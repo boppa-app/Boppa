@@ -1,61 +1,39 @@
-//
-//  ContentView.swift
-//  BopBrowser
-//
-//  Created by Bezruchkin, Anton on 2/15/26.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var selectedTab = 0
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        ZStack(alignment: .bottom) {
+            TabView(selection: $selectedTab) {
+                BrowserView()
+                    .tabItem {
+                        Label("", systemImage: "safari")
                     }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    .tag(0)
+                SearchView()
+                    .tabItem {
+                        Label("", systemImage: "magnifyingglass")
                     }
-                }
+                    .tag(1)
+                PlaylistsView()
+                    .tabItem {
+                        Label("", systemImage: "music.note.list")
+                    }
+                    .tag(2)
+                SettingsView()
+                    .tabItem {
+                        Label("", systemImage: "gear")
+                    }
+                    .tag(3)
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+            MiniPlayerView()
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
