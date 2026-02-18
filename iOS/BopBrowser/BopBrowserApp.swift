@@ -1,27 +1,50 @@
 import os
 import SwiftUI
+import UIKit
 
 @main
-struct BopBrowserApp: App {
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser", category: "BopBrowserApp")
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        return true
+    }
 
-    @State private var adBlockService = AdBlockService.shared
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        config.delegateClass = SceneDelegate.self
+        return config
+    }
+}
 
-    var body: some Scene {
-        WindowGroup {
-            Group {
-                if adBlockService.isReady {
-                    ContentView()
-                        .preferredColorScheme(.dark)
-                        .background(Color.black.ignoresSafeArea())
-                        .tint(Color.accentColor)
-                } else {
-                    Color.black.ignoresSafeArea()
-                }
-            }
-            .task {
-                await AdBlockService.shared.loadContentRuleList()
-            }
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+
+        Task {
+            await AdBlockService.shared.loadContentRuleList()
+
+            let rootView = ContentView()
+                .preferredColorScheme(.dark)
+                .background(Color.black.ignoresSafeArea())
+                .tint(Color.accentColor)
+
+            let hostingController = UIHostingController(rootView: rootView)
+            let window = UIWindow(windowScene: windowScene)
+            window.rootViewController = hostingController
+            window.makeKeyAndVisible()
+            self.window = window
         }
     }
 }
