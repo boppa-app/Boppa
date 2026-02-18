@@ -1,7 +1,4 @@
-# Swift version used by the project
 --swiftversion 5.0
-
-# Format options
 --indent 4
 --indentcase false
 --trimwhitespace always
@@ -25,10 +22,3 @@
 --ifdef no-indent
 --xcodeindentation disabled
 --linebreaks lf
-
-# Rules to disable
---disable blankLinesAtStartOfScope
---disable blankLinesAtEndOfScope
-
-# File options
---exclude Pods,Carthage,**/.build
