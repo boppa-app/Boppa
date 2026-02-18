@@ -24,6 +24,41 @@ struct MusicWebView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = WebDataStore.shared.getDataStore()
+        configuration.allowsInlineMediaPlayback = true
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.userContentController.addUserScript(getDOMVisibilityScript())
+
+        if let ruleList = AdBlockService.shared.getCompiledRuleList() {
+            configuration.userContentController.add(ruleList)
+            logger.debug("Ad block content rule list applied to webview configuration")
+        } else {
+            logger.debug("No ad block content rule list available")
+        }
+
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = context.coordinator
+        webView.allowsBackForwardNavigationGestures = true
+        webView.isOpaque = false
+        webView.backgroundColor = UIColor(Color.clear)
+
+        if isHidden {
+            webView.isHidden = true
+            webView.alpha = 0
+        }
+
+        delegate?.webViewDidCreate(webView)
+
+        if let url = url {
+            let request = URLRequest(url: url)
+            webView.load(request)
+        }
+
+        return webView
+    }
+
+    private func getDOMVisibilityScript() -> WKUserScript {
         let visibilityScript = """
             (function() {
             'use strict';
@@ -76,44 +111,11 @@ struct MusicWebView: UIViewRepresentable {
             });
             })();
         """
-        let userScript = WKUserScript(
+        return WKUserScript(
             source: visibilityScript,
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false
         )
-
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = WebDataStore.shared.getDataStore()
-        configuration.allowsInlineMediaPlayback = true
-        configuration.mediaTypesRequiringUserActionForPlayback = []
-        configuration.userContentController.addUserScript(userScript)
-
-        if let ruleList = AdBlockService.shared.getCompiledRuleList() {
-            configuration.userContentController.add(ruleList)
-            logger.debug("Ad block content rule list applied to webview configuration")
-        } else {
-            logger.debug("No ad block content rule list available")
-        }
-
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.navigationDelegate = context.coordinator
-        webView.allowsBackForwardNavigationGestures = true
-        webView.isOpaque = false
-        webView.backgroundColor = UIColor(Color.clear)
-
-        if isHidden {
-            webView.isHidden = true
-            webView.alpha = 0
-        }
-
-        delegate?.webViewDidCreate(webView)
-
-        if let url = url {
-            let request = URLRequest(url: url)
-            webView.load(request)
-        }
-
-        return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {}
