@@ -1,5 +1,5 @@
-import SwiftUI
 import os
+import SwiftUI
 
 @main
 struct BopBrowserApp: App {

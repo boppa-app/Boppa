@@ -4,7 +4,7 @@ struct BrowserToolbarView: View {
     @Bindable var viewModel: BrowserViewModel
     @State private var urlText: String = ""
     @FocusState private var isURLFieldFocused: Bool
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Button(action: { viewModel.goBack() }) {
@@ -12,13 +12,13 @@ struct BrowserToolbarView: View {
                     .font(.title3)
             }
             .disabled(!viewModel.canGoBack)
-            
+
             Button(action: { viewModel.goForward() }) {
                 Image(systemName: "arrow.forward")
                     .font(.title3)
             }
             .disabled(!viewModel.canGoForward)
-            
+
             HStack(spacing: 8) {
                 TextField("Enter URL", text: $urlText)
                     .textFieldStyle(.plain)
@@ -38,7 +38,7 @@ struct BrowserToolbarView: View {
                     .onAppear {
                         urlText = viewModel.currentURL?.absoluteString ?? ""
                     }
-                
+
                 if viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
@@ -48,8 +48,8 @@ struct BrowserToolbarView: View {
             .padding(.vertical, 10)
             .background(Color(.systemGray6))
             .cornerRadius(10)
-            
-            Button(action: { 
+
+            Button(action: {
                 if viewModel.isLoading {
                     viewModel.stop()
                 } else {

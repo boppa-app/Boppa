@@ -1,0 +1,34 @@
+# Swift version used by the project
+--swiftversion 5.0
+
+# Format options
+--indent 4
+--indentcase false
+--trimwhitespace always
+--voidtype void
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--wrapconditions after-first
+--closingparen balanced
+--commas always
+--semicolons inline
+--header ignore
+--self remove
+--importgrouping alpha
+--operatorfunc spaced
+--nospaceoperators
+--ranges spaced
+--stripunusedargs closure-only
+--maxwidth none
+--emptybraces no-space
+--ifdef no-indent
+--xcodeindentation disabled
+--linebreaks lf
+
+# Rules to disable
+--disable blankLinesAtStartOfScope
+--disable blankLinesAtEndOfScope
+
+# File options
+--exclude Pods,Carthage,**/.build
