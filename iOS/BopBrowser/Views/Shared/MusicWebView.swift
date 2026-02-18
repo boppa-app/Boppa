@@ -1,13 +1,15 @@
 import SwiftUI
 import WebKit
+import os
+
 
 struct MusicWebView: UIViewRepresentable {
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser", category: "BopBrowserApp")
+
     let url: URL?
     let isHidden: Bool
     let delegate: (any MusicWebViewDelegate)?
-    
-    @Environment(\.colorScheme) private var colorScheme
-    
+        
     init(
         url: URL?,
         isHidden: Bool = false,
@@ -86,6 +88,13 @@ struct MusicWebView: UIViewRepresentable {
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.userContentController.addUserScript(userScript)
+
+        if let ruleList = AdBlockService.shared.getCompiledRuleList() {
+            configuration.userContentController.add(ruleList)
+            logger.debug("Ad block content rule list applied to webview configuration")
+        } else {
+            logger.debug("No ad block content rule list available")
+        }
         
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator

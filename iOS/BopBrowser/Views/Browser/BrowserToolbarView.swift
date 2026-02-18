@@ -8,13 +8,13 @@ struct BrowserToolbarView: View {
     var body: some View {
         HStack(spacing: 12) {
             Button(action: { viewModel.goBack() }) {
-                Image(systemName: "chevron.left")
+                Image(systemName: "arrow.backward")
                     .font(.title3)
             }
             .disabled(!viewModel.canGoBack)
             
             Button(action: { viewModel.goForward() }) {
-                Image(systemName: "chevron.right")
+                Image(systemName: "arrow.forward")
                     .font(.title3)
             }
             .disabled(!viewModel.canGoForward)
