@@ -36,11 +36,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
             let rootView = ContentView()
                 .preferredColorScheme(.dark)
-                .background(Color.black.ignoresSafeArea())
                 .tint(Color.accentColor)
 
             let hostingController = UIHostingController(rootView: rootView)
             let window = UIWindow(windowScene: windowScene)
+            window.overrideUserInterfaceStyle = .dark
             window.rootViewController = hostingController
             window.makeKeyAndVisible()
             self.window = window

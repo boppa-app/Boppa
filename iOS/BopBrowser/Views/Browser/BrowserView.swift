@@ -14,12 +14,13 @@ struct BrowserView: View {
         VStack(spacing: 0) {
             BrowserToolbarView(viewModel: viewModel)
 
+            Rectangle().fill(Color(.systemGray6)).frame(height: 3)
+
             MusicWebView(
                 url: viewModel.currentURL,
                 delegate: viewModel
             )
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 

@@ -20,24 +20,29 @@ struct BrowserToolbarView: View {
             .disabled(!viewModel.canGoForward)
 
             HStack(spacing: 8) {
-                TextField("Enter URL", text: $urlText)
-                    .textFieldStyle(.plain)
-                    .autocapitalization(.none)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-                    .focused($isURLFieldFocused)
-                    .onSubmit {
-                        viewModel.loadURL(urlString: urlText)
-                        isURLFieldFocused = false
+                TextField(
+                    "",
+                    text: $urlText,
+                    prompt: Text("Search or enter website name").foregroundColor(Color(.systemGray4))
+                )
+                .textFieldStyle(.plain)
+                .foregroundColor(Color(.systemGray))
+                .autocapitalization(.none)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+                .focused($isURLFieldFocused)
+                .onSubmit {
+                    viewModel.loadURL(urlString: urlText)
+                    isURLFieldFocused = false
+                }
+                .onChange(of: viewModel.currentURL) { _, newURL in
+                    if !isURLFieldFocused {
+                        urlText = newURL?.absoluteString ?? ""
                     }
-                    .onChange(of: viewModel.currentURL) { _, newURL in
-                        if !isURLFieldFocused {
-                            urlText = newURL?.absoluteString ?? ""
-                        }
-                    }
-                    .onAppear {
-                        urlText = viewModel.currentURL?.absoluteString ?? ""
-                    }
+                }
+                .onAppear {
+                    urlText = viewModel.currentURL?.absoluteString ?? ""
+                }
 
                 if viewModel.isLoading {
                     ProgressView()
@@ -62,7 +67,7 @@ struct BrowserToolbarView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color(.systemBackground))
+        // .background(Color(.systemBackground))
     }
 }
 
