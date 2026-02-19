@@ -26,7 +26,7 @@ struct BrowserToolbarView: View {
                     prompt: Text("Search or enter website name").foregroundColor(Color(.systemGray4))
                 )
                 .textFieldStyle(.plain)
-                .foregroundColor(Color(.systemGray))
+                .foregroundColor(isURLFieldFocused ? Color.white : Color(.systemGray))
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
