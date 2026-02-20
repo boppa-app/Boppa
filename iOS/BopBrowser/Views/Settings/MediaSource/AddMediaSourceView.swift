@@ -37,20 +37,15 @@ struct AddMediaSourceView: View {
                         }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.black)
             .navigationTitle("Add Media Source")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        addMediaSource()
-                    }
-                    .disabled(mediaSourceUrl.isEmpty || configProviderUrl.isEmpty)
-                }
+                cancelToolbarItem
+                addToolbarItem
             }
             .alert("Edit Config Provider URL?", isPresented: $showingEditAlert) {
                 Button("Cancel", role: .cancel) {}
@@ -59,6 +54,44 @@ struct AddMediaSourceView: View {
                 }
             } message: {
                 Text("Are you sure you want to change the default config provider URL? Only use trusted config provided URLs.")
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var cancelToolbarItem: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark").font(.title3).foregroundColor(Color.red)
+                }
+            }
+            .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark").font(.title3).foregroundColor(Color.red)
+                }
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var addToolbarItem: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(action: { addMediaSource() }) {
+                    Image(systemName: "checkmark").font(.title3).foregroundColor(Color.green)
+                }
+                .disabled(mediaSourceUrl.isEmpty || configProviderUrl.isEmpty)
+            }
+            .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(action: { addMediaSource() }) {
+                    Image(systemName: "checkmark").font(.title3).foregroundColor(Color.green)
+                }
+                .disabled(mediaSourceUrl.isEmpty || configProviderUrl.isEmpty)
             }
         }
     }

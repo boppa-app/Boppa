@@ -23,6 +23,8 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
             .sheet(isPresented: $showingAddSheet) {
                 AddMediaSourceView()
             }
