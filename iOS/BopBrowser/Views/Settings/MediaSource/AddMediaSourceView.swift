@@ -10,6 +10,10 @@ struct AddMediaSourceView: View {
     @State private var showingEditAlert = false
     @State private var isConfigProviderEditable = false
 
+    private var isAddDisabled: Bool {
+        mediaSourceUrl.isEmpty || configProviderUrl.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -81,17 +85,19 @@ struct AddMediaSourceView: View {
         if #available(iOS 26.0, *) {
             ToolbarItem(placement: .confirmationAction) {
                 Button(action: { addMediaSource() }) {
-                    Image(systemName: "checkmark").font(.title3).foregroundColor(Color.green)
+                    Image(systemName: "checkmark").font(.title3)
+                        .foregroundColor(isAddDisabled ? Color(.systemGray) : Color.accentColor)
                 }
-                .disabled(mediaSourceUrl.isEmpty || configProviderUrl.isEmpty)
+                .disabled(isAddDisabled)
             }
             .sharedBackgroundVisibility(.hidden)
         } else {
             ToolbarItem(placement: .confirmationAction) {
                 Button(action: { addMediaSource() }) {
-                    Image(systemName: "checkmark").font(.title3).foregroundColor(Color.green)
+                    Image(systemName: "checkmark").font(.title3)
+                        .foregroundColor(isAddDisabled ? Color(.systemGray) : Color.accentColor)
                 }
-                .disabled(mediaSourceUrl.isEmpty || configProviderUrl.isEmpty)
+                .disabled(isAddDisabled)
             }
         }
     }

@@ -18,13 +18,11 @@ struct SettingsView: View {
                     Button {
                         showingAddSheet = true
                     } label: {
-                        Label("Add Media Source", systemImage: "plus")
+                        Label("Add Media Source", systemImage: "plus").foregroundColor(Color.accentColor)
                     }
                 }
             }
             .navigationTitle("Settings")
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.black, for: .navigationBar)
             .sheet(isPresented: $showingAddSheet) {
                 AddMediaSourceView()
             }
