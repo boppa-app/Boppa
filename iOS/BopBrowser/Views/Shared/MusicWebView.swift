@@ -48,6 +48,7 @@ struct MusicWebView: UIViewRepresentable {
             webView.alpha = 0
         }
 
+        context.coordinator.observe(webView)
         delegate?.webViewDidCreate(webView)
 
         if let url = url {
@@ -118,37 +119,34 @@ struct MusicWebView: UIViewRepresentable {
         )
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.parent = self
+    }
 
     class Coordinator: NSObject, WKNavigationDelegate {
         var parent: MusicWebView
+        private var urlObservation: NSKeyValueObservation?
+        private var canGoBackObservation: NSKeyValueObservation?
+        private var canGoForwardObservation: NSKeyValueObservation?
+        private var isLoadingObservation: NSKeyValueObservation?
 
         init(_ parent: MusicWebView) {
             self.parent = parent
         }
 
-        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-            parent.delegate?.webView(webView, didUpdateLoading: true)
-            parent.delegate?.webView(webView, didUpdateURL: webView.url)
-        }
-
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            parent.delegate?.webView(webView, didUpdateLoading: false)
-            parent.delegate?.webView(webView, didUpdateCanGoBack: webView.canGoBack)
-            parent.delegate?.webView(webView, didUpdateCanGoForward: webView.canGoForward)
-            parent.delegate?.webView(webView, didUpdateURL: webView.url)
-        }
-
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            parent.delegate?.webView(webView, didUpdateLoading: false)
-            parent.delegate?.webView(webView, didUpdateCanGoBack: webView.canGoBack)
-            parent.delegate?.webView(webView, didUpdateCanGoForward: webView.canGoForward)
-        }
-
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            parent.delegate?.webView(webView, didUpdateLoading: false)
-            parent.delegate?.webView(webView, didUpdateCanGoBack: webView.canGoBack)
-            parent.delegate?.webView(webView, didUpdateCanGoForward: webView.canGoForward)
+        func observe(_ webView: WKWebView) {
+            urlObservation = webView.observe(\.url, options: .new) { [weak self] webView, _ in
+                self?.parent.delegate?.webView(webView, didUpdateURL: webView.url)
+            }
+            canGoBackObservation = webView.observe(\.canGoBack, options: .new) { [weak self] webView, _ in
+                self?.parent.delegate?.webView(webView, didUpdateCanGoBack: webView.canGoBack)
+            }
+            canGoForwardObservation = webView.observe(\.canGoForward, options: .new) { [weak self] webView, _ in
+                self?.parent.delegate?.webView(webView, didUpdateCanGoForward: webView.canGoForward)
+            }
+            isLoadingObservation = webView.observe(\.isLoading, options: .new) { [weak self] webView, _ in
+                self?.parent.delegate?.webView(webView, didUpdateLoading: webView.isLoading)
+            }
         }
     }
 }

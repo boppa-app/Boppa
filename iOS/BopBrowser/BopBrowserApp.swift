@@ -50,7 +50,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let rootView = ContentView()
                 .modelContainer(appDelegate.modelContainer)
                 .preferredColorScheme(.dark)
-                .tint(Color.accentColor)
 
             let hostingController = UIHostingController(rootView: rootView)
             let window = UIWindow(windowScene: windowScene)

@@ -7,25 +7,24 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                Group {
-                    switch selectedTab {
-                    case 0:
-                        BrowserView()
-                    case 1:
-                        SearchView()
-                    case 2:
-                        PlaylistsView()
-                    case 3:
-                        SettingsView()
-                    default:
-                        BrowserView()
-                    }
+                ZStack {
+                    BrowserView()
+                        .opacity(selectedTab == 0 ? 1 : 0)
+                        .allowsHitTesting(selectedTab == 0)
+                    SearchView()
+                        .opacity(selectedTab == 1 ? 1 : 0)
+                        .allowsHitTesting(selectedTab == 1)
+                    PlaylistsView()
+                        .opacity(selectedTab == 2 ? 1 : 0)
+                        .allowsHitTesting(selectedTab == 2)
+                    SettingsView()
+                        .opacity(selectedTab == 3 ? 1 : 0)
+                        .allowsHitTesting(selectedTab == 3)
                 }
                 .frame(maxHeight: .infinity)
 
                 ContentTabView(selectedTab: $selectedTab)
             }
-            // .ignoresSafeArea(edges: .bottom)
 
             MiniPlayerView()
         }
@@ -53,7 +52,7 @@ struct ContentTabView: View {
                     }) {
                         Image(systemName: tab.icon)
                             .font(.system(size: 24))
-                            .foregroundColor(selectedTab == tab.num ? .accentColor : Color(.systemGray))
+                            .foregroundColor(selectedTab == tab.num ? .purp : Color(.systemGray))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }

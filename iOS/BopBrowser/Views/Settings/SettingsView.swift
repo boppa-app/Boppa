@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \MediaSource.createdAt) private var mediaSources: [MediaSource]
+    @Query private var mediaSources: [MediaSource]
     @State private var showingAddSheet = false
 
     var body: some View {
@@ -18,7 +18,7 @@ struct SettingsView: View {
                     Button {
                         showingAddSheet = true
                     } label: {
-                        Label("Add Media Source", systemImage: "plus").foregroundColor(Color.accentColor)
+                        Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
                     }
                 }
             }

@@ -11,12 +11,14 @@ struct BrowserToolbarView: View {
                 Image(systemName: "arrow.backward")
                     .font(.title3)
             }
+            .foregroundColor(viewModel.canGoBack ? Color.purp : Color(.systemGray))
             .disabled(!viewModel.canGoBack)
 
             Button(action: { viewModel.goForward() }) {
                 Image(systemName: "arrow.forward")
                     .font(.title3)
             }
+            .foregroundColor(viewModel.canGoForward ? Color.purp : Color(.systemGray))
             .disabled(!viewModel.canGoForward)
 
             HStack(spacing: 8) {
@@ -64,6 +66,8 @@ struct BrowserToolbarView: View {
                 Image(systemName: viewModel.isLoading ? "xmark" : "arrow.clockwise")
                     .font(.title3)
             }
+            .foregroundColor(viewModel.currentURL != nil ? Color.purp : Color(.systemGray))
+            .disabled(viewModel.currentURL == nil)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
