@@ -3,23 +3,41 @@ import Foundation
 struct MediaSourceConfig: Codable {
     let name: String
     let url: String
-    let login: String?
-    let loginRequired: Bool?
+    let iconSvg: String?
+    let login: LoginConfig?
     let data: MediaSourceData?
     let actions: MediaSourceActions?
 }
 
+struct LoginConfig: Codable {
+    let url: String
+    let required: Bool?
+}
+
 struct MediaSourceData: Codable {
-    let search: MediaSourceDataEntry?
-    let listLikes: MediaSourceDataEntry?
+    let search: [MediaSourceDataEntry]?
+    let listLikes: [MediaSourceDataEntry]?
 }
 
 struct MediaSourceDataEntry: Codable {
     let baseUrl: String?
-    let queryParameters: [String: String]?
     let type: String?
-    let networkRequestParser: NetworkRequestParser?
+    let queryParameters: [String: QueryParameter]?
+    let extraction: [ExtractionItem]?
     let priority: Int?
+}
+
+struct QueryParameter: Codable {
+    let type: String
+    let field: String?
+    let pattern: String?
+}
+
+struct ExtractionItem: Codable {
+    let type: String?
+    let reMatch: String?
+    let selector: String?
+    let itemMapping: SongMapping?
 }
 
 struct MediaSourceActions: Codable {
@@ -30,24 +48,7 @@ struct MediaSourceActions: Codable {
 
 struct MediaSourceAction: Codable {}
 
-struct NetworkRequestParser: Codable {
-    let reMatch: String?
-    let extract: ExtractionConfig?
-}
-
-struct ExtractionConfig: Codable {
-    let type: String?
-    let strategy: String?
-    let sources: [ExtractionSource]?
-}
-
-struct ExtractionSource: Codable {
-    let type: String?
-    let path: String?
-    let forEach: Song?
-}
-
-struct Song: Codable {
+struct SongMapping: Codable {
     let title: String
     let artist: String
     let duration: String
