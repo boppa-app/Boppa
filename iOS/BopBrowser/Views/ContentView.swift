@@ -9,21 +9,21 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ZStack {
                     BrowserView()
-                        .opacity(selectedTab == 0 ? 1 : 0)
-                        .allowsHitTesting(selectedTab == 0)
+                        .opacity(self.selectedTab == 0 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 0)
                     SearchView()
-                        .opacity(selectedTab == 1 ? 1 : 0)
-                        .allowsHitTesting(selectedTab == 1)
+                        .opacity(self.selectedTab == 1 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 1)
                     PlaylistsView()
-                        .opacity(selectedTab == 2 ? 1 : 0)
-                        .allowsHitTesting(selectedTab == 2)
+                        .opacity(self.selectedTab == 2 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 2)
                     SettingsView()
-                        .opacity(selectedTab == 3 ? 1 : 0)
-                        .allowsHitTesting(selectedTab == 3)
+                        .opacity(self.selectedTab == 3 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 3)
                 }
                 .frame(maxHeight: .infinity)
 
-                ContentTabView(selectedTab: $selectedTab)
+                ContentTabView(selectedTab: self.$selectedTab)
             }
 
             MiniPlayerView()
@@ -46,13 +46,13 @@ struct ContentTabView: View {
             Rectangle().fill(Color(.systemGray6)).frame(height: 3)
 
             HStack(spacing: 0) {
-                ForEach(tabs, id: \.num) { tab in
+                ForEach(self.tabs, id: \.num) { tab in
                     Button(action: {
-                        selectedTab = tab.num
+                        self.selectedTab = tab.num
                     }) {
                         Image(systemName: tab.icon)
                             .font(.system(size: 24))
-                            .foregroundColor(selectedTab == tab.num ? .purp : Color(.systemGray))
+                            .foregroundColor(self.selectedTab == tab.num ? .purp : Color(.systemGray))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }

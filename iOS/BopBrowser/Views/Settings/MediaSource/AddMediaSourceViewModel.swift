@@ -10,15 +10,15 @@ class AddMediaSourceViewModel {
     var errorMessage: String?
 
     var isAddDisabled: Bool {
-        mediaSourceUrl.isEmpty || configProviderUrl.isEmpty || isLoading
+        self.mediaSourceUrl.isEmpty || self.configProviderUrl.isEmpty || self.isLoading
     }
 
     func addMediaSource(modelContext: ModelContext) async -> Bool {
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
-        let formattedSourceUrl = mediaSourceUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let formattedProviderUrl = configProviderUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let formattedSourceUrl = self.mediaSourceUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let formattedProviderUrl = self.configProviderUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         do {
             let mediaSources = try await MediaSourceImportService.shared.fetchMediaSources(
@@ -26,12 +26,14 @@ class AddMediaSourceViewModel {
                 mediaSourceUrl: formattedSourceUrl
             )
             mediaSources.forEach { modelContext.insert($0) }
+            try modelContext.save()
+            NotificationCenter.default.post(name: .mediaSourcesDidChange, object: nil)
 
-            isLoading = false
+            self.isLoading = false
             return true
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            self.isLoading = false
+            self.errorMessage = error.localizedDescription
             return false
         }
     }

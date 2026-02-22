@@ -7,7 +7,7 @@ struct RegexValidated<Pattern: RegexPattern>: Codable, Equatable {
         guard value.wholeMatch(of: Pattern.regex) != nil else {
             throw ValidationError.invalidFormat(value, pattern: Pattern.description)
         }
-        rawValue = value
+        self.rawValue = value
     }
 
     init(from decoder: Decoder) throws {
@@ -18,7 +18,7 @@ struct RegexValidated<Pattern: RegexPattern>: Codable, Equatable {
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
+        try container.encode(self.rawValue)
     }
 
     enum ValidationError: Error, LocalizedError {

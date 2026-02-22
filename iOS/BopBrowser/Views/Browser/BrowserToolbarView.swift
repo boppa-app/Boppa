@@ -7,46 +7,46 @@ struct BrowserToolbarView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: { viewModel.goBack() }) {
+            Button(action: { self.viewModel.goBack() }) {
                 Image(systemName: "arrow.backward")
                     .font(.title3)
             }
-            .foregroundColor(viewModel.canGoBack ? Color.purp : Color(.systemGray))
-            .disabled(!viewModel.canGoBack)
+            .foregroundColor(self.viewModel.canGoBack ? Color.purp : Color(.systemGray))
+            .disabled(!self.viewModel.canGoBack)
 
-            Button(action: { viewModel.goForward() }) {
+            Button(action: { self.viewModel.goForward() }) {
                 Image(systemName: "arrow.forward")
                     .font(.title3)
             }
-            .foregroundColor(viewModel.canGoForward ? Color.purp : Color(.systemGray))
-            .disabled(!viewModel.canGoForward)
+            .foregroundColor(self.viewModel.canGoForward ? Color.purp : Color(.systemGray))
+            .disabled(!self.viewModel.canGoForward)
 
             HStack(spacing: 8) {
                 TextField(
                     "",
-                    text: $urlText,
+                    text: self.$urlText,
                     prompt: Text("Search or enter website name").foregroundColor(Color(.systemGray4))
                 )
                 .textFieldStyle(.plain)
-                .foregroundColor(isURLFieldFocused ? Color.white : Color(.systemGray))
+                .foregroundColor(self.isURLFieldFocused ? Color.white : Color(.systemGray))
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
-                .focused($isURLFieldFocused)
+                .focused(self.$isURLFieldFocused)
                 .onSubmit {
-                    viewModel.loadURL(urlString: urlText)
-                    isURLFieldFocused = false
+                    self.viewModel.loadURL(urlString: self.urlText)
+                    self.isURLFieldFocused = false
                 }
-                .onChange(of: viewModel.currentURL) { _, newURL in
-                    if !isURLFieldFocused {
-                        urlText = newURL?.absoluteString ?? ""
+                .onChange(of: self.viewModel.currentURL) { _, newURL in
+                    if !self.isURLFieldFocused {
+                        self.urlText = newURL?.absoluteString ?? ""
                     }
                 }
                 .onAppear {
-                    urlText = viewModel.currentURL?.absoluteString ?? ""
+                    self.urlText = self.viewModel.currentURL?.absoluteString ?? ""
                 }
 
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
@@ -57,17 +57,17 @@ struct BrowserToolbarView: View {
             .cornerRadius(10)
 
             Button(action: {
-                if viewModel.isLoading {
-                    viewModel.stop()
+                if self.viewModel.isLoading {
+                    self.viewModel.stop()
                 } else {
-                    viewModel.refresh()
+                    self.viewModel.refresh()
                 }
             }) {
-                Image(systemName: viewModel.isLoading ? "xmark" : "arrow.clockwise")
+                Image(systemName: self.viewModel.isLoading ? "xmark" : "arrow.clockwise")
                     .font(.title3)
             }
-            .foregroundColor(viewModel.currentURL != nil ? Color.purp : Color(.systemGray))
-            .disabled(viewModel.currentURL == nil)
+            .foregroundColor(self.viewModel.currentURL != nil ? Color.purp : Color(.systemGray))
+            .disabled(self.viewModel.currentURL == nil)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

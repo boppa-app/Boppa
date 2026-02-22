@@ -12,25 +12,25 @@ struct AddMediaSourceView: View {
         NavigationStack {
             Form {
                 Section("Media Source URL") {
-                    TextField("freesound.org", text: $viewModel.mediaSourceUrl)
+                    TextField("freesound.org", text: self.$viewModel.mediaSourceUrl)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
-                        .disabled(viewModel.isLoading)
+                        .disabled(self.viewModel.isLoading)
                 }
                 Section("Config Provider URL") {
-                    TextField(viewModel.configProviderUrl, text: $viewModel.configProviderUrl)
+                    TextField(self.viewModel.configProviderUrl, text: self.$viewModel.configProviderUrl)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
-                        .disabled(viewModel.isLoading)
-                        .foregroundColor(isConfigProviderEditable ? Color.white : Color.purp)
+                        .disabled(self.viewModel.isLoading)
+                        .foregroundColor(self.isConfigProviderEditable ? Color.white : Color.purp)
                         .overlay {
-                            if !isConfigProviderEditable {
+                            if !self.isConfigProviderEditable {
                                 Color.clear
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        showingEditAlert = true
+                                        self.showingEditAlert = true
                                     }
                             }
                         }
@@ -52,13 +52,13 @@ struct AddMediaSourceView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarBackground(Color.black, for: .navigationBar)
             .toolbar {
-                cancelToolbarItem
-                addToolbarItem
+                self.cancelToolbarItem
+                self.addToolbarItem
             }
-            .alert("Edit Config Provider URL?", isPresented: $showingEditAlert) {
+            .alert("Edit Config Provider URL?", isPresented: self.$showingEditAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Edit") {
-                    isConfigProviderEditable = true
+                    self.isConfigProviderEditable = true
                 }
             } message: {
                 Text("Are you sure you want to change the default config provider URL? Only use trusted config provided URLs.")
@@ -69,10 +69,10 @@ struct AddMediaSourceView: View {
     @ToolbarContentBuilder
     private var cancelToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button(action: { dismiss() }) {
+            Button(action: { self.dismiss() }) {
                 Image(systemName: "xmark").font(.title3).foregroundColor(Color.red)
             }
-            .disabled(viewModel.isLoading)
+            .disabled(self.viewModel.isLoading)
         }
         .sharedBackgroundVisibilityIfAvailable(.hidden)
     }
@@ -80,15 +80,15 @@ struct AddMediaSourceView: View {
     @ToolbarContentBuilder
     private var addToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
-            if viewModel.isLoading {
+            if self.viewModel.isLoading {
                 ProgressView()
                     .tint(.purp)
             } else {
-                Button(action: { addMediaSource() }) {
+                Button(action: { self.addMediaSource() }) {
                     Image(systemName: "checkmark").font(.title3)
-                        .foregroundColor(viewModel.isAddDisabled ? Color(.systemGray) : Color.purp)
+                        .foregroundColor(self.viewModel.isAddDisabled ? Color(.systemGray) : Color.purp)
                 }
-                .disabled(viewModel.isAddDisabled)
+                .disabled(self.viewModel.isAddDisabled)
             }
         }
         .sharedBackgroundVisibilityIfAvailable(.hidden)
@@ -96,9 +96,9 @@ struct AddMediaSourceView: View {
 
     private func addMediaSource() {
         Task {
-            let success = await viewModel.addMediaSource(modelContext: modelContext)
+            let success = await viewModel.addMediaSource(modelContext: self.modelContext)
             if success {
-                dismiss()
+                self.dismiss()
             }
         }
     }

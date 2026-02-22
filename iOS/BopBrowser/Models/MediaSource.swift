@@ -8,13 +8,13 @@ final class MediaSource {
     var configData: Data
 
     var config: MediaSourceConfig? {
-        try? JSONDecoder().decode(MediaSourceConfig.self, from: configData)
+        try? JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
 
     init(name: String, url: String, config: MediaSourceConfig) {
         self.name = name
         self.url = url
-        configData = (try? JSONEncoder().encode(config)) ?? Data()
+        self.configData = (try? JSONEncoder().encode(config)) ?? Data()
     }
 
     static func fromConfigData(_ data: Data) throws -> [MediaSource] {

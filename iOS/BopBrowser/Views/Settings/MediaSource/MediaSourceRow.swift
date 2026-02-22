@@ -10,9 +10,9 @@ struct MediaSourceRow: View {
                 .foregroundColor(Color.purp)
                 .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(source.name)
+                Text(self.source.name)
                     .font(.body)
-                Text(source.url)
+                Text(self.source.url)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

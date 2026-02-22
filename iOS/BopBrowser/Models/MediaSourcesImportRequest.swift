@@ -10,6 +10,6 @@ final class MediaSourcesImportRequest {
     init(mediaSourceUrl: String, configProviderUrl: String) {
         self.mediaSourceUrl = mediaSourceUrl
         self.configProviderUrl = configProviderUrl
-        createdAt = .now
+        self.createdAt = .now
     }
 }

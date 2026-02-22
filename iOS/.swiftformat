@@ -22,3 +22,4 @@
 --ifdef no-indent
 --xcodeindentation disabled
 --linebreaks lf
+--self insert

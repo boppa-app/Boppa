@@ -10,20 +10,20 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("Media Sources") {
-                    ForEach(mediaSources) { source in
+                    ForEach(self.mediaSources) { source in
                         MediaSourceRow(source: source)
                     }
-                    .onDelete(perform: deleteMediaSources)
+                    .onDelete(perform: self.deleteMediaSources)
 
                     Button {
-                        showingAddSheet = true
+                        self.showingAddSheet = true
                     } label: {
                         Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
                     }
                 }
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $showingAddSheet) {
+            .sheet(isPresented: self.$showingAddSheet) {
                 AddMediaSourceView()
             }
         }
@@ -31,8 +31,10 @@ struct SettingsView: View {
 
     private func deleteMediaSources(at offsets: IndexSet) {
         for index in offsets {
-            modelContext.delete(mediaSources[index])
+            self.modelContext.delete(self.mediaSources[index])
         }
+        try? self.modelContext.save()
+        NotificationCenter.default.post(name: .mediaSourcesDidChange, object: nil)
     }
 }
 

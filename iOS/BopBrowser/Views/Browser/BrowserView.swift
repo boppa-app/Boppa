@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 // TODO: Bottom menu bar:
 //         * Add picture-in-picture enable/disable button (enabled: pip, greyed out. disabled: pip.fill, accent color)
@@ -12,16 +13,23 @@ struct BrowserView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            BrowserToolbarView(viewModel: viewModel)
+            BrowserToolbarView(viewModel: self.viewModel)
 
             Rectangle().fill(Color(.systemGray6)).frame(height: 3)
 
-            MusicWebView(
-                url: viewModel.currentURL,
-                delegate: viewModel
-            )
+            WebViewWrapper(webView: self.viewModel.webView)
         }
     }
+}
+
+private struct WebViewWrapper: UIViewRepresentable {
+    let webView: WKWebView
+
+    func makeUIView(context: Context) -> WKWebView {
+        return self.webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
 }
 
 #Preview {

@@ -8,8 +8,8 @@ class WebDataStore {
     private var cookieObserver: NSObjectProtocol?
 
     private init() {
-        dataStore = WKWebsiteDataStore.default()
-        setupCookieSync()
+        self.dataStore = WKWebsiteDataStore.default()
+        self.setupCookieSync()
     }
 
     deinit {
@@ -19,7 +19,7 @@ class WebDataStore {
     }
 
     private func setupCookieSync() {
-        cookieObserver = NotificationCenter.default.addObserver(
+        self.cookieObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
@@ -27,16 +27,16 @@ class WebDataStore {
             self?.syncBidirectionally()
         }
 
-        syncBidirectionally()
+        self.syncBidirectionally()
     }
 
     private func syncBidirectionally() {
-        syncFromWKToHTTP()
-        syncFromHTTPToWK()
+        self.syncFromWKToHTTP()
+        self.syncFromHTTPToWK()
     }
 
     private func syncFromWKToHTTP() {
-        dataStore.httpCookieStore.getAllCookies { cookies in
+        self.dataStore.httpCookieStore.getAllCookies { cookies in
             for cookie in cookies {
                 HTTPCookieStorage.shared.setCookie(cookie)
             }
@@ -47,18 +47,18 @@ class WebDataStore {
         guard let cookies = HTTPCookieStorage.shared.cookies else { return }
 
         for cookie in cookies {
-            dataStore.httpCookieStore.setCookie(cookie)
+            self.dataStore.httpCookieStore.setCookie(cookie)
         }
     }
 
     func getDataStore() -> WKWebsiteDataStore {
-        return dataStore
+        return self.dataStore
     }
 
     func forceSyncCookies(completion: (() -> Void)? = nil) {
         let group = DispatchGroup()
         group.enter()
-        dataStore.httpCookieStore.getAllCookies { cookies in
+        self.dataStore.httpCookieStore.getAllCookies { cookies in
             for cookie in cookies {
                 HTTPCookieStorage.shared.setCookie(cookie)
             }
@@ -70,7 +70,7 @@ class WebDataStore {
             let innerGroup = DispatchGroup()
             for cookie in httpCookies {
                 innerGroup.enter()
-                dataStore.httpCookieStore.setCookie(cookie) {
+                self.dataStore.httpCookieStore.setCookie(cookie) {
                     innerGroup.leave()
                 }
             }
@@ -90,7 +90,7 @@ class WebDataStore {
         let group = DispatchGroup()
 
         group.enter()
-        dataStore.httpCookieStore.getAllCookies { cookies in
+        self.dataStore.httpCookieStore.getAllCookies { cookies in
             let innerGroup = DispatchGroup()
             for cookie in cookies {
                 innerGroup.enter()

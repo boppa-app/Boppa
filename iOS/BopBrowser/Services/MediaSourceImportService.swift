@@ -10,7 +10,7 @@ class MediaSourceImportService {
     private init() {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 15
-        session = URLSession(configuration: configuration)
+        self.session = URLSession(configuration: configuration)
     }
 
     func buildConfigURL(configProviderUrl: String, mediaSourceUrl: String) -> URL? {
@@ -22,22 +22,22 @@ class MediaSourceImportService {
 
     func fetchMediaSources(configProviderUrl: String, mediaSourceUrl: String) async throws -> [MediaSource] {
         guard let url = buildConfigURL(configProviderUrl: configProviderUrl, mediaSourceUrl: mediaSourceUrl) else {
-            logger.error("Invalid config URL for provider: \(configProviderUrl), source: \(mediaSourceUrl)")
+            self.logger.error("Invalid config URL for provider: \(configProviderUrl), source: \(mediaSourceUrl)")
             throw MediaSourceImportError.invalidURL
         }
 
-        logger.info("Fetching config from: \(url.absoluteString)")
+        self.logger.info("Fetching config from: \(url.absoluteString)")
         let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw MediaSourceImportError.invalidResponse
         }
         guard httpResponse.statusCode == 200 else {
-            logger.error("Server returned status \(httpResponse.statusCode) for \(url.absoluteString)")
+            self.logger.error("Server returned status \(httpResponse.statusCode) for \(url.absoluteString)")
             throw MediaSourceImportError.serverError(statusCode: httpResponse.statusCode, mediaSourceUrl: mediaSourceUrl)
         }
 
         let mediaSources = try MediaSource.fromConfigData(data)
-        logger.info("Successfully created \(mediaSources.count) media source(s) for \(mediaSourceUrl)")
+        self.logger.info("Successfully created \(mediaSources.count) media source(s) for \(mediaSourceUrl)")
 
         return mediaSources
     }
