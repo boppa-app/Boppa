@@ -9,8 +9,8 @@ enum SearchCategory: String, CaseIterable {
     var icon: String {
         switch self {
         case .songs: return "music.note"
-        case .artists: return "person"
-        case .albums: return "square.stack"
+        case .artists: return "music.microphone"
+        case .albums: return "music.note.square.stack"
         case .playlists: return "music.note.list"
         }
     }
