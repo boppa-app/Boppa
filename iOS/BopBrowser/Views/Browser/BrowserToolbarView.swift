@@ -27,6 +27,7 @@ struct BrowserToolbarView: View {
                     text: self.$urlText,
                     prompt: Text("Search or enter website name").foregroundColor(Color(.systemGray4))
                 )
+                .tint(Color.purp)
                 .textFieldStyle(.plain)
                 .foregroundColor(self.isURLFieldFocused ? Color.white : Color(.systemGray))
                 .autocapitalization(.none)

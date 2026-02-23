@@ -45,12 +45,12 @@ struct AddMediaSourceView: View {
                         .listRowSeparator(.hidden)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.black)
+            // .scrollContentBackground(.hidden)
+            // .background(Color.black)
             .navigationTitle("Add Media Source")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.black, for: .navigationBar)
+            // .toolbarBackground(.visible, for: .navigationBar)
+            // .toolbarBackground(Color.black, for: .navigationBar)
             .toolbar {
                 self.cancelToolbarItem
                 self.addToolbarItem
