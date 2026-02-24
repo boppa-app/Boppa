@@ -35,6 +35,11 @@ struct QueryParameterCapture: Codable {
     let keyMapping: KeyMapping
 }
 
+struct PaginationConfig: Codable {
+    let baseUrl: String?
+    let queryParameters: [String: String]?
+}
+
 struct MediaSourceData: Codable {
     let searchSongs: [SongDataEntry]?
     let searchArtists: [ArtistDataEntry]?
@@ -49,6 +54,7 @@ struct SongDataEntry: Codable {
     let queryParameters: [String: String]?
     let extraction: [SongExtractionItem]?
     let priority: Int?
+    let pagination: PaginationConfig?
 }
 
 struct AlbumDataEntry: Codable {
@@ -57,6 +63,7 @@ struct AlbumDataEntry: Codable {
     let queryParameters: [String: String]?
     let extraction: [AlbumExtractionItem]?
     let priority: Int?
+    let pagination: PaginationConfig?
 }
 
 struct ArtistDataEntry: Codable {
@@ -65,6 +72,7 @@ struct ArtistDataEntry: Codable {
     let queryParameters: [String: String]?
     let extraction: [ArtistExtractionItem]?
     let priority: Int?
+    let pagination: PaginationConfig?
 }
 
 struct PlaylistDataEntry: Codable {
@@ -73,6 +81,7 @@ struct PlaylistDataEntry: Codable {
     let queryParameters: [String: String]?
     let extraction: [PlaylistExtractionItem]?
     let priority: Int?
+    let pagination: PaginationConfig?
 }
 
 struct SongExtractionItem: Codable {
@@ -112,31 +121,31 @@ struct MediaSourceActions: Codable {
 struct MediaSourceAction: Codable {}
 
 struct SongMapping: Codable {
-    let title: String
-    let artist: String
-    let duration: String
-    let artworkUrl: String
-    let url: String
+    let title: [String]
+    let artist: [String]
+    let duration: [String]
+    let artworkUrl: [String]
+    let url: [String]
 }
 
 struct AlbumMapping: Codable {
-    let title: String
-    let artist: String
-    let trackCount: String
-    let artworkUrl: String
-    let url: String
+    let title: [String]
+    let artist: [String]
+    let trackCount: [String]
+    let artworkUrl: [String]
+    let url: [String]
 }
 
 struct ArtistMapping: Codable {
-    let artist: String
-    let artworkUrl: String
-    let url: String
+    let artist: [String]
+    let artworkUrl: [String]
+    let url: [String]
 }
 
 struct PlaylistMapping: Codable {
-    let title: String
-    let user: String
-    let trackCount: String
-    let artworkUrl: String
-    let url: String
+    let title: [String]
+    let user: [String]
+    let trackCount: [String]
+    let artworkUrl: [String]
+    let url: [String]
 }
