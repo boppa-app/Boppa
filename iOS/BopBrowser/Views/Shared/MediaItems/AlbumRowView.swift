@@ -11,15 +11,19 @@ struct AlbumRow: View {
                     .font(.body)
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text(self.album.artist)
-                    .font(.caption)
-                    .foregroundColor(Color(.systemGray))
-                    .lineLimit(1)
+                if let artist = self.album.artist {
+                    Text(artist)
+                        .font(.caption)
+                        .foregroundColor(Color(.systemGray))
+                        .lineLimit(1)
+                }
             }
             Spacer()
-            Text(self.album.formattedTrackCount)
-                .font(.caption)
-                .foregroundColor(Color(.systemGray))
+            if let trackCount = self.album.formattedTrackCount {
+                Text(trackCount)
+                    .font(.caption)
+                    .foregroundColor(Color(.systemGray))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

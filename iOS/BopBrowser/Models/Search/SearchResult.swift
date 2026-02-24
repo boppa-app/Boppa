@@ -7,11 +7,15 @@ enum SearchResult {
     case playlists([Playlist])
 
     var isEmpty: Bool {
+        self.count == 0
+    }
+
+    var count: Int {
         switch self {
-        case let .songs(items): return items.isEmpty
-        case let .albums(items): return items.isEmpty
-        case let .artists(items): return items.isEmpty
-        case let .playlists(items): return items.isEmpty
+        case let .songs(items): return items.count
+        case let .albums(items): return items.count
+        case let .artists(items): return items.count
+        case let .playlists(items): return items.count
         }
     }
 

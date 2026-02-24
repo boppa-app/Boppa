@@ -11,16 +11,20 @@ struct SongRow: View {
                     .font(.body)
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text(self.song.artist)
-                    .font(.caption)
-                    .foregroundColor(Color(.systemGray))
-                    .lineLimit(1)
+                if let artist = self.song.artist {
+                    Text(artist)
+                        .font(.caption)
+                        .foregroundColor(Color(.systemGray))
+                        .lineLimit(1)
+                }
             }
             Spacer()
-            Text(self.song.formattedDuration)
-                .font(.caption)
-                .foregroundColor(Color(.systemGray))
-                .monospacedDigit()
+            if let duration = self.song.formattedDuration {
+                Text(duration)
+                    .font(.caption)
+                    .foregroundColor(Color(.systemGray))
+                    .monospacedDigit()
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

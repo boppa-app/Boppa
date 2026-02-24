@@ -41,71 +41,52 @@ struct PaginationConfig: Codable {
 }
 
 struct MediaSourceData: Codable {
-    let searchSongs: [SongDataEntry]?
-    let searchArtists: [ArtistDataEntry]?
-    let searchAlbums: [AlbumDataEntry]?
-    let searchPlaylists: [PlaylistDataEntry]?
-    let listLikes: [SongDataEntry]?
+    let searchSongs: [DataEntry<SongExtractionItem>]?
+    let searchArtists: [DataEntry<ArtistExtractionItem>]?
+    let searchAlbums: [DataEntry<AlbumExtractionItem>]?
+    let searchPlaylists: [DataEntry<PlaylistExtractionItem>]?
+    let listLikes: [DataEntry<SongExtractionItem>]?
 }
 
-struct SongDataEntry: Codable {
+struct DataEntry<Extraction: Codable>: Codable {
     let baseUrl: String?
     let type: String?
     let queryParameters: [String: String]?
-    let extraction: [SongExtractionItem]?
+    let extraction: [Extraction]?
     let priority: Int?
     let pagination: PaginationConfig?
 }
 
-struct AlbumDataEntry: Codable {
-    let baseUrl: String?
-    let type: String?
-    let queryParameters: [String: String]?
-    let extraction: [AlbumExtractionItem]?
-    let priority: Int?
-    let pagination: PaginationConfig?
+protocol ExtractionSource {
+    associatedtype Mapping: Codable
+    var type: String? { get }
+    var reMatch: String? { get }
+    var selector: String? { get }
+    var itemMapping: Mapping? { get }
 }
 
-struct ArtistDataEntry: Codable {
-    let baseUrl: String?
-    let type: String?
-    let queryParameters: [String: String]?
-    let extraction: [ArtistExtractionItem]?
-    let priority: Int?
-    let pagination: PaginationConfig?
-}
-
-struct PlaylistDataEntry: Codable {
-    let baseUrl: String?
-    let type: String?
-    let queryParameters: [String: String]?
-    let extraction: [PlaylistExtractionItem]?
-    let priority: Int?
-    let pagination: PaginationConfig?
-}
-
-struct SongExtractionItem: Codable {
+struct SongExtractionItem: Codable, ExtractionSource {
     let type: String?
     let reMatch: String?
     let selector: String?
     let itemMapping: SongMapping?
 }
 
-struct AlbumExtractionItem: Codable {
+struct AlbumExtractionItem: Codable, ExtractionSource {
     let type: String?
     let reMatch: String?
     let selector: String?
     let itemMapping: AlbumMapping?
 }
 
-struct ArtistExtractionItem: Codable {
+struct ArtistExtractionItem: Codable, ExtractionSource {
     let type: String?
     let reMatch: String?
     let selector: String?
     let itemMapping: ArtistMapping?
 }
 
-struct PlaylistExtractionItem: Codable {
+struct PlaylistExtractionItem: Codable, ExtractionSource {
     let type: String?
     let reMatch: String?
     let selector: String?

@@ -9,14 +9,14 @@ enum MediaSourceImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "The config URL could not be constructed."
+            return "The config URL could not be constructed"
         case .invalidResponse:
-            return "The server returned an invalid response."
+            return "The server returned an invalid response"
         case let .serverError(statusCode, mediaSourceUrl):
             if statusCode == 404 {
                 return "No config found for media source URL: \(mediaSourceUrl)"
             }
-            return "The server returned an error (HTTP \(statusCode))."
+            return "The server returned an error (HTTP \(statusCode))"
         case let .malformedConfig(detail):
             return "Malformed config: \(detail)"
         }

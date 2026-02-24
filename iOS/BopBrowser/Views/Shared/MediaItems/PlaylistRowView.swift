@@ -11,15 +11,19 @@ struct PlaylistRow: View {
                     .font(.body)
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text(self.playlist.user)
-                    .font(.caption)
-                    .foregroundColor(Color(.systemGray))
-                    .lineLimit(1)
+                if let user = self.playlist.user {
+                    Text(user)
+                        .font(.caption)
+                        .foregroundColor(Color(.systemGray))
+                        .lineLimit(1)
+                }
             }
             Spacer()
-            Text(self.playlist.formattedTrackCount)
-                .font(.caption)
-                .foregroundColor(Color(.systemGray))
+            if let trackCount = self.playlist.formattedTrackCount {
+                Text(trackCount)
+                    .font(.caption)
+                    .foregroundColor(Color(.systemGray))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

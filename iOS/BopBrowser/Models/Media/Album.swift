@@ -3,18 +3,18 @@ import Foundation
 struct Album: Identifiable, Equatable {
     let id: UUID
     let title: String
-    let artist: String
-    let trackCount: Int
+    let artist: String?
+    let trackCount: Int?
     let artworkUrl: String?
-    let url: String
+    let url: String?
 
     init(
         id: UUID = UUID(),
         title: String,
-        artist: String,
-        trackCount: Int,
-        artworkUrl: String?,
-        url: String
+        artist: String? = nil,
+        trackCount: Int? = nil,
+        artworkUrl: String? = nil,
+        url: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -24,7 +24,8 @@ struct Album: Identifiable, Equatable {
         self.url = url
     }
 
-    var formattedTrackCount: String {
-        "\(self.trackCount) track\(self.trackCount == 1 ? "" : "s")"
+    var formattedTrackCount: String? {
+        guard let trackCount else { return nil }
+        return "\(trackCount) track\(trackCount == 1 ? "" : "s")"
     }
 }
