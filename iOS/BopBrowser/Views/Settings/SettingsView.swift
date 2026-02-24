@@ -11,7 +11,9 @@ struct SettingsView: View {
             List {
                 Section("Media Sources") {
                     ForEach(self.mediaSources) { source in
-                        MediaSourceRow(source: source)
+                        NavigationLink(destination: MediaSourceDetailView(source: source)) {
+                            MediaSourceRow(source: source)
+                        }
                     }
                     .onDelete(perform: self.deleteMediaSources)
 
