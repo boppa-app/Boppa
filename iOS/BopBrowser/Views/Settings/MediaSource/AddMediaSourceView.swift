@@ -17,6 +17,7 @@ struct AddMediaSourceView: View {
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .disabled(self.viewModel.isLoading)
+                        .tint(Color.purp)
                 }
                 Section("Config Provider URL") {
                     TextField(self.viewModel.configProviderUrl, text: self.$viewModel.configProviderUrl)
@@ -34,6 +35,7 @@ struct AddMediaSourceView: View {
                                     }
                             }
                         }
+                        .tint(Color.purp)
                 }
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
