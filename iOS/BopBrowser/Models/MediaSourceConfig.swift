@@ -8,6 +8,7 @@ struct MediaSourceConfig: Codable {
     let refreshUrls: [RefreshUrl]?
     let data: MediaSourceData?
     let actions: MediaSourceActions?
+    let playback: PlaybackConfig?
 }
 
 struct LoginConfig: Codable {

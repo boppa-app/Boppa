@@ -3,30 +3,30 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @State private var showNowPlaying = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                ZStack {
-                    BrowserView()
-                        .opacity(self.selectedTab == 0 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 0)
-                    SearchView()
-                        .opacity(self.selectedTab == 1 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 1)
-                    PlaylistsView()
-                        .opacity(self.selectedTab == 2 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 2)
-                    SettingsView()
-                        .opacity(self.selectedTab == 3 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 3)
-                }
-                .frame(maxHeight: .infinity)
-
-                ContentTabView(selectedTab: self.$selectedTab)
+        VStack(spacing: 0) {
+            ZStack {
+                BrowserView()
+                    .opacity(self.selectedTab == 0 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 0)
+                SearchView()
+                    .opacity(self.selectedTab == 1 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 1)
+                PlaylistsView()
+                    .opacity(self.selectedTab == 2 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 2)
+                SettingsView()
+                    .opacity(self.selectedTab == 3 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 3)
             }
-
-            MiniPlayerView()
+            .frame(maxHeight: .infinity)
+            MiniPlayerView(showNowPlaying: self.$showNowPlaying)
+            ContentTabView(selectedTab: self.$selectedTab)
+        }
+        .sheet(isPresented: self.$showNowPlaying) {
+            NowPlayingView()
         }
     }
 }

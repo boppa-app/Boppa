@@ -26,9 +26,13 @@ struct Song: Identifiable, Equatable {
 
     var formattedDuration: String? {
         guard let duration else { return nil }
-        let totalSeconds = duration / 1000
+        return Song.formatTime(seconds: Double(duration) / 1000.0)
+    }
+
+    static func formatTime(seconds: Double) -> String {
+        let totalSeconds = Int(max(seconds, 0))
         let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        let secs = totalSeconds % 60
+        return String(format: "%d:%02d", minutes, secs)
     }
 }

@@ -107,7 +107,14 @@ struct SearchView: View {
                 switch self.viewModel.results {
                 case let .songs(songs):
                     ForEach(songs) { song in
-                        SongRow(song: song)
+                        SongRow(
+                            song: song,
+                            isSelected: PlaybackService.shared.state.currentTrack?.url == song.url && song.url != nil,
+                            isPlaying: PlaybackService.shared.state.isPlaying
+                        )
+                        .onTapGesture {
+                            self.playSong(song, from: songs)
+                        }
                         Divider().background(Color(.systemGray5))
                     }
                 case let .albums(albums):
@@ -137,6 +144,11 @@ struct SearchView: View {
                 }
             }
         }
+    }
+
+    private func playSong(_ song: Song, from songs: [Song]) {
+        guard let source = self.viewModel.selectedSource else { return }
+        PlaybackService.shared.playTrack(song, queue: songs, mediaSource: source)
     }
 }
 
