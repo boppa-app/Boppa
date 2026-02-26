@@ -25,6 +25,7 @@ struct ContentView: View {
             MiniPlayerView(showNowPlaying: self.$showNowPlaying)
             ContentTabView(selectedTab: self.$selectedTab)
         }
+        .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {
             NowPlayingView()
         }
