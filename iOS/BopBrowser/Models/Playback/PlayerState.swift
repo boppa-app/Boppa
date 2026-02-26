@@ -11,6 +11,12 @@ enum PlayerEvent {
     case ready
 }
 
+enum RepeatMode {
+    case off
+    case all
+    case one
+}
+
 struct PlayerState {
     var currentTrack: Song?
     var mediaSource: MediaSource?
@@ -19,9 +25,19 @@ struct PlayerState {
     var currentTime: Double = 0
     var duration: Double = 0
     var queue: [Song] = []
+    var originalQueue: [Song] = []
     var currentIndex: Int = 0
+    var isShuffled: Bool = false
+    var repeatMode: RepeatMode = .off
 
     var hasTrack: Bool {
         self.currentTrack != nil
+    }
+
+    var displayQueue: [Song] {
+        if self.repeatMode == .one, let track = self.currentTrack {
+            return [track]
+        }
+        return self.queue
     }
 }

@@ -1,22 +1,44 @@
 import SwiftUI
 
+enum SongRowStyle {
+    case regular
+    case compact
+}
+
 struct SongRow: View {
     let song: Song
     var isSelected: Bool = false
     var isPlaying: Bool = false
+    var style: SongRowStyle = .regular
+
+    private var artworkSize: CGFloat {
+        self.style == .compact ? 36 : 48
+    }
+
+    private var titleFont: Font {
+        self.style == .compact ? .subheadline : .body
+    }
+
+    private var horizontalPadding: CGFloat {
+        self.style == .compact ? 10 : 16
+    }
+
+    private var verticalPadding: CGFloat {
+        self.style == .compact ? 6 : 10
+    }
 
     var body: some View {
-        HStack(spacing: 12) {
-            ArtworkView(url: self.song.artworkUrl, placeholder: "music.note")
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: self.style == .compact ? 10 : 12) {
+            ArtworkView(url: self.song.artworkUrl, placeholder: "music.note", size: self.artworkSize)
+            VStack(alignment: .leading, spacing: self.style == .compact ? 2 : 4) {
                 Text(self.song.title)
-                    .font(.body)
+                    .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
                     .foregroundColor(.white)
                     .lineLimit(1)
                 if let artist = self.song.artist {
                     Text(artist)
-                        .font(.caption)
+                        .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
                         .foregroundColor(Color(.systemGray))
                         .lineLimit(1)
@@ -28,13 +50,13 @@ struct SongRow: View {
                     .frame(width: 20, height: 16)
             } else if let duration = self.song.formattedDuration {
                 Text(duration)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, self.horizontalPadding)
+        .padding(.vertical, self.verticalPadding)
         .contentShape(Rectangle())
     }
 }

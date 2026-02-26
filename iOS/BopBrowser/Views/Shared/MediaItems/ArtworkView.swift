@@ -3,6 +3,7 @@ import SwiftUI
 struct ArtworkView: View {
     let url: String?
     let placeholder: String
+    var size: CGFloat = 48
 
     var body: some View {
         Group {
@@ -26,7 +27,7 @@ struct ArtworkView: View {
                 self.placeholderImage
             }
         }
-        .frame(width: 48, height: 48)
+        .frame(width: self.size, height: self.size)
         .background(Color(.systemGray6))
         .cornerRadius(6)
         .clipped()
@@ -36,6 +37,6 @@ struct ArtworkView: View {
         Image(systemName: self.placeholder)
             .font(.title3)
             .foregroundColor(Color(.systemGray3))
-            .frame(width: 48, height: 48)
+            .frame(width: self.size, height: self.size)
     }
 }

@@ -9,23 +9,37 @@ struct NowPlayingView: View {
 
     @State private var isSeeking = false
     @State private var seekValue: Double = 0
+    @State private var showQueue = false
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            self.artworkSection
-            Spacer().frame(height: 32)
-            self.trackInfoSection
+            self.mediaDisplaySection
             Spacer().frame(height: 24)
             self.seekBar
             Spacer().frame(height: 24)
             self.transportControls
+            Spacer().frame(height: 12)
+            self.queueToggleButton
             Spacer()
         }
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .preferredColorScheme(.dark)
+    }
+
+    private var mediaDisplaySection: some View {
+        VStack(spacing: 0) {
+            self.artworkSection
+            Spacer().frame(height: 32)
+            self.trackInfoSection
+        }
+        .overlay {
+            if self.showQueue {
+                self.queueListSection
+            }
+        }
     }
 
     private var artworkSection: some View {
@@ -55,6 +69,49 @@ struct NowPlayingView: View {
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(Color(.systemGray6))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+    }
+
+    private var queueListSection: some View {
+        let displayQueue = self.playbackService.state.displayQueue
+        let isRepeatOne = self.playbackService.state.repeatMode == .one
+
+        return List {
+            ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, song in
+                let isCurrentTrack = isRepeatOne
+                    ? true
+                    : index == self.playbackService.state.currentIndex
+                SongRow(
+                    song: song,
+                    isSelected: isCurrentTrack,
+                    isPlaying: self.playbackService.state.isPlaying && isCurrentTrack,
+                    style: .compact
+                )
+                .listRowBackground(Color.black)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowSeparatorTint(Color(.systemGray3))
+                .onTapGesture {
+                    if !isRepeatOne {
+                        let tappedSong = self.playbackService.state.queue[index]
+                        if let source = self.playbackService.state.mediaSource {
+                            self.playbackService.playTrack(tappedSong, queue: self.playbackService.state.queue, mediaSource: source)
+                        }
+                    }
+                }
+            }
+            .onMove { source, destination in
+                if !isRepeatOne {
+                    self.playbackService.moveQueueItem(fromOffsets: source, toOffset: destination)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .environment(\.editMode, .constant(isRepeatOne ? .inactive : .active))
+        .scrollIndicators(.hidden)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
     }
@@ -118,42 +175,88 @@ struct NowPlayingView: View {
     }
 
     private var transportControls: some View {
-        HStack(spacing: 40) {
+        HStack {
             Button {
-                self.playbackService.previous()
+                self.playbackService.toggleShuffle()
             } label: {
-                Image(systemName: "backward.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
+                Image(systemName: "shuffle")
+                    .font(.system(size: 18))
+                    .foregroundColor(self.playbackService.state.isShuffled ? Color.purp : Color(.systemGray))
+                    .frame(width: 36, height: 36)
             }
-            .disabled(self.playbackService.state.queue.isEmpty)
 
-            if self.playbackService.state.isLoading {
-                ProgressView()
-                    .tint(.white)
-                    .scaleEffect(2.5)
-                    .frame(width: 48, height: 48)
-            } else {
+            Spacer()
+
+            HStack(spacing: 40) {
                 Button {
-                    self.playbackService.togglePlayPause()
+                    self.playbackService.previous()
                 } label: {
-                    Image(systemName: self.playbackService.state.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 56))
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 32))
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
+                .disabled(self.playbackService.state.queue.isEmpty)
+
+                if self.playbackService.state.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(2.5)
+                        .frame(width: 48, height: 48)
+                } else {
+                    Button {
+                        self.playbackService.togglePlayPause()
+                    } label: {
+                        Image(systemName: self.playbackService.state.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 56))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 48)
+                    }
+                }
+
+                Button {
+                    self.playbackService.next()
+                } label: {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 48)
+                }
+                .disabled(self.playbackService.state.queue.count <= 1)
             }
 
+            Spacer()
+
             Button {
-                self.playbackService.next()
+                self.playbackService.cycleRepeatMode()
             } label: {
-                Image(systemName: "forward.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
+                Image(systemName: self.repeatIconName)
+                    .font(.system(size: 18))
+                    .foregroundColor(self.playbackService.state.repeatMode != .off ? Color.purp : Color(.systemGray))
+                    .frame(width: 36, height: 36)
             }
-            .disabled(self.playbackService.state.queue.count <= 1)
+        }
+    }
+
+    private var repeatIconName: String {
+        switch self.playbackService.state.repeatMode {
+        case .off, .all:
+            return "repeat"
+        case .one:
+            return "repeat.1"
+        }
+    }
+
+    private var queueToggleButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                self.showQueue.toggle()
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 20))
+                .foregroundColor(self.showQueue ? Color.purp : Color(.systemGray))
+                .frame(width: 44, height: 44)
         }
     }
 }

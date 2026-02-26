@@ -63,6 +63,7 @@ fastlane/test_output
 
 .DS_Store
 NOTES.md
+TODO.md
 
 # SwiftFormat
 BuildTools/.build

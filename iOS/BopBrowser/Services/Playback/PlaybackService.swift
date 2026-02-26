@@ -43,8 +43,20 @@ final class PlaybackService: PlaybackEngineDelegate {
         self.state.duration = Double(track.duration ?? 0) / 1000.0
 
         if !queue.isEmpty {
-            self.state.queue = queue
-            self.state.currentIndex = queue.firstIndex(of: track) ?? 0
+            self.state.originalQueue = queue
+            if self.state.isShuffled {
+                var shuffled = queue
+                shuffled.shuffle()
+                if let idx = shuffled.firstIndex(of: track) {
+                    shuffled.remove(at: idx)
+                    shuffled.insert(track, at: 0)
+                }
+                self.state.queue = shuffled
+                self.state.currentIndex = 0
+            } else {
+                self.state.queue = queue
+                self.state.currentIndex = queue.firstIndex(of: track) ?? 0
+            }
         }
 
         let engine: PlaybackEngine
@@ -92,7 +104,35 @@ final class PlaybackService: PlaybackEngineDelegate {
 
     func next() {
         guard !self.state.queue.isEmpty else { return }
-        self.state.currentIndex = (self.state.currentIndex + 1) % self.state.queue.count
+
+        if self.state.repeatMode == .one {
+            if let track = self.state.currentTrack, let source = self.state.mediaSource {
+                self.playTrack(track, queue: self.state.queue, mediaSource: source)
+            }
+            return
+        }
+
+        if self.state.isShuffled {
+            var randomIndex = Int.random(in: 0 ..< self.state.queue.count)
+            if self.state.queue.count > 1 {
+                while randomIndex == self.state.currentIndex {
+                    randomIndex = Int.random(in: 0 ..< self.state.queue.count)
+                }
+            }
+            self.state.currentIndex = randomIndex
+        } else {
+            let nextIndex = self.state.currentIndex + 1
+            if nextIndex >= self.state.queue.count {
+                if self.state.repeatMode == .all {
+                    self.state.currentIndex = 0
+                } else {
+                    return
+                }
+            } else {
+                self.state.currentIndex = nextIndex
+            }
+        }
+
         let nextTrack = self.state.queue[self.state.currentIndex]
         if let source = self.state.mediaSource {
             self.playTrack(nextTrack, queue: self.state.queue, mediaSource: source)
@@ -104,9 +144,19 @@ final class PlaybackService: PlaybackEngineDelegate {
         if self.state.currentTime > 3 {
             self.seek(to: 0)
         } else {
-            self.state.currentIndex = self.state.currentIndex > 0
-                ? self.state.currentIndex - 1
-                : self.state.queue.count - 1
+            if self.state.isShuffled {
+                var randomIndex = Int.random(in: 0 ..< self.state.queue.count)
+                if self.state.queue.count > 1 {
+                    while randomIndex == self.state.currentIndex {
+                        randomIndex = Int.random(in: 0 ..< self.state.queue.count)
+                    }
+                }
+                self.state.currentIndex = randomIndex
+            } else {
+                self.state.currentIndex = self.state.currentIndex > 0
+                    ? self.state.currentIndex - 1
+                    : self.state.queue.count - 1
+            }
             let prevTrack = self.state.queue[self.state.currentIndex]
             if let source = self.state.mediaSource {
                 self.playTrack(prevTrack, queue: self.state.queue, mediaSource: source)
@@ -114,9 +164,59 @@ final class PlaybackService: PlaybackEngineDelegate {
         }
     }
 
+    func toggleShuffle() {
+        self.state.isShuffled.toggle()
+
+        if self.state.isShuffled {
+            var shuffled = self.state.queue
+            let currentTrack = self.state.currentTrack
+            shuffled.shuffle()
+            if let track = currentTrack, let idx = shuffled.firstIndex(of: track) {
+                shuffled.remove(at: idx)
+                shuffled.insert(track, at: 0)
+            }
+            self.state.queue = shuffled
+            self.state.currentIndex = 0
+        } else {
+            self.state.queue = self.state.originalQueue
+            if let track = self.state.currentTrack,
+               let idx = self.state.queue.firstIndex(of: track)
+            {
+                self.state.currentIndex = idx
+            }
+        }
+    }
+
+    func cycleRepeatMode() {
+        switch self.state.repeatMode {
+        case .off:
+            self.state.repeatMode = .all
+        case .all:
+            self.state.repeatMode = .one
+        case .one:
+            self.state.repeatMode = .off
+        }
+    }
+
     func seek(to time: Double) {
         self.state.currentTime = time
         self.activeEngine?.seek(to: time)
+    }
+
+    func moveQueueItem(fromOffsets source: IndexSet, toOffset destination: Int) {
+        var queue = self.state.queue
+        let items = source.map { queue[$0] }
+        for index in source.sorted().reversed() {
+            queue.remove(at: index)
+        }
+        let insertionIndex = min(destination, queue.count)
+        queue.insert(contentsOf: items, at: insertionIndex)
+        self.state.queue = queue
+        if let currentTrack = self.state.currentTrack,
+           let newIndex = self.state.queue.firstIndex(of: currentTrack)
+        {
+            self.state.currentIndex = newIndex
+        }
     }
 
     func engine(_ engine: PlaybackEngine, didReceiveEvent event: PlayerEvent) {
