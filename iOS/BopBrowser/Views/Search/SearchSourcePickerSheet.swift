@@ -20,9 +20,12 @@ struct SearchSourcePickerSheet: View {
             }
             .navigationTitle("Select Source")
             .navigationBarTitleDisplayMode(.inline)
-            .scrollContentBackground(.visible)
+            .scrollContentBackground(.hidden)
+            .background(Color.black)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
         }
-        .background(Color(.systemBackground))
+        .presentationBackground(Color.black)
     }
 
     private func sourceCell(_ source: MediaSource) -> some View {

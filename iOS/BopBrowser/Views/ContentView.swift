@@ -28,6 +28,7 @@ struct ContentView: View {
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {
             NowPlayingView()
+                .presentationDragIndicator(.visible)
         }
     }
 }

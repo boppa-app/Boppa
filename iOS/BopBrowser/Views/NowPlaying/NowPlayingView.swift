@@ -12,7 +12,6 @@ struct NowPlayingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            self.dragIndicator
             Spacer()
             self.artworkSection
             Spacer().frame(height: 32)
@@ -27,13 +26,6 @@ struct NowPlayingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .preferredColorScheme(.dark)
-    }
-
-    private var dragIndicator: some View {
-        RoundedRectangle(cornerRadius: 3)
-            .fill(Color(.white))
-            .frame(width: 40, height: 5)
-            .padding(.top, 12)
     }
 
     private var artworkSection: some View {
