@@ -110,8 +110,8 @@ struct SearchView: View {
                     ForEach(songs) { song in
                         SongRow(
                             song: song,
-                            isSelected: PlaybackService.shared.state.currentTrack?.url == song.url && song.url != nil,
-                            isPlaying: PlaybackService.shared.state.isPlaying
+                            isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
+                            isPlaying: PlaybackService.shared.isPlaying
                         )
                         .onTapGesture {
                             self.playSong(song, from: songs)

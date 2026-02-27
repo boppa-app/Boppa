@@ -8,7 +8,7 @@ struct MiniPlayerView: View {
     }
 
     var body: some View {
-        if self.playbackService.state.hasTrack {
+        if self.playbackService.hasTrack {
             self.playerContent
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
@@ -36,8 +36,8 @@ struct MiniPlayerView: View {
 
     private var progressBar: some View {
         GeometryReader { geometry in
-            let progress = self.playbackService.state.duration > 0
-                ? self.playbackService.state.currentTime / self.playbackService.state.duration
+            let progress = self.playbackService.duration > 0
+                ? self.playbackService.currentTime / self.playbackService.duration
                 : 0
 
             ZStack(alignment: .leading) {
@@ -53,20 +53,20 @@ struct MiniPlayerView: View {
 
     private var artwork: some View {
         ArtworkView(
-            url: self.playbackService.state.currentTrack?.artworkUrl,
+            url: self.playbackService.currentTrack?.artworkUrl,
             placeholder: "music.note"
         )
     }
 
     private var trackInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(self.playbackService.state.currentTrack?.title ?? "")
+            Text(self.playbackService.currentTrack?.title ?? "")
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(.white)
                 .lineLimit(1)
 
-            if let artist = self.playbackService.state.currentTrack?.artist {
+            if let artist = self.playbackService.currentTrack?.artist {
                 Text(artist)
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
@@ -77,7 +77,7 @@ struct MiniPlayerView: View {
 
     private var playPauseButton: some View {
         Group {
-            if self.playbackService.state.isLoading {
+            if self.playbackService.isLoading {
                 ProgressView()
                     .tint(.white)
                     .frame(width: 32, height: 32)
@@ -85,7 +85,7 @@ struct MiniPlayerView: View {
                 Button {
                     self.playbackService.togglePlayPause()
                 } label: {
-                    Image(systemName: self.playbackService.state.isPlaying ? "pause.fill" : "play.fill")
+                    Image(systemName: self.playbackService.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 22))
                         .foregroundColor(.white)
                         .frame(width: 32, height: 32)

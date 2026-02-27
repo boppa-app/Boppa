@@ -1,6 +1,5 @@
 import AVFoundation
 import Foundation
-import MediaPlayer
 import os
 import UIKit
 
@@ -9,13 +8,23 @@ import UIKit
 final class PlaybackService: PlaybackEngineDelegate {
     static let shared = PlaybackService()
 
-    private(set) var state = PlayerState()
+    private(set) var currentTrack: Song?
+    private(set) var mediaSource: MediaSource?
+    private(set) var isPlaying: Bool = false
+    private(set) var isLoading: Bool = false
+    private(set) var currentTime: Double = 0
+    private(set) var duration: Double = 0
+
+    var hasTrack: Bool {
+        self.currentTrack != nil
+    }
 
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
         category: "PlaybackService"
     )
 
+    private let queueManager = SongQueueManager.shared
     private var activeEngine: PlaybackEngine?
     private var artworkCache: [String: UIImage] = [:]
 
@@ -35,28 +44,15 @@ final class PlaybackService: PlaybackEngineDelegate {
         self.activeEngine?.teardown()
         self.activeEngine = nil
 
-        self.state.currentTrack = track
-        self.state.mediaSource = mediaSource
-        self.state.isPlaying = false
-        self.state.isLoading = true
-        self.state.currentTime = 0
-        self.state.duration = Double(track.duration ?? 0) / 1000.0
+        self.currentTrack = track
+        self.mediaSource = mediaSource
+        self.isPlaying = false
+        self.isLoading = true
+        self.currentTime = 0
+        self.duration = Double(track.duration ?? 0) / 1000.0
 
         if !queue.isEmpty {
-            self.state.originalQueue = queue
-            if self.state.isShuffled {
-                var shuffled = queue
-                shuffled.shuffle()
-                if let idx = shuffled.firstIndex(of: track) {
-                    shuffled.remove(at: idx)
-                    shuffled.insert(track, at: 0)
-                }
-                self.state.queue = shuffled
-                self.state.currentIndex = 0
-            } else {
-                self.state.queue = queue
-                self.state.currentIndex = queue.firstIndex(of: track) ?? 0
-            }
+            self.queueManager.setQueue(queue, startingAt: track)
         }
 
         let engine: PlaybackEngine
@@ -72,7 +68,7 @@ final class PlaybackService: PlaybackEngineDelegate {
 
         case .directStream:
             self.logger.warning("Direct stream playback not yet implemented")
-            self.state.isLoading = false
+            self.isLoading = false
             return
         }
 
@@ -86,16 +82,16 @@ final class PlaybackService: PlaybackEngineDelegate {
 
     func play() {
         self.activeEngine?.play()
-        self.state.isPlaying = true
+        self.isPlaying = true
     }
 
     func pause() {
         self.activeEngine?.pause()
-        self.state.isPlaying = false
+        self.isPlaying = false
     }
 
     func togglePlayPause() {
-        if self.state.isPlaying {
+        if self.isPlaying {
             self.pause()
         } else {
             self.play()
@@ -103,141 +99,48 @@ final class PlaybackService: PlaybackEngineDelegate {
     }
 
     func next() {
-        guard !self.state.queue.isEmpty else { return }
-
-        if self.state.repeatMode == .one {
-            if let track = self.state.currentTrack, let source = self.state.mediaSource {
-                self.playTrack(track, queue: self.state.queue, mediaSource: source)
-            }
-            return
-        }
-
-        if self.state.isShuffled {
-            var randomIndex = Int.random(in: 0 ..< self.state.queue.count)
-            if self.state.queue.count > 1 {
-                while randomIndex == self.state.currentIndex {
-                    randomIndex = Int.random(in: 0 ..< self.state.queue.count)
-                }
-            }
-            self.state.currentIndex = randomIndex
-        } else {
-            let nextIndex = self.state.currentIndex + 1
-            if nextIndex >= self.state.queue.count {
-                if self.state.repeatMode == .all {
-                    self.state.currentIndex = 0
-                } else {
-                    return
-                }
-            } else {
-                self.state.currentIndex = nextIndex
-            }
-        }
-
-        let nextTrack = self.state.queue[self.state.currentIndex]
-        if let source = self.state.mediaSource {
-            self.playTrack(nextTrack, queue: self.state.queue, mediaSource: source)
+        guard let nextTrack = self.queueManager.advanceToNext() else { return }
+        if let source = self.mediaSource {
+            self.playTrack(nextTrack, mediaSource: source)
         }
     }
 
     func previous() {
-        guard !self.state.queue.isEmpty else { return }
-        if self.state.currentTime > 3 {
+        guard !self.queueManager.queue.isEmpty else { return }
+        if self.currentTime > 3 {
             self.seek(to: 0)
         } else {
-            if self.state.isShuffled {
-                var randomIndex = Int.random(in: 0 ..< self.state.queue.count)
-                if self.state.queue.count > 1 {
-                    while randomIndex == self.state.currentIndex {
-                        randomIndex = Int.random(in: 0 ..< self.state.queue.count)
-                    }
-                }
-                self.state.currentIndex = randomIndex
-            } else {
-                self.state.currentIndex = self.state.currentIndex > 0
-                    ? self.state.currentIndex - 1
-                    : self.state.queue.count - 1
+            guard let prevTrack = self.queueManager.rewindToPrevious() else { return }
+            if let source = self.mediaSource {
+                self.playTrack(prevTrack, mediaSource: source)
             }
-            let prevTrack = self.state.queue[self.state.currentIndex]
-            if let source = self.state.mediaSource {
-                self.playTrack(prevTrack, queue: self.state.queue, mediaSource: source)
-            }
-        }
-    }
-
-    func toggleShuffle() {
-        self.state.isShuffled.toggle()
-
-        if self.state.isShuffled {
-            var shuffled = self.state.queue
-            let currentTrack = self.state.currentTrack
-            shuffled.shuffle()
-            if let track = currentTrack, let idx = shuffled.firstIndex(of: track) {
-                shuffled.remove(at: idx)
-                shuffled.insert(track, at: 0)
-            }
-            self.state.queue = shuffled
-            self.state.currentIndex = 0
-        } else {
-            self.state.queue = self.state.originalQueue
-            if let track = self.state.currentTrack,
-               let idx = self.state.queue.firstIndex(of: track)
-            {
-                self.state.currentIndex = idx
-            }
-        }
-    }
-
-    func cycleRepeatMode() {
-        switch self.state.repeatMode {
-        case .off:
-            self.state.repeatMode = .all
-        case .all:
-            self.state.repeatMode = .one
-        case .one:
-            self.state.repeatMode = .off
         }
     }
 
     func seek(to time: Double) {
-        self.state.currentTime = time
+        self.currentTime = time
         self.activeEngine?.seek(to: time)
-    }
-
-    func moveQueueItem(fromOffsets source: IndexSet, toOffset destination: Int) {
-        var queue = self.state.queue
-        let items = source.map { queue[$0] }
-        for index in source.sorted().reversed() {
-            queue.remove(at: index)
-        }
-        let insertionIndex = min(destination, queue.count)
-        queue.insert(contentsOf: items, at: insertionIndex)
-        self.state.queue = queue
-        if let currentTrack = self.state.currentTrack,
-           let newIndex = self.state.queue.firstIndex(of: currentTrack)
-        {
-            self.state.currentIndex = newIndex
-        }
     }
 
     func engine(_ engine: PlaybackEngine, didReceiveEvent event: PlayerEvent) {
         switch event {
         case .playing:
-            self.state.isPlaying = true
-            self.state.isLoading = false
+            self.isPlaying = true
+            self.isLoading = false
             self.logger.debug("Engine: playing")
 
         case .paused:
-            self.state.isPlaying = false
+            self.isPlaying = false
             self.logger.debug("Engine: paused")
 
         case let .progress(currentTime, duration):
-            self.state.currentTime = currentTime
+            self.currentTime = currentTime
             if duration > 0 {
-                self.state.duration = duration
+                self.duration = duration
             }
 
         case let .durationResolved(duration):
-            self.state.duration = duration
+            self.duration = duration
             self.logger.debug("Engine: duration resolved = \(duration)s")
 
         case .finished:
@@ -245,11 +148,11 @@ final class PlaybackService: PlaybackEngineDelegate {
             self.next()
 
         case let .error(message):
-            self.state.isLoading = false
+            self.isLoading = false
             self.logger.error("Engine error: \(message)")
 
         case .loading:
-            self.state.isLoading = true
+            self.isLoading = true
 
         case .ready:
             self.logger.debug("Engine: ready")

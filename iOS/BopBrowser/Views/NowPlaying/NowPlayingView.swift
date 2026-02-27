@@ -7,6 +7,10 @@ struct NowPlayingView: View {
         PlaybackService.shared
     }
 
+    private var queueManager: SongQueueManager {
+        SongQueueManager.shared
+    }
+
     @State private var isSeeking = false
     @State private var seekValue: Double = 0
     @State private var showQueue = false
@@ -44,7 +48,7 @@ struct NowPlayingView: View {
 
     private var artworkSection: some View {
         Group {
-            if let artworkUrl = self.playbackService.state.currentTrack?.artworkUrl,
+            if let artworkUrl = self.playbackService.currentTrack?.artworkUrl,
                let url = URL(string: artworkUrl)
             {
                 AsyncImage(url: url) { phase in
@@ -74,18 +78,18 @@ struct NowPlayingView: View {
     }
 
     private var queueListSection: some View {
-        let displayQueue = self.playbackService.state.displayQueue
-        let isRepeatOne = self.playbackService.state.repeatMode == .one
+        let displayQueue = self.queueManager.displayQueue
+        let isRepeatOne = self.queueManager.repeatMode == .one
 
         return List {
             ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, song in
                 let isCurrentTrack = isRepeatOne
                     ? true
-                    : index == self.playbackService.state.currentIndex
+                    : index == self.queueManager.currentIndex
                 SongRow(
                     song: song,
                     isSelected: isCurrentTrack,
-                    isPlaying: self.playbackService.state.isPlaying && isCurrentTrack,
+                    isPlaying: self.playbackService.isPlaying && isCurrentTrack,
                     style: .compact
                 )
                 .listRowBackground(Color.black)
@@ -93,16 +97,16 @@ struct NowPlayingView: View {
                 .listRowSeparatorTint(Color(.systemGray3))
                 .onTapGesture {
                     if !isRepeatOne {
-                        let tappedSong = self.playbackService.state.queue[index]
-                        if let source = self.playbackService.state.mediaSource {
-                            self.playbackService.playTrack(tappedSong, queue: self.playbackService.state.queue, mediaSource: source)
+                        let tappedSong = self.queueManager.queue[index]
+                        if let source = self.playbackService.mediaSource {
+                            self.playbackService.playTrack(tappedSong, queue: self.queueManager.queue, mediaSource: source)
                         }
                     }
                 }
             }
             .onMove { source, destination in
                 if !isRepeatOne {
-                    self.playbackService.moveQueueItem(fromOffsets: source, toOffset: destination)
+                    self.queueManager.moveQueueItem(fromOffsets: source, toOffset: destination)
                 }
             }
         }
@@ -125,13 +129,13 @@ struct NowPlayingView: View {
 
     private var trackInfoSection: some View {
         VStack(spacing: 6) {
-            Text(self.playbackService.state.currentTrack?.title ?? "Not Playing")
+            Text(self.playbackService.currentTrack?.title ?? "Not Playing")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .lineLimit(1)
 
-            Text(self.playbackService.state.currentTrack?.artist ?? "")
+            Text(self.playbackService.currentTrack?.artist ?? "")
                 .font(.body)
                 .foregroundColor(Color(.systemGray))
                 .lineLimit(1)
@@ -142,9 +146,9 @@ struct NowPlayingView: View {
     private var seekBar: some View {
         VStack(spacing: 6) {
             SeekSlider(
-                value: self.isSeeking ? self.seekValue : self.playbackService.state.currentTime,
+                value: self.isSeeking ? self.seekValue : self.playbackService.currentTime,
                 minimum: 0,
-                maximum: max(self.playbackService.state.duration, 1),
+                maximum: max(self.playbackService.duration, 1),
                 onEditingChanged: { editing, newValue in
                     if editing {
                         self.isSeeking = true
@@ -161,12 +165,12 @@ struct NowPlayingView: View {
             .frame(height: 30)
 
             HStack {
-                Text(Song.formatTime(seconds: self.isSeeking ? self.seekValue : self.playbackService.state.currentTime))
+                Text(Song.formatTime(seconds: self.isSeeking ? self.seekValue : self.playbackService.currentTime))
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
                 Spacer()
-                Text(Song.formatTime(seconds: self.playbackService.state.duration))
+                Text(Song.formatTime(seconds: self.playbackService.duration))
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
@@ -176,12 +180,10 @@ struct NowPlayingView: View {
 
     private var transportControls: some View {
         HStack {
-            Button {
-                self.playbackService.toggleShuffle()
-            } label: {
+            Button {} label: {
                 Image(systemName: "shuffle")
                     .font(.system(size: 18))
-                    .foregroundColor(self.playbackService.state.isShuffled ? Color.purp : Color(.systemGray))
+                    .foregroundColor(Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
 
@@ -196,9 +198,9 @@ struct NowPlayingView: View {
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
-                .disabled(self.playbackService.state.queue.isEmpty)
+                .disabled(self.queueManager.queue.isEmpty)
 
-                if self.playbackService.state.isLoading {
+                if self.playbackService.isLoading {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(2.5)
@@ -207,7 +209,7 @@ struct NowPlayingView: View {
                     Button {
                         self.playbackService.togglePlayPause()
                     } label: {
-                        Image(systemName: self.playbackService.state.isPlaying ? "pause.fill" : "play.fill")
+                        Image(systemName: self.playbackService.isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 56))
                             .foregroundColor(.white)
                             .frame(width: 48, height: 48)
@@ -222,24 +224,24 @@ struct NowPlayingView: View {
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
-                .disabled(self.playbackService.state.queue.count <= 1)
+                .disabled(self.queueManager.queue.count <= 1)
             }
 
             Spacer()
 
             Button {
-                self.playbackService.cycleRepeatMode()
+                self.queueManager.cycleRepeatMode()
             } label: {
                 Image(systemName: self.repeatIconName)
                     .font(.system(size: 18))
-                    .foregroundColor(self.playbackService.state.repeatMode != .off ? Color.purp : Color(.systemGray))
+                    .foregroundColor(self.queueManager.repeatMode != .off ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
         }
     }
 
     private var repeatIconName: String {
-        switch self.playbackService.state.repeatMode {
+        switch self.queueManager.repeatMode {
         case .off, .all:
             return "repeat"
         case .one:
