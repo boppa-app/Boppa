@@ -111,6 +111,7 @@ struct SearchView: View {
                         SongRow(
                             song: song,
                             isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
+                            isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying
                         )
                         .onTapGesture {

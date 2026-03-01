@@ -64,9 +64,13 @@ final class SongQueueManager {
     func rewindToPrevious() -> Song? {
         guard !self.queue.isEmpty else { return nil }
 
-        self.currentIndex = self.currentIndex > 0
-            ? self.currentIndex - 1
-            : self.queue.count - 1
+        if self.currentIndex > 0 {
+            self.currentIndex -= 1
+        } else if self.repeatMode == .all {
+            self.currentIndex = self.queue.count - 1
+        } else {
+            return nil
+        }
 
         return self.currentTrack
     }

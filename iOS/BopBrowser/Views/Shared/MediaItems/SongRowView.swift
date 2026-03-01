@@ -5,9 +5,12 @@ enum SongRowStyle {
     case compact
 }
 
+// TODO: Add custom waveform animation, potentially with FFT
+
 struct SongRow: View {
     let song: Song
     var isSelected: Bool = false
+    var isLoading: Bool = false
     var isPlaying: Bool = false
     var style: SongRowStyle = .regular
 
@@ -34,20 +37,27 @@ struct SongRow: View {
                 Text(self.song.title)
                     .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
-                    .foregroundColor(.white)
+                    .foregroundColor(self.isSelected ? .purp : .white)
                     .lineLimit(1)
                 if let artist = self.song.artist {
                     Text(artist)
                         .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
-                        .foregroundColor(Color(.systemGray))
+                        .foregroundColor(self.isSelected ? .purp.opacity(0.5) : Color(.systemGray))
                         .lineLimit(1)
                 }
             }
             Spacer()
-            if self.isSelected && self.isPlaying {
-                WaveformAnimation()
-                    .frame(width: 20, height: 16)
+            if self.isSelected && self.isLoading {
+                ProgressView()
+                    .tint(.purp)
+            } else if self.isSelected && self.isPlaying {
+                Image(systemName: "waveform")
+                    .foregroundColor(.purp)
+                    .symbolEffect(.variableColor.iterative.reversing)
+            } else if self.isSelected {
+                Image(systemName: "waveform")
+                    .foregroundColor(.purp.opacity(0.3))
             } else if let duration = self.song.formattedDuration {
                 Text(duration)
                     .font(.caption2)
@@ -58,36 +68,5 @@ struct SongRow: View {
         .padding(.horizontal, self.horizontalPadding)
         .padding(.vertical, self.verticalPadding)
         .contentShape(Rectangle())
-    }
-}
-
-struct WaveformAnimation: View {
-    @State private var animating = false
-
-    private let barCount = 3
-    private let barWidth: CGFloat = 3
-    private let barSpacing: CGFloat = 2
-
-    var body: some View {
-        HStack(spacing: self.barSpacing) {
-            ForEach(0 ..< self.barCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: self.barWidth / 2)
-                    .fill(Color.purp)
-                    .frame(width: self.barWidth)
-                    .scaleEffect(
-                        y: self.animating ? CGFloat.random(in: 0.3 ... 1.0) : 0.4,
-                        anchor: .bottom
-                    )
-                    .animation(
-                        .easeInOut(duration: Double.random(in: 0.3 ... 0.6))
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.15),
-                        value: self.animating
-                    )
-            }
-        }
-        .onAppear {
-            self.animating = true
-        }
     }
 }

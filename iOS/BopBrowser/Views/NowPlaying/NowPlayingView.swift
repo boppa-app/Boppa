@@ -41,7 +41,7 @@ struct NowPlayingView: View {
         }
         .overlay {
             if self.showQueue {
-                self.queueListSection
+                QueueView()
             }
         }
     }
@@ -73,49 +73,6 @@ struct NowPlayingView: View {
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(Color(.systemGray6))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-    }
-
-    private var queueListSection: some View {
-        let displayQueue = self.queueManager.displayQueue
-        let isRepeatOne = self.queueManager.repeatMode == .one
-
-        return List {
-            ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, song in
-                let isCurrentTrack = isRepeatOne
-                    ? true
-                    : index == self.queueManager.currentIndex
-                SongRow(
-                    song: song,
-                    isSelected: isCurrentTrack,
-                    isPlaying: self.playbackService.isPlaying && isCurrentTrack,
-                    style: .compact
-                )
-                .listRowBackground(Color.black)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowSeparatorTint(Color(.systemGray3))
-                .onTapGesture {
-                    if !isRepeatOne {
-                        let tappedSong = self.queueManager.queue[index]
-                        if let source = self.playbackService.mediaSource {
-                            self.playbackService.playTrack(tappedSong, queue: self.queueManager.queue, mediaSource: source)
-                        }
-                    }
-                }
-            }
-            .onMove { source, destination in
-                if !isRepeatOne {
-                    self.queueManager.moveQueueItem(fromOffsets: source, toOffset: destination)
-                }
-            }
-        }
-        .listStyle(.plain)
-        .environment(\.editMode, .constant(isRepeatOne ? .inactive : .active))
-        .scrollIndicators(.hidden)
-        .scrollContentBackground(.hidden)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
     }
@@ -250,15 +207,18 @@ struct NowPlayingView: View {
     }
 
     private var queueToggleButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                self.showQueue.toggle()
+        HStack {
+            Spacer()
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.showQueue.toggle()
+                }
+            } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 20))
+                    .foregroundColor(self.showQueue ? Color.purp : Color(.systemGray))
+                    .frame(width: 36, height: 36)
             }
-        } label: {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 20))
-                .foregroundColor(self.showQueue ? Color.purp : Color(.systemGray))
-                .frame(width: 44, height: 44)
         }
     }
 }
