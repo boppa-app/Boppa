@@ -8,27 +8,17 @@ struct SeekSlider: UIViewRepresentable {
     var onEditingChanged: (Bool, Double) -> Void
     var onValueChanged: (Double) -> Void
 
-    private static let thumbSize: CGFloat = 14
-    private static let thumbPressedSize: CGFloat = 16
-
     func makeUIView(context: Context) -> UISlider {
         let slider = UISlider()
         slider.minimumValue = Float(self.minimum)
         slider.maximumValue = Float(self.maximum)
         slider.value = Float(self.value)
         slider.minimumTrackTintColor = UIColor(.purp)
-        slider.maximumTrackTintColor = UIColor(.gray).withAlphaComponent(0.3)
+        slider.maximumTrackTintColor = UIColor(Color(.systemGray5))
 
-        let normalThumb = Self.makeThumbImage(
-            size: Self.thumbSize,
-            color: UIColor(.purp)
-        )
-        let pressedThumb = Self.makeThumbImage(
-            size: Self.thumbPressedSize,
-            color: Self.darkenedColor(UIColor(.purp), by: 0.4)
-        )
-        slider.setThumbImage(normalThumb, for: .normal)
-        slider.setThumbImage(pressedThumb, for: .highlighted)
+        let thumb = Self.makeThumbImage(size: 16, color: UIColor(.purp))
+        slider.setThumbImage(thumb, for: .normal)
+        slider.setThumbImage(thumb, for: .highlighted)
 
         slider.addTarget(
             context.coordinator,
@@ -69,17 +59,6 @@ struct SeekSlider: UIViewRepresentable {
             ctx.cgContext.setFillColor(color.cgColor)
             ctx.cgContext.fillEllipse(in: rect)
         }
-    }
-
-    private static func darkenedColor(_ color: UIColor, by amount: CGFloat) -> UIColor {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return UIColor(
-            red: r * (1 - amount),
-            green: g * (1 - amount),
-            blue: b * (1 - amount),
-            alpha: a
-        )
     }
 
     final class Coordinator: NSObject {
