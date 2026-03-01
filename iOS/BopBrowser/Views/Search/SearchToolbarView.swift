@@ -78,8 +78,9 @@ struct SearchToolbarView: View {
         }
         .sheet(isPresented: self.$viewModel.showSourcePicker) {
             SearchSourcePickerSheet(viewModel: self.viewModel)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
+                .presentationBackground(Color(.systemGray6))
         }
     }
 }
