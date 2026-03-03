@@ -24,7 +24,7 @@ class SearchViewModel {
 
     private var searchTask: Task<Void, Never>?
     private var nextPageTask: Task<Void, Never>?
-    private var paginationContext: [String: String]?
+    private var paginationContext: [String: Any]?
 
     var isQueryActive: Bool {
         !self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -120,6 +120,8 @@ class SearchViewModel {
               let config = source.config
         else { return }
 
+        let trimmed = self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+
         self.isLoadingNextPage = true
 
         self.nextPageTask = Task {
@@ -128,6 +130,7 @@ class SearchViewModel {
                     paginationContext: paginationContext,
                     config: config,
                     category: self.selectedCategory,
+                    query: trimmed,
                     contextService: MediaSourceContextService.shared
                 )
 

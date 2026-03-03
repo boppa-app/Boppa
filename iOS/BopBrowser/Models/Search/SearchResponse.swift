@@ -2,5 +2,5 @@ import Foundation
 
 struct SearchResponse {
     let result: SearchResult
-    let paginationContext: [String: String]?
+    let paginationContext: [String: Any]?
 }

@@ -31,10 +31,19 @@ enum SearchCategory: String, CaseIterable {
 
     func isAvailable(in data: MediaSourceData) -> Bool {
         switch self {
-        case .songs: return !(data.searchSongs ?? []).isEmpty
-        case .artists: return !(data.searchArtists ?? []).isEmpty
-        case .albums: return !(data.searchAlbums ?? []).isEmpty
-        case .playlists: return !(data.searchPlaylists ?? []).isEmpty
+        case .songs: return data.searchSongs != nil
+        case .artists: return data.searchArtists != nil
+        case .albums: return data.searchAlbums != nil
+        case .playlists: return data.searchPlaylists != nil
+        }
+    }
+
+    func script(from data: MediaSourceData) -> String? {
+        switch self {
+        case .songs: return data.searchSongs?.script
+        case .artists: return data.searchArtists?.script
+        case .albums: return data.searchAlbums?.script
+        case .playlists: return data.searchPlaylists?.script
         }
     }
 }
