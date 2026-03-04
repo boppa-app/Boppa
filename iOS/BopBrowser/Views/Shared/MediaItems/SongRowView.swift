@@ -51,13 +51,17 @@ struct SongRow: View {
             if self.isSelected && self.isLoading {
                 ProgressView()
                     .tint(.purp)
-            } else if self.isSelected && self.isPlaying {
-                Image(systemName: "waveform")
-                    .foregroundColor(.purp)
-                    .symbolEffect(.variableColor.iterative.reversing)
             } else if self.isSelected {
-                Image(systemName: "waveform")
-                    .foregroundColor(.purp.opacity(0.3))
+                ZStack {
+                    Image(systemName: "waveform")
+                        .foregroundColor(.purp)
+                        .symbolEffect(.variableColor.iterative.reversing)
+                    if !self.isPlaying {
+                        Image(systemName: "waveform")
+                            .foregroundColor(.purp.opacity(0.3))
+                            .background(Color.black)
+                    }
+                }
             } else if let duration = self.song.formattedDuration {
                 Text(duration)
                     .font(.caption2)
