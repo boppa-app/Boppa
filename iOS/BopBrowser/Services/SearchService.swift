@@ -1,6 +1,8 @@
 import Foundation
 import os
 
+// TODO: If switching media source configs dont execute search unless user clicks, instead clear search results
+
 class SearchService {
     static let shared = SearchService()
 
@@ -79,7 +81,10 @@ class SearchService {
             result = .playlists(items.compactMap(self.mapToPlaylist))
         }
 
-        let paginationContext: [String: Any]? = items.isEmpty ? nil : jsResult
+        var paginationData = jsResult
+        paginationData.removeValue(forKey: "items")
+        let hasPaginationContext = paginationData.values.contains { !($0 is NSNull) }
+        let paginationContext: [String: Any]? = hasPaginationContext ? jsResult : nil
         return SearchResponse(result: result, paginationContext: paginationContext)
     }
 
