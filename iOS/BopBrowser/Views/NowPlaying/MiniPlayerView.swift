@@ -1,5 +1,7 @@
 import SwiftUI
 
+// TODO: If source is deleted which == playback source then stop playing (skip to next song not from that source) and clear songs with that source from the queue.
+
 struct MiniPlayerView: View {
     @Binding var showNowPlaying: Bool
 
