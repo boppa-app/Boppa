@@ -90,28 +90,28 @@ final class MediaSourceContextService: NSObject {
                 logger.debug("Skipping source '\(source.name)': unable to decode config")
                 continue
             }
-            guard let scrapes = config.scrape, !scrapes.isEmpty else {
-                logger.debug("Skipping source '\(config.name)': no scrapes configured")
+            guard let parses = config.parse, !parses.isEmpty else {
+                logger.debug("Skipping source '\(config.name)': no parses configured")
                 continue
             }
 
-            logger.info("Source '\(config.name)' has \(scrapes.count) scrape(s)")
+            logger.info("Source '\(config.name)' has \(parses.count) parse(s)")
 
-            for scrape in scrapes {
-                let timerKey = "\(config.name)|\(scrape.url)"
+            for parse in parses {
+                let timerKey = "\(config.name)|\(parse.url)"
 
-                logger.info("Enqueueing immediate refresh for '\(config.name)' -> \(scrape.url) with \(scrape.scripts.count) script(s)")
-                self.enqueueRefresh(sourceName: config.name, scrape: scrape)
+                logger.info("Enqueueing immediate refresh for '\(config.name)' -> \(parse.url) with \(parse.scripts.count) script(s)")
+                self.enqueueRefresh(sourceName: config.name, parse: parse)
 
-                let interval = TimeInterval(scrape.intervalSeconds)
+                let interval = TimeInterval(parse.intervalSeconds)
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
                     Task { @MainActor [weak self] in
-                        logger.info("Timer fired: recurring refresh for '\(config.name)' -> \(scrape.url)")
-                        self?.enqueueRefresh(sourceName: config.name, scrape: scrape)
+                        logger.info("Timer fired: recurring refresh for '\(config.name)' -> \(parse.url)")
+                        self?.enqueueRefresh(sourceName: config.name, parse: parse)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
-                logger.info("Scheduled recurring refresh for '\(config.name)' at \(scrape.url) every \(scrape.intervalSeconds)s")
+                logger.info("Scheduled recurring refresh for '\(config.name)' at \(parse.url) every \(parse.intervalSeconds)s")
             }
         }
 
@@ -120,8 +120,8 @@ final class MediaSourceContextService: NSObject {
         logger.info("Monitoring setup complete. \(queueCount) item(s) in queue, \(timerCount) timer(s) active")
     }
 
-    private func enqueueRefresh(sourceName: String, scrape: Scrape) {
-        let workItem = RefreshWorkItem(sourceName: sourceName, scrape: scrape)
+    private func enqueueRefresh(sourceName: String, parse: Parse) {
+        let workItem = RefreshWorkItem(sourceName: sourceName, parse: parse)
         self.pendingWork.append(workItem)
         let queueSize = self.pendingWork.count
         let processing = self.isProcessing
@@ -142,14 +142,14 @@ final class MediaSourceContextService: NSObject {
         self.pendingWork.removeFirst()
         self.isProcessing = true
 
-        guard let url = URL(string: workItem.scrape.url) else {
-            logger.error("Invalid refresh URL: '\(workItem.scrape.url)' for '\(workItem.sourceName)'")
+        guard let url = URL(string: workItem.parse.url) else {
+            logger.error("Invalid refresh URL: '\(workItem.parse.url)' for '\(workItem.sourceName)'")
             self.completeCurrentWork()
             return
         }
 
-        logger.info("Processing: '\(workItem.sourceName)' -> \(url.absoluteString) with \(workItem.scrape.scripts.count) script(s)")
-        self.loadRefreshURL(url: url, scripts: workItem.scrape.scripts, sourceName: workItem.sourceName)
+        logger.info("Processing: '\(workItem.sourceName)' -> \(url.absoluteString) with \(workItem.parse.scripts.count) script(s)")
+        self.loadRefreshURL(url: url, scripts: workItem.parse.scripts, sourceName: workItem.sourceName)
     }
 
     private func completeCurrentWork() {
@@ -163,7 +163,7 @@ final class MediaSourceContextService: NSObject {
         self.processNextIfIdle()
     }
 
-    private func loadRefreshURL(url: URL, scripts: [ScrapeScript], sourceName: String) {
+    private func loadRefreshURL(url: URL, scripts: [Script], sourceName: String) {
         let configuration = WKWebViewConfiguration()
 
         // TODO: Separate datastore for browser and other
@@ -293,5 +293,5 @@ extension MediaSourceContextService: WKScriptMessageHandler {
 
 private struct RefreshWorkItem {
     let sourceName: String
-    let scrape: Scrape
+    let parse: Parse
 }

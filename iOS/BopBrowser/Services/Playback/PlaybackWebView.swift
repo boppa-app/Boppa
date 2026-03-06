@@ -114,7 +114,7 @@ final class PlaybackWebView: NSObject {
         self.webView.center = CGPoint(x: screenBounds.midX, y: screenBounds.midY)
     }
 
-    private func configureScripts(scripts: [ScrapeScript]) {
+    private func configureScripts(scripts: [Script]) {
         let userContentController = self.webView.configuration.userContentController
 
         userContentController.removeAllUserScripts()
@@ -157,8 +157,8 @@ final class PlaybackWebView: NSObject {
         webView.scrollView.isScrollEnabled = false
         webView.clipsToBounds = true
         webView.isInspectable = true
-        // webView.isHidden = true
-        webView.isHidden = false
+        webView.isHidden = true
+        // webView.isHidden = false
         return webView
     }
 
