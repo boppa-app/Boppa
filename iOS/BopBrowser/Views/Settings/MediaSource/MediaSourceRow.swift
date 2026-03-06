@@ -5,10 +5,15 @@ struct MediaSourceRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "music.note")
-                .font(.title3)
-                .foregroundColor(Color.purp)
-                .frame(width: 32, height: 32)
+            if let iconSvg = self.source.config?.iconSvg {
+                SVGImageView(svgString: iconSvg, size: 24)
+                    .frame(width: 32, height: 32)
+            } else {
+                Image(systemName: "music.note")
+                    .font(.title3)
+                    .foregroundColor(Color.purp)
+                    .frame(width: 32, height: 32)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(self.source.name)
                     .font(.body)
