@@ -16,7 +16,7 @@ class MediaSourceImportService {
     func buildConfigURL(configProviderUrl: String, mediaSourceUrl: String) -> URL? {
         let host = configProviderUrl.trimmingCharacters(in: .whitespacesAndNewlines)
         let scheme = host.hasPrefix("localhost") || host.hasPrefix("127.0.0.1") ? "http" : "https"
-        let urlString = "\(scheme)://\(host)/mediaSourceConfigs/\(mediaSourceUrl).json"
+        let urlString = "\(scheme)://\(host)/msc/\(mediaSourceUrl).json"
         return URL(string: urlString)
     }
 

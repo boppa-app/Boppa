@@ -5,7 +5,7 @@ import SwiftData
 @Observable
 class AddMediaSourceViewModel {
     var mediaSourceUrl = ""
-    var configProviderUrl = "localhost:8080"
+    var configProviderUrl = "localhost:8788"
     var isLoading = false
     var errorMessage: String?
 

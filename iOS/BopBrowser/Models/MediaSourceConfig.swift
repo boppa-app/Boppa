@@ -6,7 +6,7 @@ struct MediaSourceConfig: Codable {
     let url: String
     let iconSvg: String?
     let login: LoginConfig?
-    let refreshUrls: [RefreshUrl]?
+    let scrape: [Scrape]?
     let data: MediaSourceData?
     let actions: MediaSourceActions?
     let playback: PlaybackConfig?
@@ -17,13 +17,13 @@ struct LoginConfig: Codable {
     let required: Bool?
 }
 
-struct RefreshUrl: Codable {
+struct Scrape: Codable {
     let url: String
     let intervalSeconds: Int
-    let scripts: [RefreshScript]
+    let scripts: [ScrapeScript]
 }
 
-struct RefreshScript: Codable {
+struct ScrapeScript: Codable {
     let content: ScriptContent
     let injectionTime: ScriptInjectionTime
 }

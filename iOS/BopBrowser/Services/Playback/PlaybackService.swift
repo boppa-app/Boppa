@@ -1,11 +1,15 @@
 import AVFoundation
 import Foundation
 import os
-import UIKit
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
+    category: "PlaybackService"
+)
 
 @Observable
 @MainActor
-final class PlaybackService: PlaybackEngineDelegate {
+final class PlaybackService {
     static let shared = PlaybackService()
 
     private(set) var currentTrack: Song?
@@ -19,30 +23,26 @@ final class PlaybackService: PlaybackEngineDelegate {
         self.currentTrack != nil
     }
 
-    private let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
-        category: "PlaybackService"
-    )
-
     private let queueManager = SongQueueManager.shared
-    private var activeEngine: PlaybackEngine?
-    private var artworkCache: [String: UIImage] = [:]
+    private let engine = PlaybackEngine.shared
 
     private init() {
         self.setupAudioSession()
-        self.logger.info("PlaybackService initialized")
+        self.engine.onEvent = { [weak self] event in
+            self?.handleEngineEvent(event)
+        }
+        logger.info("PlaybackService initialized")
     }
 
     func playTrack(_ track: Song, queue: [Song] = [], mediaSource: MediaSource) {
         guard let config = mediaSource.config,
               let playbackConfig = config.playback
         else {
-            self.logger.error("No playback config for source: \(mediaSource.name)")
+            logger.error("No playback config for source: \(mediaSource.name)")
             return
         }
 
-        self.activeEngine?.teardown()
-        self.activeEngine = nil
+        self.engine.teardown()
 
         self.currentTrack = track
         self.mediaSource = mediaSource
@@ -55,38 +55,18 @@ final class PlaybackService: PlaybackEngineDelegate {
             self.queueManager.setQueue(queue, startingAt: track)
         }
 
-        let engine: PlaybackEngine
-
-        switch playbackConfig.type {
-        case .widget:
-            guard let widgetConfig = playbackConfig.widget else {
-                self.logger.error("Widget playback config missing for source: \(mediaSource.name)")
-                return
-            }
-            let widgetEngine = WidgetPlaybackEngine(config: widgetConfig)
-            engine = widgetEngine
-
-        case .directStream:
-            self.logger.warning("Direct stream playback not yet implemented")
-            self.isLoading = false
-            return
-        }
-
-        engine.delegate = self
-        self.activeEngine = engine
-
         Task {
-            await engine.load(track: track)
+            await self.engine.load(track: track, config: playbackConfig, mediaSource: mediaSource)
         }
     }
 
     func play() {
-        self.activeEngine?.play()
+        self.engine.play()
         self.isPlaying = true
     }
 
     func pause() {
-        self.activeEngine?.pause()
+        self.engine.pause()
         self.isPlaying = false
     }
 
@@ -119,19 +99,19 @@ final class PlaybackService: PlaybackEngineDelegate {
 
     func seek(to time: Double) {
         self.currentTime = time
-        self.activeEngine?.seek(to: time)
+        self.engine.seek(to: time)
     }
 
-    func engine(_ engine: PlaybackEngine, didReceiveEvent event: PlayerEvent) {
+    private func handleEngineEvent(_ event: PlayerEvent) {
         switch event {
         case .playing:
             self.isPlaying = true
             self.isLoading = false
-            self.logger.debug("Engine: playing")
+            logger.debug("Engine: playing")
 
         case .paused:
             self.isPlaying = false
-            self.logger.debug("Engine: paused")
+            logger.debug("Engine: paused")
 
         case let .progress(currentTime, duration):
             self.currentTime = currentTime
@@ -141,21 +121,21 @@ final class PlaybackService: PlaybackEngineDelegate {
 
         case let .durationResolved(duration):
             self.duration = duration
-            self.logger.debug("Engine: duration resolved = \(duration)s")
+            logger.debug("Engine: duration resolved = \(duration)s")
 
         case .finished:
-            self.logger.info("Engine: track finished")
+            logger.info("Engine: track finished")
             self.next()
 
         case let .error(message):
             self.isLoading = false
-            self.logger.error("Engine error: \(message)")
+            logger.error("Engine error: \(message)")
 
         case .loading:
             self.isLoading = true
 
         case .ready:
-            self.logger.debug("Engine: ready")
+            logger.debug("Engine: ready")
         }
     }
 
@@ -163,9 +143,9 @@ final class PlaybackService: PlaybackEngineDelegate {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)
-            self.logger.info("Audio session configured for playback")
+            logger.info("Audio session configured for playback")
         } catch {
-            self.logger.error("Audio session error: \(error.localizedDescription)")
+            logger.error("Audio session error: \(error.localizedDescription)")
         }
     }
 }
