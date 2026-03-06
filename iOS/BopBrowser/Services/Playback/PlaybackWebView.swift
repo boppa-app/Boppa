@@ -5,7 +5,6 @@ import UIKit
 import WebKit
 
 // TODO: Add functionality to fetch + store scripts
-// TODO: Validate: scripts may not be updating on delete/re-add media source config, needed to delete app once
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
@@ -21,6 +20,8 @@ final class PlaybackWebView: NSObject {
     private(set) var webView: WKWebView!
     private var configuredSourceName: String?
 
+    private var mediaSourceObserver: NSObjectProtocol?
+
     override private init() {
         super.init()
         self.webView = self.createWebView()
@@ -29,8 +30,16 @@ final class PlaybackWebView: NSObject {
             name: Self.messageHandlerName
         )
         self.configureScripts(scripts: [])
+        self.applyWebViewSize(contentSize: UIScreen.main.bounds.size, maxHeight: UIScreen.main.bounds.height / 2.0)
         self.attachToWindow(self.webView)
+        self.observeMediaSourceChanges()
         logger.info("PlaybackWebView initialized")
+    }
+
+    func resetConfiguration() {
+        self.configuredSourceName = nil
+        self.configureScripts(scripts: [])
+        logger.info("PlaybackWebView configuration reset")
     }
 
     func configureForMediaSource(_ mediaSource: MediaSource) {
@@ -44,7 +53,7 @@ final class PlaybackWebView: NSObject {
         }
 
         self.configureScripts(scripts: playbackConfig.scripts)
-        self.applyDesktopMode(customUserAgent: playbackConfig.customUserAgent)
+        self.applyContentMode(customUserAgent: playbackConfig.customUserAgent)
         self.configuredSourceName = mediaSource.name
         logger.info("Configured scripts for media source: \(mediaSource.name)")
     }
@@ -79,26 +88,30 @@ final class PlaybackWebView: NSObject {
         self.webView.stopLoading()
     }
 
-    private func applyDesktopMode(customUserAgent: String?) {
-        self.webView.transform = .identity
-        guard let customUserAgent else {
-            self.webView.configuration.defaultWebpagePreferences.preferredContentMode = .mobile
+    private func applyContentMode(customUserAgent: String?) {
+        if let customUserAgent {
+            self.webView.customUserAgent = customUserAgent
+            self.webView.configuration.defaultWebpagePreferences.preferredContentMode = .desktop
+            self.applyWebViewSize(contentSize: CGSize(width: 1920, height: 1080))
+            logger.debug("Using desktop mode with custom user agent: \(customUserAgent)")
+        } else {
             self.webView.customUserAgent = nil
-            self.webView.frame = UIScreen.main.bounds
-            logger.debug("Using mobile mode (no custom user agent)")
-            return
+            self.webView.configuration.defaultWebpagePreferences.preferredContentMode = .mobile
+            self.applyWebViewSize(contentSize: UIScreen.main.bounds.size, maxHeight: UIScreen.main.bounds.height / 2.0)
+            logger.debug("Using mobile mode (scaled, centered)")
         }
+    }
 
-        let desktopSize = CGSize(width: 1920, height: 1080)
+    private func applyWebViewSize(contentSize: CGSize, maxHeight: CGFloat? = nil) {
+        self.webView.transform = .identity
+
         let screenBounds = UIScreen.main.bounds
-        let scale = min(screenBounds.width / desktopSize.width, screenBounds.height / desktopSize.height)
+        let targetHeight = maxHeight ?? screenBounds.height
+        let scale = min(screenBounds.width / contentSize.width, targetHeight / contentSize.height)
 
-        self.webView.customUserAgent = customUserAgent
-        self.webView.configuration.defaultWebpagePreferences.preferredContentMode = .desktop
-        self.webView.frame = CGRect(origin: .zero, size: desktopSize)
+        self.webView.frame = CGRect(origin: .zero, size: contentSize)
         self.webView.transform = CGAffineTransform(scaleX: scale, y: scale)
         self.webView.center = CGPoint(x: screenBounds.midX, y: screenBounds.midY)
-        logger.debug("Using desktop mode with custom user agent: \(customUserAgent)")
     }
 
     private func configureScripts(scripts: [ScrapeScript]) {
@@ -142,9 +155,10 @@ final class PlaybackWebView: NSObject {
             configuration: configuration
         )
         webView.scrollView.isScrollEnabled = false
+        webView.clipsToBounds = true
         webView.isInspectable = true
-        webView.isHidden = true
-        // webView.isHidden = false
+        // webView.isHidden = true
+        webView.isHidden = false
         return webView
     }
 
@@ -155,6 +169,18 @@ final class PlaybackWebView: NSObject {
             {
                 window.addSubview(webView)
                 logger.info("PlaybackWebView attached to window")
+            }
+        }
+    }
+
+    private func observeMediaSourceChanges() {
+        self.mediaSourceObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourcesDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.resetConfiguration()
             }
         }
     }
