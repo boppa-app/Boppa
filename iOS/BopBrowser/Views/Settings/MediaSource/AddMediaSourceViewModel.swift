@@ -27,7 +27,8 @@ class AddMediaSourceViewModel {
             )
             mediaSources.forEach { modelContext.insert($0) }
             try modelContext.save()
-            NotificationCenter.default.post(name: .mediaSourcesDidChange, object: nil)
+            let addedNames = mediaSources.map(\.name)
+            NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["names": addedNames])
 
             self.isLoading = false
             return true

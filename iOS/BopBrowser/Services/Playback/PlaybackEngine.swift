@@ -1,5 +1,6 @@
 import Foundation
 import os
+import SwiftData
 import WebKit
 
 private let logger = Logger(
@@ -13,15 +14,35 @@ final class PlaybackEngine: NSObject {
 
     var onEvent: ((PlayerEvent) -> Void)?
 
-    private var playbackWebView: PlaybackWebView {
-        PlaybackWebView.shared
-    }
+    private var webViews: [String: PlaybackWebView] = [:]
+    private var mediaSources: [MediaSource] = []
+    private var activeMediaSource: MediaSource?
+    private var modelContext: ModelContext?
+    private var mediaSourceAddedObserver: NSObjectProtocol?
+    private var mediaSourceRemovedObserver: NSObjectProtocol?
 
     override private init() {
         super.init()
+        self.observeMediaSourceChanges()
     }
 
-    func load(track: Song, config: PlaybackConfig, mediaSource: MediaSource) async {
+    func startMonitoring(modelContainer: ModelContainer) {
+        self.modelContext = ModelContext(modelContainer)
+
+        let descriptor = FetchDescriptor<MediaSource>()
+        let sources = (try? self.modelContext?.fetch(descriptor)) ?? []
+
+        for source in sources {
+            let webView = PlaybackWebView(mediaSource: source, messageHandler: self)
+            self.webViews[source.name] = webView
+            logger.info("Created PlaybackWebView for source: \(source.name)")
+        }
+
+        self.mediaSources = sources
+        logger.info("Initial setup complete: \(self.webViews.count) web view(s) active")
+    }
+
+    func load(track: Song, mediaSourceName: String) async {
         self.onEvent?(.loading)
 
         guard let trackURL = track.url else {
@@ -30,13 +51,26 @@ final class PlaybackEngine: NSObject {
             return
         }
 
-        self.playbackWebView.configureForMediaSource(mediaSource)
+        guard let webView = self.webViews[mediaSourceName] else {
+            logger.error("No PlaybackWebView for source: \(mediaSourceName)")
+            self.onEvent?(.error("No playback web view configured for \(mediaSourceName)"))
+            return
+        }
+
+        guard let mediaSource = self.mediaSources.first(where: { $0.name == mediaSourceName }) else {
+            logger.error("No MediaSource found for source: \(mediaSourceName)")
+            self.onEvent?(.error("No media source for \(mediaSourceName)"))
+            return
+        }
+
+        let config = mediaSource.config.playback
+        self.activeMediaSource = mediaSource
 
         let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
 
         if let htmlTemplate = config.html {
             let resolvedHTML = htmlTemplate.script.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
-            self.playbackWebView.loadHTML(resolvedHTML)
+            webView.loadHTML(resolvedHTML)
             logger.info("Loading track via HTML: \(track.title)")
         } else if let urlTemplate = config.url {
             let resolvedURLString = urlTemplate.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
@@ -47,7 +81,7 @@ final class PlaybackEngine: NSObject {
                 return
             }
 
-            self.playbackWebView.loadURL(url)
+            webView.loadURL(url)
             logger.info("Loading track via URL: \(track.title) at \(url.absoluteString)")
         } else {
             logger.error("PlaybackConfig has neither 'url' nor 'html'")
@@ -56,7 +90,8 @@ final class PlaybackEngine: NSObject {
     }
 
     func play() {
-        self.playbackWebView.evaluateJavaScript("playerPlay();") { _, error in
+        guard let webView = self.activeWebView else { return }
+        webView.evaluateJavaScript("playerPlay();") { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
             }
@@ -64,7 +99,8 @@ final class PlaybackEngine: NSObject {
     }
 
     func pause() {
-        self.playbackWebView.evaluateJavaScript("playerPause();") { _, error in
+        guard let webView = self.activeWebView else { return }
+        webView.evaluateJavaScript("playerPause();") { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
             }
@@ -72,8 +108,9 @@ final class PlaybackEngine: NSObject {
     }
 
     func seek(to timeSeconds: Double) {
+        guard let webView = self.activeWebView else { return }
         let ms = Int(timeSeconds * 1000)
-        self.playbackWebView.evaluateJavaScript("playerSeek(\(ms));") { _, error in
+        webView.evaluateJavaScript("playerSeek(\(ms));") { _, error in
             if let error {
                 logger.error("Seek command error: \(error.localizedDescription)")
             }
@@ -81,7 +118,16 @@ final class PlaybackEngine: NSObject {
     }
 
     func teardown() {
-        self.playbackWebView.stopLoading()
+        guard let webView = self.activeWebView else { return }
+        webView.stopLoading()
+    }
+
+    private var activeWebView: PlaybackWebView? {
+        guard let source = self.activeMediaSource else {
+            logger.warning("No active media source set")
+            return nil
+        }
+        return self.webViews[source.name]
     }
 
     private func handleMessage(_ dict: [String: Any]) {
@@ -122,6 +168,61 @@ final class PlaybackEngine: NSObject {
         if let intValue = dict[key] as? Int { return Double(intValue) }
         if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
         return 0
+    }
+
+    private func observeMediaSourceChanges() {
+        self.mediaSourceAddedObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceAdded,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      let names = notification.userInfo?["names"] as? [String]
+                else { return }
+                self.handleSourcesAdded(names: names)
+            }
+        }
+
+        self.mediaSourceRemovedObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceRemoved,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      let names = notification.userInfo?["names"] as? [String]
+                else { return }
+                self.handleSourcesRemoved(names: names)
+            }
+        }
+    }
+
+    private func handleSourcesAdded(names: [String]) {
+        guard let modelContext else { return }
+
+        let descriptor = FetchDescriptor<MediaSource>()
+        guard let sources = try? modelContext.fetch(descriptor) else { return }
+
+        for source in sources where names.contains(source.name) {
+            let webView = PlaybackWebView(mediaSource: source, messageHandler: self)
+            self.webViews[source.name] = webView
+            self.mediaSources.append(source)
+            logger.info("Added PlaybackWebView for source: \(source.name)")
+        }
+    }
+
+    private func handleSourcesRemoved(names: [String]) {
+        for name in names {
+            if let webView = self.webViews.removeValue(forKey: name) {
+                webView.teardown()
+                logger.info("Removed PlaybackWebView for source: \(name)")
+            }
+            self.mediaSources.removeAll { $0.name == name }
+            if self.activeMediaSource?.name == name {
+                self.activeMediaSource = nil
+            }
+        }
     }
 }
 

@@ -12,7 +12,7 @@ struct SearchSourcePickerSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: self.columns, spacing: 40) {
-                    ForEach(self.viewModel.availableSources) { source in
+                    ForEach(self.viewModel.mediaSources) { source in
                         self.sourceCell(source)
                     }
                 }
@@ -37,7 +37,7 @@ struct SearchSourcePickerSheet: View {
                         .fill(isSelected ? Color.purp.opacity(0.2) : Color(.systemGray6))
                         .frame(width: 64, height: 64)
 
-                    if let iconSvg = source.config?.iconSvg {
+                    if let iconSvg = source.config.iconSvg {
                         SVGImageView(svgString: iconSvg, size: 40)
                             .frame(width: 40, height: 40)
                             .opacity(isSelected ? 1.0 : 0.5)

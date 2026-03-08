@@ -26,22 +26,18 @@ final class PlaybackService {
     private let queueManager = SongQueueManager.shared
     private let engine = PlaybackEngine.shared
 
+    private var mediaSourceRemovedObserver: NSObjectProtocol?
+
     private init() {
         self.setupAudioSession()
         self.engine.onEvent = { [weak self] event in
             self?.handleEngineEvent(event)
         }
+        self.observeMediaSourceRemoved()
         logger.info("PlaybackService initialized")
     }
 
     func playTrack(_ track: Song, queue: [Song] = [], mediaSource: MediaSource) {
-        guard let config = mediaSource.config,
-              let playbackConfig = config.playback
-        else {
-            logger.error("No playback config for source: \(mediaSource.name)")
-            return
-        }
-
         self.engine.teardown()
 
         self.currentTrack = track
@@ -56,7 +52,7 @@ final class PlaybackService {
         }
 
         Task {
-            await self.engine.load(track: track, config: playbackConfig, mediaSource: mediaSource)
+            await self.engine.load(track: track, mediaSourceName: mediaSource.name)
         }
     }
 
@@ -136,6 +132,46 @@ final class PlaybackService {
 
         case .ready:
             logger.debug("Engine: ready")
+        }
+    }
+
+    func stop() {
+        self.engine.teardown()
+        self.currentTrack = nil
+        self.mediaSource = nil
+        self.isPlaying = false
+        self.isLoading = false
+        self.currentTime = 0
+        self.duration = 0
+        self.queueManager.clearQueue()
+        logger.info("Playback stopped and cleared")
+    }
+
+    private func observeMediaSourceRemoved() {
+        self.mediaSourceRemovedObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceRemoved,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      let names = notification.userInfo?["names"] as? [String]
+                else { return }
+                self.handleMediaSourceRemoved(names: names)
+            }
+        }
+    }
+
+    private func handleMediaSourceRemoved(names: [String]) {
+        if let currentSource = self.mediaSource, names.contains(currentSource.name) {
+            self.stop()
+            logger.info("Stopped playback: media source '\(currentSource.name)' was removed")
+            return
+        }
+
+        for name in names {
+            self.queueManager.removeSongs(forMediaSource: name)
+            logger.info("Removed queued songs for deleted media source: \(name)")
         }
     }
 

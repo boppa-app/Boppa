@@ -26,8 +26,14 @@ struct SearchView: View {
         .onAppear {
             self.viewModel.loadSources(modelContext: self.modelContext)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .mediaSourcesDidChange)) { _ in
-            self.viewModel.clearSearch()
+        .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
+            self.viewModel.loadSources(modelContext: self.modelContext)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
+            let removedNames = notification.userInfo?["names"] as? [String] ?? []
+            if let selected = self.viewModel.selectedSource, removedNames.contains(selected.name) {
+                self.viewModel.clearSearch()
+            }
             self.viewModel.loadSources(modelContext: self.modelContext)
         }
     }

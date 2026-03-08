@@ -5,7 +5,7 @@ struct MediaSourceRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            if let iconSvg = self.source.config?.iconSvg {
+            if let iconSvg = self.source.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 24)
                     .frame(width: 32, height: 32)
             } else {

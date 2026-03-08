@@ -9,7 +9,7 @@ struct MediaSourceConfig: Codable {
     let parse: [Parse]?
     let data: MediaSourceData?
     let actions: MediaSourceActions?
-    let playback: PlaybackConfig?
+    let playback: PlaybackConfig
 }
 
 struct LoginConfig: Codable {

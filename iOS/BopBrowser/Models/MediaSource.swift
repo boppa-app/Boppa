@@ -7,8 +7,8 @@ final class MediaSource {
     var url: String
     var configData: Data
 
-    var config: MediaSourceConfig? {
-        try? JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
+    var config: MediaSourceConfig {
+        try! JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
 
     init(name: String, url: String, config: MediaSourceConfig) {

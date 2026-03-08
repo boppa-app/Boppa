@@ -96,6 +96,21 @@ final class SongQueueManager {
         }
     }
 
+    func removeSongs(forMediaSource mediaSourceName: String) {
+        let current = self.currentTrack
+        self.queue.removeAll { $0.mediaSourceName == mediaSourceName }
+        if let current, let newIndex = self.queue.firstIndex(of: current) {
+            self.currentIndex = newIndex
+        } else {
+            self.currentIndex = min(self.currentIndex, max(self.queue.count - 1, 0))
+        }
+    }
+
+    func clearQueue() {
+        self.queue = []
+        self.currentIndex = 0
+    }
+
     func moveQueueItem(fromOffsets source: IndexSet, toOffset destination: Int) {
         let current = self.currentTrack
         var reordered = self.queue

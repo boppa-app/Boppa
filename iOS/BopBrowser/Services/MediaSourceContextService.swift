@@ -4,7 +4,8 @@ import SwiftData
 import WebKit
 
 extension Notification.Name {
-    static let mediaSourcesDidChange = Notification.Name("mediaSourcesDidChange")
+    static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
+    static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
 }
 
 private let logger = Logger(
@@ -27,7 +28,8 @@ final class MediaSourceContextService: NSObject {
     private var activeWebView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
     private var modelContext: ModelContext?
-    private var mediaSourceObserver: NSObjectProtocol?
+    private var mediaSourceAddedObserver: NSObjectProtocol?
+    private var mediaSourceRemovedObserver: NSObjectProtocol?
 
     override private init() {
         super.init()
@@ -45,12 +47,21 @@ final class MediaSourceContextService: NSObject {
         self.modelContext = context
         self.refreshFromModelContext()
 
-        self.mediaSourceObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourcesDidChange,
+        self.mediaSourceAddedObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceAdded,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            logger.info("Received mediaSourcesDidChange notification, refreshing...")
+            logger.info("Received mediaSourceAdded notification, refreshing...")
+            self?.refreshFromModelContext()
+        }
+
+        self.mediaSourceRemovedObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceRemoved,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            logger.info("Received mediaSourceRemoved notification, refreshing...")
             self?.refreshFromModelContext()
         }
     }
@@ -86,10 +97,7 @@ final class MediaSourceContextService: NSObject {
         self.isProcessing = false
 
         for source in sources {
-            guard let config = source.config else {
-                logger.debug("Skipping source '\(source.name)': unable to decode config")
-                continue
-            }
+            let config = source.config
             guard let parses = config.parse, !parses.isEmpty else {
                 logger.debug("Skipping source '\(config.name)': no parses configured")
                 continue

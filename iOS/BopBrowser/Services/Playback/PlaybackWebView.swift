@@ -1,6 +1,5 @@
 import Foundation
 import os
-import SwiftData
 import UIKit
 import WebKit
 
@@ -13,62 +12,28 @@ private let logger = Logger(
 
 @MainActor
 final class PlaybackWebView: NSObject {
-    static let shared = PlaybackWebView()
-
     static let messageHandlerName = "playerCallback"
 
     private(set) var webView: WKWebView!
-    private var configuredSourceName: String?
+    let mediaSourceName: String
 
-    private var mediaSourceObserver: NSObjectProtocol?
-
-    override private init() {
+    init(mediaSource: MediaSource, messageHandler: WKScriptMessageHandler) {
+        self.mediaSourceName = mediaSource.name
         super.init()
+
         self.webView = self.createWebView()
         self.webView.configuration.userContentController.add(
-            PlaybackEngine.shared,
+            messageHandler,
             name: Self.messageHandlerName
         )
-        self.configureScripts(scripts: [])
-        self.applyWebViewSize(contentSize: UIScreen.main.bounds.size, maxHeight: UIScreen.main.bounds.height / 2.0)
-        self.attachToWindow(self.webView)
-        self.observeMediaSourceChanges()
-        logger.info("PlaybackWebView initialized")
-    }
 
-    func resetConfiguration() {
-        self.configuredSourceName = nil
-        self.configureScripts(scripts: [])
-        logger.info("PlaybackWebView configuration reset")
-    }
-
-    func configureForMediaSource(_ mediaSource: MediaSource) {
-        guard mediaSource.name != self.configuredSourceName else { return }
-
-        guard let config = mediaSource.config,
-              let playbackConfig = config.playback
-        else {
-            logger.warning("No playback config for source: \(mediaSource.name)")
-            return
-        }
-
+        let playbackConfig = mediaSource.config.playback
         self.configureScripts(scripts: playbackConfig.scripts)
         self.applyContentMode(customUserAgent: playbackConfig.customUserAgent)
-        self.configuredSourceName = mediaSource.name
-        logger.info("Configured scripts for media source: \(mediaSource.name)")
-    }
 
-    func configureForPrimarySource(modelContainer: ModelContainer) {
-        let context = ModelContext(modelContainer)
-        let descriptor = FetchDescriptor<MediaSource>()
-        guard let sources = try? context.fetch(descriptor),
-              let primary = sources.first
-        else {
-            logger.info("No primary media source found")
-            return
-        }
-
-        self.configureForMediaSource(primary)
+        self.applyWebViewSize(contentSize: UIScreen.main.bounds.size, maxHeight: UIScreen.main.bounds.height / 2.0)
+        self.attachToWindow(self.webView)
+        logger.info("PlaybackWebView created for media source: \(mediaSource.name)")
     }
 
     func loadURL(_ url: URL) {
@@ -86,6 +51,12 @@ final class PlaybackWebView: NSObject {
 
     func stopLoading() {
         self.webView.stopLoading()
+    }
+
+    func teardown() {
+        self.webView.stopLoading()
+        self.webView.removeFromSuperview()
+        logger.info("PlaybackWebView torn down for media source: \(self.mediaSourceName)")
     }
 
     private func applyContentMode(customUserAgent: String?) {
@@ -168,19 +139,7 @@ final class PlaybackWebView: NSObject {
                let window = windowScene.windows.first
             {
                 window.addSubview(webView)
-                logger.info("PlaybackWebView attached to window")
-            }
-        }
-    }
-
-    private func observeMediaSourceChanges() {
-        self.mediaSourceObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourcesDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.resetConfiguration()
+                logger.info("PlaybackWebView attached to window for source: \(self.mediaSourceName)")
             }
         }
     }

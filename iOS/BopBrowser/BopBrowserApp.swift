@@ -47,7 +47,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         Task {
             await AdBlockService.shared.loadContentRuleList()
             MediaSourceContextService.shared.startMonitoring(modelContainer: appDelegate.modelContainer)
-            PlaybackWebView.shared.configureForPrimarySource(modelContainer: appDelegate.modelContainer)
+            PlaybackEngine.shared.startMonitoring(modelContainer: appDelegate.modelContainer)
 
             let rootView = ContentView()
                 .modelContainer(appDelegate.modelContainer)

@@ -6,7 +6,7 @@ struct MediaSourceDetailView: View {
     @State private var showingLogin = false
 
     private var loginURL: URL? {
-        guard let urlString = self.source.config?.login?.url else { return nil }
+        guard let urlString = self.source.config.login?.url else { return nil }
         return URL(string: urlString)
     }
 

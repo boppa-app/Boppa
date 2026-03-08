@@ -64,7 +64,7 @@ struct SearchToolbarView: View {
             self.viewModel.showSourcePicker = true
         } label: {
             if let source = self.viewModel.selectedSource,
-               let iconSvg = source.config?.iconSvg
+               let iconSvg = source.config.iconSvg
             {
                 SVGImageView(svgString: iconSvg, size: 24)
                     .frame(width: 24, height: 24)

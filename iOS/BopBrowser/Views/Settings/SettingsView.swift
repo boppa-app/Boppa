@@ -32,11 +32,12 @@ struct SettingsView: View {
     }
 
     private func deleteMediaSources(at offsets: IndexSet) {
+        let removedNames = offsets.map { self.mediaSources[$0].name }
         for index in offsets {
             self.modelContext.delete(self.mediaSources[index])
         }
         try? self.modelContext.save()
-        NotificationCenter.default.post(name: .mediaSourcesDidChange, object: nil)
+        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["names": removedNames])
     }
 }
 

@@ -25,7 +25,7 @@ class SearchService {
 
         let context = self.buildJSContext(query: query, previousResult: nil, contextService: contextService)
         let jsResult = try await JSExecutionEngine.shared.execute(script: script, context: context)
-        return self.parseJSResult(jsResult, category: category)
+        return self.parseJSResult(jsResult, category: category, mediaSourceName: config.name)
     }
 
     @MainActor
@@ -46,7 +46,7 @@ class SearchService {
 
         let context = self.buildJSContext(query: query, previousResult: paginationContext, contextService: contextService)
         let jsResult = try await JSExecutionEngine.shared.execute(script: script, context: context)
-        return self.parseJSResult(jsResult, category: category)
+        return self.parseJSResult(jsResult, category: category, mediaSourceName: config.name)
     }
 
     private func buildJSContext(query: String, previousResult: [String: Any]?, contextService: MediaSourceContextService) -> [String: Any] {
@@ -61,7 +61,7 @@ class SearchService {
         return context
     }
 
-    private func parseJSResult(_ jsResult: [String: Any], category: SearchCategory) -> SearchResponse {
+    private func parseJSResult(_ jsResult: [String: Any], category: SearchCategory, mediaSourceName: String) -> SearchResponse {
         let items: [[String: Any]]
         if let itemsArray = jsResult["items"] as? [[String: Any]] {
             items = itemsArray
@@ -72,7 +72,7 @@ class SearchService {
         let result: SearchResult
         switch category {
         case .songs:
-            result = .songs(items.compactMap(self.mapToSong))
+            result = .songs(items.compactMap { self.mapToSong($0, mediaSourceName: mediaSourceName) })
         case .albums:
             result = .albums(items.compactMap(self.mapToAlbum))
         case .artists:
@@ -88,14 +88,15 @@ class SearchService {
         return SearchResponse(result: result, paginationContext: paginationContext)
     }
 
-    private func mapToSong(_ item: [String: Any]) -> Song? {
+    private func mapToSong(_ item: [String: Any], mediaSourceName: String) -> Song? {
         guard let title = item["title"] as? String else { return nil }
         return Song(
             title: title,
             artist: item["artist"] as? String,
             duration: self.resolveInt(item["duration"]),
             artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String
+            url: item["url"] as? String,
+            mediaSourceName: mediaSourceName
         )
     }
 
