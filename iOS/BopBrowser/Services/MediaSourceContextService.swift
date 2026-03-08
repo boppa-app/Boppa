@@ -109,13 +109,13 @@ final class MediaSourceContextService: NSObject {
                 let timerKey = "\(config.name)|\(parse.url)"
 
                 logger.info("Enqueueing immediate refresh for '\(config.name)' -> \(parse.url) with \(parse.scripts.count) script(s)")
-                self.enqueueRefresh(sourceName: config.name, parse: parse)
+                self.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
 
                 let interval = TimeInterval(parse.intervalSeconds)
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
                     Task { @MainActor [weak self] in
                         logger.info("Timer fired: recurring refresh for '\(config.name)' -> \(parse.url)")
-                        self?.enqueueRefresh(sourceName: config.name, parse: parse)
+                        self?.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
@@ -128,8 +128,8 @@ final class MediaSourceContextService: NSObject {
         logger.info("Monitoring setup complete. \(queueCount) item(s) in queue, \(timerCount) timer(s) active")
     }
 
-    private func enqueueRefresh(sourceName: String, parse: Parse) {
-        let workItem = RefreshWorkItem(sourceName: sourceName, parse: parse)
+    private func enqueueRefresh(sourceName: String, parse: Parse, customUserAgent: String?) {
+        let workItem = RefreshWorkItem(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
         self.pendingWork.append(workItem)
         let queueSize = self.pendingWork.count
         let processing = self.isProcessing
@@ -157,7 +157,7 @@ final class MediaSourceContextService: NSObject {
         }
 
         logger.info("Processing: '\(workItem.sourceName)' -> \(url.absoluteString) with \(workItem.parse.scripts.count) script(s)")
-        self.loadRefreshURL(url: url, scripts: workItem.parse.scripts, sourceName: workItem.sourceName)
+        self.loadRefreshURL(url: url, scripts: workItem.parse.scripts, sourceName: workItem.sourceName, customUserAgent: workItem.customUserAgent)
     }
 
     private func completeCurrentWork() {
@@ -171,34 +171,15 @@ final class MediaSourceContextService: NSObject {
         self.processNextIfIdle()
     }
 
-    private func loadRefreshURL(url: URL, scripts: [Script], sourceName: String) {
-        let configuration = WKWebViewConfiguration()
+    private func loadRefreshURL(url: URL, scripts: [Script], sourceName: String, customUserAgent: String?) {
+        let webView = WebViewFactory.makeWebView(
+            scripts: scripts,
+            contractScript: self.buildContractScript(),
+            messageHandler: self,
+            messageHandlerName: Self.messageHandlerName,
+            customUserAgent: customUserAgent
+        )
 
-        // TODO: Separate datastore for browser and other
-        configuration.websiteDataStore = WebDataStore.shared.getDataStore()
-
-        let userContentController = WKUserContentController()
-
-        let contractScript = self.buildContractScript()
-        userContentController.addUserScript(WKUserScript(
-            source: contractScript,
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
-        ))
-
-        for script in scripts {
-            userContentController.addUserScript(WKUserScript(
-                source: script.content.script,
-                injectionTime: script.injectionTime.wkUserScriptInjectionTime,
-                forMainFrameOnly: false
-            ))
-        }
-
-        userContentController.add(self, name: Self.messageHandlerName)
-        configuration.userContentController = userContentController
-
-        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 1, height: 1), configuration: configuration)
-        webView.isHidden = true
         self.activeWebView = webView
 
         let timeout = Self.refreshTimeoutSeconds
@@ -302,4 +283,5 @@ extension MediaSourceContextService: WKScriptMessageHandler {
 private struct RefreshWorkItem {
     let sourceName: String
     let parse: Parse
+    let customUserAgent: String?
 }

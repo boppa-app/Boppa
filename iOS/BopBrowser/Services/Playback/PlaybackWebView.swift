@@ -21,17 +21,19 @@ final class PlaybackWebView: NSObject {
         self.mediaSourceName = mediaSource.name
         super.init()
 
-        self.webView = self.createWebView()
-        self.webView.configuration.userContentController.add(
-            messageHandler,
-            name: Self.messageHandlerName
+        let config = mediaSource.config
+        let playbackConfig = config.playback
+
+        self.webView = WebViewFactory.makeWebView(
+            scripts: playbackConfig.scripts,
+            contractScript: self.buildContractScript(),
+            messageHandler: messageHandler,
+            messageHandlerName: Self.messageHandlerName,
+            customUserAgent: config.customUserAgent,
+            allowsInlineMediaPlayback: true,
+            isHidden: true
         )
 
-        let playbackConfig = mediaSource.config.playback
-        self.configureScripts(scripts: playbackConfig.scripts)
-        self.applyContentMode(customUserAgent: playbackConfig.customUserAgent)
-
-        self.applyWebViewSize(contentSize: UIScreen.main.bounds.size, maxHeight: UIScreen.main.bounds.height / 2.0)
         self.attachToWindow(self.webView)
         logger.info("PlaybackWebView created for media source: \(mediaSource.name)")
     }
@@ -59,52 +61,6 @@ final class PlaybackWebView: NSObject {
         logger.info("PlaybackWebView torn down for media source: \(self.mediaSourceName)")
     }
 
-    private func applyContentMode(customUserAgent: String?) {
-        if let customUserAgent {
-            self.webView.customUserAgent = customUserAgent
-            self.webView.configuration.defaultWebpagePreferences.preferredContentMode = .desktop
-            self.applyWebViewSize(contentSize: CGSize(width: 1920, height: 1080))
-            logger.debug("Using desktop mode with custom user agent: \(customUserAgent)")
-        } else {
-            self.webView.customUserAgent = nil
-            self.webView.configuration.defaultWebpagePreferences.preferredContentMode = .mobile
-            self.applyWebViewSize(contentSize: UIScreen.main.bounds.size, maxHeight: UIScreen.main.bounds.height / 2.0)
-            logger.debug("Using mobile mode (scaled, centered)")
-        }
-    }
-
-    private func applyWebViewSize(contentSize: CGSize, maxHeight: CGFloat? = nil) {
-        self.webView.transform = .identity
-
-        let screenBounds = UIScreen.main.bounds
-        let targetHeight = maxHeight ?? screenBounds.height
-        let scale = min(screenBounds.width / contentSize.width, targetHeight / contentSize.height)
-
-        self.webView.frame = CGRect(origin: .zero, size: contentSize)
-        self.webView.transform = CGAffineTransform(scaleX: scale, y: scale)
-        self.webView.center = CGPoint(x: screenBounds.midX, y: screenBounds.midY)
-    }
-
-    private func configureScripts(scripts: [Script]) {
-        let userContentController = self.webView.configuration.userContentController
-
-        userContentController.removeAllUserScripts()
-
-        userContentController.addUserScript(WKUserScript(
-            source: self.buildContractScript(),
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
-        ))
-
-        for script in scripts {
-            userContentController.addUserScript(WKUserScript(
-                source: script.content.script,
-                injectionTime: script.injectionTime.wkUserScriptInjectionTime,
-                forMainFrameOnly: false
-            ))
-        }
-    }
-
     private func buildContractScript() -> String {
         """
         (function() {
@@ -113,24 +69,6 @@ final class PlaybackWebView: NSObject {
             };
         })();
         """
-    }
-
-    private func createWebView() -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.allowsInlineMediaPlayback = true
-        configuration.mediaTypesRequiringUserActionForPlayback = []
-        configuration.websiteDataStore = WebDataStore.shared.getDataStore()
-
-        let webView = WKWebView(
-            frame: UIScreen.main.bounds,
-            configuration: configuration
-        )
-        webView.scrollView.isScrollEnabled = false
-        webView.clipsToBounds = true
-        webView.isInspectable = true
-        webView.isHidden = true
-        // webView.isHidden = false
-        return webView
     }
 
     private func attachToWindow(_ webView: WKWebView) {

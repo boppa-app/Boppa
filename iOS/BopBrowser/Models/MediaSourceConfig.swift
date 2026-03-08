@@ -5,6 +5,7 @@ struct MediaSourceConfig: Codable {
     let name: String
     let url: String
     let iconSvg: String?
+    let customUserAgent: String?
     let login: LoginConfig?
     let parse: [Parse]?
     let data: MediaSourceData?
