@@ -3,11 +3,12 @@ import WebKit
 
 struct LoginWebView: View {
     let url: URL
+    let customUserAgent: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            LoginWebViewRepresentable(url: self.url)
+            LoginWebViewRepresentable(url: self.url, customUserAgent: self.customUserAgent)
                 .ignoresSafeArea(edges: .bottom)
                 .navigationTitle("Login")
                 .navigationBarTitleDisplayMode(.inline)
@@ -27,13 +28,17 @@ struct LoginWebView: View {
 
 private struct LoginWebViewRepresentable: UIViewRepresentable {
     let url: URL
+    let customUserAgent: String?
 
     func makeUIView(context: Context) -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = WebDataStore.shared.getDataStore()
-
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = WebViewFactory.makeWebView(
+            customUserAgent: self.customUserAgent,
+            isHidden: false
+        )
+        webView.scrollView.isScrollEnabled = true
         webView.allowsBackForwardNavigationGestures = true
+        webView.transform = .identity
+        webView.frame = .zero
         webView.load(URLRequest(url: self.url))
         return webView
     }

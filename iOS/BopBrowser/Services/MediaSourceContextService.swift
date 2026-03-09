@@ -6,6 +6,7 @@ import WebKit
 extension Notification.Name {
     static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
     static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
+    static let mediaSourceLoginCompleted = Notification.Name("mediaSourceLoginCompleted")
 }
 
 private let logger = Logger(
@@ -30,6 +31,7 @@ final class MediaSourceContextService: NSObject {
     private var modelContext: ModelContext?
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
+    private var mediaSourceLoginObserver: NSObjectProtocol?
 
     override private init() {
         super.init()
@@ -64,6 +66,16 @@ final class MediaSourceContextService: NSObject {
             logger.info("Received mediaSourceRemoved notification, refreshing...")
             self?.refreshFromModelContext()
         }
+
+        self.mediaSourceLoginObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceLoginCompleted,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let sourceName = notification.userInfo?["sourceName"] as? String else { return }
+            logger.info("Received mediaSourceLoginCompleted for '\(sourceName)', triggering refresh...")
+            self?.refreshSource(named: sourceName)
+        }
     }
 
     func stopAllTimers() {
@@ -85,6 +97,30 @@ final class MediaSourceContextService: NSObject {
         let sources = (try? modelContext.fetch(descriptor)) ?? []
         logger.info("Fetched \(sources.count) media source(s) from ModelContext")
         self.startMonitoring(sources: sources)
+    }
+
+    private func refreshSource(named sourceName: String) {
+        guard let modelContext else {
+            logger.warning("refreshSource called but no modelContext set")
+            return
+        }
+        let descriptor = FetchDescriptor<MediaSource>()
+        let sources = (try? modelContext.fetch(descriptor)) ?? []
+        guard let source = sources.first(where: { $0.name == sourceName }) else {
+            logger.warning("refreshSource: no source found with name '\(sourceName)'")
+            return
+        }
+
+        let config = source.config
+        guard let parses = config.parse, !parses.isEmpty else {
+            logger.debug("refreshSource: source '\(sourceName)' has no parses configured")
+            return
+        }
+
+        logger.info("Refreshing source '\(sourceName)' with \(parses.count) parse(s) after login")
+        for parse in parses {
+            self.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
+        }
     }
 
     private func startMonitoring(sources: [MediaSource]) {

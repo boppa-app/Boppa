@@ -38,9 +38,15 @@ struct MediaSourceDetailView: View {
         .toolbar {
             self.backToolbarItem
         }
-        .sheet(isPresented: self.$showingLogin) {
+        .sheet(isPresented: self.$showingLogin, onDismiss: {
+            NotificationCenter.default.post(
+                name: .mediaSourceLoginCompleted,
+                object: nil,
+                userInfo: ["sourceName": self.source.name]
+            )
+        }) {
             if let loginURL {
-                LoginWebView(url: loginURL)
+                LoginWebView(url: loginURL, customUserAgent: self.source.config.customUserAgent)
             }
         }
     }
