@@ -7,6 +7,7 @@ struct Playlist: Identifiable, Equatable {
     let trackCount: Int?
     let artworkUrl: String?
     let url: String?
+    let metadata: [String: String]
 
     init(
         id: UUID = UUID(),
@@ -14,7 +15,8 @@ struct Playlist: Identifiable, Equatable {
         user: String? = nil,
         trackCount: Int? = nil,
         artworkUrl: String? = nil,
-        url: String? = nil
+        url: String? = nil,
+        metadata: [String: String] = [:]
     ) {
         self.id = id
         self.title = title
@@ -22,6 +24,7 @@ struct Playlist: Identifiable, Equatable {
         self.trackCount = trackCount
         self.artworkUrl = artworkUrl
         self.url = url
+        self.metadata = metadata
     }
 
     var formattedTrackCount: String? {

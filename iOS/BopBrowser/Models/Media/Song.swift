@@ -8,6 +8,7 @@ struct Song: Identifiable, Equatable {
     let artworkUrl: String?
     let url: String?
     let mediaSourceName: String?
+    let metadata: [String: String]
 
     init(
         id: UUID = UUID(),
@@ -16,7 +17,8 @@ struct Song: Identifiable, Equatable {
         duration: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
-        mediaSourceName: String? = nil
+        mediaSourceName: String? = nil,
+        metadata: [String: String] = [:]
     ) {
         self.id = id
         self.title = title
@@ -25,6 +27,7 @@ struct Song: Identifiable, Equatable {
         self.artworkUrl = artworkUrl
         self.url = url
         self.mediaSourceName = mediaSourceName
+        self.metadata = metadata
     }
 
     var formattedDuration: String? {

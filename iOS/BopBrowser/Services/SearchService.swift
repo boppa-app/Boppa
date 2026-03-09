@@ -96,7 +96,8 @@ class SearchService {
             duration: self.resolveInt(item["duration"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            mediaSourceName: mediaSourceName
+            mediaSourceName: mediaSourceName,
+            metadata: self.resolveMetadata(item["metadata"])
         )
     }
 
@@ -107,7 +108,8 @@ class SearchService {
             artist: item["artist"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String
+            url: item["url"] as? String,
+            metadata: self.resolveMetadata(item["metadata"])
         )
     }
 
@@ -116,7 +118,8 @@ class SearchService {
         return Artist(
             name: name,
             artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String
+            url: item["url"] as? String,
+            metadata: self.resolveMetadata(item["metadata"])
         )
     }
 
@@ -127,8 +130,22 @@ class SearchService {
             user: item["user"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String
+            url: item["url"] as? String,
+            metadata: self.resolveMetadata(item["metadata"])
         )
+    }
+
+    private func resolveMetadata(_ value: Any?) -> [String: String] {
+        guard let rawMetadata = value as? [String: Any] else { return [:] }
+        var metadata: [String: String] = [:]
+        for (key, value) in rawMetadata {
+            if let stringValue = value as? String {
+                metadata[key] = stringValue
+            } else {
+                metadata[key] = String(describing: value)
+            }
+        }
+        return metadata
     }
 
     private func resolveInt(_ value: Any?) -> Int? {
