@@ -4,11 +4,20 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNowPlaying = false
+    @State private var browserViewModel = BrowserViewModel()
+
+    private var bottomBarsHidden: Bool {
+        self.selectedTab == 0 && self.browserViewModel.barsHidden
+    }
+
+    private var showMiniPlayer: Bool {
+        self.selectedTab != 0 && self.selectedTab != 3
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                BrowserView()
+                BrowserView(viewModel: self.browserViewModel)
                     .opacity(self.selectedTab == 0 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 0)
                 SearchView()
@@ -22,9 +31,17 @@ struct ContentView: View {
                     .allowsHitTesting(self.selectedTab == 3)
             }
             .frame(maxHeight: .infinity)
-            MiniPlayerView(showNowPlaying: self.$showNowPlaying)
-            ContentTabView(selectedTab: self.$selectedTab)
+
+            if !self.bottomBarsHidden {
+                if self.showMiniPlayer {
+                    MiniPlayerView(showNowPlaying: self.$showNowPlaying)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                ContentTabView(selectedTab: self.$selectedTab)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.3), value: self.bottomBarsHidden)
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {
             NowPlayingView()
