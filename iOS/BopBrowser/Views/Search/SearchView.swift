@@ -1,6 +1,8 @@
 import SwiftData
 import SwiftUI
 
+// TODO: Swiping up in search view should refresh results
+
 struct SearchView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = SearchViewModel()

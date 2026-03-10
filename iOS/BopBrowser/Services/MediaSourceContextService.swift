@@ -72,9 +72,9 @@ final class MediaSourceContextService: NSObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let sourceName = notification.userInfo?["sourceName"] as? String else { return }
-            logger.info("Received mediaSourceLoginCompleted for '\(sourceName)', triggering refresh...")
-            self?.refreshSource(named: sourceName)
+            guard let mediaSourceName = notification.userInfo?["mediaSourceName"] as? String else { return }
+            logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceName)', triggering refresh...")
+            self?.refreshSource(named: mediaSourceName)
         }
     }
 

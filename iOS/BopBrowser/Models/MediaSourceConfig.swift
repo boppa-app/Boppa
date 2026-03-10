@@ -16,6 +16,7 @@ struct MediaSourceConfig: Codable {
 struct LoginConfig: Codable {
     let url: String
     let required: Bool?
+    let cookies: [String]?
 }
 
 struct Parse: Codable {

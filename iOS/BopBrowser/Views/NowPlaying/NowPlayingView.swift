@@ -3,17 +3,7 @@ import SwiftUI
 struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
 
-    private var playbackService: PlaybackService {
-        PlaybackService.shared
-    }
-
-    private var queueManager: SongQueueManager {
-        SongQueueManager.shared
-    }
-
-    @State private var isSeeking = false
-    @State private var seekValue: Double = 0
-    @State private var showQueue = false
+    var viewModel: NowPlayingViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,7 +30,7 @@ struct NowPlayingView: View {
             self.trackInfoSection
         }
         .overlay {
-            if self.showQueue {
+            if self.viewModel.showQueue {
                 QueueView()
             }
         }
@@ -48,9 +38,7 @@ struct NowPlayingView: View {
 
     private var artworkSection: some View {
         Group {
-            if let artworkUrl = self.playbackService.currentTrack?.artworkUrl,
-               let url = URL(string: artworkUrl)
-            {
+            if let url = self.viewModel.artworkURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
@@ -86,13 +74,13 @@ struct NowPlayingView: View {
 
     private var trackInfoSection: some View {
         VStack(spacing: 6) {
-            Text(self.playbackService.currentTrack?.title ?? "Not Playing")
+            Text(self.viewModel.trackTitle)
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .lineLimit(1)
 
-            Text(self.playbackService.currentTrack?.artist ?? "")
+            Text(self.viewModel.trackArtist)
                 .font(.body)
                 .foregroundColor(Color(.systemGray))
                 .lineLimit(1)
@@ -103,31 +91,25 @@ struct NowPlayingView: View {
     private var seekBar: some View {
         VStack(spacing: 6) {
             SeekSlider(
-                value: self.isSeeking ? self.seekValue : self.playbackService.currentTime,
+                value: self.viewModel.displayCurrentTime,
                 minimum: 0,
-                maximum: max(self.playbackService.duration, 1),
+                maximum: self.viewModel.seekMaximum,
                 onEditingChanged: { editing, newValue in
-                    if editing {
-                        self.isSeeking = true
-                        self.seekValue = newValue
-                    } else {
-                        self.playbackService.seek(to: newValue)
-                        self.isSeeking = false
-                    }
+                    self.viewModel.handleSeekEditingChanged(editing: editing, newValue: newValue)
                 },
                 onValueChanged: { newValue in
-                    self.seekValue = newValue
+                    self.viewModel.handleSeekValueChanged(newValue: newValue)
                 }
             )
             .frame(height: 30)
 
             HStack {
-                Text(Song.formatTime(seconds: self.isSeeking ? self.seekValue : self.playbackService.currentTime))
+                Text(self.viewModel.formattedCurrentTime)
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
                 Spacer()
-                Text(Song.formatTime(seconds: self.playbackService.duration))
+                Text(self.viewModel.formattedDuration)
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
@@ -148,25 +130,25 @@ struct NowPlayingView: View {
 
             HStack(spacing: 40) {
                 Button {
-                    self.playbackService.previous()
+                    self.viewModel.previous()
                 } label: {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 32))
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
-                .disabled(self.queueManager.queue.isEmpty)
+                .disabled(!self.viewModel.canGoBack)
 
-                if self.playbackService.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(2.5)
                         .frame(width: 48, height: 48)
                 } else {
                     Button {
-                        self.playbackService.togglePlayPause()
+                        self.viewModel.togglePlayPause()
                     } label: {
-                        Image(systemName: self.playbackService.isPlaying ? "pause.fill" : "play.fill")
+                        Image(systemName: self.viewModel.playPauseIconName)
                             .font(.system(size: 56))
                             .foregroundColor(.white)
                             .frame(width: 48, height: 48)
@@ -174,49 +156,49 @@ struct NowPlayingView: View {
                 }
 
                 Button {
-                    self.playbackService.next()
+                    self.viewModel.next()
                 } label: {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 32))
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
-                .disabled(self.queueManager.queue.count <= 1)
+                .disabled(!self.viewModel.canSkipForward)
             }
 
             Spacer()
 
             Button {
-                self.queueManager.cycleRepeatMode()
+                self.viewModel.cycleRepeatMode()
             } label: {
-                Image(systemName: self.repeatIconName)
+                Image(systemName: self.viewModel.repeatIconName)
                     .font(.system(size: 18))
-                    .foregroundColor(self.queueManager.repeatMode != .off ? Color.purp : Color(.systemGray))
+                    .foregroundColor(self.viewModel.isRepeatActive ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
         }
     }
 
-    private var repeatIconName: String {
-        switch self.queueManager.repeatMode {
-        case .off, .all:
-            return "repeat"
-        case .one:
-            return "repeat.1"
-        }
-    }
-
     private var queueToggleButton: some View {
         HStack {
-            Spacer()
             Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    self.showQueue.toggle()
-                }
+                self.viewModel.openInBrowser(dismiss: self.dismiss)
+            } label: {
+                Image(systemName: "safari")
+                    .font(.system(size: 20))
+                    .foregroundColor(self.viewModel.hasSongUrl ? Color.purp : Color(.systemGray))
+                    .frame(width: 36, height: 36)
+            }
+            .disabled(!self.viewModel.hasSongUrl)
+
+            Spacer()
+
+            Button {
+                self.viewModel.toggleQueue()
             } label: {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 20))
-                    .foregroundColor(self.showQueue ? Color.purp : Color(.systemGray))
+                    .foregroundColor(self.viewModel.showQueue ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
         }
@@ -224,6 +206,6 @@ struct NowPlayingView: View {
 }
 
 #Preview {
-    NowPlayingView()
+    NowPlayingView(viewModel: NowPlayingViewModel())
         .preferredColorScheme(.dark)
 }

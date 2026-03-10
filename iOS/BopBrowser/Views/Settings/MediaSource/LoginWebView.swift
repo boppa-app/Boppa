@@ -2,25 +2,34 @@ import SwiftUI
 import WebKit
 
 struct LoginWebView: View {
-    let url: URL
-    let customUserAgent: String?
     @Environment(\.dismiss) private var dismiss
+    @StateObject var viewModel: LoginWebViewModel
 
     var body: some View {
         NavigationStack {
-            LoginWebViewRepresentable(url: self.url, customUserAgent: self.customUserAgent)
+            LoginWebViewRepresentable(url: self.viewModel.url, customUserAgent: self.viewModel.customUserAgent)
                 .ignoresSafeArea(edges: .bottom)
                 .navigationTitle("Login")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Done") {
-                            WebDataStore.shared.forceSyncCookies()
-                            self.dismiss()
+                            self.viewModel.dismiss()
                         }
                         .foregroundColor(Color.purp)
                     }
                     .sharedBackgroundVisibilityIfAvailable(.hidden)
+                }
+                .onAppear {
+                    self.viewModel.startMonitoring()
+                }
+                .onDisappear {
+                    self.viewModel.stopMonitoring()
+                }
+                .onChange(of: self.viewModel.shouldDismiss) {
+                    if self.viewModel.shouldDismiss {
+                        self.dismiss()
+                    }
                 }
         }
     }

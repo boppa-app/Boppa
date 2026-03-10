@@ -24,21 +24,23 @@ class BrowserViewModel: NSObject {
     private var isLoadingObservation: NSKeyValueObservation?
 
     override init() {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = WebDataStore.shared.getDataStore()
-        configuration.allowsInlineMediaPlayback = true
-        configuration.mediaTypesRequiringUserActionForPlayback = []
-        configuration.userContentController.addUserScript(getDomVisibilityScript())
+        let webView = WebViewFactory.makeWebView(
+            contractScript: getDomVisibilityScript().source,
+            isHidden: false
+        )
+
+        webView.allowsBackForwardNavigationGestures = true
+        webView.scrollView.isScrollEnabled = true
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.frame = .zero
+        webView.transform = .identity
 
         if let ruleList = AdBlockService.shared.getCompiledRuleList() {
-            configuration.userContentController.add(ruleList)
+            webView.configuration.userContentController.add(ruleList)
             logger.debug("Ad block content rule list applied")
         }
 
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.allowsBackForwardNavigationGestures = true
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
         self.webView = webView
 
         super.init()

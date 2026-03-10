@@ -1,115 +1,73 @@
 import Foundation
+import os
 import WebKit
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
+    category: "WebDataStore"
+)
 
 class WebDataStore {
     static let shared = WebDataStore()
 
-    private let dataStore: WKWebsiteDataStore
-    private var cookieObserver: NSObjectProtocol?
+    private let mobileDataStore: WKWebsiteDataStore
+    private let desktopDataStore: WKWebsiteDataStore
+    private var observers: [NSObjectProtocol] = []
 
     private init() {
-        self.dataStore = WKWebsiteDataStore.default()
-        self.setupCookieSync()
-    }
-
-    deinit {
-        if let observer = cookieObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-
-    private func setupCookieSync() {
-        self.cookieObserver = NotificationCenter.default.addObserver(
-            forName: UIApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.syncBidirectionally()
-        }
-
-        self.syncBidirectionally()
-    }
-
-    private func syncBidirectionally() {
-        self.syncFromWKToHTTP()
-        self.syncFromHTTPToWK()
-    }
-
-    private func syncFromWKToHTTP() {
-        self.dataStore.httpCookieStore.getAllCookies { cookies in
-            for cookie in cookies {
-                HTTPCookieStorage.shared.setCookie(cookie)
-            }
-        }
-    }
-
-    private func syncFromHTTPToWK() {
-        guard let cookies = HTTPCookieStorage.shared.cookies else { return }
-
-        for cookie in cookies {
-            self.dataStore.httpCookieStore.setCookie(cookie)
-        }
+        self.mobileDataStore = WKWebsiteDataStore.default()
+        self.desktopDataStore = WKWebsiteDataStore.default()
     }
 
     func getDataStore() -> WKWebsiteDataStore {
-        return self.dataStore
+        return self.mobileDataStore
     }
 
-    func forceSyncCookies(completion: (() -> Void)? = nil) {
-        let group = DispatchGroup()
-        group.enter()
-        self.dataStore.httpCookieStore.getAllCookies { cookies in
-            for cookie in cookies {
-                HTTPCookieStorage.shared.setCookie(cookie)
+    func getDesktopDataStore() -> WKWebsiteDataStore {
+        return self.desktopDataStore
+    }
+
+    func checkCookiesExist(named cookieNames: [String], forDomain domain: String? = nil, useDesktopStore: Bool = false, completion: @escaping (Bool) -> Void) {
+        let store = useDesktopStore ? self.desktopDataStore : self.mobileDataStore
+        store.httpCookieStore.getAllCookies { cookies in
+            let validCookies = cookies.filter { cookie in
+                guard cookie.expiresDate == nil || cookie.expiresDate! > Date() else {
+                    return false
+                }
+                if let domain {
+                    let cookieDomain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
+                    return domain == cookieDomain || domain.hasSuffix(".\(cookieDomain)")
+                }
+                return true
             }
+            let validCookieNames = Set(validCookies.map(\.name))
+            let allFound = cookieNames.allSatisfy { validCookieNames.contains($0) }
+            DispatchQueue.main.async {
+                completion(allFound)
+            }
+        }
+    }
+
+    func clearAllData(completion: (() -> Void)? = nil) {
+        let group = DispatchGroup()
+        let allDataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+        let since = Date.distantPast
+
+        group.enter()
+        self.mobileDataStore.removeData(ofTypes: allDataTypes, modifiedSince: since) {
             group.leave()
         }
 
         group.enter()
-        if let httpCookies = HTTPCookieStorage.shared.cookies {
-            let innerGroup = DispatchGroup()
-            for cookie in httpCookies {
-                innerGroup.enter()
-                self.dataStore.httpCookieStore.setCookie(cookie) {
-                    innerGroup.leave()
-                }
-            }
-            innerGroup.notify(queue: .main) {
-                group.leave()
-            }
-        } else {
+        self.desktopDataStore.removeData(ofTypes: allDataTypes, modifiedSince: since) {
             group.leave()
         }
 
-        group.notify(queue: .main) {
-            completion?()
-        }
-    }
-
-    func clearAllCookies(completion: (() -> Void)? = nil) {
-        let group = DispatchGroup()
-
-        group.enter()
-        self.dataStore.httpCookieStore.getAllCookies { cookies in
-            let innerGroup = DispatchGroup()
-            for cookie in cookies {
-                innerGroup.enter()
-                self.dataStore.httpCookieStore.delete(cookie) {
-                    innerGroup.leave()
-                }
-            }
-            innerGroup.notify(queue: .main) {
-                group.leave()
-            }
-        }
-
-        group.enter()
         if let httpCookies = HTTPCookieStorage.shared.cookies {
             for cookie in httpCookies {
                 HTTPCookieStorage.shared.deleteCookie(cookie)
             }
         }
-        group.leave()
 
         group.notify(queue: .main) {
             completion?()

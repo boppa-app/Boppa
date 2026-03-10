@@ -2,51 +2,65 @@ import SwiftUI
 
 struct MediaSourceDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    let source: MediaSource
-    @State private var showingLogin = false
-
-    private var loginURL: URL? {
-        guard let urlString = self.source.config.login?.url else { return nil }
-        return URL(string: urlString)
-    }
+    @State var viewModel: MediaSourceDetailViewModel
 
     var body: some View {
         List {
             Section("Details") {
-                LabeledContent("Name", value: self.source.name)
-                LabeledContent("URL", value: self.source.url)
+                LabeledContent("Name", value: self.viewModel.source.name)
+                LabeledContent("URL", value: self.viewModel.source.url)
             }
 
-            if let loginURL {
+            if let loginURL = self.viewModel.loginURL {
                 Section("Authentication") {
-                    Button {
-                        self.showingLogin = true
-                    } label: {
+                    if self.viewModel.isCheckingLogin {
                         HStack {
-                            Image(systemName: "person.crop.circle")
-                                .foregroundColor(Color.purp)
-                            Text("Login")
-                                .foregroundColor(Color.purp)
+                            ProgressView()
+                                .tint(Color.white)
+                            Text("Checking Login Status…")
+                                .foregroundColor(.white)
+                                .padding(.leading, 8)
+                        }
+                    } else if self.viewModel.isLoggedIn {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Logged In")
+                                .foregroundColor(.green)
+                        }
+                    } else {
+                        Button {
+                            self.viewModel.showingLogin = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "person.crop.circle")
+                                    .foregroundColor(Color.purp)
+                                Text("Login")
+                                    .foregroundColor(Color.purp)
+                            }
                         }
                     }
                 }
             }
         }
-        .navigationTitle(self.source.name)
+        .navigationTitle(self.viewModel.source.name)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             self.backToolbarItem
         }
-        .sheet(isPresented: self.$showingLogin, onDismiss: {
-            NotificationCenter.default.post(
-                name: .mediaSourceLoginCompleted,
-                object: nil,
-                userInfo: ["sourceName": self.source.name]
-            )
-        }) {
-            if let loginURL {
-                LoginWebView(url: loginURL, customUserAgent: self.source.config.customUserAgent)
+        .onAppear {
+            self.viewModel.checkLoginStatus()
+        }
+        .sheet(isPresented: self.$viewModel.showingLogin) {
+            if let loginURL = self.viewModel.loginURL {
+                LoginWebView(viewModel: LoginWebViewModel(
+                    url: loginURL,
+                    customUserAgent: self.viewModel.source.config.customUserAgent,
+                    requiredCookies: self.viewModel.source.config.login?.cookies ?? [],
+                    cookieDomain: URL(string: self.viewModel.source.config.url)?.host,
+                    mediaSourceName: self.viewModel.source.name
+                ))
             }
         }
     }

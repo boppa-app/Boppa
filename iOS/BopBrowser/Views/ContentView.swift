@@ -5,6 +5,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNowPlaying = false
     @State private var browserViewModel = BrowserViewModel()
+    @State private var nowPlayingViewModel = NowPlayingViewModel()
 
     private var bottomBarsHidden: Bool {
         self.selectedTab == 0 && self.browserViewModel.barsHidden
@@ -44,8 +45,14 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.3), value: self.bottomBarsHidden)
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {
-            NowPlayingView()
+            NowPlayingView(viewModel: self.nowPlayingViewModel)
                 .presentationDragIndicator(.visible)
+        }
+        .onAppear {
+            self.nowPlayingViewModel.onOpenInBrowser = { url in
+                self.browserViewModel.loadURL(urlString: url)
+                self.selectedTab = 0
+            }
         }
     }
 }
