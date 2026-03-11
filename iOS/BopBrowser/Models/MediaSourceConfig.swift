@@ -11,6 +11,21 @@ struct MediaSourceConfig: Codable {
     let data: MediaSourceData?
     let actions: MediaSourceActions?
     let playback: PlaybackConfig
+    let lastUpdated: Date
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.url = try container.decode(String.self, forKey: .url)
+        self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
+        self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
+        self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
+        self.parse = try container.decodeIfPresent([Parse].self, forKey: .parse)
+        self.data = try container.decodeIfPresent(MediaSourceData.self, forKey: .data)
+        self.actions = try container.decodeIfPresent(MediaSourceActions.self, forKey: .actions)
+        self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
+        self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
+    }
 }
 
 struct LoginConfig: Codable {
@@ -22,7 +37,7 @@ struct LoginConfig: Codable {
 struct Parse: Codable {
     let url: String
     let intervalSeconds: Int
-    let scripts: [Script]
+    let userScripts: [Script]
 }
 
 struct Script: Codable {

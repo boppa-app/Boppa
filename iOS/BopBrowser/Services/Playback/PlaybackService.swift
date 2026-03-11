@@ -24,21 +24,21 @@ final class PlaybackService {
     }
 
     private let queueManager = SongQueueManager.shared
-    private let engine = PlaybackEngine.shared
+    private let playbackManager = PlaybackManager.shared
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
 
     private init() {
         self.setupAudioSession()
-        self.engine.onEvent = { [weak self] event in
-            self?.handleEngineEvent(event)
+        self.playbackManager.onEvent = { [weak self] event in
+            self?.handleManagerEvent(event)
         }
         self.observeMediaSourceRemoved()
         logger.info("PlaybackService initialized")
     }
 
     func playTrack(_ track: Song, queue: [Song] = [], mediaSource: MediaSource) {
-        self.engine.teardown()
+        self.playbackManager.stop()
 
         self.currentTrack = track
         self.mediaSource = mediaSource
@@ -52,17 +52,17 @@ final class PlaybackService {
         }
 
         Task {
-            await self.engine.load(track: track, mediaSourceName: mediaSource.name)
+            await self.playbackManager.load(track: track, mediaSource: mediaSource)
         }
     }
 
     func play() {
-        self.engine.play()
+        self.playbackManager.play()
         self.isPlaying = true
     }
 
     func pause() {
-        self.engine.pause()
+        self.playbackManager.pause()
         self.isPlaying = false
     }
 
@@ -95,19 +95,19 @@ final class PlaybackService {
 
     func seek(to time: Double) {
         self.currentTime = time
-        self.engine.seek(to: time)
+        self.playbackManager.seek(to: time)
     }
 
-    private func handleEngineEvent(_ event: PlayerEvent) {
+    private func handleManagerEvent(_ event: PlayerEvent) {
         switch event {
         case .playing:
             self.isPlaying = true
             self.isLoading = false
-            logger.debug("Engine: playing")
+            logger.debug("Manager: playing")
 
         case .paused:
             self.isPlaying = false
-            logger.debug("Engine: paused")
+            logger.debug("Manager: paused")
 
         case let .progress(currentTime, duration):
             self.currentTime = currentTime
@@ -117,26 +117,26 @@ final class PlaybackService {
 
         case let .durationResolved(duration):
             self.duration = duration
-            logger.debug("Engine: duration resolved = \(duration)s")
+            logger.debug("Manager: duration resolved = \(duration)s")
 
         case .finished:
-            logger.info("Engine: track finished")
+            logger.info("Manager: track finished")
             self.next()
 
         case let .error(message):
             self.isLoading = false
-            logger.error("Engine error: \(message)")
+            logger.error("Manager error: \(message)")
 
         case .loading:
             self.isLoading = true
 
         case .ready:
-            logger.debug("Engine: ready")
+            logger.debug("Manager: ready")
         }
     }
 
     func stop() {
-        self.engine.teardown()
+        self.playbackManager.stop()
         self.currentTrack = nil
         self.mediaSource = nil
         self.isPlaying = false

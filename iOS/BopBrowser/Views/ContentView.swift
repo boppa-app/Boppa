@@ -42,6 +42,15 @@ struct ContentView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .overlay(alignment: .bottom) {
+            if self.bottomBarsHidden {
+                BottomSafeAreaTapTarget {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.browserViewModel.showBars()
+                    }
+                }
+            }
+        }
         .animation(.easeInOut(duration: 0.3), value: self.bottomBarsHidden)
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {
@@ -85,6 +94,25 @@ struct ContentTabView: View {
             }
             .frame(height: 60)
         }
+    }
+}
+
+private struct BottomSafeAreaTapTarget: View {
+    let onTap: () -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let bottomInset = proxy.safeAreaInsets.bottom
+            VStack(spacing: 0) {
+                Spacer()
+                Color.black.opacity(0.001)
+                    .frame(height: max(bottomInset, 20))
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture { self.onTap() }
+            }
+        }
+        .ignoresSafeArea(edges: .bottom)
     }
 }
 

@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+// TODO: Fix slider to avoid shifting back to previous state momentarily when scrubbing
+
 struct SeekSlider: UIViewRepresentable {
     var value: Double
     var minimum: Double

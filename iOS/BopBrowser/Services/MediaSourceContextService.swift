@@ -144,7 +144,7 @@ final class MediaSourceContextService: NSObject {
             for parse in parses {
                 let timerKey = "\(config.name)|\(parse.url)"
 
-                logger.info("Enqueueing immediate refresh for '\(config.name)' -> \(parse.url) with \(parse.scripts.count) script(s)")
+                logger.info("Enqueueing immediate refresh for '\(config.name)' -> \(parse.url) with \(parse.userScripts.count) script(s)")
                 self.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
 
                 let interval = TimeInterval(parse.intervalSeconds)
@@ -192,8 +192,8 @@ final class MediaSourceContextService: NSObject {
             return
         }
 
-        logger.info("Processing: '\(workItem.sourceName)' -> \(url.absoluteString) with \(workItem.parse.scripts.count) script(s)")
-        self.loadRefreshURL(url: url, scripts: workItem.parse.scripts, sourceName: workItem.sourceName, customUserAgent: workItem.customUserAgent)
+        logger.info("Processing: '\(workItem.sourceName)' -> \(url.absoluteString) with \(workItem.parse.userScripts.count) script(s)")
+        self.loadRefreshURL(url: url, scripts: workItem.parse.userScripts, sourceName: workItem.sourceName, customUserAgent: workItem.customUserAgent)
     }
 
     private func completeCurrentWork() {
