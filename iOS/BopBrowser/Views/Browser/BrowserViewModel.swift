@@ -46,7 +46,7 @@ class BrowserViewModel: NSObject {
         super.init()
 
         self.webView.navigationDelegate = self
-        self.setupScrollDetection()
+        self.setupInteractionDetection()
         self.observeWebView()
     }
 
@@ -106,8 +106,21 @@ class BrowserViewModel: NSObject {
         return url.host ?? url.absoluteString
     }
 
-    private func setupScrollDetection() {
+    private func setupInteractionDetection() {
         self.webView.scrollView.delegate = self
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.webViewInteracted))
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delegate = self
+        self.webView.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func webViewInteracted() {
+        guard !self.barsHidden, self.currentURL != nil else { return }
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                self.hideBars()
+            }
+        }
     }
 
     private func observeWebView() {
@@ -128,12 +141,16 @@ class BrowserViewModel: NSObject {
 
 extension BrowserViewModel: UIScrollViewDelegate {
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        guard !self.barsHidden else { return }
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.hideBars()
-            }
-        }
+        self.webViewInteracted()
+    }
+}
+
+extension BrowserViewModel: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        return true
     }
 }
 

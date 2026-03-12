@@ -6,6 +6,7 @@ import WebKit
 //         * Add mobile/desktop mode which rotates view content 90 degrees (sf symbol: desktopcomputer / iphone.gen1)
 // TODO: Central config for greyed out (unavailable) color
 // TODO: URL bar extension when selected for input
+// TODO: Add settings page for browser whether to keep menu bars or hide them based on interaction.
 
 struct BrowserView: View {
     @Bindable var viewModel: BrowserViewModel
@@ -21,11 +22,20 @@ struct BrowserView: View {
             }
 
             if self.viewModel.barsHidden {
-                MinifiedBrowserToolbarView(viewModel: self.viewModel)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                MinifiedBrowserToolbarView(
+                    host: self.viewModel.displayHost,
+                    isLoading: self.viewModel.isLoading
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.viewModel.showBars()
+                    }
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             WebViewWrapper(webView: self.viewModel.webView)
+                .allowsHitTesting(self.viewModel.currentURL != nil)
         }
         .animation(.easeInOut(duration: 0.3), value: self.viewModel.barsHidden)
     }
