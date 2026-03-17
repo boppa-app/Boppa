@@ -2,6 +2,8 @@ import Foundation
 import JavaScriptCore
 import os
 
+// TODO: Block fetch only on allowed domains
+
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
     category: "JSExecutionEngine"
@@ -51,6 +53,7 @@ final class JSExecutionEngine: NSObject {
             jsContext.setObject(postError, forKeyedSubscript: "__postError" as NSString)
 
             self.installFetch(in: jsContext)
+            self.installTimers(in: jsContext)
             self.installContext(in: jsContext, context: context)
             self.installHelpers(in: jsContext)
 
@@ -67,7 +70,7 @@ final class JSExecutionEngine: NSObject {
             logger.info("Executing JS script in JSContext")
             jsContext.evaluateScript(wrappedScript)
 
-            Task { [weak self] in
+            Task {
                 try? await Task.sleep(for: .seconds(Self.timeoutSeconds))
                 guard !hasCompleted else { return }
                 hasCompleted = true
@@ -78,7 +81,7 @@ final class JSExecutionEngine: NSObject {
     }
 
     private func installExceptionHandler(_ jsContext: JSContext) {
-        jsContext.exceptionHandler = { [weak self] _, exception in
+        jsContext.exceptionHandler = { _, exception in
             let message = exception?.toString() ?? "Unknown JS exception"
             logger.error("JS exception: \(message)")
         }
@@ -128,6 +131,37 @@ final class JSExecutionEngine: NSObject {
         }
 
         jsContext.setObject(fetchBlock, forKeyedSubscript: "fetch" as NSString)
+    }
+
+    private func installTimers(in jsContext: JSContext) {
+        var nextTimerId: Int32 = 1
+        var activeTimers: [Int32: Task<Void, Never>] = [:]
+
+        let setTimeoutBlock: @convention(block) (JSValue, JSValue) -> JSValue = { callback, delayMs in
+            let timerId = nextTimerId
+            nextTimerId += 1
+
+            let delay = delayMs.isUndefined || delayMs.isNull ? 0.0 : delayMs.toDouble()
+            let delaySeconds = max(delay / 1000.0, 0)
+
+            let task = Task {
+                try? await Task.sleep(for: .seconds(delaySeconds))
+                guard !Task.isCancelled else { return }
+                callback.call(withArguments: [])
+            }
+
+            activeTimers[timerId] = task
+            return JSValue(int32: timerId, in: jsContext)
+        }
+
+        let clearTimeoutBlock: @convention(block) (JSValue) -> Void = { timerIdValue in
+            let timerId = timerIdValue.toInt32()
+            activeTimers[timerId]?.cancel()
+            activeTimers.removeValue(forKey: timerId)
+        }
+
+        jsContext.setObject(setTimeoutBlock, forKeyedSubscript: "setTimeout" as NSString)
+        jsContext.setObject(clearTimeoutBlock, forKeyedSubscript: "clearTimeout" as NSString)
     }
 
     private static func buildRequest(urlString: String, options: JSValue?) -> URLRequest? {
