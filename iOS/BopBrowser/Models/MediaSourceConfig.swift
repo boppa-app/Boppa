@@ -1,7 +1,8 @@
 import Foundation
 import WebKit
 
-struct MediaSourceConfig: Codable {
+// TODO: Add version, updateUrl (URL to check for config updates), and downloadUrl (URL to download config) fields
+struct MediaSourceConfig: Codable, Sendable {
     let name: String
     let url: String
     let iconSvg: String?
@@ -13,7 +14,11 @@ struct MediaSourceConfig: Codable {
     let playback: PlaybackConfig
     let lastUpdated: Date
 
-    init(from decoder: Decoder) throws {
+    private enum CodingKeys: String, CodingKey {
+        case name, url, iconSvg, customUserAgent, login, parse, data, actions, playback, lastUpdated
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.name = try container.decode(String.self, forKey: .name)
         self.url = try container.decode(String.self, forKey: .url)
@@ -26,26 +31,40 @@ struct MediaSourceConfig: Codable {
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
         self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
     }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.name, forKey: .name)
+        try container.encode(self.url, forKey: .url)
+        try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)
+        try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
+        try container.encodeIfPresent(self.login, forKey: .login)
+        try container.encodeIfPresent(self.parse, forKey: .parse)
+        try container.encodeIfPresent(self.data, forKey: .data)
+        try container.encodeIfPresent(self.actions, forKey: .actions)
+        try container.encode(self.playback, forKey: .playback)
+        try container.encode(self.lastUpdated, forKey: .lastUpdated)
+    }
 }
 
-struct LoginConfig: Codable {
+struct LoginConfig: Codable, Sendable {
     let url: String
     let required: Bool?
     let cookies: [String]?
 }
 
-struct Parse: Codable {
+struct Parse: Codable, Sendable {
     let url: String
     let intervalSeconds: Int
     let userScripts: [Script]
 }
 
-struct Script: Codable {
+struct Script: Codable, Sendable {
     let content: ScriptContent
     let injectionTime: ScriptInjectionTime
 }
 
-enum ScriptInjectionTime: String, Codable {
+enum ScriptInjectionTime: String, Codable, Sendable {
     case atDocumentStart
     case atDocumentEnd
 
@@ -57,10 +76,10 @@ enum ScriptInjectionTime: String, Codable {
     }
 }
 
-struct ScriptContent: Codable {
+struct ScriptContent: Codable, Sendable {
     let script: String
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let lines = try? container.decode([String].self) {
             self.script = lines.joined(separator: "\n")
@@ -69,24 +88,26 @@ struct ScriptContent: Codable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    nonisolated func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.script)
     }
 }
 
-struct MediaSourceData: Codable {
+struct MediaSourceData: Codable, Sendable {
     let searchSongs: ScriptContent?
     let searchArtists: ScriptContent?
     let searchAlbums: ScriptContent?
     let searchPlaylists: ScriptContent?
     let listLikes: ScriptContent?
+    let listPlaylists: ScriptContent?
+    let listPlaylistItems: ScriptContent?
 }
 
-struct MediaSourceActions: Codable {
+struct MediaSourceActions: Codable, Sendable {
     let searchNextPage: MediaSourceAction?
     let likesNextPage: MediaSourceAction?
     let addToLikes: MediaSourceAction?
 }
 
-struct MediaSourceAction: Codable {}
+struct MediaSourceAction: Codable, Sendable {}

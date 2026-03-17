@@ -1,10 +1,6 @@
 import Foundation
 import SwiftData
 
-enum PlaylistType: String {
-    case likes, created, saved
-}
-
 enum PlaylistSortMode: String, CaseIterable {
     case defaultOrder = "default"
     case reversed
@@ -41,7 +37,7 @@ final class StoredPlaylist {
     var name: String
     var mediaSourceName: String
     var artworkUrl: String?
-    var playlistType: PlaylistType
+    var playlistType: String
     var remoteId: String?
     var sortModeRaw: String = PlaylistSortMode.defaultOrder.rawValue
 
@@ -57,7 +53,7 @@ final class StoredPlaylist {
         name: String,
         mediaSourceName: String,
         artworkUrl: String? = nil,
-        playlistType: PlaylistType,
+        playlistType: String,
         remoteId: String? = nil
     ) {
         self.name = name
@@ -68,7 +64,7 @@ final class StoredPlaylist {
     }
 
     var isLikes: Bool {
-        self.playlistType == PlaylistType.likes
+        self.playlistType == "likes"
     }
 
     var songCount: Int {

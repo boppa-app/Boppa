@@ -28,7 +28,7 @@ final class MediaSource {
         }
 
         guard !configs.isEmpty else {
-            throw MediaSourceImportError.malformedConfig(detail: "Config array is empty.")
+            throw MediaSourceImportError.malformedConfig(detail: "Config array is empty")
         }
 
         return configs.map { config in
@@ -41,13 +41,13 @@ final class MediaSource {
         case let .keyNotFound(key, context):
             let path = context.codingPath.map(\.stringValue).joined(separator: ".")
             let location = path.isEmpty ? "" : " at \"\(path)\""
-            return "Missing key \"\(key.stringValue)\"\(location)."
+            return "Missing key \"\(key.stringValue)\"\(location)"
         case let .typeMismatch(type, context):
             let path = context.codingPath.map(\.stringValue).joined(separator: ".")
-            return "Type mismatch for \"\(path)\": expected \(type)."
+            return "Type mismatch for \"\(path)\": expected \(type)"
         case let .valueNotFound(type, context):
             let path = context.codingPath.map(\.stringValue).joined(separator: ".")
-            return "Missing value for \"\(path)\": expected \(type)."
+            return "Missing value for \"\(path)\": expected \(type)"
         case let .dataCorrupted(context):
             return "Data corrupted: \(context.debugDescription)"
         @unknown default:

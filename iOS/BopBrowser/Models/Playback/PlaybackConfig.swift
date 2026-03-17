@@ -1,6 +1,6 @@
 import Foundation
 
-struct PlaybackConfig: Codable {
+struct PlaybackConfig: Codable, Sendable {
     let url: String?
     let html: ScriptContent?
     let streamUrl: ScriptContent?
