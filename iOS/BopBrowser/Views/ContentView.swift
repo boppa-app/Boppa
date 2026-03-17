@@ -1,6 +1,8 @@
 import SwiftData
 import SwiftUI
 
+// TODO: Disable hiding bars when browser is tapped, fix size of mini url toolbar
+
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNowPlaying = false
