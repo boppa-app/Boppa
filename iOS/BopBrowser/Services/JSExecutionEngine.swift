@@ -3,6 +3,7 @@ import JavaScriptCore
 import os
 
 // TODO: Block fetch only on allowed domains
+// TODO: Add console logging in error message on view if errored out (easier debugging)
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",

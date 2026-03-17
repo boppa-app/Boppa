@@ -3,6 +3,9 @@ import os
 import SwiftData
 import WebKit
 
+// TODO: Rename as provider
+// TODO: Store retrieved context in SwiftData
+
 extension Notification.Name {
     static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
     static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
@@ -54,8 +57,10 @@ final class MediaSourceContextService: NSObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            logger.info("Received mediaSourceAdded notification, refreshing...")
-            self?.refreshFromModelContext()
+            Task { @MainActor [weak self] in
+                logger.info("Received mediaSourceAdded notification, refreshing...")
+                self?.refreshFromModelContext()
+            }
         }
 
         self.mediaSourceRemovedObserver = NotificationCenter.default.addObserver(
@@ -63,8 +68,10 @@ final class MediaSourceContextService: NSObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            logger.info("Received mediaSourceRemoved notification, refreshing...")
-            self?.refreshFromModelContext()
+            Task { @MainActor [weak self] in
+                logger.info("Received mediaSourceRemoved notification, refreshing...")
+                self?.refreshFromModelContext()
+            }
         }
 
         self.mediaSourceLoginObserver = NotificationCenter.default.addObserver(
@@ -73,8 +80,10 @@ final class MediaSourceContextService: NSObject {
             queue: .main
         ) { [weak self] notification in
             guard let mediaSourceName = notification.userInfo?["mediaSourceName"] as? String else { return }
-            logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceName)', triggering refresh...")
-            self?.refreshSource(named: mediaSourceName)
+            Task { @MainActor [weak self] in
+                logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceName)', triggering refresh...")
+                self?.refreshSource(named: mediaSourceName)
+            }
         }
     }
 
@@ -282,20 +291,16 @@ extension MediaSourceContextService: WKScriptMessageHandler {
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
-        guard message.name == Self.messageHandlerName else { return }
+        MainActor.assumeIsolated {
+            guard message.name == Self.messageHandlerName else { return }
 
-        guard let body = message.body as? [String: Any],
-              let type = body["type"] as? String
-        else {
-            let bodyDesc = String(describing: message.body)
-            Task { @MainActor in
+            guard let body = message.body as? [String: Any],
+                  let type = body["type"] as? String
+            else {
+                let bodyDesc = String(describing: message.body)
                 logger.warning("Received message with unexpected body format: \(bodyDesc)")
+                return
             }
-            return
-        }
-
-        Task { @MainActor [weak self] in
-            guard let self else { return }
 
             switch type {
             case "set":
