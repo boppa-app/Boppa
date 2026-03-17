@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 struct SearchToolbarView: View {
@@ -77,10 +78,18 @@ struct SearchToolbarView: View {
             }
         }
         .sheet(isPresented: self.$viewModel.showSourcePicker) {
-            SearchSourcePickerSheet(viewModel: self.viewModel)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(Color(.systemGray6))
+            SourcePickerSheet(
+                sources: self.viewModel.mediaSources,
+                mode: .single(
+                    selectedID: self.viewModel.selectedSource?.persistentModelID,
+                    onSelect: { source in
+                        self.viewModel.selectSource(source)
+                    }
+                )
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGray6))
         }
     }
 }

@@ -5,50 +5,52 @@ struct MediaSourceDetailView: View {
     @State var viewModel: MediaSourceDetailViewModel
 
     var body: some View {
-        List {
-            Section("Details") {
-                LabeledContent("Name", value: self.viewModel.source.name)
-                LabeledContent("URL", value: self.viewModel.source.url)
-            }
+        VStack(spacing: 0) {
+            DetailHeaderView(
+                title: self.viewModel.source.name,
+                onBack: { self.dismiss() }
+            )
 
-            if let loginURL = self.viewModel.loginURL {
-                Section("Authentication") {
-                    if self.viewModel.isCheckingLogin {
-                        HStack {
-                            ProgressView()
-                                .tint(Color.white)
-                            Text("Checking Login Status…")
-                                .foregroundColor(.white)
-                                .padding(.leading, 8)
-                        }
-                    } else if self.viewModel.isLoggedIn {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Logged In")
-                                .foregroundColor(.green)
-                        }
-                    } else {
-                        Button {
-                            self.viewModel.showingLogin = true
-                        } label: {
+            List {
+                Section("Details") {
+                    LabeledContent("Name", value: self.viewModel.source.name)
+                    LabeledContent("URL", value: self.viewModel.source.url)
+                }
+
+                if let _ = self.viewModel.loginURL {
+                    Section("Authentication") {
+                        if self.viewModel.isCheckingLogin {
                             HStack {
-                                Image(systemName: "person.crop.circle")
-                                    .foregroundColor(Color.purp)
-                                Text("Login")
-                                    .foregroundColor(Color.purp)
+                                ProgressView()
+                                    .tint(Color.white)
+                                Text("Checking Login Status…")
+                                    .foregroundColor(.white)
+                                    .padding(.leading, 8)
+                            }
+                        } else if self.viewModel.isLoggedIn {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                Text("Logged In")
+                                    .foregroundColor(.green)
+                            }
+                        } else {
+                            Button {
+                                self.viewModel.showingLogin = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "person.crop.circle")
+                                        .foregroundColor(Color.purp)
+                                    Text("Login")
+                                        .foregroundColor(Color.purp)
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        .navigationTitle(self.viewModel.source.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            self.backToolbarItem
-        }
+        .navigationBarHidden(true)
         .onAppear {
             self.viewModel.checkLoginStatus()
         }
@@ -63,17 +65,5 @@ struct MediaSourceDetailView: View {
                 ))
             }
         }
-    }
-
-    @ToolbarContentBuilder
-    private var backToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Button(action: { self.dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.body.weight(.semibold))
-                    .foregroundColor(Color.purp)
-            }
-        }
-        .sharedBackgroundVisibilityIfAvailable(.hidden)
     }
 }

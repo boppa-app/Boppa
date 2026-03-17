@@ -1,8 +1,21 @@
 import SwiftData
 import SwiftUI
 
-struct SearchSourcePickerSheet: View {
-    @Bindable var viewModel: SearchViewModel
+enum SourcePickerMode {
+    case single(selectedID: PersistentIdentifier?, onSelect: (MediaSource) -> Void)
+    case multi(selectedNames: Binding<Set<String>>)
+}
+
+struct SourcePickerSheet: View {
+    let sources: [MediaSource]
+    let mode: SourcePickerMode
+
+    private var title: String {
+        switch self.mode {
+        case .single: return "Select Source"
+        case .multi: return "Filter Sources"
+        }
+    }
 
     private let columns = [
         GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 20),
@@ -12,23 +25,39 @@ struct SearchSourcePickerSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: self.columns, spacing: 40) {
-                    ForEach(self.viewModel.mediaSources) { source in
+                    ForEach(self.sources) { source in
                         self.sourceCell(source)
                     }
                 }
                 .padding(20)
             }
-            .navigationTitle("Select Source")
+            .navigationTitle(self.title)
             .navigationBarTitleDisplayMode(.inline)
             .scrollContentBackground(.hidden)
         }
     }
 
     private func sourceCell(_ source: MediaSource) -> some View {
-        let isSelected = source.persistentModelID == self.viewModel.selectedSource?.persistentModelID
+        let isSelected: Bool = {
+            switch self.mode {
+            case let .single(selectedID, _):
+                return source.persistentModelID == selectedID
+            case let .multi(selectedNames):
+                return selectedNames.wrappedValue.contains(source.name)
+            }
+        }()
 
         return Button {
-            self.viewModel.selectSource(source)
+            switch self.mode {
+            case let .single(_, onSelect):
+                onSelect(source)
+            case let .multi(selectedNames):
+                if selectedNames.wrappedValue.contains(source.name) {
+                    selectedNames.wrappedValue.remove(source.name)
+                } else {
+                    selectedNames.wrappedValue.insert(source.name)
+                }
+            }
         } label: {
             VStack(spacing: 8) {
                 ZStack {
