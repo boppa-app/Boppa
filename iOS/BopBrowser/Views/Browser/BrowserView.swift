@@ -16,9 +16,6 @@ struct BrowserView: View {
             if !self.viewModel.barsHidden {
                 BrowserToolbarView(viewModel: self.viewModel)
                     .transition(.move(edge: .top).combined(with: .opacity))
-
-                Rectangle().fill(Color(.systemGray6)).frame(height: 3)
-                    .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             if self.viewModel.barsHidden {
