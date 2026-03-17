@@ -1,6 +1,7 @@
 import SwiftData
 import SwiftUI
 
+// TODO: Add ability to order media sources
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var mediaSources: [MediaSource]
