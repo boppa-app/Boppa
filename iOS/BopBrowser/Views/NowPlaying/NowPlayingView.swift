@@ -186,7 +186,8 @@ struct NowPlayingView: View {
             } label: {
                 Image(systemName: "safari")
                     .font(.system(size: 20))
-                    .foregroundColor(self.viewModel.hasSongUrl ? Color.white : Color(.systemGray))
+                    // TODO: dont use gray for no URL because its confusing, potentially cross out browser with X or dont show icon (?)
+                    .foregroundColor(self.viewModel.hasSongUrl ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
             .disabled(!self.viewModel.hasSongUrl)
