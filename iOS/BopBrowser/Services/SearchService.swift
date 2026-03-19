@@ -16,7 +16,7 @@ class SearchService {
         query: String,
         config: MediaSourceConfig,
         category: SearchCategory,
-        contextService: MediaSourceContextService
+        contextService: MediaSourceContextProvider
     ) async throws -> SearchResponse {
         guard let data = config.data else {
             throw SearchError.noSearchConfig
@@ -42,7 +42,7 @@ class SearchService {
         config: MediaSourceConfig,
         category: SearchCategory,
         query: String,
-        contextService: MediaSourceContextService
+        contextService: MediaSourceContextProvider
     ) async throws -> SearchResponse {
         guard let data = config.data else {
             throw SearchError.noSearchConfig

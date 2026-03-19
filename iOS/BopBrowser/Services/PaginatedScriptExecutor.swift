@@ -20,7 +20,7 @@ class PaginatedScriptExecutor {
         script: String,
         params: [String: Any],
         previousResult: [String: Any]?,
-        contextService: MediaSourceContextService
+        contextService: MediaSourceContextProvider
     ) async throws -> PageResult {
         let context = self.buildJSContext(params: params, previousResult: previousResult, contextService: contextService)
         let jsResult = try await JSExecutionEngine.shared.execute(script: script, context: context)
@@ -30,7 +30,7 @@ class PaginatedScriptExecutor {
     func executeAllPages(
         script: String,
         params: [String: Any],
-        contextService: MediaSourceContextService,
+        contextService: MediaSourceContextProvider,
         mediaSourceName: String,
         onPageFetched: (([Song]) -> Void)? = nil
     ) async throws -> [Song] {
@@ -65,7 +65,7 @@ class PaginatedScriptExecutor {
     func buildJSContext(
         params: [String: Any],
         previousResult: [String: Any]?,
-        contextService: MediaSourceContextService
+        contextService: MediaSourceContextProvider
     ) -> [String: Any] {
         var context: [String: Any] = params
         context["capturedValues"] = contextService.allContextData()

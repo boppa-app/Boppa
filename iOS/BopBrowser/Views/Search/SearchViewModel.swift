@@ -92,7 +92,7 @@ class SearchViewModel {
                     query: trimmed,
                     config: config,
                     category: self.selectedCategory,
-                    contextService: MediaSourceContextService.shared
+                    contextService: MediaSourceContextProvider.shared
                 )
 
                 guard !Task.isCancelled else { return }
@@ -134,7 +134,7 @@ class SearchViewModel {
                     config: config,
                     category: self.selectedCategory,
                     query: trimmed,
-                    contextService: MediaSourceContextService.shared
+                    contextService: MediaSourceContextProvider.shared
                 )
 
                 guard !Task.isCancelled else { return }

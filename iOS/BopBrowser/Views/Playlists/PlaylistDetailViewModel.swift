@@ -104,7 +104,7 @@ class PlaylistDetailViewModel {
                         mediaSourceName: mediaSourceName,
                         playlist: playlist,
                         modelContext: modelContext,
-                        contextService: MediaSourceContextService.shared,
+                        contextService: MediaSourceContextProvider.shared,
                         onPageFetched: onPageFetched
                     )
                 } else {

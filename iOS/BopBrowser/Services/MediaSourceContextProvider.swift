@@ -3,8 +3,7 @@ import os
 import SwiftData
 import WebKit
 
-// TODO: Rename as provider
-// TODO: Store retrieved context in SwiftData
+// TODO: Store retrieved context in SwiftData, or store in cookies in WebDataStore, also implement restriction on allowed fetch domains
 
 extension Notification.Name {
     static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
@@ -14,12 +13,12 @@ extension Notification.Name {
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
-    category: "MediaSourceContextService"
+    category: "MediaSourceContextProvider"
 )
 
 @Observable
-final class MediaSourceContextService: NSObject {
-    static let shared = MediaSourceContextService()
+final class MediaSourceContextProvider: NSObject {
+    static let shared = MediaSourceContextProvider()
 
     private static let refreshTimeoutSeconds: TimeInterval = 15
     private static let messageHandlerName = "contextCapture"
@@ -37,7 +36,7 @@ final class MediaSourceContextService: NSObject {
 
     override private init() {
         super.init()
-        logger.info("MediaSourceContextService initialized")
+        logger.info("MediaSourceContextProvider initialized")
     }
 
     func allContextData() -> [String: Any] {
@@ -46,7 +45,7 @@ final class MediaSourceContextService: NSObject {
 
     @MainActor
     func startMonitoring(modelContainer: ModelContainer) {
-        logger.info("MediaSourceContextService starting monitoring...")
+        logger.info("MediaSourceContextProvider starting monitoring...")
 
         let context = ModelContext(modelContainer)
         self.modelContext = context
@@ -59,7 +58,7 @@ final class MediaSourceContextService: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceAdded notification, refreshing...")
-                MediaSourceContextService.shared.refreshFromModelContext()
+                MediaSourceContextProvider.shared.refreshFromModelContext()
             }
         }
 
@@ -70,7 +69,7 @@ final class MediaSourceContextService: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceRemoved notification, refreshing...")
-                MediaSourceContextService.shared.refreshFromModelContext()
+                MediaSourceContextProvider.shared.refreshFromModelContext()
             }
         }
 
@@ -82,7 +81,7 @@ final class MediaSourceContextService: NSObject {
             guard let mediaSourceName = notification.userInfo?["mediaSourceName"] as? String else { return }
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceName)', triggering refresh...")
-                MediaSourceContextService.shared.refreshSource(named: mediaSourceName)
+                MediaSourceContextProvider.shared.refreshSource(named: mediaSourceName)
             }
         }
     }
@@ -165,7 +164,7 @@ final class MediaSourceContextService: NSObject {
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
                     MainActor.assumeIsolated {
                         logger.info("Timer fired: recurring refresh for '\(sourceName)' -> \(parse.url)")
-                        MediaSourceContextService.shared.enqueueRefresh(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
+                        MediaSourceContextProvider.shared.enqueueRefresh(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
@@ -241,7 +240,7 @@ final class MediaSourceContextService: NSObject {
             try? await Task.sleep(for: .seconds(timeout))
             guard !Task.isCancelled else { return }
             logger.warning("Timeout (\(timeout)s) for '\(sourceName)'. Moving on.")
-            MediaSourceContextService.shared.completeCurrentWork()
+            MediaSourceContextProvider.shared.completeCurrentWork()
         }
 
         let urlStr = url.absoluteString
@@ -296,7 +295,7 @@ final class MediaSourceContextService: NSObject {
     }
 }
 
-extension MediaSourceContextService: WKScriptMessageHandler {
+extension MediaSourceContextProvider: WKScriptMessageHandler {
     nonisolated func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage

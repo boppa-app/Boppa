@@ -38,7 +38,7 @@ final class AVPlayerPlaybackEngine: PlaybackEngine {
         logger.info("Resolving stream URL via JS for track: \(track.title)")
 
         let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
-        let capturedValues = MediaSourceContextService.shared.allContextData()
+        let capturedValues = MediaSourceContextProvider.shared.allContextData()
 
         var jsContext: [String: Any] = [:]
         jsContext["trackUrl"] = encodedTrackURL

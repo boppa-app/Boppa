@@ -19,7 +19,7 @@ class PlaylistService {
         mediaSourceName: String,
         playlist: StoredPlaylist,
         modelContext: ModelContext,
-        contextService: MediaSourceContextService,
+        contextService: MediaSourceContextProvider,
         onPageFetched: (([Song]) -> Void)? = nil
     ) async throws {
         guard let script = config.data?.listLikes?.script else {
