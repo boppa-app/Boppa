@@ -9,6 +9,7 @@ private let logger = Logger(
 )
 
 @Observable
+@MainActor
 class BrowserViewModel: NSObject {
     var currentURL: URL?
     var isLoading: Bool = false
@@ -125,16 +126,24 @@ class BrowserViewModel: NSObject {
 
     private func observeWebView() {
         self.urlObservation = self.webView.observe(\.url, options: .new) { [weak self] webView, _ in
-            self?.currentURL = webView.url
+            MainActor.assumeIsolated {
+                self?.currentURL = webView.url
+            }
         }
         self.canGoBackObservation = self.webView.observe(\.canGoBack, options: .new) { [weak self] webView, _ in
-            self?.canGoBack = webView.canGoBack
+            MainActor.assumeIsolated {
+                self?.canGoBack = webView.canGoBack
+            }
         }
         self.canGoForwardObservation = self.webView.observe(\.canGoForward, options: .new) { [weak self] webView, _ in
-            self?.canGoForward = webView.canGoForward
+            MainActor.assumeIsolated {
+                self?.canGoForward = webView.canGoForward
+            }
         }
         self.isLoadingObservation = self.webView.observe(\.isLoading, options: .new) { [weak self] webView, _ in
-            self?.isLoading = webView.isLoading
+            MainActor.assumeIsolated {
+                self?.isLoading = webView.isLoading
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ private let logger = Logger(
     category: "LoginWebViewModel"
 )
 
+@MainActor
 class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
     let url: URL
     let customUserAgent: String?
@@ -45,7 +46,9 @@ class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
         self.cookieStore?.add(self)
 
         self.pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            self?.checkCookies()
+            MainActor.assumeIsolated {
+                self?.checkCookies()
+            }
         }
     }
 
@@ -79,7 +82,7 @@ class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
             }
             let validCookieNames = Set(validCookies.map(\.name))
 
-            let found = self.requiredCookies.filter { validCookieNames.contains($0) }
+            let _ = self.requiredCookies.filter { validCookieNames.contains($0) }
             let missing = self.requiredCookies.filter { !validCookieNames.contains($0) }
 
             if missing.isEmpty {

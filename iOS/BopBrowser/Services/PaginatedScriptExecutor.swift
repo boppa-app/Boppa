@@ -62,6 +62,7 @@ class PaginatedScriptExecutor {
         return allSongs
     }
 
+    /// @MainActor func buildJSContext(
     func buildJSContext(
         params: [String: Any],
         previousResult: [String: Any]?,

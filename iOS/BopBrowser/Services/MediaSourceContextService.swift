@@ -18,7 +18,6 @@ private let logger = Logger(
 )
 
 @Observable
-@MainActor
 final class MediaSourceContextService: NSObject {
     static let shared = MediaSourceContextService()
 
@@ -45,6 +44,7 @@ final class MediaSourceContextService: NSObject {
         return self.contextData
     }
 
+    @MainActor
     func startMonitoring(modelContainer: ModelContainer) {
         logger.info("MediaSourceContextService starting monitoring...")
 
@@ -56,10 +56,10 @@ final class MediaSourceContextService: NSObject {
             forName: .mediaSourceAdded,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in
+        ) { _ in
+            MainActor.assumeIsolated {
                 logger.info("Received mediaSourceAdded notification, refreshing...")
-                self?.refreshFromModelContext()
+                MediaSourceContextService.shared.refreshFromModelContext()
             }
         }
 
@@ -67,10 +67,10 @@ final class MediaSourceContextService: NSObject {
             forName: .mediaSourceRemoved,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in
+        ) { _ in
+            MainActor.assumeIsolated {
                 logger.info("Received mediaSourceRemoved notification, refreshing...")
-                self?.refreshFromModelContext()
+                MediaSourceContextService.shared.refreshFromModelContext()
             }
         }
 
@@ -78,11 +78,11 @@ final class MediaSourceContextService: NSObject {
             forName: .mediaSourceLoginCompleted,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
+        ) { notification in
             guard let mediaSourceName = notification.userInfo?["mediaSourceName"] as? String else { return }
-            Task { @MainActor [weak self] in
+            MainActor.assumeIsolated {
                 logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceName)', triggering refresh...")
-                self?.refreshSource(named: mediaSourceName)
+                MediaSourceContextService.shared.refreshSource(named: mediaSourceName)
             }
         }
     }
@@ -97,6 +97,7 @@ final class MediaSourceContextService: NSObject {
         self.refreshTimers.removeAll()
     }
 
+    @MainActor
     private func refreshFromModelContext() {
         guard let modelContext else {
             logger.warning("refreshFromModelContext called but no modelContext set")
@@ -108,6 +109,7 @@ final class MediaSourceContextService: NSObject {
         self.startMonitoring(sources: sources)
     }
 
+    @MainActor
     private func refreshSource(named sourceName: String) {
         guard let modelContext else {
             logger.warning("refreshSource called but no modelContext set")
@@ -132,6 +134,7 @@ final class MediaSourceContextService: NSObject {
         }
     }
 
+    @MainActor
     private func startMonitoring(sources: [MediaSource]) {
         logger.info("startMonitoring called with \(sources.count) source(s)")
 
@@ -157,10 +160,12 @@ final class MediaSourceContextService: NSObject {
                 self.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
 
                 let interval = TimeInterval(parse.intervalSeconds)
-                let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-                    Task { @MainActor [weak self] in
-                        logger.info("Timer fired: recurring refresh for '\(config.name)' -> \(parse.url)")
-                        self?.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
+                let sourceName = config.name
+                let customUserAgent = config.customUserAgent
+                let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+                    MainActor.assumeIsolated {
+                        logger.info("Timer fired: recurring refresh for '\(sourceName)' -> \(parse.url)")
+                        MediaSourceContextService.shared.enqueueRefresh(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
@@ -173,6 +178,7 @@ final class MediaSourceContextService: NSObject {
         logger.info("Monitoring setup complete. \(queueCount) item(s) in queue, \(timerCount) timer(s) active")
     }
 
+    @MainActor
     private func enqueueRefresh(sourceName: String, parse: Parse, customUserAgent: String?) {
         let workItem = RefreshWorkItem(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
         self.pendingWork.append(workItem)
@@ -182,6 +188,7 @@ final class MediaSourceContextService: NSObject {
         self.processNextIfIdle()
     }
 
+    @MainActor
     private func processNextIfIdle() {
         guard !self.isProcessing else {
             let waiting = self.pendingWork.count
@@ -205,6 +212,7 @@ final class MediaSourceContextService: NSObject {
         self.loadRefreshURL(url: url, scripts: workItem.parse.userScripts, sourceName: workItem.sourceName, customUserAgent: workItem.customUserAgent)
     }
 
+    @MainActor
     private func completeCurrentWork() {
         self.timeoutTask?.cancel()
         self.timeoutTask = nil
@@ -216,6 +224,7 @@ final class MediaSourceContextService: NSObject {
         self.processNextIfIdle()
     }
 
+    @MainActor
     private func loadRefreshURL(url: URL, scripts: [Script], sourceName: String, customUserAgent: String?) {
         let webView = WebViewFactory.makeWebView(
             scripts: scripts,
@@ -228,11 +237,11 @@ final class MediaSourceContextService: NSObject {
         self.activeWebView = webView
 
         let timeout = Self.refreshTimeoutSeconds
-        self.timeoutTask = Task { @MainActor [weak self] in
+        self.timeoutTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(timeout))
-            guard let self, !Task.isCancelled else { return }
+            guard !Task.isCancelled else { return }
             logger.warning("Timeout (\(timeout)s) for '\(sourceName)'. Moving on.")
-            self.completeCurrentWork()
+            MediaSourceContextService.shared.completeCurrentWork()
         }
 
         let urlStr = url.absoluteString
@@ -280,6 +289,7 @@ final class MediaSourceContextService: NSObject {
         self.contextData[key] = value
     }
 
+    @MainActor
     private func handleDoneMessage() {
         logger.info("Script signaled done. Completing work item.")
         self.completeCurrentWork()
