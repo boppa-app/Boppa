@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 // TODO: Disable hiding bars when browser is tapped, fix size of mini url toolbar
-
+// TODO: Tapping again on a category in the bottom menu bar takes you back to the main view (ex: Tapping playlist again takes you out of playlist detail view and back to playlist view)
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNowPlaying = false

@@ -82,7 +82,7 @@ class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
             }
             let validCookieNames = Set(validCookies.map(\.name))
 
-            let _ = self.requiredCookies.filter { validCookieNames.contains($0) }
+            _ = self.requiredCookies.filter { validCookieNames.contains($0) }
             let missing = self.requiredCookies.filter { !validCookieNames.contains($0) }
 
             if missing.isEmpty {

@@ -2,10 +2,12 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+// TODO: Full JS errors for JS execution as well as capturing and emitting log statements
+
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     let modelContainer: ModelContainer = {
-        let schema = Schema([MediaSource.self])
+        let schema = Schema([MediaSource.self, StoredPlaylist.self, StoredSong.self])
         let configuration = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
