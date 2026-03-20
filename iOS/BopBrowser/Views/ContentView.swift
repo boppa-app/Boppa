@@ -80,7 +80,9 @@ struct ContentTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Rectangle().fill(Color(.systemGray6)).frame(height: 3)
+            Rectangle().fill(Color(.systemGray3)).frame(height: 1.5)
+
+            Spacer().frame(height: 6)
 
             HStack(spacing: 0) {
                 ForEach(self.tabs, id: \.num) { tab in
