@@ -2,6 +2,7 @@ import Foundation
 import os
 
 // TODO: If switching media source configs dont execute search unless user clicks, instead clear search results
+// TODO: Save search source preference
 
 @MainActor
 class SearchService {
