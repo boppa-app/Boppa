@@ -18,8 +18,6 @@ struct MiniPlayerView: View {
 
     private var playerContent: some View {
         VStack(spacing: 0) {
-            self.progressBar
-
             HStack(spacing: 12) {
                 self.artwork
                 self.trackInfo
@@ -28,8 +26,12 @@ struct MiniPlayerView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 6)
+            
+            self.progressBar
         }
-        .background(Color.black)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+        .padding(.horizontal, 6)
         .contentShape(Rectangle())
         .onTapGesture {
             self.showNowPlaying = true
@@ -44,7 +46,7 @@ struct MiniPlayerView: View {
 
             ZStack(alignment: .leading) {
                 Rectangle()
-                    .fill(Color(.systemGray5))
+                    .fill(Color.purp.opacity(0.3))
                 Rectangle()
                     .fill(Color.purp)
                     .frame(width: geometry.size.width * CGFloat(min(progress, 1.0)))

@@ -9,12 +9,16 @@ struct ContentView: View {
     @State private var browserViewModel = BrowserViewModel()
     @State private var nowPlayingViewModel = NowPlayingViewModel()
 
+    private var playbackService: PlaybackService {
+        PlaybackService.shared
+    }
+
     private var bottomBarsHidden: Bool {
         self.selectedTab == 0 && self.browserViewModel.barsHidden
     }
 
     private var showMiniPlayer: Bool {
-        self.selectedTab != 0 && self.selectedTab != 3
+        self.selectedTab != 0 && self.selectedTab != 3 && self.playbackService.hasTrack
     }
 
     var body: some View {
@@ -37,10 +41,13 @@ struct ContentView: View {
 
             if !self.bottomBarsHidden {
                 if self.showMiniPlayer {
-                    MiniPlayerView(showNowPlaying: self.$showNowPlaying)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    VStack(spacing: 0) {
+                        MiniPlayerView(showNowPlaying: self.$showNowPlaying)
+                        Spacer().frame(height: 6)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                ContentTabView(selectedTab: self.$selectedTab)
+                ContentTabView(selectedTab: self.$selectedTab, hideSeparator: self.showMiniPlayer)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
@@ -70,6 +77,7 @@ struct ContentView: View {
 
 struct ContentTabView: View {
     @Binding var selectedTab: Int
+    var hideSeparator: Bool = false
 
     let tabs: [(icon: String, num: Int)] = [
         ("safari", 0),
@@ -80,9 +88,9 @@ struct ContentTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Rectangle().fill(Color(.systemGray3)).frame(height: 1.5)
-
-            Spacer().frame(height: 6)
+            if !self.hideSeparator {
+                Rectangle().fill(Color(.systemGray6)).frame(height: 3)
+            }
 
             HStack(spacing: 0) {
                 ForEach(self.tabs, id: \.num) { tab in
