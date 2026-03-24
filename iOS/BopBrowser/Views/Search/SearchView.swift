@@ -41,7 +41,7 @@ struct SearchView: View {
     }
 
     private var categorySuggestions: some View {
-        VStack(spacing: 0) {
+        List {
             ForEach(self.viewModel.availableCategories, id: \.self) { category in
                 Button {
                     self.viewModel.selectCategory(category)
@@ -62,17 +62,16 @@ struct SearchView: View {
                             .font(.system(size: 12))
                             .foregroundColor(Color(.systemGray3))
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-
-                if category != self.viewModel.availableCategories.last {
-                    Divider().background(Color(.systemGray5))
-                }
+                .listRowBackground(Color.black)
+                .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
+                .listRowSeparatorTint(category == self.viewModel.availableCategories.last ? .clear : Color(.systemGray5))
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -111,49 +110,63 @@ struct SearchView: View {
     }
 
     private var resultsList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                switch self.viewModel.results {
-                case let .songs(songs):
-                    ForEach(songs) { song in
+        List {
+            switch self.viewModel.results {
+            case let .songs(songs):
+                ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                    Button {
+                        self.playSong(song, from: songs)
+                    } label: {
                         SongRow(
                             song: song,
                             isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying
                         )
-                        .onTapGesture {
-                            self.playSong(song, from: songs)
-                        }
-                        Divider().background(Color(.systemGray5))
+                        .contentShape(Rectangle())
                     }
-                case let .albums(albums):
-                    ForEach(albums) { album in
-                        AlbumRow(album: album)
-                        Divider().background(Color(.systemGray5))
-                    }
-                case let .artists(artists):
-                    ForEach(artists) { artist in
-                        ArtistRow(artist: artist)
-                        Divider().background(Color(.systemGray5))
-                    }
-                case let .playlists(playlists):
-                    ForEach(playlists) { playlist in
-                        PlaylistRow(playlist: playlist)
-                        Divider().background(Color(.systemGray5))
-                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparatorTint(index == songs.count - 1 ? .clear : Color(.systemGray5))
                 }
-
-                if self.viewModel.hasMorePages {
-                    ProgressView()
-                        .padding(.vertical, 16)
-                        .frame(maxWidth: .infinity)
-                        .onAppear {
-                            self.viewModel.loadNextPage()
-                        }
+            case let .albums(albums):
+                ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
+                    AlbumRow(album: album)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                }
+            case let .artists(artists):
+                ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
+                    ArtistRow(artist: artist)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
+                }
+            case let .playlists(playlists):
+                ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
+                    PlaylistRow(playlist: playlist)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
                 }
             }
+
+            if self.viewModel.hasMorePages {
+                ProgressView()
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .onAppear {
+                        self.viewModel.loadNextPage()
+                    }
+            }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 
     private func playSong(_ song: Song, from songs: [Song]) {

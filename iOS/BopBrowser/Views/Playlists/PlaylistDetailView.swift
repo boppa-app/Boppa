@@ -98,22 +98,27 @@ struct PlaylistDetailView: View {
     }
 
     private var songList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(self.viewModel.displaySongs) { song in
+        List {
+            ForEach(Array(self.viewModel.displaySongs.enumerated()), id: \.element.id) { index, song in
+                Button {
+                    self.playSong(song)
+                } label: {
                     SongRow(
                         song: song,
                         isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying
                     )
-                    .onTapGesture {
-                        self.playSong(song)
-                    }
-                    Divider().background(Color(.systemGray5))
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .listRowBackground(Color.black)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowSeparatorTint(index == self.viewModel.displaySongs.count - 1 ? .clear : Color(.systemGray5))
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 
     // TODO: Check if user is signed in and if not display button to go to settings to sign in to media source config
