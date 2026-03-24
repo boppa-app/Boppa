@@ -68,3 +68,6 @@ TODO.md
 # SwiftFormat
 BuildTools/.build
 BuildTools/.swiftpm
+
+# Swift LSP
+iOS/buildServer.json
