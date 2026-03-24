@@ -110,63 +110,65 @@ struct SearchView: View {
     }
 
     private var resultsList: some View {
-        List {
-            switch self.viewModel.results {
-            case let .songs(songs):
-                ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
-                    Button {
-                        self.playSong(song, from: songs)
-                    } label: {
-                        SongRow(
-                            song: song,
-                            isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
-                            isLoading: PlaybackService.shared.isLoading,
-                            isPlaying: PlaybackService.shared.isPlaying
-                        )
-                        .contentShape(Rectangle())
+        ScrollFadeView {
+            List {
+                switch self.viewModel.results {
+                case let .songs(songs):
+                    ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                        Button {
+                            self.playSong(song, from: songs)
+                        } label: {
+                            SongRow(
+                                song: song,
+                                isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
+                                isLoading: PlaybackService.shared.isLoading,
+                                isPlaying: PlaybackService.shared.isPlaying
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparatorTint(index == songs.count - 1 ? .clear : Color(.systemGray5))
                     }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(index == songs.count - 1 ? .clear : Color(.systemGray5))
+                case let .albums(albums):
+                    ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
+                        AlbumRow(album: album)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                    }
+                case let .artists(artists):
+                    ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
+                        ArtistRow(artist: artist)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
+                    }
+                case let .playlists(playlists):
+                    ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
+                        PlaylistRow(playlist: playlist)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                    }
                 }
-            case let .albums(albums):
-                ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
-                    AlbumRow(album: album)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
-                }
-            case let .artists(artists):
-                ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
-                    ArtistRow(artist: artist)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
-                }
-            case let .playlists(playlists):
-                ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
-                    PlaylistRow(playlist: playlist)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
-                }
-            }
 
-            if self.viewModel.hasMorePages {
-                ProgressView()
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
-                    .onAppear {
-                        self.viewModel.loadNextPage()
-                    }
+                if self.viewModel.hasMorePages {
+                    ProgressView()
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .onAppear {
+                            self.viewModel.loadNextPage()
+                        }
+                }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
     }
 
     private func playSong(_ song: Song, from songs: [Song]) {

@@ -98,27 +98,29 @@ struct PlaylistDetailView: View {
     }
 
     private var songList: some View {
-        List {
-            ForEach(Array(self.viewModel.displaySongs.enumerated()), id: \.element.id) { index, song in
-                Button {
-                    self.playSong(song)
-                } label: {
-                    SongRow(
-                        song: song,
-                        isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
-                        isLoading: PlaybackService.shared.isLoading,
-                        isPlaying: PlaybackService.shared.isPlaying
-                    )
-                    .contentShape(Rectangle())
+        ScrollFadeView {
+            List {
+                ForEach(Array(self.viewModel.displaySongs.enumerated()), id: \.element.id) { index, song in
+                    Button {
+                        self.playSong(song)
+                    } label: {
+                        SongRow(
+                            song: song,
+                            isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
+                            isLoading: PlaybackService.shared.isLoading,
+                            isPlaying: PlaybackService.shared.isPlaying
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparatorTint(index == self.viewModel.displaySongs.count - 1 ? .clear : Color(.systemGray5))
                 }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.black)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowSeparatorTint(index == self.viewModel.displaySongs.count - 1 ? .clear : Color(.systemGray5))
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
     }
 
     // TODO: Check if user is signed in and if not display button to go to settings to sign in to media source config

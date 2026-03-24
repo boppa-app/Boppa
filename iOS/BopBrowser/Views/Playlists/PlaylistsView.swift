@@ -75,10 +75,12 @@ struct PlaylistsView: View {
     }
 
     private var sourceList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(self.viewModel.filteredSources) { source in
-                    self.sourceSection(source)
+        ScrollFadeView {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(self.viewModel.filteredSources) { source in
+                        self.sourceSection(source)
+                    }
                 }
             }
         }
