@@ -57,7 +57,7 @@ struct SearchToolbarView: View {
             .cornerRadius(10)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 6)
     }
 
     private var sourcePickerButton: some View {

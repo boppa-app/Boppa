@@ -43,7 +43,6 @@ struct ContentView: View {
                 if self.showMiniPlayer {
                     VStack(spacing: 0) {
                         MiniPlayerView(showNowPlaying: self.$showNowPlaying)
-                        Spacer().frame(height: 6)
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -89,6 +88,7 @@ struct ContentTabView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !self.hideSeparator {
+                Spacer().frame(height: 6)
                 Rectangle().fill(Color(.systemGray6)).frame(height: 3)
             }
 
