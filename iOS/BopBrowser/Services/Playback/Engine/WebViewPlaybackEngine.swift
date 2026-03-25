@@ -8,6 +8,9 @@ private let logger = Logger(
     category: "WebViewPlaybackEngine"
 )
 
+// TODO: Integration with seek and prev/next is broken, total track time also broken (seems like its only when switching mid track)
+// TODO: Keep paused state when executing prev/next
+
 @MainActor
 final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     static let shared = WebViewPlaybackEngine()
@@ -24,12 +27,57 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     }
 
     func load(track: Song, config: MediaSourceConfig) async -> Bool {
-        let playback = config.playback
 
         if self.webView == nil || self.needsReconfigure(for: config) {
             self.reconfigureWebView(config: config)
+            return self.loadTrackIntoPage(track: track, config: config)
         }
 
+        guard let webView = self.webView else {
+            logger.error("WebView not available")
+            return false
+        }
+
+        guard let escapedJSON: String = self.seralizeSongData(track: track) else {
+            logger.error("Failed to serialize track data")
+            return false
+        }
+        // Post message to webview to load new track
+        let loadTrackScript = """
+        (function() {
+            try {
+                var trackData = JSON.parse('\(escapedJSON)');
+                if (window.bopBrowserLoadTrack) {
+                    window.bopBrowserLoadTrack(trackData);
+                } else {
+                    console.error('bopBrowserLoadTrack function not found');
+                }
+            } catch (e) {
+                console.error('Error loading track:', e);
+            }
+        })();
+        """
+        
+        return await withCheckedContinuation { continuation in
+            webView.evaluateJavaScript(loadTrackScript) { [weak self] _, error in
+                guard let self else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                
+                if let error {
+                    logger.error("Load track message error: \(error.localizedDescription), falling back to page reload")
+                    let success = self.loadTrackIntoPage(track: track, config: config)
+                    continuation.resume(returning: success)
+                } else {
+                    logger.info("Sent load track message: \(track.title)")
+                    continuation.resume(returning: true)
+                }
+            }
+        }
+    }
+    
+    private func loadTrackIntoPage(track: Song, config: MediaSourceConfig) -> Bool {
         guard let webView = self.webView else {
             logger.error("Failed to create web view")
             return false
@@ -43,6 +91,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         webView.stopLoading()
 
         let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
+        let playback = config.playback
 
         if let htmlTemplate = playback.html {
             let resolvedHTML = htmlTemplate.script.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
@@ -66,8 +115,42 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         return false
     }
 
+    private func seralizeSongData(track: Song) -> String? {
+        let songData: [String: Any] = [
+            "title": track.title,
+            "artist": track.artist ?? "",
+            "duration": track.duration ?? 0,
+            "artworkUrl": track.artworkUrl ?? "",
+            "url": track.url ?? "",
+            "mediaSourceName": track.mediaSourceName ?? "",
+            "metadata": track.metadata
+        ]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: songData),
+              let jsonString = String(data: jsonData, encoding: .utf8) else {
+            return nil
+        }
+        
+        let escapedJSON = jsonString
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+        
+        return escapedJSON
+    }
+
     func play() {
-        self.webView?.evaluateJavaScript("playerPlay();") { _, error in
+        let script = """
+        (function() {
+            if (window.bopBrowserPlay) {
+                window.bopBrowserPlay();
+            } else {
+                console.error('No play function available');
+            }
+        })();
+        """
+        self.webView?.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
             }
@@ -75,7 +158,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     }
 
     func pause() {
-        self.webView?.evaluateJavaScript("playerPause();") { _, error in
+        let script = """
+        (function() {
+            if (window.bopBrowserPause) {
+                window.bopBrowserPause();
+            } else {
+                console.error('No pause function available');
+            }
+        })();
+        """
+        self.webView?.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
             }
@@ -84,7 +176,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
 
     func seek(to timeSeconds: Double) {
         let ms = Int(timeSeconds * 1000)
-        self.webView?.evaluateJavaScript("playerSeek(\(ms));") { _, error in
+        let script = """
+        (function() {
+            if (window.bopBrowserSeek) {
+                window.bopBrowserSeek(\(ms));
+            } else {
+                console.error('No seek function available');
+            }
+        })();
+        """
+        self.webView?.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Seek command error: \(error.localizedDescription)")
             }
@@ -92,7 +193,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     }
 
     func stop() {
-        self.webView?.loadHTMLString("", baseURL: nil)
+        self.pause()
         logger.info("WebViewPlaybackEngine stopped")
     }
 
@@ -137,9 +238,17 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     private static func contractScript() -> String {
         """
         (function() {
+            // Post events back to Swift
             window.postEvent = function(eventObj) {
                 window.webkit.messageHandlers.\(self.messageHandlerName).postMessage(eventObj);
             };
+            
+            // Placeholder functions for play/pause/seek/loadTrack
+            // User scripts must define these functions to handle playback control
+            window.bopBrowserPlay = null;
+            window.bopBrowserPause = null;
+            window.bopBrowserSeek = null;
+            window.bopBrowserLoadTrack = null;
         })();
         """
     }
@@ -159,8 +268,24 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             return
         }
 
-        let event: PlayerEvent
+        switch type {
+        case "previoustrack":
+            logger.info("Received previoustrack message from webview")
+            Task { @MainActor in
+                PlaybackService.shared.previous()
+            }
+            return
+        case "nexttrack":
+            logger.info("Received nexttrack message from webview")
+            Task { @MainActor in
+                PlaybackService.shared.next()
+            }
+            return
+        default:
+            break
+        }
 
+        let event: PlayerEvent
         switch type {
         case "play", "initialPlay":
             event = .playing
