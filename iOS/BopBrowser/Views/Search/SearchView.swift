@@ -72,6 +72,7 @@ struct SearchView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.immediately)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -94,6 +95,11 @@ struct SearchView: View {
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            self.isSearchFieldFocused = false
+        }
     }
 
     private func errorView(message: String) -> some View {
@@ -106,6 +112,11 @@ struct SearchView: View {
                 .foregroundColor(Color(.systemGray))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            self.isSearchFieldFocused = false
         }
     }
 
@@ -168,6 +179,7 @@ struct SearchView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.immediately)
         }
     }
 
