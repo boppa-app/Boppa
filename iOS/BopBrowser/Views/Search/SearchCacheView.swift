@@ -8,29 +8,10 @@ struct SearchCacheView: View {
 
     var body: some View {
         if self.cachedQueries.isEmpty {
-            EmptyView()
+            self.headerView
         } else {
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("Recent Searches")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(Color(.systemGray))
-
-                    Spacer()
-
-                    Button {
-                        self.onClearAll()
-                    } label: {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(.systemGray))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
+                self.headerView
 
                 ScrollFadeView {
                     ScrollView {
@@ -74,5 +55,30 @@ struct SearchCacheView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: UIScreen.main.bounds.height * 0.35, alignment: .top)
         }
+    }
+
+    var headerView: some View {
+        HStack {
+            Text("Recent Searches")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(Color(.systemGray))
+
+            Spacer()
+
+            if !self.cachedQueries.isEmpty {
+                Button {
+                    self.onClearAll()
+                } label: {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(.systemGray))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
     }
 }
