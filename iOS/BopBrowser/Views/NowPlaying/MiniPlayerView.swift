@@ -26,7 +26,7 @@ struct MiniPlayerView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 6)
-            
+
             self.progressBar
         }
         .background(Color(.systemGray6))
@@ -64,17 +64,23 @@ struct MiniPlayerView: View {
 
     private var trackInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(self.playbackService.currentTrack?.title ?? "")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.white)
-                .lineLimit(1)
+            MarqueeText(
+                self.playbackService.currentTrack?.title ?? "",
+                font: .subheadline,
+                fontWeight: .medium,
+                foregroundColor: .white,
+                uniqueId: self.playbackService.currentTrack?.id.uuidString,
+                visible: !self.showNowPlaying
+            )
 
             if let artist = self.playbackService.currentTrack?.artist {
-                Text(artist)
-                    .font(.caption)
-                    .foregroundColor(Color(.systemGray))
-                    .lineLimit(1)
+                MarqueeText(
+                    artist,
+                    font: .caption,
+                    foregroundColor: Color(.systemGray),
+                    uniqueId: self.playbackService.currentTrack?.id.uuidString,
+                    visible: !self.showNowPlaying
+                )
             }
         }
     }

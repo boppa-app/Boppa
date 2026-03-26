@@ -74,16 +74,22 @@ struct NowPlayingView: View {
 
     private var trackInfoSection: some View {
         VStack(spacing: 6) {
-            Text(self.viewModel.trackTitle)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .lineLimit(1)
+            MarqueeText(
+                self.viewModel.trackTitle,
+                font: .title3,
+                fontWeight: .semibold,
+                foregroundColor: .white,
+                uniqueId: self.viewModel.currentTrack?.id.uuidString
+            )
+            .frame(maxWidth: .infinity)
 
-            Text(self.viewModel.trackArtist)
-                .font(.body)
-                .foregroundColor(Color(.systemGray))
-                .lineLimit(1)
+            MarqueeText(
+                self.viewModel.trackArtist,
+                font: .body,
+                foregroundColor: Color(.systemGray),
+                uniqueId: self.viewModel.currentTrack?.id.uuidString
+            )
+            .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity)
     }

@@ -31,19 +31,19 @@ private struct ScrollFadeModifier: ViewModifier {
     }
 }
 
-// Fade effect is only available on iOS 18.0+
+/// Fade effect is only available on iOS 18.0+
 struct ScrollFadeView<Content: View>: View {
     let content: Content
     let fadeHeight: CGFloat
-    
+
     @State private var topFade: CGFloat = 0
     @State private var bottomFade: CGFloat = 1
-    
+
     init(fadeHeight: CGFloat = 40, @ViewBuilder content: () -> Content) {
         self.fadeHeight = fadeHeight
         self.content = content()
     }
-    
+
     var body: some View {
         self.content
             .modifier(ScrollFadeModifier(
@@ -59,9 +59,9 @@ struct ScrollFadeView<Content: View>: View {
                         endPoint: .bottom
                     )
                     .frame(height: self.fadeHeight)
-                    
+
                     Color.black
-                    
+
                     LinearGradient(
                         colors: [.black, .black.opacity(1 - self.bottomFade)],
                         startPoint: .top,

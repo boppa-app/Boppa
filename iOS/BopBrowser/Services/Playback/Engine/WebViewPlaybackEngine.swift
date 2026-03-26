@@ -27,7 +27,6 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     }
 
     func load(track: Song, config: MediaSourceConfig) async -> Bool {
-
         if self.webView == nil || self.needsReconfigure(for: config) {
             self.reconfigureWebView(config: config)
             return self.loadTrackIntoPage(track: track, config: config)
@@ -57,14 +56,14 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        
+
         return await withCheckedContinuation { continuation in
             webView.evaluateJavaScript(loadTrackScript) { [weak self] _, error in
                 guard let self else {
                     continuation.resume(returning: false)
                     return
                 }
-                
+
                 if let error {
                     logger.error("Load track message error: \(error.localizedDescription), falling back to page reload")
                     let success = self.loadTrackIntoPage(track: track, config: config)
@@ -76,7 +75,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         }
     }
-    
+
     private func loadTrackIntoPage(track: Song, config: MediaSourceConfig) -> Bool {
         guard let webView = self.webView else {
             logger.error("Failed to create web view")
@@ -123,21 +122,20 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             "artworkUrl": track.artworkUrl ?? "",
             "url": track.url ?? "",
             "mediaSourceName": track.mediaSourceName ?? "",
-            "metadata": track.metadata
+            "metadata": track.metadata,
         ]
-        
+
         guard let jsonData = try? JSONSerialization.data(withJSONObject: songData),
-              let jsonString = String(data: jsonData, encoding: .utf8) else {
+              let jsonString = String(data: jsonData, encoding: .utf8)
+        else {
             return nil
         }
-        
-        let escapedJSON = jsonString
+
+        return jsonString
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
-        
-        return escapedJSON
     }
 
     func play() {
