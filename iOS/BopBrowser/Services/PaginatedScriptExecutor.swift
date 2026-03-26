@@ -20,17 +20,24 @@ class PaginatedScriptExecutor {
         script: String,
         params: [String: Any],
         previousResult: [String: Any]?,
-        contextService: MediaSourceContextProvider
+        customUserAgent: String?,
+        domain: String
     ) async throws -> PageResult {
-        let context = self.buildJSContext(params: params, previousResult: previousResult, contextService: contextService)
-        let jsResult = try await JSExecutionEngine.shared.execute(script: script, context: context)
+        let context = self.buildJSContext(params: params, previousResult: previousResult)
+        let jsResult = try await JSExecutionEngine.shared.execute(
+            script: script,
+            context: context,
+            customUserAgent: customUserAgent,
+            domain: domain
+        )
         return self.parsePageResult(jsResult)
     }
 
     func executeAllPages(
         script: String,
         params: [String: Any],
-        contextService: MediaSourceContextProvider,
+        customUserAgent: String?,
+        domain: String,
         mediaSourceName: String,
         onPageFetched: (([Song]) -> Void)? = nil
     ) async throws -> [Song] {
@@ -42,7 +49,8 @@ class PaginatedScriptExecutor {
                 script: script,
                 params: params,
                 previousResult: previousResult,
-                contextService: contextService
+                customUserAgent: customUserAgent,
+                domain: domain
             )
 
             let songs = page.items.compactMap { self.mapToSong($0, mediaSourceName: mediaSourceName) }
@@ -64,11 +72,9 @@ class PaginatedScriptExecutor {
 
     func buildJSContext(
         params: [String: Any],
-        previousResult: [String: Any]?,
-        contextService: MediaSourceContextProvider
+        previousResult: [String: Any]?
     ) -> [String: Any] {
         var context: [String: Any] = params
-        context["capturedValues"] = contextService.allContextData()
 
         if let previousResult {
             context["previousResult"] = previousResult

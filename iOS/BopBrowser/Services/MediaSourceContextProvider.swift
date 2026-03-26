@@ -3,8 +3,6 @@ import os
 import SwiftData
 import WebKit
 
-// TODO: Store retrieved context in SwiftData, or store in cookies in WebDataStore, also implement restriction on allowed fetch domains
-
 extension Notification.Name {
     static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
     static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
@@ -23,7 +21,6 @@ final class MediaSourceContextProvider: NSObject {
     private static let refreshTimeoutSeconds: TimeInterval = 15
     private static let messageHandlerName = "contextCapture"
 
-    private var contextData: [String: Any] = [:]
     private var refreshTimers: [String: Timer] = [:]
     private var isProcessing = false
     private var pendingWork: [RefreshWorkItem] = []
@@ -37,10 +34,6 @@ final class MediaSourceContextProvider: NSObject {
     override private init() {
         super.init()
         logger.info("MediaSourceContextProvider initialized")
-    }
-
-    func allContextData() -> [String: Any] {
-        return self.contextData
     }
 
     @MainActor
@@ -138,7 +131,6 @@ final class MediaSourceContextProvider: NSObject {
         logger.info("startMonitoring called with \(sources.count) source(s)")
 
         self.stopAllTimers()
-        self.contextData.removeAll()
         self.pendingWork.removeAll()
         self.tearDownWebView()
         self.isProcessing = false
@@ -218,8 +210,7 @@ final class MediaSourceContextProvider: NSObject {
         self.tearDownWebView()
         self.isProcessing = false
         let remaining = self.pendingWork.count
-        let allKeys = self.contextData.keys.joined(separator: ", ")
-        logger.debug("Work item complete. \(remaining) item(s) remaining. All context keys: [\(allKeys)]")
+        logger.debug("Work item complete. \(remaining) item(s) remaining.")
         self.processNextIfIdle()
     }
 
@@ -251,16 +242,7 @@ final class MediaSourceContextProvider: NSObject {
     private func buildContractScript() -> String {
         """
         (function() {
-            window.contextStore = {
-                set: function(key, value) {
-                    window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({
-                        type: 'set',
-                        key: String(key),
-                        value: value
-                    });
-                }
-            };
-            window.done = function() {
+            window.bopBrowserMediaContextDone = function() {
                 window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({
                     type: 'done'
                 });
@@ -278,19 +260,9 @@ final class MediaSourceContextProvider: NSObject {
         self.activeWebView = nil
     }
 
-    private func handleSetMessage(key: String, value: Any) {
-        let valueDesc = String(describing: value)
-        if self.contextData[key] == nil {
-            logger.info("NEW context value: \(key) = \(valueDesc)")
-        } else {
-            logger.info("UPDATED context value: \(key) = \(valueDesc)")
-        }
-        self.contextData[key] = value
-    }
-
     @MainActor
     private func handleDoneMessage() {
-        logger.info("Script signaled done. Completing work item.")
+        logger.info("bopBrowserMediaContextDone signaled. Completing work item.")
         self.completeCurrentWork()
     }
 }
@@ -312,14 +284,6 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
             }
 
             switch type {
-            case "set":
-                guard let key = body["key"] as? String else {
-                    logger.warning("'set' message missing 'key' field")
-                    return
-                }
-                let value = body["value"] ?? NSNull()
-                self.handleSetMessage(key: key, value: value)
-
             case "done":
                 self.handleDoneMessage()
 

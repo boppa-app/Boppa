@@ -22,8 +22,17 @@ final class JSExecutionEngine: NSObject {
 
     func execute(
         script: String,
-        context: [String: Any]
+        context: [String: Any],
+        customUserAgent: String? = nil,
+        domain: String? = nil
     ) async throws -> [String: Any] {
+        var context = context
+        if let domain {
+            let useDesktopStore = customUserAgent != nil
+            let cookies = await WebDataStore.shared.getCookies(forDomain: domain, useDesktopStore: useDesktopStore)
+            context["cookies"] = cookies
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             let jsContext = JSContext()!
 

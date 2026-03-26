@@ -91,8 +91,7 @@ class SearchViewModel {
                 let response = try await SearchService.shared.search(
                     query: trimmed,
                     config: config,
-                    category: self.selectedCategory,
-                    contextService: MediaSourceContextProvider.shared
+                    category: self.selectedCategory
                 )
 
                 guard !Task.isCancelled else { return }
@@ -133,8 +132,7 @@ class SearchViewModel {
                     paginationContext: paginationContext,
                     config: config,
                     category: self.selectedCategory,
-                    query: trimmed,
-                    contextService: MediaSourceContextProvider.shared
+                    query: trimmed
                 )
 
                 guard !Task.isCancelled else { return }

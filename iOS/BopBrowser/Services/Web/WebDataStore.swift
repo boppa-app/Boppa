@@ -27,6 +27,20 @@ class WebDataStore {
         return self.desktopDataStore
     }
 
+    func getCookies(forDomain domain: String, useDesktopStore: Bool) async -> [String: String] {
+        let store = useDesktopStore ? self.desktopDataStore : self.mobileDataStore
+        let cookies = await store.httpCookieStore.allCookies()
+        var result: [String: String] = [:]
+        for cookie in cookies {
+            let cookieDomain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
+            if domain == cookieDomain || domain.hasSuffix(".\(cookieDomain)") {
+                result[cookie.name] = cookie.value
+            }
+        }
+        logger.debug("getCookies for '\(domain)': \(result.count) cookie(s) (desktop: \(useDesktopStore))")
+        return result
+    }
+
     func checkCookiesExist(named cookieNames: [String], forDomain domain: String? = nil, useDesktopStore: Bool = false, completion: @escaping (Bool) -> Void) {
         let store = useDesktopStore ? self.desktopDataStore : self.mobileDataStore
         store.httpCookieStore.getAllCookies { cookies in

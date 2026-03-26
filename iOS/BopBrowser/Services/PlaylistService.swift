@@ -19,7 +19,6 @@ class PlaylistService {
         mediaSourceName: String,
         playlist: StoredPlaylist,
         modelContext: ModelContext,
-        contextService: MediaSourceContextProvider,
         onPageFetched: (([Song]) -> Void)? = nil
     ) async throws {
         guard let script = config.data?.listLikes?.script else {
@@ -32,7 +31,8 @@ class PlaylistService {
         let songs = try await self.paginated.executeAllPages(
             script: script,
             params: [:],
-            contextService: contextService,
+            customUserAgent: config.customUserAgent,
+            domain: config.url,
             mediaSourceName: mediaSourceName,
             onPageFetched: { allSongsSoFar in
                 onPageFetched?(allSongsSoFar)
