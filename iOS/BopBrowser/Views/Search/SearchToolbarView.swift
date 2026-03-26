@@ -4,6 +4,7 @@ import SwiftUI
 struct SearchToolbarView: View {
     @Bindable var viewModel: SearchViewModel
     var isSearchFieldFocused: FocusState<Bool>.Binding
+    var onSearch: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -35,6 +36,7 @@ struct SearchToolbarView: View {
                 .focused(self.isSearchFieldFocused)
                 .onSubmit {
                     self.viewModel.search()
+                    self.onSearch?()
                     self.isSearchFieldFocused.wrappedValue = false
                 }
 

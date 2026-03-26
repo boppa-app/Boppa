@@ -6,17 +6,34 @@ import SwiftUI
 struct SearchView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = SearchViewModel()
+    @State private var cacheManager = SearchCacheManager()
     @FocusState private var isSearchFieldFocused: Bool
 
     private var showCategorySuggestions: Bool {
         self.isSearchFieldFocused && self.viewModel.isQueryActive
     }
 
+    private var showRecentSearches: Bool {
+        self.isSearchFieldFocused && !self.viewModel.isQueryActive
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            SearchToolbarView(viewModel: self.viewModel, isSearchFieldFocused: self.$isSearchFieldFocused)
+            SearchToolbarView(
+                viewModel: self.viewModel,
+                isSearchFieldFocused: self.$isSearchFieldFocused,
+                onSearch: {
+                    self.cacheManager.saveQuery(
+                        self.viewModel.searchQuery,
+                        category: self.viewModel.selectedCategory,
+                        modelContext: self.modelContext
+                    )
+                }
+            )
             if self.showCategorySuggestions {
                 self.categorySuggestions
+            } else if self.showRecentSearches {
+                self.recentSearchesView
             } else {
                 self.contentArea
             }
@@ -27,6 +44,7 @@ struct SearchView: View {
         }
         .onAppear {
             self.viewModel.loadSources(modelContext: self.modelContext)
+            self.cacheManager.load(modelContext: self.modelContext)
         }
         .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
             self.viewModel.loadSources(modelContext: self.modelContext)
@@ -46,6 +64,11 @@ struct SearchView: View {
                 Button {
                     self.viewModel.selectCategory(category)
                     self.viewModel.search()
+                    self.cacheManager.saveQuery(
+                        self.viewModel.searchQuery,
+                        category: category,
+                        modelContext: self.modelContext
+                    )
                     self.isSearchFieldFocused = false
                 } label: {
                     HStack(spacing: 12) {
@@ -54,12 +77,12 @@ struct SearchView: View {
                             .foregroundColor(.purp)
                             .frame(width: 24)
                         Text("Search \(category.rawValue)")
-                            .font(.body)
+                            .font(.system(size: 16))
                             .foregroundColor(.white)
                             .lineLimit(1)
                         Spacer()
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 12))
+                            .font(.system(size: 16))
                             .foregroundColor(Color(.systemGray3))
                     }
                     .contentShape(Rectangle())
@@ -87,6 +110,39 @@ struct SearchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var recentSearchesView: some View {
+        VStack(spacing: 0) {
+            SearchCacheView(
+                cachedQueries: self.cacheManager.cachedQueries,
+                onSelect: { cached in
+                    if let category = cached.category {
+                        self.viewModel.searchQuery = cached.query
+                        self.viewModel.selectCategory(category)
+                        self.viewModel.search()
+                        self.isSearchFieldFocused = false
+                        self.cacheManager.saveQuery(
+                            cached.query,
+                            category: category,
+                            modelContext: self.modelContext
+                        )
+                    }
+                },
+                onRemove: { cached in
+                    self.cacheManager.removeQuery(cached, modelContext: self.modelContext)
+                },
+                onClearAll: {
+                    self.cacheManager.clearAll(modelContext: self.modelContext)
+                }
+            )
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            self.isSearchFieldFocused = false
+        }
     }
 
     private var emptyStateView: some View {
