@@ -23,44 +23,47 @@ class TracklistViewModel {
         self.applySorting(self.songs)
     }
 
-    func loadFromCache(tracklist: StoredTracklist, modelContext: ModelContext) {
-        let sortedSongs = tracklist.songs.sorted { $0.sortOrder < $1.sortOrder }
-        self.unsortedSongs = sortedSongs.map { $0.toSong() }
-        self.songs = self.unsortedSongs
-        self.sortMode = tracklist.sortMode
-    }
-
-    func fetchIfEmpty(
-        tracklist: StoredTracklist,
+    func load(
+        tracklist: Tracklist,
         config: MediaSourceConfig,
-        mediaSourceName: String,
         modelContext: ModelContext
     ) {
-        self.loadFromCache(tracklist: tracklist, modelContext: modelContext)
+        if let stored = tracklist.storedTracklist {
+            self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
+        }
 
         if self.songs.isEmpty {
-            self.fetchAll(tracklist: tracklist, config: config, mediaSourceName: mediaSourceName, modelContext: modelContext)
+            self.fetchAll(tracklist: tracklist, config: config, modelContext: modelContext)
         }
     }
 
     func refresh(
-        tracklist: StoredTracklist,
+        tracklist: Tracklist,
         config: MediaSourceConfig,
-        mediaSourceName: String,
         modelContext: ModelContext
     ) {
+        guard tracklist.isPersisted else { return }
         self.isRefreshing = true
-        self.fetchAll(tracklist: tracklist, config: config, mediaSourceName: mediaSourceName, modelContext: modelContext)
+        self.fetchAll(tracklist: tracklist, config: config, modelContext: modelContext)
     }
 
-    func setSortMode(_ mode: TracklistSortMode, tracklist: StoredTracklist, modelContext: ModelContext) {
+    func setSortMode(_ mode: TracklistSortMode, tracklist: Tracklist, modelContext: ModelContext) {
         if self.sortMode == mode {
             self.sortMode = .defaultOrder
         } else {
             self.sortMode = mode
         }
-        tracklist.sortMode = self.sortMode
-        try? modelContext.save()
+        if let stored = tracklist.storedTracklist {
+            stored.sortMode = self.sortMode
+            try? modelContext.save()
+        }
+    }
+
+    private func loadFromCache(storedTracklist: StoredTracklist, modelContext: ModelContext) {
+        let sortedSongs = storedTracklist.songs.sorted { $0.sortOrder < $1.sortOrder }
+        self.unsortedSongs = sortedSongs.map { $0.toSong() }
+        self.songs = self.unsortedSongs
+        self.sortMode = storedTracklist.sortMode
     }
 
     private func applySorting(_ songs: [Song]) -> [Song] {
@@ -81,9 +84,8 @@ class TracklistViewModel {
     }
 
     private func fetchAll(
-        tracklist: StoredTracklist,
+        tracklist: Tracklist,
         config: MediaSourceConfig,
-        mediaSourceName: String,
         modelContext: ModelContext
     ) {
         self.fetchTask?.cancel()
@@ -98,16 +100,28 @@ class TracklistViewModel {
                     self.songs = allSongsSoFar
                 }
 
-                if tracklist.isLikes {
+                switch tracklist.tracklistType {
+                case .likes:
+                    guard let stored = tracklist.storedTracklist else { return }
                     try await TracklistService.shared.fetchLikes(
                         config: config,
-                        mediaSourceName: mediaSourceName,
-                        tracklist: tracklist,
+                        mediaSourceName: tracklist.mediaSourceName,
+                        tracklist: stored,
                         modelContext: modelContext,
                         onPageFetched: onPageFetched
                     )
-                } else {
-                    // TODO: Add user tracklist retrieval functionality (listtracklists)
+                case let .album(album):
+                    let songs = try await TracklistService.shared.fetchAlbum(
+                        album: album,
+                        config: config,
+                        mediaSourceName: tracklist.mediaSourceName,
+                        onPageFetched: onPageFetched
+                    )
+                    guard !Task.isCancelled else { return }
+                    self.unsortedSongs = songs
+                    self.songs = songs
+                case .playlist:
+                    // TODO: Add user playlist retrieval functionality (listPlaylists)
                     return
                 }
 

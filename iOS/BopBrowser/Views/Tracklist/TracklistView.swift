@@ -9,7 +9,7 @@ struct TracklistView: View {
     @State private var viewModel = TracklistViewModel()
     @State private var showSortSheet = false
 
-    let tracklist: StoredTracklist
+    let tracklist: Tracklist
     let source: MediaSource
 
     var body: some View {
@@ -18,27 +18,30 @@ struct TracklistView: View {
                 title: self.tracklist.name,
                 onBack: { self.dismiss() },
                 trailing: {
-                    Button {
-                        self.showSortSheet = true
-                    } label: {
-                        Image(systemName: "arrow.up.arrow.down")
-                            .font(.system(size: 16))
-                            .foregroundColor(self.viewModel.sortMode == .defaultOrder ? .white : .purp)
+                    if self.tracklist.isPersisted {
+                        Button {
+                            self.showSortSheet = true
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                                .font(.system(size: 16))
+                                .foregroundColor(self.viewModel.sortMode == .defaultOrder ? .white : .purp)
+                        }
+                        .frame(width: 44, height: 44)
                     }
-                    .frame(width: 44, height: 44)
                 },
                 centerTrailing: {
-                    self.refreshButton
+                    if self.tracklist.isPersisted {
+                        self.refreshButton
+                    }
                 }
             )
             self.content
         }
         .navigationBarHidden(true)
         .onAppear {
-            self.viewModel.fetchIfEmpty(
+            self.viewModel.load(
                 tracklist: self.tracklist,
                 config: self.source.config,
-                mediaSourceName: self.source.name,
                 modelContext: self.modelContext
             )
         }
@@ -77,7 +80,6 @@ struct TracklistView: View {
             self.viewModel.refresh(
                 tracklist: self.tracklist,
                 config: self.source.config,
-                mediaSourceName: self.source.name,
                 modelContext: self.modelContext
             )
         } label: {

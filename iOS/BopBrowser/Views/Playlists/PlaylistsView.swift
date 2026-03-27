@@ -98,7 +98,10 @@ struct PlaylistsView: View {
                 if !isCollapsed {
                     ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
                         NavigationLink {
-                            TracklistView(tracklist: playlist, source: source)
+                            TracklistView(
+                                tracklist: Tracklist(storedTracklist: playlist),
+                                source: source
+                            )
                         } label: {
                             self.playlistRow(playlist)
                         }

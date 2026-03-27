@@ -44,6 +44,41 @@ class TracklistService {
         logger.info("Persisted \(songs.count) liked song(s) for '\(mediaSourceName)'")
     }
 
+    func fetchAlbum(
+        album: Album,
+        config: MediaSourceConfig,
+        mediaSourceName: String,
+        onPageFetched: (([Song]) -> Void)? = nil
+    ) async throws -> [Song] {
+        guard let script = config.data?.getAlbum?.script else {
+            logger.warning("No getAlbum script for '\(mediaSourceName)'")
+            return []
+        }
+
+        logger.info("Fetching album '\(album.title)' for '\(mediaSourceName)'...")
+
+        var itemParams: [String: Any] = [:]
+        itemParams["artist"] = album.artist ?? ""
+        itemParams["artworkUrl"] = album.artworkUrl ?? ""
+        for (key, value) in album.metadata {
+            itemParams[key] = value
+        }
+
+        let songs = try await self.paginated.executeAllPages(
+            script: script,
+            params: ["item": itemParams],
+            customUserAgent: config.customUserAgent,
+            domain: config.url,
+            mediaSourceName: mediaSourceName,
+            onPageFetched: { allSongsSoFar in
+                onPageFetched?(allSongsSoFar)
+            }
+        )
+
+        logger.info("Fetched \(songs.count) song(s) for album '\(album.title)'")
+        return songs
+    }
+
     func persistSongs(_ songs: [Song], into tracklist: StoredTracklist, modelContext: ModelContext, pruneStale: Bool) {
         let existingSongs = tracklist.songs
 

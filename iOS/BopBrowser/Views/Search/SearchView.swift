@@ -18,43 +18,41 @@ struct SearchView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            SearchToolbarView(
-                viewModel: self.viewModel,
-                isSearchFieldFocused: self.$isSearchFieldFocused,
-                onSearch: {
-                    self.cacheManager.saveQuery(
-                        self.viewModel.searchQuery,
-                        category: self.viewModel.selectedCategory,
-                        modelContext: self.modelContext
-                    )
+        NavigationStack {
+            VStack(spacing: 0) {
+                SearchToolbarView(
+                    viewModel: self.viewModel,
+                    isSearchFieldFocused: self.$isSearchFieldFocused,
+                    onSearch: {
+                        self.cacheManager.saveQuery(
+                            self.viewModel.searchQuery,
+                            category: self.viewModel.selectedCategory,
+                            modelContext: self.modelContext
+                        )
+                    }
+                )
+                if self.showCategorySuggestions {
+                    self.categorySuggestions
+                } else if self.showRecentSearches {
+                    self.recentSearchesView
+                } else {
+                    self.contentArea
                 }
-            )
-            if self.showCategorySuggestions {
-                self.categorySuggestions
-            } else if self.showRecentSearches {
-                self.recentSearchesView
-            } else {
-                self.contentArea
             }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
-        .onAppear {
-            self.viewModel.loadSources(modelContext: self.modelContext)
-            self.cacheManager.load(modelContext: self.modelContext)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
-            self.viewModel.loadSources(modelContext: self.modelContext)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
-            let removedNames = notification.userInfo?["names"] as? [String] ?? []
-            if let selected = self.viewModel.selectedSource, removedNames.contains(selected.name) {
-                self.viewModel.clearSearch()
+            .onAppear {
+                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.cacheManager.load(modelContext: self.modelContext)
             }
-            self.viewModel.loadSources(modelContext: self.modelContext)
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
+                self.viewModel.loadSources(modelContext: self.modelContext)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
+                let removedNames = notification.userInfo?["names"] as? [String] ?? []
+                if let selected = self.viewModel.selectedSource, removedNames.contains(selected.name) {
+                    self.viewModel.clearSearch()
+                }
+                self.viewModel.loadSources(modelContext: self.modelContext)
+            }
         }
     }
 
@@ -96,7 +94,10 @@ struct SearchView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            self.isSearchFieldFocused = false
+        }
     }
 
     private var contentArea: some View {
@@ -200,10 +201,27 @@ struct SearchView: View {
                     }
                 case let .albums(albums):
                     ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
-                        AlbumRow(album: album)
+                        if let source = self.viewModel.selectedSource,
+                           source.config.data?.getAlbum != nil
+                        {
+                            NavigationLink {
+                                TracklistView(
+                                    tracklist: Tracklist(album: album, mediaSourceName: source.name),
+                                    source: source
+                                )
+                            } label: {
+                                AlbumRow(album: album)
+                            }
+                            .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                        } else {
+                            AlbumRow(album: album)
+                                .listRowBackground(Color.black)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                        }
                     }
                 case let .artists(artists):
                     ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
