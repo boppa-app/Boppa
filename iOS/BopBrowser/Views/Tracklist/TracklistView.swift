@@ -3,10 +3,10 @@ import SwiftUI
 
 // TODO: Add search bar button to the top right and ensure the search bar is always visible when toggled (follows DetailHeaderView)
 
-struct PlaylistDetailView: View {
+struct TracklistView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel = PlaylistDetailViewModel()
+    @State private var viewModel = TracklistViewModel()
     @State private var showSortSheet = false
 
     let playlist: StoredPlaylist

@@ -4,12 +4,12 @@ import SwiftData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
-    category: "PlaylistDetailViewModel"
+    category: "TracklistViewModel"
 )
 
 @MainActor
 @Observable
-class PlaylistDetailViewModel {
+class TracklistViewModel {
     var songs: [Song] = []
     var isLoading = false
     var isRefreshing = false
