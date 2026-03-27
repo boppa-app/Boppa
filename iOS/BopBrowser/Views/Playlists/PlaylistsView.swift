@@ -98,7 +98,7 @@ struct PlaylistsView: View {
                 if !isCollapsed {
                     ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
                         NavigationLink {
-                            TracklistView(playlist: playlist, source: source)
+                            TracklistView(tracklist: playlist, source: source)
                         } label: {
                             self.playlistRow(playlist)
                         }
@@ -151,7 +151,7 @@ struct PlaylistsView: View {
         .buttonStyle(.plain)
     }
 
-    private func playlistRow(_ playlist: StoredPlaylist) -> some View {
+    private func playlistRow(_ playlist: StoredTracklist) -> some View {
         HStack(spacing: 12) {
             Text(playlist.name)
                 .font(.body)
@@ -173,6 +173,6 @@ struct PlaylistsView: View {
 
 #Preview {
     PlaylistsView()
-        .modelContainer(for: [MediaSource.self, StoredPlaylist.self, StoredSong.self], inMemory: true)
+        .modelContainer(for: [MediaSource.self, StoredTracklist.self, StoredSong.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

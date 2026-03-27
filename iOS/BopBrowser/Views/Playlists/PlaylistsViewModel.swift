@@ -38,9 +38,9 @@ class PlaylistsViewModel {
         self.collapsedSources.contains(sourceName)
     }
 
-    func playlistsForSource(_ source: MediaSource, modelContext: ModelContext) -> [StoredPlaylist] {
+    func playlistsForSource(_ source: MediaSource, modelContext: ModelContext) -> [StoredTracklist] {
         let name = source.name
-        let descriptor = FetchDescriptor<StoredPlaylist>(
+        let descriptor = FetchDescriptor<StoredTracklist>(
             predicate: #Predicate { $0.mediaSourceName == name }
         )
 

@@ -9,13 +9,13 @@ struct TracklistView: View {
     @State private var viewModel = TracklistViewModel()
     @State private var showSortSheet = false
 
-    let playlist: StoredPlaylist
+    let tracklist: StoredTracklist
     let source: MediaSource
 
     var body: some View {
         VStack(spacing: 0) {
             DetailHeaderView(
-                title: self.playlist.name,
+                title: self.tracklist.name,
                 onBack: { self.dismiss() },
                 trailing: {
                     Button {
@@ -36,7 +36,7 @@ struct TracklistView: View {
         .navigationBarHidden(true)
         .onAppear {
             self.viewModel.fetchIfEmpty(
-                playlist: self.playlist,
+                tracklist: self.tracklist,
                 config: self.source.config,
                 mediaSourceName: self.source.name,
                 modelContext: self.modelContext
@@ -46,7 +46,7 @@ struct TracklistView: View {
             SortPickerSheet(
                 currentMode: self.viewModel.sortMode,
                 onSelect: { mode in
-                    self.viewModel.setSortMode(mode, playlist: self.playlist, modelContext: self.modelContext)
+                    self.viewModel.setSortMode(mode, tracklist: self.tracklist, modelContext: self.modelContext)
                     self.showSortSheet = false
                 }
             )
@@ -75,7 +75,7 @@ struct TracklistView: View {
     private var refreshButton: some View {
         Button {
             self.viewModel.refresh(
-                playlist: self.playlist,
+                tracklist: self.tracklist,
                 config: self.source.config,
                 mediaSourceName: self.source.name,
                 modelContext: self.modelContext

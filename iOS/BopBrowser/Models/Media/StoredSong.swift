@@ -12,8 +12,8 @@ final class StoredSong {
     var metadataJSON: Data
     var sortOrder: Int
 
-    @Relationship(inverse: \StoredPlaylist.songs)
-    var playlist: StoredPlaylist?
+    @Relationship(inverse: \StoredTracklist.songs)
+    var tracklist: StoredTracklist?
 
     var metadata: [String: String] {
         (try? JSONDecoder().decode([String: String].self, from: self.metadataJSON)) ?? [:]

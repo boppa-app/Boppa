@@ -14,7 +14,7 @@ class TracklistViewModel {
     var isLoading = false
     var isRefreshing = false
     var errorMessage: String?
-    var sortMode: PlaylistSortMode = .defaultOrder
+    var sortMode: TracklistSortMode = .defaultOrder
 
     private var fetchTask: Task<Void, Never>?
     private var unsortedSongs: [Song] = []
@@ -23,43 +23,43 @@ class TracklistViewModel {
         self.applySorting(self.songs)
     }
 
-    func loadFromCache(playlist: StoredPlaylist, modelContext: ModelContext) {
-        let sortedSongs = playlist.songs.sorted { $0.sortOrder < $1.sortOrder }
+    func loadFromCache(tracklist: StoredTracklist, modelContext: ModelContext) {
+        let sortedSongs = tracklist.songs.sorted { $0.sortOrder < $1.sortOrder }
         self.unsortedSongs = sortedSongs.map { $0.toSong() }
         self.songs = self.unsortedSongs
-        self.sortMode = playlist.sortMode
+        self.sortMode = tracklist.sortMode
     }
 
     func fetchIfEmpty(
-        playlist: StoredPlaylist,
+        tracklist: StoredTracklist,
         config: MediaSourceConfig,
         mediaSourceName: String,
         modelContext: ModelContext
     ) {
-        self.loadFromCache(playlist: playlist, modelContext: modelContext)
+        self.loadFromCache(tracklist: tracklist, modelContext: modelContext)
 
         if self.songs.isEmpty {
-            self.fetchAll(playlist: playlist, config: config, mediaSourceName: mediaSourceName, modelContext: modelContext)
+            self.fetchAll(tracklist: tracklist, config: config, mediaSourceName: mediaSourceName, modelContext: modelContext)
         }
     }
 
     func refresh(
-        playlist: StoredPlaylist,
+        tracklist: StoredTracklist,
         config: MediaSourceConfig,
         mediaSourceName: String,
         modelContext: ModelContext
     ) {
         self.isRefreshing = true
-        self.fetchAll(playlist: playlist, config: config, mediaSourceName: mediaSourceName, modelContext: modelContext)
+        self.fetchAll(tracklist: tracklist, config: config, mediaSourceName: mediaSourceName, modelContext: modelContext)
     }
 
-    func setSortMode(_ mode: PlaylistSortMode, playlist: StoredPlaylist, modelContext: ModelContext) {
+    func setSortMode(_ mode: TracklistSortMode, tracklist: StoredTracklist, modelContext: ModelContext) {
         if self.sortMode == mode {
             self.sortMode = .defaultOrder
         } else {
             self.sortMode = mode
         }
-        playlist.sortMode = self.sortMode
+        tracklist.sortMode = self.sortMode
         try? modelContext.save()
     }
 
@@ -81,7 +81,7 @@ class TracklistViewModel {
     }
 
     private func fetchAll(
-        playlist: StoredPlaylist,
+        tracklist: StoredTracklist,
         config: MediaSourceConfig,
         mediaSourceName: String,
         modelContext: ModelContext
@@ -98,16 +98,16 @@ class TracklistViewModel {
                     self.songs = allSongsSoFar
                 }
 
-                if playlist.isLikes {
+                if tracklist.isLikes {
                     try await TracklistService.shared.fetchLikes(
                         config: config,
                         mediaSourceName: mediaSourceName,
-                        playlist: playlist,
+                        tracklist: tracklist,
                         modelContext: modelContext,
                         onPageFetched: onPageFetched
                     )
                 } else {
-                    // TODO: Add user playlist retrieval functionality (listPlaylists)
+                    // TODO: Add user tracklist retrieval functionality (listtracklists)
                     return
                 }
 
@@ -116,14 +116,14 @@ class TracklistViewModel {
                 self.isLoading = false
                 self.isRefreshing = false
 
-                logger.info("Loaded \(self.songs.count) song(s) for '\(playlist.name)'")
+                logger.info("Loaded \(self.songs.count) song(s) for '\(tracklist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 
                 self.isLoading = false
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch failed for '\(playlist.name)': \(error.localizedDescription)")
+                logger.error("Fetch failed for '\(tracklist.name)': \(error.localizedDescription)")
             }
         }
     }

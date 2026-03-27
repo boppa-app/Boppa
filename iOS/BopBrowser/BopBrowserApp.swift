@@ -7,7 +7,7 @@ import UIKit
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     let modelContainer: ModelContainer = {
-        let schema = Schema([MediaSource.self, StoredPlaylist.self, StoredSong.self, CachedSearchQuery.self])
+        let schema = Schema([MediaSource.self, StoredTracklist.self, StoredSong.self, CachedSearchQuery.self])
         let configuration = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(for: schema, configurations: [configuration])

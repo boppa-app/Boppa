@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-enum PlaylistSortMode: String, CaseIterable {
+enum TracklistSortMode: String, CaseIterable {
     case defaultOrder = "default"
     case reversed
     case artistAZ
@@ -33,19 +33,19 @@ enum PlaylistSortMode: String, CaseIterable {
 }
 
 @Model
-final class StoredPlaylist {
+final class StoredTracklist {
     var name: String
     var mediaSourceName: String
     var artworkUrl: String?
-    var playlistType: String
+    var tracklistType: String
     var remoteId: String?
-    var sortModeRaw: String = PlaylistSortMode.defaultOrder.rawValue
+    var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
 
     @Relationship(deleteRule: .cascade)
     var songs: [StoredSong] = []
 
-    var sortMode: PlaylistSortMode {
-        get { PlaylistSortMode(rawValue: self.sortModeRaw) ?? .defaultOrder }
+    var sortMode: TracklistSortMode {
+        get { TracklistSortMode(rawValue: self.sortModeRaw) ?? .defaultOrder }
         set { self.sortModeRaw = newValue.rawValue }
     }
 
@@ -53,18 +53,18 @@ final class StoredPlaylist {
         name: String,
         mediaSourceName: String,
         artworkUrl: String? = nil,
-        playlistType: String,
+        tracklistType: String,
         remoteId: String? = nil
     ) {
         self.name = name
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = artworkUrl
-        self.playlistType = playlistType
+        self.tracklistType = tracklistType
         self.remoteId = remoteId
     }
 
     var isLikes: Bool {
-        self.playlistType == "likes"
+        self.tracklistType == "likes"
     }
 
     var songCount: Int {

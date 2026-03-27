@@ -17,7 +17,7 @@ class TracklistService {
     func fetchLikes(
         config: MediaSourceConfig,
         mediaSourceName: String,
-        playlist: StoredPlaylist,
+        tracklist: StoredTracklist,
         modelContext: ModelContext,
         onPageFetched: (([Song]) -> Void)? = nil
     ) async throws {
@@ -39,20 +39,20 @@ class TracklistService {
             }
         )
 
-        self.persistSongs(songs, into: playlist, modelContext: modelContext, pruneStale: true)
+        self.persistSongs(songs, into: tracklist, modelContext: modelContext, pruneStale: true)
         onPageFetched?(songs)
         logger.info("Persisted \(songs.count) liked song(s) for '\(mediaSourceName)'")
     }
 
-    func persistSongs(_ songs: [Song], into playlist: StoredPlaylist, modelContext: ModelContext, pruneStale: Bool) {
-        let existingSongs = playlist.songs
+    func persistSongs(_ songs: [Song], into tracklist: StoredTracklist, modelContext: ModelContext, pruneStale: Bool) {
+        let existingSongs = tracklist.songs
 
         for (index, song) in songs.enumerated() {
             if let match = existingSongs.first(where: { $0.contentMatches(song) }) {
                 match.sortOrder = index
             } else {
                 let stored = StoredSong.from(song, sortOrder: index)
-                stored.playlist = playlist
+                stored.tracklist = tracklist
                 modelContext.insert(stored)
             }
         }
@@ -68,22 +68,22 @@ class TracklistService {
         try? modelContext.save()
     }
 
-    func ensureLikesPlaylist(mediaSourceName: String, modelContext: ModelContext) -> StoredPlaylist? {
-        let descriptor = FetchDescriptor<StoredPlaylist>(
-            predicate: #Predicate { $0.mediaSourceName == mediaSourceName && $0.playlistType == "likes" }
+    func ensureLikesPlaylist(mediaSourceName: String, modelContext: ModelContext) -> StoredTracklist? {
+        let descriptor = FetchDescriptor<StoredTracklist>(
+            predicate: #Predicate { $0.mediaSourceName == mediaSourceName && $0.tracklistType == "likes" }
         )
 
         if let existing = try? modelContext.fetch(descriptor).first {
             return existing
         }
 
-        let playlist = StoredPlaylist(
+        let tracklist = StoredTracklist(
             name: "Likes",
             mediaSourceName: mediaSourceName,
-            playlistType: "likes"
+            tracklistType: "likes"
         )
-        modelContext.insert(playlist)
+        modelContext.insert(tracklist)
         try? modelContext.save()
-        return playlist
+        return tracklist
     }
 }

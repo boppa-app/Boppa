@@ -1,10 +1,10 @@
 import SwiftUI
 
 struct SortPickerSheet: View {
-    let currentMode: PlaylistSortMode
-    let onSelect: (PlaylistSortMode) -> Void
+    let currentMode: TracklistSortMode
+    let onSelect: (TracklistSortMode) -> Void
 
-    private let modes = PlaylistSortMode.allCases.filter { $0 != .defaultOrder }
+    private let modes = TracklistSortMode.allCases.filter { $0 != .defaultOrder }
 
     var body: some View {
         NavigationStack {
