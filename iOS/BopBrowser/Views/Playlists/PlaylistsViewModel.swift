@@ -19,7 +19,7 @@ class PlaylistsViewModel {
         }
 
         for source in self.mediaSources where self.hasLikesScript(source) {
-            _ = PlaylistService.shared.ensureLikesPlaylist(
+            _ = TracklistService.shared.ensureLikesPlaylist(
                 mediaSourceName: source.name,
                 modelContext: modelContext
             )

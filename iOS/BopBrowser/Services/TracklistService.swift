@@ -4,11 +4,11 @@ import SwiftData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
-    category: "PlaylistService"
+    category: "TracklistService"
 )
 
-class PlaylistService {
-    static let shared = PlaylistService()
+class TracklistService {
+    static let shared = TracklistService()
 
     private let paginated = PaginatedScriptExecutor.shared
 

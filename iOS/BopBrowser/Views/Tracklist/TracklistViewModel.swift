@@ -99,7 +99,7 @@ class TracklistViewModel {
                 }
 
                 if playlist.isLikes {
-                    try await PlaylistService.shared.fetchLikes(
+                    try await TracklistService.shared.fetchLikes(
                         config: config,
                         mediaSourceName: mediaSourceName,
                         playlist: playlist,
