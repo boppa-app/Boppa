@@ -74,13 +74,10 @@ struct MiniPlayerView: View {
             )
 
             if let artist = self.playbackService.currentTrack?.artist {
-                MarqueeText(
-                    artist,
-                    font: .caption,
-                    foregroundColor: Color(.systemGray),
-                    uniqueId: self.playbackService.currentTrack?.id.uuidString,
-                    visible: !self.showNowPlaying
-                )
+                Text(artist)
+                    .font(.caption)
+                    .foregroundColor(Color(.systemGray))
+                    .lineLimit(1)
             }
         }
     }

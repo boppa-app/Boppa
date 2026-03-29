@@ -5,15 +5,15 @@ struct PlaylistRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.playlist.artworkUrl, placeholder: "music.note.list")
+            ArtworkView(url: self.playlist.artworkUrl, placeholder: "music.note.list", size: 72)
             VStack(alignment: .leading, spacing: 4) {
                 Text(self.playlist.title)
-                    .font(.body)
+                    .font(.headline)
                     .foregroundColor(.white)
                     .lineLimit(1)
                 if let user = self.playlist.user {
                     Text(user)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundColor(Color(.systemGray))
                         .lineLimit(1)
                 }
@@ -21,12 +21,12 @@ struct PlaylistRow: View {
             Spacer()
             if let trackCount = self.playlist.formattedTrackCount {
                 Text(trackCount)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(Color(.systemGray))
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 }

@@ -5,15 +5,15 @@ struct AlbumRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.album.artworkUrl, placeholder: "square.stack")
+            ArtworkView(url: self.album.artworkUrl, placeholder: "square.stack", size: 72)
             VStack(alignment: .leading, spacing: 4) {
                 Text(self.album.title)
-                    .font(.body)
+                    .font(.headline)
                     .foregroundColor(.white)
                     .lineLimit(1)
                 if let artist = self.album.artist {
                     Text(artist)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundColor(Color(.systemGray))
                         .lineLimit(1)
                 }
@@ -21,12 +21,12 @@ struct AlbumRow: View {
             Spacer()
             if let trackCount = self.album.formattedTrackCount {
                 Text(trackCount)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(Color(.systemGray))
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 }

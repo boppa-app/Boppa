@@ -4,6 +4,7 @@ struct ArtworkView: View {
     let url: String?
     let placeholder: String
     var size: CGFloat = 48
+    var isCircular: Bool = false
 
     var body: some View {
         Group {
@@ -29,7 +30,7 @@ struct ArtworkView: View {
         }
         .frame(width: self.size, height: self.size)
         .background(Color(.systemGray6))
-        .cornerRadius(6)
+        .cornerRadius(self.isCircular ? self.size / 2 : 6)
         .clipped()
     }
 
