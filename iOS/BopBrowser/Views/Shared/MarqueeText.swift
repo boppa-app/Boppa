@@ -12,6 +12,8 @@ struct MarqueeText: View {
     let uniqueId: String?
     let visible: Bool
     let visibleResetDelay: Double
+    let maxWidth: CGFloat?
+    let alignment: Alignment
 
     @State private var textWidth: CGFloat = 0
     @State private var containerWidth: CGFloat = 0
@@ -22,7 +24,11 @@ struct MarqueeText: View {
     @State private var viewID: UUID = .init()
 
     private var overflows: Bool {
-        self.textWidth > self.containerWidth && self.containerWidth > 0
+        if let maxW = self.maxWidth {
+            return self.textWidth > maxW && maxW > 0
+        } else {
+            return self.textWidth > self.containerWidth && self.containerWidth > 0
+        }
     }
 
     private var overflowAmount: CGFloat {
@@ -40,7 +46,9 @@ struct MarqueeText: View {
         fadeWidth: CGFloat = 16,
         uniqueId: String? = nil,
         visible: Bool = true,
-        visibleResetDelay: Double = 0.5
+        visibleResetDelay: Double = 0.5,
+        maxWidth: CGFloat? = nil,
+        alignment: Alignment = .leading
     ) {
         self.text = text
         self.font = font
@@ -53,19 +61,23 @@ struct MarqueeText: View {
         self.uniqueId = uniqueId
         self.visible = visible
         self.visibleResetDelay = visibleResetDelay
+        self.maxWidth = maxWidth
+        self.alignment = alignment
     }
 
     var body: some View {
+        let effectiveWidth = self.maxWidth.map { min($0, self.measureTextWidth()) } ?? nil
+        
         GeometryReader { geometry in
             let containerW = geometry.size.width
-            ZStack(alignment: .leading) {
+            ZStack(alignment: self.overflows ? .leading : self.alignment) {
                 if self.overflows {
                     self.scrollingContent
                 } else {
                     self.staticContent
                 }
             }
-            .frame(width: containerW, alignment: .leading)
+            .frame(width: containerW, alignment: self.overflows ? .leading : self.alignment)
             .clipped()
             .mask {
                 if self.overflows {
@@ -91,7 +103,7 @@ struct MarqueeText: View {
                 }
             }
         }
-        .frame(height: self.measureTextHeight())
+        .frame(width: effectiveWidth, height: self.measureTextHeight())
     }
 
     private var staticContent: some View {
@@ -281,5 +293,72 @@ struct MarqueeText: View {
             uiFont = UIFont.preferredFont(forTextStyle: .body)
         }
         return uiFont.lineHeight
+    }
+    
+    private func measureTextWidth() -> CGFloat {
+        let uiFont: UIFont
+        switch self.font {
+        case .largeTitle:
+            uiFont = UIFont.preferredFont(forTextStyle: .largeTitle)
+        case .title:
+            uiFont = UIFont.preferredFont(forTextStyle: .title1)
+        case .title2:
+            uiFont = UIFont.preferredFont(forTextStyle: .title2)
+        case .title3:
+            uiFont = UIFont.preferredFont(forTextStyle: .title3)
+        case .headline:
+            uiFont = UIFont.preferredFont(forTextStyle: .headline)
+        case .subheadline:
+            uiFont = UIFont.preferredFont(forTextStyle: .subheadline)
+        case .body:
+            uiFont = UIFont.preferredFont(forTextStyle: .body)
+        case .callout:
+            uiFont = UIFont.preferredFont(forTextStyle: .callout)
+        case .footnote:
+            uiFont = UIFont.preferredFont(forTextStyle: .footnote)
+        case .caption:
+            uiFont = UIFont.preferredFont(forTextStyle: .caption1)
+        case .caption2:
+            uiFont = UIFont.preferredFont(forTextStyle: .caption2)
+        default:
+            uiFont = UIFont.preferredFont(forTextStyle: .body)
+        }
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: uiFont.withWeight(self.fontWeight)
+        ]
+        let size = (self.text as NSString).size(withAttributes: attributes)
+        return size.width
+    }
+}
+
+extension UIFont {
+    func withWeight(_ weight: Font.Weight) -> UIFont {
+        let traits: [UIFontDescriptor.TraitKey: Any]
+        switch weight {
+        case .ultraLight:
+            traits = [.weight: UIFont.Weight.ultraLight]
+        case .thin:
+            traits = [.weight: UIFont.Weight.thin]
+        case .light:
+            traits = [.weight: UIFont.Weight.light]
+        case .regular:
+            traits = [.weight: UIFont.Weight.regular]
+        case .medium:
+            traits = [.weight: UIFont.Weight.medium]
+        case .semibold:
+            traits = [.weight: UIFont.Weight.semibold]
+        case .bold:
+            traits = [.weight: UIFont.Weight.bold]
+        case .heavy:
+            traits = [.weight: UIFont.Weight.heavy]
+        case .black:
+            traits = [.weight: UIFont.Weight.black]
+        default:
+            traits = [.weight: UIFont.Weight.regular]
+        }
+        
+        let descriptor = self.fontDescriptor.addingAttributes([.traits: traits])
+        return UIFont(descriptor: descriptor, size: self.pointSize)
     }
 }

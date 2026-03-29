@@ -22,10 +22,14 @@ struct DetailHeaderView<TrailingContent: View, CenterContent: View>: View {
         VStack(spacing: 0) {
             ZStack {
                 HStack(spacing: 6) {
-                    Text(self.title)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .lineLimit(1)
+                    MarqueeText(
+                        self.title,
+                        font: .headline,
+                        fontWeight: .regular,
+                        foregroundColor: .white,
+                        maxWidth: 200,
+                        alignment: .center
+                    )
                     self.centerTrailing()
                 }
 
