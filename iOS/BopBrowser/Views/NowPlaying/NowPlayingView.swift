@@ -83,7 +83,7 @@ struct NowPlayingView: View {
             )
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(self.viewModel.trackArtist)
+            Text(self.viewModel.trackSubtitle)
                 .font(.body)
                 .foregroundColor(Color(.systemGray))
                 .lineLimit(1)
@@ -191,10 +191,10 @@ struct NowPlayingView: View {
                 Image(systemName: "safari")
                     .font(.system(size: 20))
                     // TODO: dont use gray for no URL because its confusing, potentially cross out browser with X or dont show icon (?)
-                    .foregroundColor(self.viewModel.hasSongUrl ? Color.purp : Color(.systemGray))
+                    .foregroundColor(self.viewModel.hasTrackUrl ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
-            .disabled(!self.viewModel.hasSongUrl)
+            .disabled(!self.viewModel.hasTrackUrl)
 
             Spacer()
 

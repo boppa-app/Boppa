@@ -67,7 +67,7 @@ struct MarqueeText: View {
 
     var body: some View {
         let effectiveWidth = self.maxWidth.map { min($0, self.measureTextWidth()) } ?? nil
-        
+
         GeometryReader { geometry in
             let containerW = geometry.size.width
             ZStack(alignment: self.overflows ? .leading : self.alignment) {
@@ -294,7 +294,7 @@ struct MarqueeText: View {
         }
         return uiFont.lineHeight
     }
-    
+
     private func measureTextWidth() -> CGFloat {
         let uiFont: UIFont
         switch self.font {
@@ -323,9 +323,9 @@ struct MarqueeText: View {
         default:
             uiFont = UIFont.preferredFont(forTextStyle: .body)
         }
-        
+
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: uiFont.withWeight(self.fontWeight)
+            .font: uiFont.withWeight(self.fontWeight),
         ]
         let size = (self.text as NSString).size(withAttributes: attributes)
         return size.width
@@ -357,7 +357,7 @@ extension UIFont {
         default:
             traits = [.weight: UIFont.Weight.regular]
         }
-        
+
         let descriptor = self.fontDescriptor.addingAttributes([.traits: traits])
         return UIFont(descriptor: descriptor, size: self.pointSize)
     }

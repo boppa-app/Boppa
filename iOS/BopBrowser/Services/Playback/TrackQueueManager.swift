@@ -3,24 +3,24 @@ import os
 
 @Observable
 @MainActor
-final class SongQueueManager {
-    static let shared = SongQueueManager()
+final class TrackQueueManager {
+    static let shared = TrackQueueManager()
 
-    private(set) var queue: [Song] = []
+    private(set) var queue: [Track] = []
     private(set) var currentIndex: Int = 0
     private(set) var repeatMode: RepeatMode = .off
 
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
-        category: "SongQueueManager"
+        category: "TrackQueueManager"
     )
 
-    var currentTrack: Song? {
+    var currentTrack: Track? {
         guard !self.queue.isEmpty, self.currentIndex < self.queue.count else { return nil }
         return self.queue[self.currentIndex]
     }
 
-    var displayQueue: [Song] {
+    var displayQueue: [Track] {
         guard !self.queue.isEmpty, self.currentIndex < self.queue.count else {
             return self.queue
         }
@@ -35,12 +35,12 @@ final class SongQueueManager {
 
     private init() {}
 
-    func setQueue(_ songs: [Song], startingAt track: Song) {
-        self.queue = songs
-        self.currentIndex = songs.firstIndex(of: track) ?? 0
+    func setQueue(_ tracks: [Track], startingAt track: Track) {
+        self.queue = tracks
+        self.currentIndex = tracks.firstIndex(of: track) ?? 0
     }
 
-    func advanceToNext() -> Song? {
+    func advanceToNext() -> Track? {
         guard !self.queue.isEmpty else { return nil }
 
         if self.repeatMode == .one {
@@ -61,7 +61,7 @@ final class SongQueueManager {
         return self.currentTrack
     }
 
-    func rewindToPrevious() -> Song? {
+    func rewindToPrevious() -> Track? {
         guard !self.queue.isEmpty else { return nil }
 
         if self.currentIndex > 0 {
@@ -75,16 +75,16 @@ final class SongQueueManager {
         return self.currentTrack
     }
 
-    func addToQueue(_ song: Song) {
-        self.queue.append(song)
+    func addToQueue(_ track: Track) {
+        self.queue.append(track)
     }
 
-    func playNext(_ song: Song) {
+    func playNext(_ track: Track) {
         let insertIndex = self.currentIndex + 1
         if insertIndex >= self.queue.count {
-            self.queue.append(song)
+            self.queue.append(track)
         } else {
-            self.queue.insert(song, at: insertIndex)
+            self.queue.insert(track, at: insertIndex)
         }
     }
 
@@ -96,7 +96,7 @@ final class SongQueueManager {
         }
     }
 
-    func removeSongs(forMediaSource mediaSourceName: String) {
+    func removeTracks(forMediaSource mediaSourceName: String) {
         let current = self.currentTrack
         self.queue.removeAll { $0.mediaSourceName == mediaSourceName }
         if let current, let newIndex = self.queue.firstIndex(of: current) {
@@ -132,7 +132,7 @@ final class SongQueueManager {
         }
     }
 
-    func applyReorderedDisplayQueue(_ reorderedDisplay: [Song]) {
+    func applyReorderedDisplayQueue(_ reorderedDisplay: [Track]) {
         guard self.repeatMode != .one else { return }
 
         let current = self.currentTrack

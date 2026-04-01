@@ -26,7 +26,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         super.init()
     }
 
-    func load(track: Song, config: MediaSourceConfig) async -> Bool {
+    func load(track: Track, config: MediaSourceConfig) async -> Bool {
         if self.webView == nil || self.needsReconfigure(for: config) {
             self.reconfigureWebView(config: config)
             return self.loadTrackIntoPage(track: track, config: config)
@@ -37,7 +37,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             return false
         }
 
-        guard let escapedJSON: String = self.seralizeSongData(track: track) else {
+        guard let escapedJSON: String = self.seralizeTrackData(track: track) else {
             logger.error("Failed to serialize track data")
             return false
         }
@@ -76,7 +76,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         }
     }
 
-    private func loadTrackIntoPage(track: Song, config: MediaSourceConfig) -> Bool {
+    private func loadTrackIntoPage(track: Track, config: MediaSourceConfig) -> Bool {
         guard let webView = self.webView else {
             logger.error("Failed to create web view")
             return false
@@ -114,10 +114,10 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         return false
     }
 
-    private func seralizeSongData(track: Song) -> String? {
-        let songData: [String: Any] = [
+    private func seralizeTrackData(track: Track) -> String? {
+        let trackData: [String: Any] = [
             "title": track.title,
-            "artist": track.artist ?? "",
+            "subtitle": track.subtitle ?? "",
             "duration": track.duration ?? 0,
             "artworkUrl": track.artworkUrl ?? "",
             "url": track.url ?? "",
@@ -125,7 +125,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             "metadata": track.metadata,
         ]
 
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: songData),
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: trackData),
               let jsonString = String(data: jsonData, encoding: .utf8)
         else {
             return nil

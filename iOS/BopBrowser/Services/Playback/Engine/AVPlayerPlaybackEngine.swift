@@ -22,7 +22,7 @@ final class AVPlayerPlaybackEngine: PlaybackEngine {
 
     private init() {}
 
-    func load(track: Song, config: MediaSourceConfig) async -> Bool {
+    func load(track: Track, config: MediaSourceConfig) async -> Bool {
         self.stop()
 
         guard let streamUrlScript = config.playback.streamUrl else {
@@ -42,7 +42,7 @@ final class AVPlayerPlaybackEngine: PlaybackEngine {
         var context: [String: Any] = [:]
         context["trackUrl"] = encodedTrackURL
         context["trackTitle"] = track.title
-        context["trackArtist"] = track.artist ?? ""
+        context["trackArtist"] = track.subtitle ?? ""
         context["metadata"] = track.metadata
 
         do {

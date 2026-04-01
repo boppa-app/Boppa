@@ -11,8 +11,8 @@ struct AlbumRow: View {
                     .font(.headline)
                     .foregroundColor(.white)
                     .lineLimit(1)
-                if let artist = self.album.artist {
-                    Text(artist)
+                if let subtitle = self.album.subtitle {
+                    Text(subtitle)
                         .font(.subheadline)
                         .foregroundColor(Color(.systemGray))
                         .lineLimit(1)

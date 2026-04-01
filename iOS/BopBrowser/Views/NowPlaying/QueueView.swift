@@ -5,8 +5,8 @@ struct QueueView: View {
         PlaybackService.shared
     }
 
-    private var queueManager: SongQueueManager {
-        SongQueueManager.shared
+    private var queueManager: TrackQueueManager {
+        TrackQueueManager.shared
     }
 
     var body: some View {
@@ -16,17 +16,17 @@ struct QueueView: View {
 
         ScrollFadeView {
             List {
-                ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, song in
-                    let isCurrent = song == self.queueManager.currentTrack
+                ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, track in
+                    let isCurrent = track == self.queueManager.currentTrack
                     Button {
                         if repeatMode != .one {
                             if let source = self.playbackService.mediaSource {
-                                self.playbackService.playTrack(song, queue: self.queueManager.queue, mediaSource: source)
+                                self.playbackService.playTrack(track, queue: self.queueManager.queue, mediaSource: source)
                             }
                         }
                     } label: {
-                        SongRow(
-                            song: song,
+                        TrackRow(
+                            track: track,
                             isSelected: isCurrent,
                             isLoading: self.playbackService.isLoading,
                             isPlaying: self.playbackService.isPlaying && isCurrent,

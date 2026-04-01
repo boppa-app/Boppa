@@ -14,11 +14,11 @@ final class NowPlayingViewModel {
         PlaybackService.shared
     }
 
-    private var queueManager: SongQueueManager {
-        SongQueueManager.shared
+    private var queueManager: TrackQueueManager {
+        TrackQueueManager.shared
     }
 
-    var currentTrack: Song? {
+    var currentTrack: Track? {
         self.playbackService.currentTrack
     }
 
@@ -38,7 +38,7 @@ final class NowPlayingViewModel {
         self.playbackService.duration
     }
 
-    var queue: [Song] {
+    var queue: [Track] {
         self.queueManager.queue
     }
 
@@ -55,16 +55,16 @@ final class NowPlayingViewModel {
         self.currentTrack?.title ?? "Not Playing"
     }
 
-    var trackArtist: String {
-        self.currentTrack?.artist ?? ""
+    var trackSubtitle: String {
+        self.currentTrack?.subtitle ?? ""
     }
 
-    var songUrl: String? {
+    var trackUrl: String? {
         self.currentTrack?.url
     }
 
-    var hasSongUrl: Bool {
-        self.songUrl != nil
+    var hasTrackUrl: Bool {
+        self.trackUrl != nil
     }
 
     var displayCurrentTime: Double {
@@ -76,11 +76,11 @@ final class NowPlayingViewModel {
     }
 
     var formattedCurrentTime: String {
-        Song.formatTime(seconds: self.displayCurrentTime)
+        Track.formatTime(seconds: self.displayCurrentTime)
     }
 
     var formattedDuration: String {
-        Song.formatTime(seconds: self.duration)
+        Track.formatTime(seconds: self.duration)
     }
 
     var playPauseIconName: String {
@@ -149,7 +149,7 @@ final class NowPlayingViewModel {
     }
 
     func openInBrowser(dismiss: DismissAction) {
-        guard let url = self.songUrl else { return }
+        guard let url = self.trackUrl else { return }
         dismiss()
         self.onOpenInBrowser?(url)
     }

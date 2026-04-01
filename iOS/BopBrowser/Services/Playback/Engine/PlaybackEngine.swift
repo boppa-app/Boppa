@@ -4,7 +4,7 @@ import Foundation
 protocol PlaybackEngine: AnyObject {
     var onEvent: ((PlayerEvent) -> Void)? { get set }
 
-    func load(track: Song, config: MediaSourceConfig) async -> Bool
+    func load(track: Track, config: MediaSourceConfig) async -> Bool
     func play()
     func pause()
     func seek(to timeSeconds: Double)

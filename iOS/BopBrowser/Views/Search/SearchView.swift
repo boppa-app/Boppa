@@ -181,14 +181,14 @@ struct SearchView: View {
         ScrollFadeView {
             List {
                 switch self.viewModel.results {
-                case let .songs(songs):
-                    ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                case let .songs(tracks):
+                    ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
                         Button {
-                            self.playSong(song, from: songs)
+                            self.playTrack(track, from: tracks)
                         } label: {
-                            SongRow(
-                                song: song,
-                                isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
+                            TrackRow(
+                                track: track,
+                                isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
                                 isLoading: PlaybackService.shared.isLoading,
                                 isPlaying: PlaybackService.shared.isPlaying
                             )
@@ -197,7 +197,7 @@ struct SearchView: View {
                         .buttonStyle(.plain)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == songs.count - 1 ? .clear : Color(.systemGray5))
+                        .listRowSeparatorTint(index == tracks.count - 1 ? .clear : Color(.systemGray5))
                     }
                 case let .albums(albums):
                     ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
@@ -257,9 +257,9 @@ struct SearchView: View {
         }
     }
 
-    private func playSong(_ song: Song, from songs: [Song]) {
+    private func playTrack(_ track: Track, from tracks: [Track]) {
         guard let source = self.viewModel.selectedSource else { return }
-        PlaybackService.shared.playTrack(song, queue: songs, mediaSource: source)
+        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: source)
     }
 }
 

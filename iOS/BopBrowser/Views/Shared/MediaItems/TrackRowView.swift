@@ -1,18 +1,18 @@
 import SwiftUI
 
-enum SongRowStyle {
+enum TrackRowStyle {
     case regular
     case compact
 }
 
 // TODO: Add custom waveform animation, potentially with FFT
 
-struct SongRow: View {
-    let song: Song
+struct TrackRow: View {
+    let track: Track
     var isSelected: Bool = false
     var isLoading: Bool = false
     var isPlaying: Bool = false
-    var style: SongRowStyle = .regular
+    var style: TrackRowStyle = .regular
 
     private var artworkSize: CGFloat {
         self.style == .compact ? 36 : 48
@@ -32,15 +32,15 @@ struct SongRow: View {
 
     var body: some View {
         HStack(spacing: self.style == .compact ? 10 : 12) {
-            ArtworkView(url: self.song.artworkUrl, placeholder: "music.note", size: self.artworkSize)
+            ArtworkView(url: self.track.artworkUrl, placeholder: "music.note", size: self.artworkSize)
             VStack(alignment: .leading, spacing: self.style == .compact ? 2 : 4) {
-                Text(self.song.title)
+                Text(self.track.title)
                     .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
                     .foregroundColor(self.isSelected ? .purp : .white)
                     .lineLimit(1)
-                if let artist = self.song.artist {
-                    Text(artist)
+                if let subtitle = self.track.subtitle {
+                    Text(subtitle)
                         .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
                         .foregroundColor(self.isSelected ? .purp.opacity(0.5) : Color(.systemGray))
@@ -62,7 +62,7 @@ struct SongRow: View {
                             .background(Color.black)
                     }
                 }
-            } else if let duration = self.song.formattedDuration {
+            } else if let duration = self.track.formattedDuration {
                 Text(duration)
                     .font(.caption2)
                     .foregroundColor(Color(.systemGray))

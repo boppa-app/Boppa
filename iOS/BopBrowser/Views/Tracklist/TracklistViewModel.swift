@@ -10,17 +10,17 @@ private let logger = Logger(
 @MainActor
 @Observable
 class TracklistViewModel {
-    var songs: [Song] = []
+    var tracks: [Track] = []
     var isLoading = false
     var isRefreshing = false
     var errorMessage: String?
     var sortMode: TracklistSortMode = .defaultOrder
 
     private var fetchTask: Task<Void, Never>?
-    private var unsortedSongs: [Song] = []
+    private var unsortedTracks: [Track] = []
 
-    var displaySongs: [Song] {
-        self.applySorting(self.songs)
+    var displayTracks: [Track] {
+        self.applySorting(self.tracks)
     }
 
     func load(
@@ -32,7 +32,7 @@ class TracklistViewModel {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 
-        if self.songs.isEmpty {
+        if self.tracks.isEmpty {
             self.fetchAll(tracklist: tracklist, config: config, modelContext: modelContext)
         }
     }
@@ -60,26 +60,26 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist, modelContext: ModelContext) {
-        let sortedSongs = storedTracklist.songs.sorted { $0.sortOrder < $1.sortOrder }
-        self.unsortedSongs = sortedSongs.map { $0.toSong() }
-        self.songs = self.unsortedSongs
+        let sortedTracks = storedTracklist.tracks.sorted { $0.sortOrder < $1.sortOrder }
+        self.unsortedTracks = sortedTracks.map { $0.toTrack() }
+        self.tracks = self.unsortedTracks
         self.sortMode = storedTracklist.sortMode
     }
 
-    private func applySorting(_ songs: [Song]) -> [Song] {
+    private func applySorting(_ tracks: [Track]) -> [Track] {
         switch self.sortMode {
         case .defaultOrder:
-            return songs
+            return tracks
         case .reversed:
-            return songs.reversed()
-        case .artistAZ:
-            return songs.sorted { ($0.artist ?? "").localizedCaseInsensitiveCompare($1.artist ?? "") == .orderedAscending }
-        case .artistZA:
-            return songs.sorted { ($0.artist ?? "").localizedCaseInsensitiveCompare($1.artist ?? "") == .orderedDescending }
-        case .songAZ:
-            return songs.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
-        case .songZA:
-            return songs.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
+            return tracks.reversed()
+        case .authorAZ:
+            return tracks.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedAscending }
+        case .authorZA:
+            return tracks.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedDescending }
+        case .nameAZ:
+            return tracks.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case .nameZA:
+            return tracks.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
         }
     }
 
@@ -94,10 +94,10 @@ class TracklistViewModel {
 
         self.fetchTask = Task {
             do {
-                let onPageFetched: ([Song]) -> Void = { [weak self] allSongsSoFar in
+                let onPageFetched: ([Track]) -> Void = { [weak self] allTracksSoFar in
                     guard let self else { return }
-                    self.unsortedSongs = allSongsSoFar
-                    self.songs = allSongsSoFar
+                    self.unsortedTracks = allTracksSoFar
+                    self.tracks = allTracksSoFar
                 }
 
                 switch tracklist.tracklistType {
@@ -111,15 +111,15 @@ class TracklistViewModel {
                         onPageFetched: onPageFetched
                     )
                 case let .album(album):
-                    let songs = try await TracklistService.shared.fetchAlbum(
+                    let tracks = try await TracklistService.shared.fetchAlbum(
                         album: album,
                         config: config,
                         mediaSourceName: tracklist.mediaSourceName,
                         onPageFetched: onPageFetched
                     )
                     guard !Task.isCancelled else { return }
-                    self.unsortedSongs = songs
-                    self.songs = songs
+                    self.unsortedTracks = tracks
+                    self.tracks = tracks
                 case .playlist:
                     // TODO: Add user playlist retrieval functionality (listPlaylists)
                     return
@@ -130,7 +130,7 @@ class TracklistViewModel {
                 self.isLoading = false
                 self.isRefreshing = false
 
-                logger.info("Loaded \(self.songs.count) song(s) for '\(tracklist.name)'")
+                logger.info("Loaded \(self.tracks.count) track(s) for '\(tracklist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 

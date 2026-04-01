@@ -14,7 +14,7 @@ private let logger = Logger(
 final class PlaybackService {
     static let shared = PlaybackService()
 
-    private(set) var currentTrack: Song?
+    private(set) var currentTrack: Track?
     private(set) var mediaSource: MediaSource?
     private(set) var isPlaying: Bool = false
     private(set) var isLoading: Bool = false
@@ -25,7 +25,7 @@ final class PlaybackService {
         self.currentTrack != nil
     }
 
-    private let queueManager = SongQueueManager.shared
+    private let queueManager = TrackQueueManager.shared
     private let playbackManager = PlaybackManager.shared
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
@@ -39,7 +39,7 @@ final class PlaybackService {
         logger.info("PlaybackService initialized")
     }
 
-    func playTrack(_ track: Song, queue: [Song] = [], mediaSource: MediaSource) {
+    func playTrack(_ track: Track, queue: [Track] = [], mediaSource: MediaSource) {
         self.playbackManager.stop()
 
         self.currentTrack = track
@@ -172,8 +172,8 @@ final class PlaybackService {
         }
 
         for name in names {
-            self.queueManager.removeSongs(forMediaSource: name)
-            logger.info("Removed queued songs for deleted media source: \(name)")
+            self.queueManager.removeTracks(forMediaSource: name)
+            logger.info("Removed queued tracks for deleted media source: \(name)")
         }
     }
 

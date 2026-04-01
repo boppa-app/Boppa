@@ -63,13 +63,13 @@ struct TracklistView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
-            } else if self.viewModel.songs.isEmpty && self.viewModel.isLoading {
+            } else if self.viewModel.tracks.isEmpty && self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.viewModel.songs.isEmpty {
+            } else if self.viewModel.tracks.isEmpty {
                 self.emptyState
             } else {
-                self.songList
+                self.trackList
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -99,16 +99,16 @@ struct TracklistView: View {
         .disabled(self.viewModel.isRefreshing)
     }
 
-    private var songList: some View {
+    private var trackList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.displaySongs.enumerated()), id: \.element.id) { index, song in
+                ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
                     Button {
-                        self.playSong(song)
+                        self.playTrack(track)
                     } label: {
-                        SongRow(
-                            song: song,
-                            isSelected: PlaybackService.shared.currentTrack?.url == song.url && song.url != nil,
+                        TrackRow(
+                            track: track,
+                            isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying
                         )
@@ -117,7 +117,7 @@ struct TracklistView: View {
                     .buttonStyle(.plain)
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(index == self.viewModel.displaySongs.count - 1 ? .clear : Color(.systemGray5))
+                    .listRowSeparatorTint(index == self.viewModel.displayTracks.count - 1 ? .clear : Color(.systemGray5))
                 }
             }
             .listStyle(.plain)
@@ -149,7 +149,7 @@ struct TracklistView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func playSong(_ song: Song) {
-        PlaybackService.shared.playTrack(song, queue: self.viewModel.displaySongs, mediaSource: self.source)
+    private func playTrack(_ track: Track) {
+        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: self.source)
     }
 }

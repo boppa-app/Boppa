@@ -1,7 +1,7 @@
 import Foundation
 
 enum SearchResult {
-    case songs([Song])
+    case songs([Track])
     case albums([Album])
     case artists([Artist])
     case playlists([Playlist])

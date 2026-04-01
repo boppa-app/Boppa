@@ -67,7 +67,7 @@ class SearchService {
         let result: SearchResult
         switch category {
         case .songs:
-            result = .songs(page.items.compactMap { self.paginated.mapToSong($0, mediaSourceName: mediaSourceName) })
+            result = .songs(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) })
         case .albums:
             result = .albums(page.items.compactMap(self.paginated.mapToAlbum))
         case .artists:

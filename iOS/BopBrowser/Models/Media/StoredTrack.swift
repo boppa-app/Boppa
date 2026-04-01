@@ -2,9 +2,9 @@ import Foundation
 import SwiftData
 
 @Model
-final class StoredSong {
+final class StoredTrack {
     var title: String
-    var artist: String?
+    var subtitle: String?
     var duration: Int?
     var artworkUrl: String?
     var url: String?
@@ -12,7 +12,7 @@ final class StoredSong {
     var metadataJSON: Data
     var sortOrder: Int
 
-    @Relationship(inverse: \StoredTracklist.songs)
+    @Relationship(inverse: \StoredTracklist.tracks)
     var tracklist: StoredTracklist?
 
     var metadata: [String: String] {
@@ -21,7 +21,7 @@ final class StoredSong {
 
     init(
         title: String,
-        artist: String? = nil,
+        subtitle: String? = nil,
         duration: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
@@ -30,7 +30,7 @@ final class StoredSong {
         sortOrder: Int = 0
     ) {
         self.title = title
-        self.artist = artist
+        self.subtitle = subtitle
         self.duration = duration
         self.artworkUrl = artworkUrl
         self.url = url
@@ -39,10 +39,10 @@ final class StoredSong {
         self.sortOrder = sortOrder
     }
 
-    func toSong() -> Song {
-        Song(
+    func toTrack() -> Track {
+        Track(
             title: self.title,
-            artist: self.artist,
+            subtitle: self.subtitle,
             duration: self.duration,
             artworkUrl: self.artworkUrl,
             url: self.url,
@@ -51,26 +51,26 @@ final class StoredSong {
         )
     }
 
-    static func from(_ song: Song, sortOrder: Int) -> StoredSong {
-        StoredSong(
-            title: song.title,
-            artist: song.artist,
-            duration: song.duration,
-            artworkUrl: song.artworkUrl,
-            url: song.url,
-            mediaSourceName: song.mediaSourceName,
-            metadata: song.metadata,
+    static func from(_ track: Track, sortOrder: Int) -> StoredTrack {
+        StoredTrack(
+            title: track.title,
+            subtitle: track.subtitle,
+            duration: track.duration,
+            artworkUrl: track.artworkUrl,
+            url: track.url,
+            mediaSourceName: track.mediaSourceName,
+            metadata: track.metadata,
             sortOrder: sortOrder
         )
     }
 
-    func contentMatches(_ song: Song) -> Bool {
-        self.title == song.title
-            && self.artist == song.artist
-            && self.duration == song.duration
-            && self.artworkUrl == song.artworkUrl
-            && self.url == song.url
-            && self.mediaSourceName == song.mediaSourceName
-            && self.metadata == song.metadata
+    func contentMatches(_ track: Track) -> Bool {
+        self.title == track.title
+            && self.subtitle == track.subtitle
+            && self.duration == track.duration
+            && self.artworkUrl == track.artworkUrl
+            && self.url == track.url
+            && self.mediaSourceName == track.mediaSourceName
+            && self.metadata == track.metadata
     }
 }

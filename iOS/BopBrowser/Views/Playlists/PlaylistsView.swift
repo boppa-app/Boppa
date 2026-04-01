@@ -176,6 +176,6 @@ struct PlaylistsView: View {
 
 #Preview {
     PlaylistsView()
-        .modelContainer(for: [MediaSource.self, StoredTracklist.self, StoredSong.self], inMemory: true)
+        .modelContainer(for: [MediaSource.self, StoredTracklist.self, StoredTrack.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

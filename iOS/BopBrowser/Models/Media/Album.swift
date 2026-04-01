@@ -3,7 +3,7 @@ import Foundation
 struct Album: Identifiable, Equatable {
     let id: UUID
     let title: String
-    let artist: String?
+    let subtitle: String?
     let trackCount: Int?
     let artworkUrl: String?
     let url: String?
@@ -12,7 +12,7 @@ struct Album: Identifiable, Equatable {
     init(
         id: UUID = UUID(),
         title: String,
-        artist: String? = nil,
+        subtitle: String? = nil,
         trackCount: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
@@ -20,7 +20,7 @@ struct Album: Identifiable, Equatable {
     ) {
         self.id = id
         self.title = title
-        self.artist = artist
+        self.subtitle = subtitle
         self.trackCount = trackCount
         self.artworkUrl = artworkUrl
         self.url = url

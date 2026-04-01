@@ -19,7 +19,7 @@ final class PlaybackManager {
 
     private init() {}
 
-    func load(track: Song, mediaSource: MediaSource) async {
+    func load(track: Track, mediaSource: MediaSource) async {
         self.onEvent?(.loading)
 
         let config = mediaSource.config

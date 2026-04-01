@@ -1,9 +1,9 @@
 import Foundation
 
-struct Song: Identifiable, Equatable {
+struct Track: Identifiable, Equatable {
     let id: UUID
     let title: String
-    let artist: String?
+    let subtitle: String?
     let duration: Int?
     let artworkUrl: String?
     let url: String?
@@ -13,7 +13,7 @@ struct Song: Identifiable, Equatable {
     init(
         id: UUID = UUID(),
         title: String,
-        artist: String? = nil,
+        subtitle: String? = nil,
         duration: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
@@ -22,7 +22,7 @@ struct Song: Identifiable, Equatable {
     ) {
         self.id = id
         self.title = title
-        self.artist = artist
+        self.subtitle = subtitle
         self.duration = duration
         self.artworkUrl = artworkUrl
         self.url = url
@@ -32,7 +32,7 @@ struct Song: Identifiable, Equatable {
 
     var formattedDuration: String? {
         guard let duration else { return nil }
-        return Song.formatTime(seconds: Double(duration) / 1000.0)
+        return Track.formatTime(seconds: Double(duration) / 1000.0)
     }
 
     static func formatTime(seconds: Double) -> String {

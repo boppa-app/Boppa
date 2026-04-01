@@ -4,19 +4,19 @@ import SwiftData
 enum TracklistSortMode: String, CaseIterable {
     case defaultOrder = "default"
     case reversed
-    case artistAZ
-    case artistZA
-    case songAZ
-    case songZA
+    case authorAZ
+    case authorZA
+    case nameAZ
+    case nameZA
 
     var label: String {
         switch self {
         case .defaultOrder: return "Default Order"
         case .reversed: return "Reversed"
-        case .artistAZ: return "Artist (A→Z)"
-        case .artistZA: return "Artist (Z→A)"
-        case .songAZ: return "Song (A→Z)"
-        case .songZA: return "Song (Z→A)"
+        case .authorAZ: return "Author (A→Z)"
+        case .authorZA: return "Author (Z→A)"
+        case .nameAZ: return "Name (A→Z)"
+        case .nameZA: return "Name (Z→A)"
         }
     }
 
@@ -24,10 +24,10 @@ enum TracklistSortMode: String, CaseIterable {
         switch self {
         case .defaultOrder: return "list.number"
         case .reversed: return "arrow.up.arrow.down"
-        case .artistAZ: return "person.fill"
-        case .artistZA: return "person.fill"
-        case .songAZ: return "music.note"
-        case .songZA: return "music.note"
+        case .authorAZ: return "person.fill"
+        case .authorZA: return "person.fill"
+        case .nameAZ: return "music.note"
+        case .nameZA: return "music.note"
         }
     }
 }
@@ -42,7 +42,7 @@ final class StoredTracklist {
     var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
 
     @Relationship(deleteRule: .cascade)
-    var songs: [StoredSong] = []
+    var tracks: [StoredTrack] = []
 
     var sortMode: TracklistSortMode {
         get { TracklistSortMode(rawValue: self.sortModeRaw) ?? .defaultOrder }
@@ -67,7 +67,7 @@ final class StoredTracklist {
         self.tracklistType == "likes"
     }
 
-    var songCount: Int {
-        self.songs.count
+    var trackCount: Int {
+        self.tracks.count
     }
 }

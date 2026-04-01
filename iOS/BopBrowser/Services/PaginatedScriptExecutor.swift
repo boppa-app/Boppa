@@ -39,9 +39,9 @@ class PaginatedScriptExecutor {
         customUserAgent: String?,
         domain: String,
         mediaSourceName: String,
-        onPageFetched: (([Song]) -> Void)? = nil
-    ) async throws -> [Song] {
-        var allSongs: [Song] = []
+        onPageFetched: (([Track]) -> Void)? = nil
+    ) async throws -> [Track] {
+        var allTracks: [Track] = []
         var previousResult: [String: Any]? = nil
 
         while true {
@@ -53,12 +53,12 @@ class PaginatedScriptExecutor {
                 domain: domain
             )
 
-            let songs = page.items.compactMap { self.mapToSong($0, mediaSourceName: mediaSourceName) }
-            allSongs.append(contentsOf: songs)
+            let tracks = page.items.compactMap { self.mapToTrack($0, mediaSourceName: mediaSourceName) }
+            allTracks.append(contentsOf: tracks)
 
-            logger.info("Fetched page with \(songs.count) song(s), total: \(allSongs.count)")
+            logger.info("Fetched page with \(tracks.count) track(s), total: \(allTracks.count)")
 
-            onPageFetched?(allSongs)
+            onPageFetched?(allTracks)
 
             guard let nextContext = page.paginationContext else {
                 break
@@ -66,8 +66,8 @@ class PaginatedScriptExecutor {
             previousResult = nextContext
         }
 
-        logger.info("All pages fetched: \(allSongs.count) total song(s)")
-        return allSongs
+        logger.info("All pages fetched: \(allTracks.count) total track(s)")
+        return allTracks
     }
 
     func buildJSContext(
@@ -99,11 +99,11 @@ class PaginatedScriptExecutor {
         return PageResult(items: items, paginationContext: paginationContext)
     }
 
-    func mapToSong(_ item: [String: Any], mediaSourceName: String) -> Song? {
-        guard let title = item["title"] as? String else { return nil }
-        return Song(
+    func mapToTrack(_ item: [String: Any], mediaSourceName: String) -> Track? {
+        guard let title = item["subtitle"] as? String else { return nil }
+        return Track(
             title: title,
-            artist: item["artist"] as? String,
+            subtitle: item["subtitle"] as? String,
             duration: self.resolveInt(item["duration"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
@@ -116,7 +116,7 @@ class PaginatedScriptExecutor {
         guard let title = item["title"] as? String else { return nil }
         return Album(
             title: title,
-            artist: item["artist"] as? String,
+            subtitle: item["subtitle"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
@@ -125,7 +125,7 @@ class PaginatedScriptExecutor {
     }
 
     func mapToArtist(_ item: [String: Any]) -> Artist? {
-        guard let name = (item["name"] as? String) ?? (item["artist"] as? String) else { return nil }
+        guard let name = (item["name"] as? String) else { return nil }
         return Artist(
             name: name,
             artworkUrl: item["artworkUrl"] as? String,

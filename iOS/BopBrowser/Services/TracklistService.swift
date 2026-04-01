@@ -19,7 +19,7 @@ class TracklistService {
         mediaSourceName: String,
         tracklist: StoredTracklist,
         modelContext: ModelContext,
-        onPageFetched: (([Song]) -> Void)? = nil
+        onPageFetched: (([Track]) -> Void)? = nil
     ) async throws {
         guard let script = config.data?.listLikes?.script else {
             logger.warning("No listLikes script for '\(mediaSourceName)'")
@@ -28,28 +28,28 @@ class TracklistService {
 
         logger.info("Fetching likes for '\(mediaSourceName)'...")
 
-        let songs = try await self.paginated.executeAllPages(
+        let tracks = try await self.paginated.executeAllPages(
             script: script,
             params: [:],
             customUserAgent: config.customUserAgent,
             domain: config.url,
             mediaSourceName: mediaSourceName,
-            onPageFetched: { allSongsSoFar in
-                onPageFetched?(allSongsSoFar)
+            onPageFetched: { allTracksSoFar in
+                onPageFetched?(allTracksSoFar)
             }
         )
 
-        self.persistSongs(songs, into: tracklist, modelContext: modelContext, pruneStale: true)
-        onPageFetched?(songs)
-        logger.info("Persisted \(songs.count) liked song(s) for '\(mediaSourceName)'")
+        self.persistTracks(tracks, into: tracklist, modelContext: modelContext, pruneStale: true)
+        onPageFetched?(tracks)
+        logger.info("Persisted \(tracks.count) liked track(s) for '\(mediaSourceName)'")
     }
 
     func fetchAlbum(
         album: Album,
         config: MediaSourceConfig,
         mediaSourceName: String,
-        onPageFetched: (([Song]) -> Void)? = nil
-    ) async throws -> [Song] {
+        onPageFetched: (([Track]) -> Void)? = nil
+    ) async throws -> [Track] {
         guard let script = config.data?.getAlbum?.script else {
             logger.warning("No getAlbum script for '\(mediaSourceName)'")
             return []
@@ -58,43 +58,43 @@ class TracklistService {
         logger.info("Fetching album '\(album.title)' for '\(mediaSourceName)'...")
 
         var itemParams: [String: Any] = [:]
-        itemParams["artist"] = album.artist ?? ""
+        itemParams["subtitle"] = album.subtitle ?? ""
         itemParams["artworkUrl"] = album.artworkUrl ?? ""
         for (key, value) in album.metadata {
             itemParams[key] = value
         }
 
-        let songs = try await self.paginated.executeAllPages(
+        let tracks = try await self.paginated.executeAllPages(
             script: script,
             params: ["item": itemParams],
             customUserAgent: config.customUserAgent,
             domain: config.url,
             mediaSourceName: mediaSourceName,
-            onPageFetched: { allSongsSoFar in
-                onPageFetched?(allSongsSoFar)
+            onPageFetched: { allTracksSoFar in
+                onPageFetched?(allTracksSoFar)
             }
         )
 
-        logger.info("Fetched \(songs.count) song(s) for album '\(album.title)'")
-        return songs
+        logger.info("Fetched \(tracks.count) track(s) for album '\(album.title)'")
+        return tracks
     }
 
-    func persistSongs(_ songs: [Song], into tracklist: StoredTracklist, modelContext: ModelContext, pruneStale: Bool) {
-        let existingSongs = tracklist.songs
+    func persistTracks(_ tracks: [Track], into tracklist: StoredTracklist, modelContext: ModelContext, pruneStale: Bool) {
+        let existingTracks = tracklist.tracks
 
-        for (index, song) in songs.enumerated() {
-            if let match = existingSongs.first(where: { $0.contentMatches(song) }) {
+        for (index, track) in tracks.enumerated() {
+            if let match = existingTracks.first(where: { $0.contentMatches(track) }) {
                 match.sortOrder = index
             } else {
-                let stored = StoredSong.from(song, sortOrder: index)
+                let stored = StoredTrack.from(track, sortOrder: index)
                 stored.tracklist = tracklist
                 modelContext.insert(stored)
             }
         }
 
         if pruneStale {
-            for existing in existingSongs {
-                if !songs.contains(where: { existing.contentMatches($0) }) {
+            for existing in existingTracks {
+                if !tracks.contains(where: { existing.contentMatches($0) }) {
                     modelContext.delete(existing)
                 }
             }
