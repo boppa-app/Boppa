@@ -100,7 +100,7 @@ class PaginatedScriptExecutor {
     }
 
     func mapToTrack(_ item: [String: Any], mediaSourceName: String) -> Track? {
-        guard let title = item["subtitle"] as? String else { return nil }
+        guard let title = item["title"] as? String else { return nil }
         return Track(
             title: title,
             subtitle: item["subtitle"] as? String,
