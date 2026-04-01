@@ -2,6 +2,7 @@ import Foundation
 
 enum SearchCategory: String, CaseIterable {
     case songs
+    case videos
     case artists
     case albums
     case playlists
@@ -9,6 +10,7 @@ enum SearchCategory: String, CaseIterable {
     var icon: String {
         switch self {
         case .songs: return "music.note"
+        case .videos: return "video"
         case .artists: return "music.microphone"
         case .albums:
             if #available(iOS 26.0, *) {
@@ -23,6 +25,7 @@ enum SearchCategory: String, CaseIterable {
     var emptyResult: SearchResult {
         switch self {
         case .songs: return .songs([])
+        case .videos: return .videos([])
         case .artists: return .artists([])
         case .albums: return .albums([])
         case .playlists: return .playlists([])
@@ -32,6 +35,7 @@ enum SearchCategory: String, CaseIterable {
     func isAvailable(in data: MediaSourceData) -> Bool {
         switch self {
         case .songs: return data.searchSongs != nil
+        case .videos: return data.searchVideos != nil
         case .artists: return data.searchArtists != nil
         case .albums: return data.searchAlbums != nil
         case .playlists: return data.searchPlaylists != nil
@@ -41,6 +45,7 @@ enum SearchCategory: String, CaseIterable {
     func script(from data: MediaSourceData) -> String? {
         switch self {
         case .songs: return data.searchSongs?.script
+        case .videos: return data.searchVideos?.script
         case .artists: return data.searchArtists?.script
         case .albums: return data.searchAlbums?.script
         case .playlists: return data.searchPlaylists?.script

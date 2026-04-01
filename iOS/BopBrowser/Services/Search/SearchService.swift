@@ -68,6 +68,8 @@ class SearchService {
         switch category {
         case .songs:
             result = .songs(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) })
+        case .videos:
+            result = .videos(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) })
         case .albums:
             result = .albums(page.items.compactMap(self.paginated.mapToAlbum))
         case .artists:

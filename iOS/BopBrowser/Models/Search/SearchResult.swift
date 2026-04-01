@@ -2,6 +2,7 @@ import Foundation
 
 enum SearchResult {
     case songs([Track])
+    case videos([Track])
     case albums([Album])
     case artists([Artist])
     case playlists([Playlist])
@@ -13,6 +14,7 @@ enum SearchResult {
     var count: Int {
         switch self {
         case let .songs(items): return items.count
+        case let .videos(items): return items.count
         case let .albums(items): return items.count
         case let .artists(items): return items.count
         case let .playlists(items): return items.count
@@ -23,6 +25,8 @@ enum SearchResult {
         switch (self, other) {
         case let (.songs(existing), .songs(new)):
             self = .songs(existing + new)
+        case let (.videos(existing), .videos(new)):
+            self = .videos(existing + new)
         case let (.albums(existing), .albums(new)):
             self = .albums(existing + new)
         case let (.artists(existing), .artists(new)):

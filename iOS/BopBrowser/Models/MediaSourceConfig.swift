@@ -96,6 +96,7 @@ struct ScriptContent: Codable, Sendable {
 
 struct MediaSourceData: Codable, Sendable {
     let searchSongs: ScriptContent?
+    let searchVideos: ScriptContent?
     let searchArtists: ScriptContent?
     let searchAlbums: ScriptContent?
     let searchPlaylists: ScriptContent?

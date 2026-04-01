@@ -181,7 +181,7 @@ struct SearchView: View {
         ScrollFadeView {
             List {
                 switch self.viewModel.results {
-                case let .songs(tracks):
+                case let .songs(tracks), let .videos(tracks):
                     ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
                         Button {
                             self.playTrack(track, from: tracks)
