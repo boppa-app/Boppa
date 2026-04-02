@@ -11,7 +11,8 @@ class PlaylistsViewModel {
     var showFilterSheet = false
 
     func loadSources(modelContext: ModelContext) {
-        let descriptor = FetchDescriptor<MediaSource>()
+        var descriptor = FetchDescriptor<MediaSource>()
+        descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
 
         if self.visibleSourceNames.isEmpty {

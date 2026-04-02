@@ -25,7 +25,7 @@ struct SourcePickerSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: self.columns, spacing: 40) {
-                    ForEach(self.sources) { source in
+                    ForEach(self.sources.sorted(by: { $0.order < $1.order })) { source in
                         self.sourceCell(source)
                     }
                 }

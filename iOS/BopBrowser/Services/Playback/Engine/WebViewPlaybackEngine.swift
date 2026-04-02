@@ -10,6 +10,7 @@ private let logger = Logger(
 
 // TODO: Integration with seek and prev/next is broken, total track time also broken (seems like its only when switching mid track)
 // TODO: Keep paused state when executing prev/next
+// TODO: Add support for triggering pop-up with webview by posting a message back to Swift
 
 @MainActor
 final class WebViewPlaybackEngine: NSObject, PlaybackEngine {

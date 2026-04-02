@@ -25,7 +25,15 @@ class AddMediaSourceViewModel {
                 configProviderUrl: formattedProviderUrl,
                 mediaSourceUrl: formattedSourceUrl
             )
-            mediaSources.forEach { modelContext.insert($0) }
+
+            let existingDescriptor = FetchDescriptor<MediaSource>()
+            let existingSources = (try? modelContext.fetch(existingDescriptor)) ?? []
+            let maxOrder = existingSources.map(\.order).max() ?? -1
+
+            for (index, source) in mediaSources.enumerated() {
+                source.order = maxOrder + 1 + index
+                modelContext.insert(source)
+            }
             try modelContext.save()
             let addedNames = mediaSources.map(\.name)
             NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["names": addedNames])

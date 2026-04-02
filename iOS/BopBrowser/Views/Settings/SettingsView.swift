@@ -1,30 +1,49 @@
 import SwiftData
 import SwiftUI
 
-// TODO: Add ability to order media sources, this also needs to reflect in source picker sheet
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var mediaSources: [MediaSource]
+    @Query(sort: \MediaSource.order) private var mediaSources: [MediaSource]
     @State private var showingAddSheet = false
     @State private var isClearingData = false
     @State private var showDataCleared = false
     @State private var showClearConfirmation = false
+    @State private var isEditing = false
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Media Sources") {
+                Section {
                     ForEach(self.mediaSources) { source in
-                        NavigationLink(destination: MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(source: source))) {
+                        if self.isEditing {
                             MediaSourceRow(source: source)
+                        } else {
+                            NavigationLink(destination: MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(source: source))) {
+                                MediaSourceRow(source: source)
+                            }
                         }
                     }
-                    .onDelete(perform: self.deleteMediaSources)
+                    .onMove(perform: self.moveMediaSources)
 
-                    Button {
-                        self.showingAddSheet = true
-                    } label: {
-                        Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
+                    if self.isEditing {
+                        Button {
+                            self.showingAddSheet = true
+                        } label: {
+                            Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text("Media Sources").font(.body)
+                        Spacer()
+                        Button {
+                            self.isEditing.toggle()
+                        } label: {
+                            Text(self.isEditing ? "Done" : "Edit")
+                                .font(.body)
+                                .foregroundColor(Color.purp)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
@@ -45,6 +64,7 @@ struct SettingsView: View {
                     .disabled(self.isClearingData)
                 }
             }
+            .environment(\.editMode, self.isEditing ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
             .sheet(isPresented: self.$showingAddSheet) {
                 AddMediaSourceView()
@@ -69,13 +89,13 @@ struct SettingsView: View {
         }
     }
 
-    private func deleteMediaSources(at offsets: IndexSet) {
-        let removedNames = offsets.map { self.mediaSources[$0].name }
-        for index in offsets {
-            self.modelContext.delete(self.mediaSources[index])
+    private func moveMediaSources(from source: IndexSet, to destination: Int) {
+        var reordered = self.mediaSources
+        reordered.move(fromOffsets: source, toOffset: destination)
+        for (index, mediaSource) in reordered.enumerated() {
+            mediaSource.order = index
         }
         try? self.modelContext.save()
-        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["names": removedNames])
     }
 }
 
