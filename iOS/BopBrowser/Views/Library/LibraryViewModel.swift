@@ -4,7 +4,7 @@ import SwiftData
 
 @MainActor
 @Observable
-class PlaylistsViewModel {
+class LibraryViewModel {
     var mediaSources: [MediaSource] = []
     var collapsedSources: Set<String> = []
     var visibleSourceNames: Set<String> = []

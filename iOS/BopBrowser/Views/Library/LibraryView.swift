@@ -1,9 +1,9 @@
 import SwiftData
 import SwiftUI
 
-struct PlaylistsView: View {
+struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel = PlaylistsViewModel()
+    @State private var viewModel = LibraryViewModel()
 
     var body: some View {
         NavigationStack {
@@ -37,7 +37,7 @@ struct PlaylistsView: View {
 
     private var toolbar: some View {
         HStack {
-            Text("Playlists")
+            Text("Library")
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
@@ -57,7 +57,7 @@ struct PlaylistsView: View {
     private var content: some View {
         Group {
             if self.viewModel.filteredSources.isEmpty {
-                self.emptyState
+                self.emptyStateView
             } else {
                 self.sourceList
             }
@@ -65,16 +65,13 @@ struct PlaylistsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // TODO: On empty playlists button to go to settings to add media source config
-    private var emptyState: some View {
+    private var emptyStateView: some View {
         VStack(spacing: 12) {
-            Image(systemName: "music.note.list")
+            Image(systemName: "bookmark")
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
-            Text("No playlists yet")
-                .font(.callout)
-                .foregroundColor(Color(.systemGray))
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var sourceList: some View {
@@ -178,7 +175,7 @@ struct PlaylistsView: View {
 }
 
 #Preview {
-    PlaylistsView()
+    LibraryView()
         .modelContainer(for: [MediaSource.self, StoredTracklist.self, StoredTrack.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

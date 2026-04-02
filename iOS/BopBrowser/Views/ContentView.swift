@@ -30,7 +30,7 @@ struct ContentView: View {
                 SearchView()
                     .opacity(self.selectedTab == 1 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 1)
-                PlaylistsView()
+                LibraryView()
                     .opacity(self.selectedTab == 2 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 2)
                 SettingsView()
@@ -81,7 +81,7 @@ struct ContentTabView: View {
     let tabs: [(icon: String, num: Int)] = [
         ("safari", 0),
         ("magnifyingglass", 1),
-        ("music.note.list", 2),
+        ("bookmark", 2),
         ("gear", 3),
     ]
 
