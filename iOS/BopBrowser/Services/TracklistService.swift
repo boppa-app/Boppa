@@ -83,8 +83,11 @@ class TracklistService {
         let existingTracks = tracklist.tracks
 
         for (index, track) in tracks.enumerated() {
-            if let match = existingTracks.first(where: { $0.contentMatches(track) }) {
+            if let match = existingTracks.first(where: { $0.identityMatches(track) }) {
                 match.sortOrder = index
+                if !match.contentMatches(track) {
+                    match.updateContent(from: track)
+                }
             } else {
                 let stored = StoredTrack.from(track, sortOrder: index)
                 stored.tracklist = tracklist
@@ -94,7 +97,7 @@ class TracklistService {
 
         if pruneStale {
             for existing in existingTracks {
-                if !tracks.contains(where: { existing.contentMatches($0) }) {
+                if !tracks.contains(where: { existing.identityMatches($0) }) {
                     modelContext.delete(existing)
                 }
             }

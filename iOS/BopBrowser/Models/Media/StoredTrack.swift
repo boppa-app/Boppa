@@ -64,13 +64,23 @@ final class StoredTrack {
         )
     }
 
-    func contentMatches(_ track: Track) -> Bool {
+    func identityMatches(_ track: Track) -> Bool {
         self.title == track.title
             && self.subtitle == track.subtitle
-            && self.duration == track.duration
-            && self.artworkUrl == track.artworkUrl
             && self.url == track.url
             && self.mediaSourceName == track.mediaSourceName
+    }
+
+    func contentMatches(_ track: Track) -> Bool {
+        self.identityMatches(track)
+            && self.duration == track.duration
+            && self.artworkUrl == track.artworkUrl
             && self.metadata == track.metadata
+    }
+
+    func updateContent(from track: Track) {
+        self.duration = track.duration
+        self.artworkUrl = track.artworkUrl
+        self.metadataJSON = (try? JSONEncoder().encode(track.metadata)) ?? Data()
     }
 }

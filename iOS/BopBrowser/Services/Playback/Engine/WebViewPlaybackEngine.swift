@@ -26,53 +26,59 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         super.init()
     }
 
-    func load(track: Track, config: MediaSourceConfig) async -> Bool {
-        if self.webView == nil || self.needsReconfigure(for: config) {
-            self.reconfigureWebView(config: config)
-            return self.loadTrackIntoPage(track: track, config: config)
-        }
-
-        guard let webView = self.webView else {
-            logger.error("WebView not available")
-            return false
-        }
-
-        guard let escapedJSON: String = self.seralizeTrackData(track: track) else {
-            logger.error("Failed to serialize track data")
-            return false
-        }
-        // Post message to webview to load new track
-        let loadTrackScript = """
-        (function() {
-            try {
-                var trackData = JSON.parse('\(escapedJSON)');
-                if (window.bopBrowserLoadTrack) {
-                    window.bopBrowserLoadTrack(trackData);
-                } else {
-                    console.error('bopBrowserLoadTrack function not found');
-                }
-            } catch (e) {
-                console.error('Error loading track:', e);
+    func load(source: PlaybackSource) async -> Bool {
+        switch source {
+        case let .track(track, config):
+            if self.webView == nil || self.needsReconfigure(for: config) {
+                self.reconfigureWebView(config: config)
+                return self.loadTrackIntoPage(track: track, config: config)
             }
-        })();
-        """
 
-        return await withCheckedContinuation { continuation in
-            webView.evaluateJavaScript(loadTrackScript) { [weak self] _, error in
-                guard let self else {
-                    continuation.resume(returning: false)
-                    return
+            guard let webView = self.webView else {
+                logger.error("WebView not available")
+                return false
+            }
+
+            guard let escapedJSON: String = self.seralizeTrackData(track: track) else {
+                logger.error("Failed to serialize track data")
+                return false
+            }
+
+            let loadTrackScript = """
+            (function() {
+                try {
+                    var trackData = JSON.parse('\(escapedJSON)');
+                    if (window.bopBrowserLoadTrack) {
+                        window.bopBrowserLoadTrack(trackData);
+                    } else {
+                        console.error('bopBrowserLoadTrack function not found');
+                    }
+                } catch (e) {
+                    console.error('Error loading track:', e);
                 }
+            })();
+            """
 
-                if let error {
-                    logger.error("Load track message error: \(error.localizedDescription), falling back to page reload")
-                    let success = self.loadTrackIntoPage(track: track, config: config)
-                    continuation.resume(returning: success)
-                } else {
-                    logger.info("Sent load track message: \(track.title)")
-                    continuation.resume(returning: true)
+            return await withCheckedContinuation { continuation in
+                webView.evaluateJavaScript(loadTrackScript) { [weak self] _, error in
+                    guard let self else {
+                        continuation.resume(returning: false)
+                        return
+                    }
+
+                    if let error {
+                        logger.error("Load track message error: \(error.localizedDescription), falling back to page reload")
+                        let success = self.loadTrackIntoPage(track: track, config: config)
+                        continuation.resume(returning: success)
+                    } else {
+                        logger.info("Sent load track message: \(track.title)")
+                        continuation.resume(returning: true)
+                    }
                 }
             }
+        case .getTrackResponse:
+            logger.error("WebViewPlaybackEngine does not support loading from GetTrackResponse")
+            return false
         }
     }
 
@@ -215,7 +221,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         }
 
         let webView = WebViewFactory.makeWebView(
-            scripts: config.playback.userScripts,
+            scripts: config.playback.userScripts ?? [],
             contractScript: Self.contractScript(),
             customUserAgent: config.customUserAgent,
             allowsInlineMediaPlayback: true,

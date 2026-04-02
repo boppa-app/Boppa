@@ -22,51 +22,22 @@ final class AVPlayerPlaybackEngine: PlaybackEngine {
 
     private init() {}
 
-    func load(track: Track, config: MediaSourceConfig) async -> Bool {
-        self.stop()
-
-        guard let streamUrlScript = config.playback.streamUrl else {
-            logger.error("No streamUrl script in playback config")
+    func load(source: PlaybackSource) async -> Bool {
+        switch source {
+        case let .track(track, config):
+            logger.error("No streamUrl provided to AVPlayerPlaybackEngine")
             return false
-        }
 
-        guard let trackURL = track.url else {
-            logger.error("Track has no URL")
-            return false
-        }
-
-        logger.info("Resolving stream URL via JS for track: \(track.title)")
-
-        let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
-
-        var context: [String: Any] = [:]
-        context["trackUrl"] = encodedTrackURL
-        context["trackTitle"] = track.title
-        context["trackArtist"] = track.subtitle ?? ""
-        context["metadata"] = track.metadata
-
-        do {
-            let result = try await JSExecutionEngine.shared.execute(
-                script: streamUrlScript.script,
-                context: context,
-                customUserAgent: config.customUserAgent,
-                domain: config.url
-            )
-
-            guard let streamUrlString = result["streamUrl"] as? String,
+        case let .getTrackResponse(getTrackResponse):
+            guard let streamUrlString = getTrackResponse.streamUrl,
                   let streamUrl = URL(string: streamUrlString)
             else {
-                let resultDesc = String(describing: result)
-                logger.error("JS did not return a valid 'streamUrl'. Result: \(resultDesc)")
+                logger.error("No streamUrl provided to AVPlayerPlaybackEngine")
                 return false
             }
-
-            logger.info("Resolved stream URL: \(streamUrl.absoluteString)")
+            self.stop()
             self.startPlayback(url: streamUrl)
             return true
-        } catch {
-            logger.error("Stream URL JS execution failed: \(error.localizedDescription)")
-            return false
         }
     }
 
