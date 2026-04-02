@@ -31,7 +31,9 @@ class SearchViewModel {
     }
 
     func loadSources(modelContext: ModelContext) {
-        var descriptor = FetchDescriptor<MediaSource>()
+        var descriptor = FetchDescriptor<MediaSource>(
+            predicate: #Predicate { $0.isEnabled }
+        )
         descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
 

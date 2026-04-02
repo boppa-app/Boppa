@@ -11,13 +11,16 @@ class PlaylistsViewModel {
     var showFilterSheet = false
 
     func loadSources(modelContext: ModelContext) {
-        var descriptor = FetchDescriptor<MediaSource>()
+        var descriptor = FetchDescriptor<MediaSource>(
+            predicate: #Predicate { $0.isEnabled }
+        )
         descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
 
-        if self.visibleSourceNames.isEmpty {
-            self.visibleSourceNames = Set(self.mediaSources.map(\.name))
-        }
+        let enabledNames = Set(self.mediaSources.map(\.name))
+        self.visibleSourceNames = self.visibleSourceNames.isEmpty
+            ? enabledNames
+            : self.visibleSourceNames.intersection(enabledNames)
 
         for source in self.mediaSources where self.hasLikesScript(source) {
             _ = TracklistService.shared.ensureLikesPlaylist(

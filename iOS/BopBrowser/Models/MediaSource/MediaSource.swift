@@ -7,16 +7,18 @@ final class MediaSource {
     var url: String
     var configData: Data
     var order: Int
+    var isEnabled: Bool
 
     var config: MediaSourceConfig {
         try! JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
 
-    init(name: String, url: String, config: MediaSourceConfig, order: Int = 0) {
+    init(name: String, url: String, config: MediaSourceConfig, order: Int = 0, isEnabled: Bool = true) {
         self.name = name
         self.url = url
         self.configData = (try? JSONEncoder().encode(config)) ?? Data()
         self.order = order
+        self.isEnabled = isEnabled
     }
 
     static func fromConfigData(_ data: Data) throws -> [MediaSource] {

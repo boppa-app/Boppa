@@ -9,6 +9,14 @@ class MediaSourceDetailViewModel {
     var isLoggedIn = false
     var isCheckingLogin = true
 
+    var isSourceEnabled: Bool {
+        get { self.source.isEnabled }
+        set {
+            self.source.isEnabled = newValue
+            NotificationCenter.default.post(name: .mediaSourceUpdated, object: nil, userInfo: ["name": self.source.name])
+        }
+    }
+
     var loginURL: URL? {
         guard let urlString = self.source.config.login?.url else { return nil }
         return URL(string: urlString)

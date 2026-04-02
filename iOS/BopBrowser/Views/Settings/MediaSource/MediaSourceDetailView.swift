@@ -12,6 +12,14 @@ struct MediaSourceDetailView: View {
             )
 
             List {
+                Section("Enabled") {
+                    HStack {
+                        SolidToggle(isOn: self.$viewModel.isSourceEnabled)
+                            .fixedSize()
+                        Spacer()
+                    }
+                }
+
                 Section("Details") {
                     LabeledContent("Name", value: self.viewModel.source.name)
                     LabeledContent("URL", value: self.viewModel.source.url)

@@ -6,6 +6,7 @@ import WebKit
 extension Notification.Name {
     static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
     static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
+    static let mediaSourceUpdated = Notification.Name("mediaSourceUpdated")
     static let mediaSourceLoginCompleted = Notification.Name("mediaSourceLoginCompleted")
 }
 
