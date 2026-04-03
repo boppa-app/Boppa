@@ -25,6 +25,12 @@ class BrowserViewModel: NSObject {
     private var isLoadingObservation: NSKeyValueObservation?
 
     override init() {
+        self.webView = Self.createWebView()
+        super.init()
+        self.configureWebView()
+    }
+
+    private static func createWebView() -> WKWebView {
         let webView = WebViewFactory.makeWebView(
             contractScript: getDomVisibilityScript().source,
             isHidden: false
@@ -37,15 +43,10 @@ class BrowserViewModel: NSObject {
         webView.frame = .zero
         webView.transform = .identity
 
-        if let ruleList = AdBlockService.shared.getCompiledRuleList() {
-            webView.configuration.userContentController.add(ruleList)
-            logger.debug("Ad block content rule list applied")
-        }
+        return webView
+    }
 
-        self.webView = webView
-
-        super.init()
-
+    private func configureWebView() {
         self.webView.navigationDelegate = self
         self.setupInteractionDetection()
         self.observeWebView()
@@ -55,6 +56,12 @@ class BrowserViewModel: NSObject {
 
     func loadURL(urlString: String) {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed.isEmpty {
+            self.clearPage()
+            return
+        }
+
         self.lastAttemptedInput = trimmed
 
         var urlToLoad = trimmed
@@ -94,6 +101,26 @@ class BrowserViewModel: NSObject {
         self.webView.stopLoading()
     }
 
+    func clearPage() {
+        self.urlObservation = nil
+        self.canGoBackObservation = nil
+        self.canGoForwardObservation = nil
+        self.isLoadingObservation = nil
+        self.webView.stopLoading()
+        self.webView.navigationDelegate = nil
+        self.webView.scrollView.delegate = nil
+
+        self.webView = Self.createWebView()
+        self.configureWebView()
+
+        self.currentURL = nil
+        self.canGoBack = false
+        self.canGoForward = false
+        self.isLoading = false
+        self.lastAttemptedInput = nil
+        self.showBars()
+    }
+
     func showBars() {
         self.barsHidden = false
     }
@@ -109,19 +136,6 @@ class BrowserViewModel: NSObject {
 
     private func setupInteractionDetection() {
         self.webView.scrollView.delegate = self
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.webViewInteracted))
-        tapGesture.cancelsTouchesInView = false
-        tapGesture.delegate = self
-        self.webView.addGestureRecognizer(tapGesture)
-    }
-
-    @objc private func webViewInteracted() {
-        guard !self.barsHidden, self.currentURL != nil else { return }
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.hideBars()
-            }
-        }
     }
 
     private func observeWebView() {
@@ -150,16 +164,10 @@ class BrowserViewModel: NSObject {
 
 extension BrowserViewModel: UIScrollViewDelegate {
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        self.webViewInteracted()
-    }
-}
-
-extension BrowserViewModel: UIGestureRecognizerDelegate {
-    func gestureRecognizer(
-        _ gestureRecognizer: UIGestureRecognizer,
-        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-    ) -> Bool {
-        return true
+        guard !self.barsHidden, self.currentURL != nil else { return }
+        withAnimation(.easeInOut(duration: 0.3)) {
+            self.hideBars()
+        }
     }
 }
 

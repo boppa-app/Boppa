@@ -21,7 +21,12 @@ struct BrowserView: View {
             if self.viewModel.barsHidden {
                 MinifiedBrowserToolbarView(
                     host: self.viewModel.displayHost,
-                    isLoading: self.viewModel.isLoading
+                    isLoading: self.viewModel.isLoading,
+                    onClose: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            self.viewModel.clearPage()
+                        }
+                    }
                 )
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -35,17 +40,39 @@ struct BrowserView: View {
                 .allowsHitTesting(self.viewModel.currentURL != nil)
         }
         .animation(.easeInOut(duration: 0.3), value: self.viewModel.barsHidden)
+        .ignoresSafeArea(edges: self.viewModel.barsHidden ? [.bottom] : [])
     }
 }
 
 private struct WebViewWrapper: UIViewRepresentable {
     let webView: WKWebView
 
-    func makeUIView(context: Context) -> WKWebView {
-        return self.webView
+    func makeUIView(context: Context) -> UIView {
+        let container = UIView()
+        container.addSubview(self.webView)
+        self.webView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            self.webView.topAnchor.constraint(equalTo: container.topAnchor),
+            self.webView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            self.webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            self.webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ])
+        return container
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIView(_ container: UIView, context: Context) {
+        guard self.webView.superview !== container else { return }
+        container.subviews.forEach { $0.removeFromSuperview() }
+        container.addSubview(self.webView)
+        self.webView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            self.webView.topAnchor.constraint(equalTo: container.topAnchor),
+            self.webView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            self.webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            self.webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ])
+        container.layoutIfNeeded()
+    }
 }
 
 #Preview {

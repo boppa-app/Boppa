@@ -47,6 +47,16 @@ struct BrowserToolbarView: View {
                     self.urlText = self.viewModel.currentURL?.absoluteString ?? ""
                 }
 
+                if self.isURLFieldFocused && !self.urlText.isEmpty {
+                    Button {
+                        self.urlText = ""
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color(.systemGray))
+                    }
+                }
+
                 if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
