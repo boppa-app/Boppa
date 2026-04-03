@@ -18,7 +18,7 @@ struct SettingsView: View {
                         if self.isEditing {
                             MediaSourceRow(source: source)
                         } else {
-                            NavigationLink(destination: MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(source: source))) {
+                            NavigationLink(destination: MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(source: source, modelContext: self.modelContext))) {
                                 MediaSourceRow(source: source)
                             }
                         }

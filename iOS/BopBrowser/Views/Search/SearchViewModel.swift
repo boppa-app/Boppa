@@ -80,7 +80,7 @@ class SearchViewModel {
         }
 
         guard let source = self.selectedSource else {
-            self.errorMessage = "No Media Source Selected"
+            self.errorMessage = "No media source selected"
             return
         }
 

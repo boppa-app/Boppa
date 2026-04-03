@@ -1,9 +1,11 @@
 import Foundation
+import SwiftData
 
 @MainActor
 @Observable
 class MediaSourceDetailViewModel {
     let source: MediaSource
+    private let modelContext: ModelContext
 
     var showingLogin = false
     var isLoggedIn = false
@@ -13,6 +15,7 @@ class MediaSourceDetailViewModel {
         get { self.source.isEnabled }
         set {
             self.source.isEnabled = newValue
+            try? self.modelContext.save()
             NotificationCenter.default.post(name: .mediaSourceUpdated, object: nil, userInfo: ["name": self.source.name])
         }
     }
@@ -22,8 +25,9 @@ class MediaSourceDetailViewModel {
         return URL(string: urlString)
     }
 
-    init(source: MediaSource) {
+    init(source: MediaSource, modelContext: ModelContext) {
         self.source = source
+        self.modelContext = modelContext
         NotificationCenter.default.addObserver(
             forName: .mediaSourceLoginCompleted,
             object: nil,

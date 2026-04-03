@@ -166,7 +166,7 @@ struct SearchView: View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 40))
-                .foregroundColor(.red)
+                .foregroundColor(self.viewModel.mediaSources.count == 0 ? Color(.systemGray) : .red)
             Text(message)
                 .font(.callout)
                 .foregroundColor(Color(.systemGray))
