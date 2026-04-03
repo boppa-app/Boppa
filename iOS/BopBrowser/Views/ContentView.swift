@@ -89,7 +89,20 @@ struct ContentTabView: View {
         VStack(spacing: 0) {
             if !self.hideSeparator {
                 Spacer().frame(height: 6)
-                Rectangle().fill(Color(.systemGray6)).frame(height: 3)
+                Rectangle()
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black.opacity(0.5), location: 0),
+                                .init(color: .clear, location: 0.5),
+                                .init(color: .black.opacity(0.5), location: 1),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 3)
             }
 
             HStack(spacing: 0) {
