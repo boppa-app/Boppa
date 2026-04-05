@@ -195,6 +195,7 @@ struct SearchView: View {
                                 isLoading: PlaybackService.shared.isLoading,
                                 isPlaying: PlaybackService.shared.isPlaying
                             )
+                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -214,13 +215,16 @@ struct SearchView: View {
                                 )
                             } label: {
                                 AlbumRow(album: album)
+                                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                            .padding(.trailing, 16)
                         } else {
                             AlbumRow(album: album)
+                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                                 .listRowBackground(Color.black)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                                 .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
@@ -229,6 +233,7 @@ struct SearchView: View {
                 case let .artists(artists):
                     ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
                         ArtistRow(artist: artist)
+                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
@@ -236,6 +241,7 @@ struct SearchView: View {
                 case let .playlists(playlists):
                     ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
                         PlaylistRow(playlist: playlist)
+                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))

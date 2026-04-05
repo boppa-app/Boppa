@@ -48,25 +48,29 @@ struct TrackRow: View {
                 }
             }
             Spacer()
-            if self.isSelected && self.isLoading {
-                ProgressView()
-                    .tint(.purp)
-            } else if self.isSelected {
-                ZStack {
-                    Image(systemName: "waveform")
-                        .foregroundColor(.purp)
-                        .symbolEffect(.variableColor.iterative.reversing)
-                    if !self.isPlaying {
+            if self.style == .regular {
+                if self.isSelected && self.isLoading {
+                    ProgressView()
+                        .tint(.purp)
+                } else if self.isSelected {
+                    ZStack {
                         Image(systemName: "waveform")
-                            .foregroundColor(.purp.opacity(0.3))
-                            .background(Color.black)
+                            .foregroundColor(.purp)
+                            .symbolEffect(.variableColor.iterative.reversing)
+                        if !self.isPlaying {
+                            Image(systemName: "waveform")
+                                .foregroundColor(.purp.opacity(0.3))
+                                .background(Color.black)
+                        }
+                    }
+                } else {
+                    ZStack {
+                        Button {} label: {
+                            Image(systemName: "ellipsis")
+                                .foregroundColor(Color(.systemGray))
+                        }
                     }
                 }
-            } else if let duration = self.track.formattedDuration {
-                Text(duration)
-                    .font(.caption2)
-                    .foregroundColor(Color(.systemGray))
-                    .monospacedDigit()
             }
         }
         .padding(.horizontal, self.horizontalPadding)
