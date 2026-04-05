@@ -10,7 +10,7 @@ struct Tracklist {
     enum TracklistType {
         case likes
         case album(Album)
-        case playlist
+        case playlist(Playlist)
     }
 
     var isPersisted: Bool {
@@ -27,6 +27,11 @@ struct Tracklist {
         return nil
     }
 
+    var playlist: Playlist? {
+        if case let .playlist(playlist) = self.tracklistType { return playlist }
+        return nil
+    }
+
     init(storedTracklist: StoredTracklist) {
         self.name = storedTracklist.name
         self.mediaSourceName = storedTracklist.mediaSourceName
@@ -37,7 +42,7 @@ struct Tracklist {
         case "likes":
             self.tracklistType = .likes
         default:
-            self.tracklistType = .playlist
+            self.tracklistType = .playlist(Playlist(title: storedTracklist.name))
         }
     }
 
@@ -46,6 +51,14 @@ struct Tracklist {
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = album.artworkUrl
         self.tracklistType = .album(album)
+        self.storedTracklist = nil
+    }
+
+    init(playlist: Playlist, mediaSourceName: String) {
+        self.name = playlist.title
+        self.mediaSourceName = mediaSourceName
+        self.artworkUrl = playlist.artworkUrl
+        self.tracklistType = .playlist(playlist)
         self.storedTracklist = nil
     }
 }

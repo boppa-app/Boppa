@@ -25,7 +25,7 @@ struct DetailHeaderView<TrailingContent: View, CenterContent: View>: View {
                     MarqueeText(
                         self.title,
                         font: .headline,
-                        fontWeight: .regular,
+                        fontWeight: .bold,
                         foregroundColor: .white,
                         maxWidth: 200,
                         alignment: .center

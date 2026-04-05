@@ -117,7 +117,19 @@ struct TracklistView: View {
                     .buttonStyle(.plain)
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(index == self.viewModel.displayTracks.count - 1 ? .clear : Color(.systemGray5))
+                    .listRowSeparatorTint(index == self.viewModel.displayTracks.count - 1 && !self.viewModel.hasMorePages ? .clear : Color(.systemGray5))
+                }
+
+                if self.viewModel.hasMorePages {
+                    ProgressView()
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .onAppear {
+                            self.viewModel.loadNextPage()
+                        }
                 }
             }
             .listStyle(.plain)

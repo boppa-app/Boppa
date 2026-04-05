@@ -240,11 +240,30 @@ struct SearchView: View {
                     }
                 case let .playlists(playlists):
                     ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
-                        PlaylistRow(playlist: playlist)
-                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
+                        if let source = self.viewModel.selectedSource,
+                           source.config.data?.getPlaylist != nil
+                        {
+                            NavigationLink {
+                                TracklistView(
+                                    tracklist: Tracklist(playlist: playlist, mediaSourceName: source.name),
+                                    source: source
+                                )
+                            } label: {
+                                PlaylistRow(playlist: playlist)
+                                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
+                            }
+                            .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                            .padding(.trailing, 16)
+                        } else {
+                            PlaylistRow(playlist: playlist)
+                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
+                                .listRowBackground(Color.black)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                        }
                     }
                 }
 

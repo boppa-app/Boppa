@@ -102,6 +102,7 @@ struct MediaSourceData: Codable, Sendable {
     let searchAlbums: ScriptContent?
     let searchPlaylists: ScriptContent?
     let getAlbum: ScriptContent?
+    let getPlaylist: ScriptContent?
     let listLikes: ScriptContent?
     let listPlaylists: ScriptContent?
     let listPlaylistItems: ScriptContent?

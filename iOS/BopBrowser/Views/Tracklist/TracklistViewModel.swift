@@ -15,9 +15,13 @@ class TracklistViewModel {
     var isRefreshing = false
     var errorMessage: String?
     var sortMode: TracklistSortMode = .defaultOrder
+    var hasMorePages = false
 
     private var fetchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
+    private var paginationContext: [String: Any]?
+    private var currentTracklist: Tracklist?
+    private var currentConfig: MediaSourceConfig?
 
     var displayTracks: [Track] {
         self.applySorting(self.tracks)
@@ -28,6 +32,9 @@ class TracklistViewModel {
         config: MediaSourceConfig,
         modelContext: ModelContext
     ) {
+        self.currentTracklist = tracklist
+        self.currentConfig = config
+        
         if let stored = tracklist.storedTracklist {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
@@ -94,14 +101,13 @@ class TracklistViewModel {
 
         self.fetchTask = Task {
             do {
-                let onPageFetched: ([Track]) -> Void = { [weak self] allTracksSoFar in
-                    guard let self else { return }
-                    self.unsortedTracks = allTracksSoFar
-                    self.tracks = allTracksSoFar
-                }
-
                 switch tracklist.tracklistType {
                 case .likes:
+                    let onPageFetched: ([Track]) -> Void = { [weak self] allTracksSoFar in
+                        guard let self else { return }
+                        self.unsortedTracks = allTracksSoFar
+                        self.tracks = allTracksSoFar
+                    }
                     guard let stored = tracklist.storedTracklist else { return }
                     try await TracklistService.shared.fetchLikes(
                         config: config,
@@ -110,19 +116,17 @@ class TracklistViewModel {
                         modelContext: modelContext,
                         onPageFetched: onPageFetched
                     )
-                case let .album(album):
-                    let tracks = try await TracklistService.shared.fetchAlbum(
-                        album: album,
+                case .album, .playlist:
+                    let response = try await TracklistService.shared.fetchTracklist(
+                        tracklist: tracklist,
                         config: config,
-                        mediaSourceName: tracklist.mediaSourceName,
-                        onPageFetched: onPageFetched
+                        previousResult: nil
                     )
                     guard !Task.isCancelled else { return }
-                    self.unsortedTracks = tracks
-                    self.tracks = tracks
-                case .playlist:
-                    // TODO: Add user playlist retrieval functionality (listPlaylists)
-                    return
+                    self.unsortedTracks = response.tracks
+                    self.tracks = response.tracks
+                    self.paginationContext = response.paginationContext
+                    self.hasMorePages = response.paginationContext != nil
                 }
 
                 guard !Task.isCancelled else { return }
@@ -138,6 +142,43 @@ class TracklistViewModel {
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
                 logger.error("Fetch failed for '\(tracklist.name)': \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func loadNextPage() {
+        guard let tracklist = self.currentTracklist,
+              let config = self.currentConfig,
+              let paginationContext = self.paginationContext,
+              !self.isLoading else {
+            return
+        }
+
+        self.isLoading = true
+
+        Task {
+            do {
+                let response = try await TracklistService.shared.fetchTracklist(
+                    tracklist: tracklist,
+                    config: config,
+                    previousResult: paginationContext
+                )
+
+                guard !Task.isCancelled else { return }
+
+                self.unsortedTracks.append(contentsOf: response.tracks)
+                self.tracks = self.unsortedTracks
+                self.paginationContext = response.paginationContext
+                self.hasMorePages = response.paginationContext != nil
+                self.isLoading = false
+
+                logger.info("Loaded next page: \(response.tracks.count) track(s), total: \(self.tracks.count)")
+            } catch {
+                guard !Task.isCancelled else { return }
+
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+                logger.error("Failed to load next page: \(error.localizedDescription)")
             }
         }
     }
