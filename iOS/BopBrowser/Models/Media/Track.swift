@@ -8,6 +8,8 @@ struct Track: Identifiable, Equatable {
     let artworkUrl: String?
     let url: String?
     let mediaSourceName: String?
+    let artists: [String: [String: String]]
+    let album: [String: [String: String]]
     let metadata: [String: String]
 
     init(
@@ -18,6 +20,8 @@ struct Track: Identifiable, Equatable {
         artworkUrl: String? = nil,
         url: String? = nil,
         mediaSourceName: String? = nil,
+        artists: [String: [String: String]] = [:],
+        album: [String: [String: String]] = [:],
         metadata: [String: String] = [:]
     ) {
         self.id = id
@@ -27,6 +31,8 @@ struct Track: Identifiable, Equatable {
         self.artworkUrl = artworkUrl
         self.url = url
         self.mediaSourceName = mediaSourceName
+        self.artists = artists
+        self.album = album
         self.metadata = metadata
     }
 
