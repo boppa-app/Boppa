@@ -33,7 +33,7 @@ struct ContentView: View {
                 LibraryView()
                     .opacity(self.selectedTab == 2 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 2)
-                SettingsView()
+                SettingsView(selectedTab: self.$selectedTab)
                     .opacity(self.selectedTab == 3 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 3)
             }

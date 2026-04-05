@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
+    @Binding var selectedTab: Int
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \MediaSource.order) private var mediaSources: [MediaSource]
     @State private var showingAddSheet = false
@@ -24,6 +25,7 @@ struct SettingsView: View {
                         }
                     }
                     .onMove(perform: self.moveMediaSources)
+                    .onDelete(perform: self.deleteMediaSources)
 
                     if self.isEditing {
                         Button {
@@ -66,6 +68,11 @@ struct SettingsView: View {
             }
             .environment(\.editMode, self.isEditing ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
+            .onChange(of: self.selectedTab) { _, newTab in
+                if newTab != 3 {
+                    self.isEditing = false
+                }
+            }
             .sheet(isPresented: self.$showingAddSheet) {
                 AddMediaSourceView()
             }
@@ -97,9 +104,19 @@ struct SettingsView: View {
         }
         try? self.modelContext.save()
     }
+    
+    private func deleteMediaSources(at offsets: IndexSet) {
+        let deletedNames = offsets.map { self.mediaSources[$0].name }
+        for index in offsets {
+            let mediaSource = self.mediaSources[index]
+            self.modelContext.delete(mediaSource)
+        }
+        try? self.modelContext.save()
+        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["names": deletedNames])
+    }
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(selectedTab: .constant(3))
         .modelContainer(for: MediaSource.self, inMemory: true)
 }
