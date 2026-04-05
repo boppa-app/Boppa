@@ -10,37 +10,49 @@ import WebKit
 
 struct BrowserView: View {
     @Bindable var viewModel: BrowserViewModel
+    @FocusState private var isURLFieldFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            if !self.viewModel.barsHidden {
-                BrowserToolbarView(viewModel: self.viewModel)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
+        ZStack {
+            VStack(spacing: 0) {
+                if !self.viewModel.barsHidden {
+                    BrowserToolbarView(viewModel: self.viewModel, isURLFieldFocused: self.$isURLFieldFocused)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
 
-            if self.viewModel.barsHidden {
-                MinifiedBrowserToolbarView(
-                    host: self.viewModel.displayHost,
-                    isLoading: self.viewModel.isLoading,
-                    onClose: {
+                if self.viewModel.barsHidden {
+                    MinifiedBrowserToolbarView(
+                        host: self.viewModel.displayHost,
+                        isLoading: self.viewModel.isLoading,
+                        onClose: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                self.viewModel.clearPage()
+                            }
+                        }
+                    )
+                    .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            self.viewModel.clearPage()
+                            self.viewModel.showBars()
                         }
                     }
-                )
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.viewModel.showBars()
-                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
 
-            WebViewWrapper(webView: self.viewModel.webView)
-                .allowsHitTesting(self.viewModel.currentURL != nil)
+                WebViewWrapper(webView: self.viewModel.webView)
+                    .allowsHitTesting(self.viewModel.currentURL != nil)
+            }
+            .animation(.easeInOut(duration: 0.3), value: self.viewModel.barsHidden)
+            .ignoresSafeArea(edges: self.viewModel.barsHidden ? [.bottom] : [])
+            
+            if self.isURLFieldFocused {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        self.isURLFieldFocused = false
+                    }
+                    .ignoresSafeArea()
+            }
         }
-        .animation(.easeInOut(duration: 0.3), value: self.viewModel.barsHidden)
-        .ignoresSafeArea(edges: self.viewModel.barsHidden ? [.bottom] : [])
     }
 }
 

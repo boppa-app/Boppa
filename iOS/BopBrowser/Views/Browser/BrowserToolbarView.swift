@@ -2,8 +2,8 @@ import SwiftUI
 
 struct BrowserToolbarView: View {
     @Bindable var viewModel: BrowserViewModel
+    @FocusState.Binding var isURLFieldFocused: Bool
     @State private var urlText: String = ""
-    @FocusState private var isURLFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -87,5 +87,6 @@ struct BrowserToolbarView: View {
 }
 
 #Preview {
-    BrowserToolbarView(viewModel: BrowserViewModel())
+    @Previewable @FocusState var isFocused: Bool
+    BrowserToolbarView(viewModel: BrowserViewModel(), isURLFieldFocused: $isFocused)
 }
