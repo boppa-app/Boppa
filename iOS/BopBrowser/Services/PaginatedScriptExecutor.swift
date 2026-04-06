@@ -21,14 +21,16 @@ class PaginatedScriptExecutor {
         params: [String: Any],
         previousResult: [String: Any]?,
         customUserAgent: String?,
-        domain: String
+        domain: String,
+        mediaSourceContext: [String: String] = [:]
     ) async throws -> PageResult {
         let context = self.buildJSContext(params: params, previousResult: previousResult)
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             context: context,
             customUserAgent: customUserAgent,
-            domain: domain
+            domain: domain,
+            mediaSourceContext: mediaSourceContext
         )
         return self.parsePageResult(jsResult)
     }
@@ -39,6 +41,7 @@ class PaginatedScriptExecutor {
         customUserAgent: String?,
         domain: String,
         mediaSourceName: String,
+        mediaSourceContext: [String: String] = [:],
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> [Track] {
         var allTracks: [Track] = []
@@ -50,7 +53,8 @@ class PaginatedScriptExecutor {
                 params: params,
                 previousResult: previousResult,
                 customUserAgent: customUserAgent,
-                domain: domain
+                domain: domain,
+                mediaSourceContext: mediaSourceContext
             )
 
             let tracks = page.items.compactMap { self.mapToTrack($0, mediaSourceName: mediaSourceName) }

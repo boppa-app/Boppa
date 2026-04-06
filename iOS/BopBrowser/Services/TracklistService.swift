@@ -20,12 +20,13 @@ class TracklistService {
     private init() {}
 
     func fetchLikes(
-        config: MediaSourceConfig,
-        mediaSourceName: String,
+        mediaSource: MediaSource,
         tracklist: StoredTracklist,
         modelContext: ModelContext,
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws {
+        let config = mediaSource.config
+        let mediaSourceName = mediaSource.name
         guard let script = config.data?.listLikes?.script else {
             logger.warning("No listLikes script for '\(mediaSourceName)'")
             return
@@ -39,6 +40,7 @@ class TracklistService {
             customUserAgent: config.customUserAgent,
             domain: config.url,
             mediaSourceName: mediaSourceName,
+            mediaSourceContext: mediaSource.contextValues,
             onPageFetched: { allTracksSoFar in
                 onPageFetched?(allTracksSoFar)
             }
@@ -51,22 +53,26 @@ class TracklistService {
 
     func fetchTracklist(
         tracklist: Tracklist,
-        config: MediaSourceConfig,
+        mediaSource: MediaSource,
         previousResult: [String: Any]? = nil
     ) async throws -> TracklistResponse {
+        let config = mediaSource.config
+        let mediaSourceName = tracklist.mediaSourceName
         switch tracklist.tracklistType {
         case let .album(album):
             return try await self.fetchAlbumPage(
                 album: album,
                 config: config,
-                mediaSourceName: tracklist.mediaSourceName,
+                mediaSourceName: mediaSourceName,
+                mediaSourceContext: mediaSource.contextValues,
                 previousResult: previousResult
             )
         case let .playlist(playlist):
             return try await self.fetchPlaylistPage(
                 playlist: playlist,
                 config: config,
-                mediaSourceName: tracklist.mediaSourceName,
+                mediaSourceName: mediaSourceName,
+                mediaSourceContext: mediaSource.contextValues,
                 previousResult: previousResult
             )
         case .likes:
@@ -76,9 +82,10 @@ class TracklistService {
 
     func fetchArtist(
         artist: Artist,
-        config: MediaSourceConfig,
-        mediaSourceName: String
+        mediaSource: MediaSource
     ) async throws -> ArtistDetail {
+        let config = mediaSource.config
+        let mediaSourceName = mediaSource.name
         guard let script = config.data?.getArtist?.script else {
             logger.warning("No getArtist script for '\(mediaSourceName)'")
             return ArtistDetail(songs: [], albums: [], videos: [])
@@ -102,7 +109,8 @@ class TracklistService {
             script: script,
             context: context,
             customUserAgent: config.customUserAgent,
-            domain: config.url
+            domain: config.url,
+            mediaSourceContext: mediaSource.contextValues
         )
 
         let songs = (jsResult["songs"] as? [[String: Any]] ?? [])
@@ -123,6 +131,7 @@ class TracklistService {
         album: Album,
         config: MediaSourceConfig,
         mediaSourceName: String,
+        mediaSourceContext: [String: String],
         previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
         guard let script = config.data?.getAlbum?.script else {
@@ -144,7 +153,8 @@ class TracklistService {
             params: ["item": itemParams],
             previousResult: previousResult,
             customUserAgent: config.customUserAgent,
-            domain: config.url
+            domain: config.url,
+            mediaSourceContext: mediaSourceContext
         )
 
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) }
@@ -157,6 +167,7 @@ class TracklistService {
         playlist: Playlist,
         config: MediaSourceConfig,
         mediaSourceName: String,
+        mediaSourceContext: [String: String],
         previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
         guard let script = config.data?.getPlaylist?.script else {
@@ -178,7 +189,8 @@ class TracklistService {
             params: ["item": itemParams],
             previousResult: previousResult,
             customUserAgent: config.customUserAgent,
-            domain: config.url
+            domain: config.url,
+            mediaSourceContext: mediaSourceContext
         )
 
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) }

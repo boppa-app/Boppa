@@ -27,6 +27,7 @@ final class MediaSourceContextProvider: NSObject {
     private var pendingWork: [RefreshWorkItem] = []
     private var activeWebView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
+    private var currentSourceName: String?
     private var modelContext: ModelContext?
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
@@ -193,6 +194,7 @@ final class MediaSourceContextProvider: NSObject {
         }
         self.pendingWork.removeFirst()
         self.isProcessing = true
+        self.currentSourceName = workItem.sourceName
 
         guard let url = URL(string: workItem.parse.url) else {
             logger.error("Invalid refresh URL: '\(workItem.parse.url)' for '\(workItem.sourceName)'")
@@ -210,6 +212,7 @@ final class MediaSourceContextProvider: NSObject {
         self.timeoutTask = nil
         self.tearDownWebView()
         self.isProcessing = false
+        self.currentSourceName = nil
         let remaining = self.pendingWork.count
         logger.debug("Work item complete. \(remaining) item(s) remaining.")
         self.processNextIfIdle()
@@ -243,9 +246,15 @@ final class MediaSourceContextProvider: NSObject {
     private func buildContractScript() -> String {
         """
         (function() {
-            window.bopBrowserMediaContextDone = function() {
+            window.bopBrowserMediaSourceContextDone = function() {
                 window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({
                     type: 'done'
+                });
+            };
+            window.bopBrowserSetMediaSourceContextValues = function(values) {
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({
+                    type: 'contextValues',
+                    values: values
                 });
             };
         })();
@@ -263,8 +272,39 @@ final class MediaSourceContextProvider: NSObject {
 
     @MainActor
     private func handleDoneMessage() {
-        logger.info("bopBrowserMediaContextDone signaled. Completing work item.")
+        logger.info("bopBrowserMediaSourceContextDone signaled. Completing work item.")
         self.completeCurrentWork()
+    }
+
+    @MainActor
+    private func handleContextValues(_ values: [String: Any]) {
+        guard let sourceName = self.currentSourceName else {
+            logger.warning("Received contextValues but no current source name")
+            return
+        }
+        guard let modelContext else {
+            logger.warning("Received contextValues but no modelContext")
+            return
+        }
+
+        let descriptor = FetchDescriptor<MediaSource>()
+        guard let sources = try? modelContext.fetch(descriptor),
+              let source = sources.first(where: { $0.name == sourceName })
+        else {
+            logger.warning("Could not find MediaSource '\(sourceName)' to store context values")
+            return
+        }
+
+        for (key, value) in values {
+            if let stringValue = value as? String {
+                source.contextValues[key] = stringValue
+            } else {
+                source.contextValues[key] = String(describing: value)
+            }
+        }
+
+        try? modelContext.save()
+        logger.info("Stored \(values.count) context value(s) for '\(sourceName)'")
     }
 }
 
@@ -287,6 +327,13 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
             switch type {
             case "done":
                 self.handleDoneMessage()
+
+            case "contextValues":
+                if let values = body["values"] as? [String: Any] {
+                    self.handleContextValues(values)
+                } else {
+                    logger.warning("contextValues message missing 'values' dictionary")
+                }
 
             default:
                 logger.warning("Unknown message type: \(type)")

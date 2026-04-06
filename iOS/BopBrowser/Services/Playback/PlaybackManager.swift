@@ -23,28 +23,27 @@ final class PlaybackManager {
     func load(track: Track, mediaSource: MediaSource) async {
         self.onEvent?(.loading)
 
-        let config = mediaSource.config
-        let playback = config.playback
+        let playback = mediaSource.config.playback
 
         self.activeEngine?.stop()
         self.activeEngine = nil
 
-        let streamPlaying = await self.tryStreamPlayback(playbackMode: playback.mode, track: track, config: config, fallback: false)
+        let streamPlaying = await self.tryStreamPlayback(playbackMode: playback.mode, track: track, mediaSource: mediaSource, fallback: false)
         if streamPlaying { return }
-        let webPlaying = await self.tryWebPlayback(playbackMode: playback.mode, track: track, config: config, fallback: false)
+        let webPlaying = await self.tryWebPlayback(playbackMode: playback.mode, track: track, mediaSource: mediaSource, fallback: false)
         if webPlaying { return }
-        let streamFallbackPlaying = await self.tryStreamPlayback(playbackMode: playback.mode, track: track, config: config, fallback: true)
+        let streamFallbackPlaying = await self.tryStreamPlayback(playbackMode: playback.mode, track: track, mediaSource: mediaSource, fallback: true)
         if streamFallbackPlaying { return }
-        let webFallbackPlaying = await self.tryWebPlayback(playbackMode: playback.mode, track: track, config: config, fallback: true)
+        let webFallbackPlaying = await self.tryWebPlayback(playbackMode: playback.mode, track: track, mediaSource: mediaSource, fallback: true)
         if webFallbackPlaying { return }
 
         logger.error("All playback methods failed for track: \(track.title)")
         self.onEvent?(.error("No playback method succeeded"))
     }
 
-    private func tryStreamPlayback(playbackMode: PlaybackMode, track: Track, config: MediaSourceConfig, fallback: Bool) async -> Bool {
+    private func tryStreamPlayback(playbackMode: PlaybackMode, track: Track, mediaSource: MediaSource, fallback: Bool) async -> Bool {
         if playbackMode == .streamOnly || (playbackMode == .webFallback && fallback) {
-            let getTrackResponse = await self.getTrack(track: track, config: config)
+            let getTrackResponse = await self.getTrack(track: track, mediaSource: mediaSource)
             if let getTrackResponse = getTrackResponse {
                 self.avPlayerEngine.onEvent = { [weak self] event in self?.onEvent?(event) }
                 if await self.avPlayerEngine.load(getTrackResponse: getTrackResponse) {
@@ -59,7 +58,8 @@ final class PlaybackManager {
         return false
     }
 
-    private func tryWebPlayback(playbackMode: PlaybackMode, track: Track, config: MediaSourceConfig, fallback: Bool) async -> Bool {
+    private func tryWebPlayback(playbackMode: PlaybackMode, track: Track, mediaSource: MediaSource, fallback: Bool) async -> Bool {
+        let config = mediaSource.config
         if playbackMode == .webOnly || (playbackMode == .streamFallback && fallback) {
             if config.playback.html != nil || config.playback.url != nil {
                 self.webViewEngine.onEvent = { [weak self] event in self?.onEvent?(event) }
@@ -74,7 +74,8 @@ final class PlaybackManager {
         return false
     }
 
-    private func getTrack(track: Track, config: MediaSourceConfig) async -> GetTrackResponse? {
+    private func getTrack(track: Track, mediaSource: MediaSource) async -> GetTrackResponse? {
+        let config = mediaSource.config
         guard let getTrackScript = config.data?.getTrack else {
             logger.error("No getTrack script in data config")
             return nil
@@ -100,7 +101,8 @@ final class PlaybackManager {
                 script: getTrackScript.script,
                 context: context,
                 customUserAgent: config.customUserAgent,
-                domain: config.url
+                domain: config.url,
+                mediaSourceContext: mediaSource.contextValues
             )
 
             return GetTrackResponse(

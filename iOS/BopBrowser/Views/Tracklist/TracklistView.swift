@@ -41,7 +41,7 @@ struct TracklistView: View {
         .onAppear {
             self.viewModel.load(
                 tracklist: self.tracklist,
-                config: self.source.config,
+                source: self.source,
                 modelContext: self.modelContext
             )
         }
@@ -79,7 +79,7 @@ struct TracklistView: View {
         Button {
             self.viewModel.refresh(
                 tracklist: self.tracklist,
-                config: self.source.config,
+                source: self.source,
                 modelContext: self.modelContext
             )
         } label: {

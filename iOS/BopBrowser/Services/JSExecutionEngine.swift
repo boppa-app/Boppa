@@ -24,13 +24,17 @@ final class JSExecutionEngine: NSObject {
         script: String,
         context: [String: Any],
         customUserAgent: String? = nil,
-        domain: String? = nil
+        domain: String? = nil,
+        mediaSourceContext: [String: String] = [:]
     ) async throws -> [String: Any] {
         var context = context
         if let domain {
             let useDesktopStore = customUserAgent != nil
             let cookies = await WebDataStore.shared.getCookies(forDomain: domain, useDesktopStore: useDesktopStore)
             context["cookies"] = cookies
+        }
+        if !mediaSourceContext.isEmpty {
+            context["mediaSourceContext"] = mediaSourceContext
         }
 
         return try await withCheckedThrowingContinuation { continuation in

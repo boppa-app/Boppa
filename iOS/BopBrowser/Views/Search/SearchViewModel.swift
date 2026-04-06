@@ -84,8 +84,6 @@ class SearchViewModel {
             return
         }
 
-        let config = source.config
-
         self.isSearching = true
         self.errorMessage = nil
 
@@ -93,7 +91,7 @@ class SearchViewModel {
             do {
                 let response = try await SearchService.shared.search(
                     query: trimmed,
-                    config: config,
+                    mediaSource: source,
                     category: self.selectedCategory
                 )
 
@@ -123,8 +121,6 @@ class SearchViewModel {
               let source = self.selectedSource
         else { return }
 
-        let config = source.config
-
         let trimmed = self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
 
         self.isLoadingNextPage = true
@@ -133,7 +129,7 @@ class SearchViewModel {
             do {
                 let response = try await SearchService.shared.searchNextPage(
                     paginationContext: paginationContext,
-                    config: config,
+                    mediaSource: source,
                     category: self.selectedCategory,
                     query: trimmed
                 )

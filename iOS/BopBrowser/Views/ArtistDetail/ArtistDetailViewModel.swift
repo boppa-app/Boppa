@@ -17,17 +17,15 @@ class ArtistDetailViewModel {
 
     func load(
         artist: Artist,
-        config: MediaSourceConfig,
-        mediaSourceName: String
+        source: MediaSource
     ) {
         guard self.detail == nil else { return }
-        self.fetch(artist: artist, config: config, mediaSourceName: mediaSourceName)
+        self.fetch(artist: artist, source: source)
     }
 
     private func fetch(
         artist: Artist,
-        config: MediaSourceConfig,
-        mediaSourceName: String
+        source: MediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true
@@ -37,8 +35,7 @@ class ArtistDetailViewModel {
             do {
                 let result = try await TracklistService.shared.fetchArtist(
                     artist: artist,
-                    config: config,
-                    mediaSourceName: mediaSourceName
+                    mediaSource: source
                 )
 
                 guard !Task.isCancelled else { return }

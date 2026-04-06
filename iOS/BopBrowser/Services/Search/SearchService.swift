@@ -15,9 +15,10 @@ class SearchService {
     @MainActor
     func search(
         query: String,
-        config: MediaSourceConfig,
+        mediaSource: MediaSource,
         category: SearchCategory
     ) async throws -> SearchResponse {
+        let config = mediaSource.config
         guard let data = config.data else {
             throw SearchError.noSearchConfig
         }
@@ -31,7 +32,8 @@ class SearchService {
             params: ["query": query],
             previousResult: nil,
             customUserAgent: config.customUserAgent,
-            domain: config.url
+            domain: config.url,
+            mediaSourceContext: mediaSource.contextValues
         )
 
         return self.buildResponse(page: page, category: category, mediaSourceName: config.name)
@@ -40,10 +42,11 @@ class SearchService {
     @MainActor
     func searchNextPage(
         paginationContext: [String: Any],
-        config: MediaSourceConfig,
+        mediaSource: MediaSource,
         category: SearchCategory,
         query: String
     ) async throws -> SearchResponse {
+        let config = mediaSource.config
         guard let data = config.data else {
             throw SearchError.noSearchConfig
         }
@@ -57,7 +60,8 @@ class SearchService {
             params: ["query": query],
             previousResult: paginationContext,
             customUserAgent: config.customUserAgent,
-            domain: config.url
+            domain: config.url,
+            mediaSourceContext: mediaSource.contextValues
         )
 
         return self.buildResponse(page: page, category: category, mediaSourceName: config.name)

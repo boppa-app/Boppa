@@ -23,8 +23,7 @@ struct ArtistDetailView: View {
         .onAppear {
             self.viewModel.load(
                 artist: self.artist,
-                config: self.source.config,
-                mediaSourceName: self.source.name
+                source: self.source
             )
         }
     }

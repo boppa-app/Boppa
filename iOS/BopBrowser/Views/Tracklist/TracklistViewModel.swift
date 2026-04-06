@@ -21,7 +21,7 @@ class TracklistViewModel {
     private var unsortedTracks: [Track] = []
     private var paginationContext: [String: Any]?
     private var currentTracklist: Tracklist?
-    private var currentConfig: MediaSourceConfig?
+    private var currentSource: MediaSource?
 
     var displayTracks: [Track] {
         self.applySorting(self.tracks)
@@ -29,29 +29,29 @@ class TracklistViewModel {
 
     func load(
         tracklist: Tracklist,
-        config: MediaSourceConfig,
+        source: MediaSource,
         modelContext: ModelContext
     ) {
         self.currentTracklist = tracklist
-        self.currentConfig = config
+        self.currentSource = source
 
         if let stored = tracklist.storedTracklist {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 
         if self.tracks.isEmpty {
-            self.fetchAll(tracklist: tracklist, config: config, modelContext: modelContext)
+            self.fetchAll(tracklist: tracklist, source: source, modelContext: modelContext)
         }
     }
 
     func refresh(
         tracklist: Tracklist,
-        config: MediaSourceConfig,
+        source: MediaSource,
         modelContext: ModelContext
     ) {
         guard tracklist.isPersisted else { return }
         self.isRefreshing = true
-        self.fetchAll(tracklist: tracklist, config: config, modelContext: modelContext)
+        self.fetchAll(tracklist: tracklist, source: source, modelContext: modelContext)
     }
 
     func setSortMode(_ mode: TracklistSortMode, tracklist: Tracklist, modelContext: ModelContext) {
@@ -92,7 +92,7 @@ class TracklistViewModel {
 
     private func fetchAll(
         tracklist: Tracklist,
-        config: MediaSourceConfig,
+        source: MediaSource,
         modelContext: ModelContext
     ) {
         self.fetchTask?.cancel()
@@ -110,8 +110,7 @@ class TracklistViewModel {
                     }
                     guard let stored = tracklist.storedTracklist else { return }
                     try await TracklistService.shared.fetchLikes(
-                        config: config,
-                        mediaSourceName: tracklist.mediaSourceName,
+                        mediaSource: source,
                         tracklist: stored,
                         modelContext: modelContext,
                         onPageFetched: onPageFetched
@@ -119,7 +118,7 @@ class TracklistViewModel {
                 case .album, .playlist:
                     let response = try await TracklistService.shared.fetchTracklist(
                         tracklist: tracklist,
-                        config: config,
+                        mediaSource: source,
                         previousResult: nil
                     )
                     guard !Task.isCancelled else { return }
@@ -148,7 +147,7 @@ class TracklistViewModel {
 
     func loadNextPage() {
         guard let tracklist = self.currentTracklist,
-              let config = self.currentConfig,
+              let source = self.currentSource,
               let paginationContext = self.paginationContext,
               !self.isLoading
         else {
@@ -161,7 +160,7 @@ class TracklistViewModel {
             do {
                 let response = try await TracklistService.shared.fetchTracklist(
                     tracklist: tracklist,
-                    config: config,
+                    mediaSource: source,
                     previousResult: paginationContext
                 )
 
