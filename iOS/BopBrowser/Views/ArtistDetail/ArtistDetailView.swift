@@ -156,23 +156,22 @@ struct ArtistDetailView: View {
     }
 
     private func sectionHeader(title: String, icon: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 13))
-                .foregroundColor(.purp)
-            Text(title)
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-            Spacer()
-            Button {} label: {
-                Image(systemName: "arrowshape.right.fill")
+        Button {} label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundColor(.purp)
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                Image(systemName: "arrow.right")
                     .font(.headline)
                     .foregroundColor(.purp)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private var emptyState: some View {
