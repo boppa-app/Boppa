@@ -34,7 +34,7 @@ class TracklistViewModel {
     ) {
         self.currentTracklist = tracklist
         self.currentConfig = config
-        
+
         if let stored = tracklist.storedTracklist {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
@@ -150,7 +150,8 @@ class TracklistViewModel {
         guard let tracklist = self.currentTracklist,
               let config = self.currentConfig,
               let paginationContext = self.paginationContext,
-              !self.isLoading else {
+              !self.isLoading
+        else {
             return
         }
 

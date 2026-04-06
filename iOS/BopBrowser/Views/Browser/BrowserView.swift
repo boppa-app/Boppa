@@ -43,7 +43,7 @@ struct BrowserView: View {
             }
             .animation(.easeInOut(duration: 0.3), value: self.viewModel.barsHidden)
             .ignoresSafeArea(edges: self.viewModel.barsHidden ? [.bottom] : [])
-            
+
             if self.isURLFieldFocused {
                 Color.clear
                     .contentShape(Rectangle())

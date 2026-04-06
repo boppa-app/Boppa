@@ -104,7 +104,7 @@ struct SettingsView: View {
         }
         try? self.modelContext.save()
     }
-    
+
     private func deleteMediaSources(at offsets: IndexSet) {
         let deletedNames = offsets.map { self.mediaSources[$0].name }
         for index in offsets {
