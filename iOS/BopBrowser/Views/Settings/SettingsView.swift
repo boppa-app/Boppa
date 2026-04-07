@@ -26,6 +26,7 @@ struct SettingsView: View {
                     }
                     .onMove(perform: self.moveMediaSources)
                     .onDelete(perform: self.deleteMediaSources)
+                    .deleteDisabled(!self.isEditing)
 
                     if self.isEditing {
                         Button {
