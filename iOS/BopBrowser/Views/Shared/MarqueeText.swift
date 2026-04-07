@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MarqueeText: View {
     let text: String
+    let highlightedPrefix: String?
+    let highlightedPrefixColor: Color
     let font: Font
     let fontWeight: Font.Weight
     let foregroundColor: Color
@@ -37,6 +39,8 @@ struct MarqueeText: View {
 
     init(
         _ text: String,
+        highlightedPrefix: String? = nil,
+        highlightedPrefixColor: Color = .purp,
         font: Font = .body,
         fontWeight: Font.Weight = .regular,
         foregroundColor: Color = .white,
@@ -51,6 +55,8 @@ struct MarqueeText: View {
         alignment: Alignment = .leading
     ) {
         self.text = text
+        self.highlightedPrefix = highlightedPrefix
+        self.highlightedPrefixColor = highlightedPrefixColor
         self.font = font
         self.fontWeight = fontWeight
         self.foregroundColor = foregroundColor
@@ -149,12 +155,40 @@ struct MarqueeText: View {
     }
 
     private var styledText: some View {
-        Text(self.text)
-            .font(self.font)
-            .fontWeight(self.fontWeight)
-            .foregroundColor(self.foregroundColor)
-            .fixedSize()
-            .lineLimit(1)
+        Group {
+            if let prefix = self.highlightedPrefix {
+                (
+                    Text(prefix)
+                        .font(self.font)
+                        .fontWeight(self.fontWeight)
+                        .foregroundColor(.white)
+                        + Text("  |  ")
+                        .font(self.font)
+                        .fontWeight(self.fontWeight)
+                        .foregroundColor(Color(.systemGray3))
+                        + Text(self.text)
+                        .font(self.font)
+                        .fontWeight(self.fontWeight)
+                        .foregroundColor(Color(.systemGray))
+                )
+                .fixedSize()
+                .lineLimit(1)
+            } else {
+                Text(self.text)
+                    .font(self.font)
+                    .fontWeight(self.fontWeight)
+                    .foregroundColor(self.foregroundColor)
+                    .fixedSize()
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    private var fullDisplayText: String {
+        if let prefix = self.highlightedPrefix {
+            return "\(prefix) — \(self.text)"
+        }
+        return self.text
     }
 
     private func fadeMask(width: CGFloat) -> some View {
@@ -327,7 +361,7 @@ struct MarqueeText: View {
         let attributes: [NSAttributedString.Key: Any] = [
             .font: uiFont.withWeight(self.fontWeight),
         ]
-        let size = (self.text as NSString).size(withAttributes: attributes)
+        let size = (self.fullDisplayText as NSString).size(withAttributes: attributes)
         return size.width
     }
 }

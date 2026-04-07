@@ -2,17 +2,20 @@ import SwiftUI
 
 struct DetailHeaderView<TrailingContent: View, CenterContent: View>: View {
     let title: String
+    let highlightedTitle: String?
     let onBack: () -> Void
     @ViewBuilder let trailing: () -> TrailingContent
     @ViewBuilder let centerTrailing: () -> CenterContent
 
     init(
         title: String,
+        highlightedTitle: String? = nil,
         onBack: @escaping () -> Void,
         @ViewBuilder trailing: @escaping () -> TrailingContent = { EmptyView() },
         @ViewBuilder centerTrailing: @escaping () -> CenterContent = { EmptyView() }
     ) {
         self.title = title
+        self.highlightedTitle = highlightedTitle
         self.onBack = onBack
         self.trailing = trailing
         self.centerTrailing = centerTrailing
@@ -24,6 +27,7 @@ struct DetailHeaderView<TrailingContent: View, CenterContent: View>: View {
                 HStack(spacing: 6) {
                     MarqueeText(
                         self.title,
+                        highlightedPrefix: self.highlightedTitle,
                         font: .headline,
                         fontWeight: .bold,
                         foregroundColor: .white,

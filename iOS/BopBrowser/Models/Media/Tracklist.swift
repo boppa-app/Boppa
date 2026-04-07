@@ -2,6 +2,7 @@ import Foundation
 
 struct Tracklist {
     let name: String
+    let artist: Artist?
     let mediaSourceName: String
     let artworkUrl: String?
     let tracklistType: TracklistType
@@ -11,6 +12,9 @@ struct Tracklist {
         case likes
         case album(Album)
         case playlist(Playlist)
+        case artistSongs(Artist, ArtistDetail)
+        case artistVideos(Artist, ArtistDetail)
+        case preloaded([Track])
     }
 
     var isPersisted: Bool {
@@ -34,6 +38,7 @@ struct Tracklist {
 
     init(storedTracklist: StoredTracklist) {
         self.name = storedTracklist.name
+        self.artist = nil
         self.mediaSourceName = storedTracklist.mediaSourceName
         self.artworkUrl = storedTracklist.artworkUrl
         self.storedTracklist = storedTracklist
@@ -48,6 +53,7 @@ struct Tracklist {
 
     init(album: Album, mediaSourceName: String) {
         self.name = album.title
+        self.artist = nil
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = album.artworkUrl
         self.tracklistType = .album(album)
@@ -56,9 +62,32 @@ struct Tracklist {
 
     init(playlist: Playlist, mediaSourceName: String) {
         self.name = playlist.title
+        self.artist = nil
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = playlist.artworkUrl
         self.tracklistType = .playlist(playlist)
         self.storedTracklist = nil
+    }
+
+    init(artist: Artist, type: TracklistType, mediaSourceName: String, tracks: [Track]?) {
+        self.artist = artist
+        self.mediaSourceName = mediaSourceName
+        self.artworkUrl = artist.artworkUrl
+        self.storedTracklist = nil
+
+        if let tracks, !tracks.isEmpty {
+            self.tracklistType = .preloaded(tracks)
+        } else {
+            self.tracklistType = type
+        }
+
+        switch type {
+        case .artistSongs:
+            self.name = "Songs"
+        case .artistVideos:
+            self.name = "Videos"
+        default:
+            self.name = artist.name
+        }
     }
 }

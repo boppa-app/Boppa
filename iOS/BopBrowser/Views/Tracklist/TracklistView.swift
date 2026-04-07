@@ -11,11 +11,13 @@ struct TracklistView: View {
 
     let tracklist: Tracklist
     let source: MediaSource
+    var fallbackTracks: [Track] = []
 
     var body: some View {
         VStack(spacing: 0) {
             DetailHeaderView(
                 title: self.tracklist.name,
+                highlightedTitle: self.tracklist.artist?.name,
                 onBack: { self.dismiss() },
                 trailing: {
                     if self.tracklist.isPersisted {
@@ -39,6 +41,7 @@ struct TracklistView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            self.viewModel.fallbackTracks = self.fallbackTracks
             self.viewModel.load(
                 tracklist: self.tracklist,
                 source: self.source,

@@ -48,15 +48,15 @@ struct ArtistDetailView: View {
         ScrollFadeView {
             List {
                 if !detail.albums.isEmpty {
-                    self.albumsSection(Array(detail.albums.prefix(self.maxAlbums)))
+                    self.albumsSection(detail)
                 }
 
                 if !detail.songs.isEmpty {
-                    self.songsSection(Array(detail.songs.prefix(self.maxSongs)))
+                    self.songsSection(detail)
                 }
 
                 if !detail.videos.isEmpty {
-                    self.videosSection(Array(detail.videos.prefix(self.maxVideos)))
+                    self.videosSection(detail)
                 }
             }
             .listStyle(.plain)
@@ -65,9 +65,10 @@ struct ArtistDetailView: View {
         }
     }
 
-    private func albumsSection(_ albums: [Album]) -> some View {
-        Section {
-            self.sectionHeader(title: "Albums", icon: "square.stack")
+    private func albumsSection(_ detail: ArtistDetail) -> some View {
+        let albums = Array(detail.albums.prefix(self.maxAlbums))
+        return Section {
+            self.albumsSectionHeader(detail)
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
@@ -99,9 +100,10 @@ struct ArtistDetailView: View {
         }
     }
 
-    private func songsSection(_ songs: [Track]) -> some View {
-        Section {
-            self.sectionHeader(title: "Songs", icon: "music.note")
+    private func songsSection(_ detail: ArtistDetail) -> some View {
+        let songs = Array(detail.songs.prefix(self.maxSongs))
+        return Section {
+            self.songsSectionHeader(detail)
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
@@ -127,9 +129,10 @@ struct ArtistDetailView: View {
         }
     }
 
-    private func videosSection(_ videos: [Track]) -> some View {
-        Section {
-            self.sectionHeader(title: "Videos", icon: "video")
+    private func videosSection(_ detail: ArtistDetail) -> some View {
+        let videos = Array(detail.videos.prefix(self.maxVideos))
+        return Section {
+            self.videosSectionHeader(detail)
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
@@ -155,23 +158,75 @@ struct ArtistDetailView: View {
         }
     }
 
-    private func sectionHeader(title: String, icon: String) -> some View {
-        Button {} label: {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 13))
-                    .foregroundColor(.purp)
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                Image(systemName: "arrow.right")
-                    .font(.headline)
-                    .foregroundColor(.purp)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+    private func albumsSectionHeader(_ detail: ArtistDetail) -> some View {
+        let hasScript = self.source.config.data?.listAlbumsForArtist != nil
+        return self.sectionHeaderLabel(title: "Albums", icon: "square.stack")
+            .background(
+                NavigationLink(destination: TracklistListView(
+                    artist: self.artist,
+                    artistDetail: detail,
+                    source: self.source,
+                    title: "Albums",
+                    preloadedAlbums: hasScript ? nil : detail.albums,
+                    fallbackAlbums: detail.albums
+                )) { EmptyView() }
+                    .opacity(0)
+            )
+    }
+
+    private func songsSectionHeader(_ detail: ArtistDetail) -> some View {
+        let hasScript = self.source.config.data?.listSongsForArtist != nil
+        let tracklist = Tracklist(
+            artist: self.artist,
+            type: .artistSongs(self.artist, detail),
+            mediaSourceName: self.source.name,
+            tracks: hasScript ? nil : detail.songs
+        )
+        return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
+            .background(
+                NavigationLink(destination: TracklistView(
+                    tracklist: tracklist,
+                    source: self.source,
+                    fallbackTracks: detail.songs
+                )) { EmptyView() }
+                    .opacity(0)
+            )
+    }
+
+    private func videosSectionHeader(_ detail: ArtistDetail) -> some View {
+        let hasScript = self.source.config.data?.listVideosForArtist != nil
+        let tracklist = Tracklist(
+            artist: self.artist,
+            type: .artistVideos(self.artist, detail),
+            mediaSourceName: self.source.name,
+            tracks: hasScript ? nil : detail.videos
+        )
+        return self.sectionHeaderLabel(title: "Videos", icon: "video")
+            .background(
+                NavigationLink(destination: TracklistView(
+                    tracklist: tracklist,
+                    source: self.source,
+                    fallbackTracks: detail.videos
+                )) { EmptyView() }
+                    .opacity(0)
+            )
+    }
+
+    private func sectionHeaderLabel(title: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(.purp)
+            Text(title)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+            Image(systemName: "arrow.right")
+                .font(.headline)
+                .foregroundColor(.purp)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
     private var emptyState: some View {

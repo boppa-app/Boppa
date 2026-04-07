@@ -16,6 +16,7 @@ class TracklistViewModel {
     var errorMessage: String?
     var sortMode: TracklistSortMode = .defaultOrder
     var hasMorePages = false
+    var fallbackTracks: [Track] = []
 
     private var fetchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
@@ -115,17 +116,22 @@ class TracklistViewModel {
                         modelContext: modelContext,
                         onPageFetched: onPageFetched
                     )
-                case .album, .playlist:
+                case .album, .playlist, .artistSongs, .artistVideos:
                     let response = try await TracklistService.shared.fetchTracklist(
                         tracklist: tracklist,
                         mediaSource: source,
                         previousResult: nil
                     )
                     guard !Task.isCancelled else { return }
-                    self.unsortedTracks = response.tracks
-                    self.tracks = response.tracks
-                    self.paginationContext = response.paginationContext
-                    self.hasMorePages = response.paginationContext != nil
+                    let resolvedTracks = response.tracks.isEmpty ? self.fallbackTracks : response.tracks
+                    self.unsortedTracks = resolvedTracks
+                    self.tracks = resolvedTracks
+                    self.paginationContext = response.tracks.isEmpty ? nil : response.paginationContext
+                    self.hasMorePages = !response.tracks.isEmpty && response.paginationContext != nil
+                case let .preloaded(tracks):
+                    self.unsortedTracks = tracks
+                    self.tracks = tracks
+                    self.hasMorePages = false
                 }
 
                 guard !Task.isCancelled else { return }
