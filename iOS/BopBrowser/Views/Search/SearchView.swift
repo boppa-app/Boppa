@@ -260,7 +260,7 @@ struct SearchView: View {
                 case let .playlists(playlists):
                     ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
                         if let source = self.viewModel.selectedSource,
-                           source.config.data?.listPlaylist != nil
+                           source.config.data?.getPlaylist != nil
                         {
                             NavigationLink {
                                 TracklistView(

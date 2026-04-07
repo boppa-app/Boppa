@@ -282,8 +282,8 @@ class TracklistService {
         mediaSourceContext: [String: String],
         previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
-        guard let script = config.data?.listPlaylist?.script else {
-            logger.warning("No listPlaylist script for '\(mediaSourceName)'")
+        guard let script = config.data?.getPlaylist?.script else {
+            logger.warning("No getPlaylist script for '\(mediaSourceName)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
 
