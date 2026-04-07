@@ -3,9 +3,17 @@ import SwiftUI
 struct AlbumRow: View {
     let album: Album
 
+    private var albumPlaceholder: String {
+        if #available(iOS 26.0, *) {
+            return "music.note.square.stack"
+        } else {
+            return "square.stack"
+        }
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.album.artworkUrl, placeholder: "square.stack", size: 72)
+            ArtworkView(url: self.album.artworkUrl, placeholder: self.albumPlaceholder, size: 72)
             VStack(alignment: .leading, spacing: 4) {
                 Text(self.album.title)
                     .font(.headline)

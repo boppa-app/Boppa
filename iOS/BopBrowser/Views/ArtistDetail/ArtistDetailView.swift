@@ -158,9 +158,17 @@ struct ArtistDetailView: View {
         }
     }
 
+    private var albumsIcon: String {
+        if #available(iOS 26.0, *) {
+            return "music.note.square.stack"
+        } else {
+            return "square.stack"
+        }
+    }
+
     private func albumsSectionHeader(_ detail: ArtistDetail) -> some View {
         let hasScript = self.source.config.data?.listAlbumsForArtist != nil
-        return self.sectionHeaderLabel(title: "Albums", icon: "square.stack")
+        return self.sectionHeaderLabel(title: "Albums", icon: self.albumsIcon)
             .background(
                 NavigationLink(destination: TracklistListView(
                     artist: self.artist,
