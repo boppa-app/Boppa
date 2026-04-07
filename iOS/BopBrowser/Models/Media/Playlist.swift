@@ -7,7 +7,7 @@ struct Playlist: Identifiable, Equatable {
     let trackCount: Int?
     let artworkUrl: String?
     let url: String?
-    let metadata: [String: String]
+    let metadata: [String: Any]
 
     init(
         id: UUID = UUID(),
@@ -16,7 +16,7 @@ struct Playlist: Identifiable, Equatable {
         trackCount: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
-        metadata: [String: String] = [:]
+        metadata: [String: Any] = [:]
     ) {
         self.id = id
         self.title = title
@@ -25,6 +25,15 @@ struct Playlist: Identifiable, Equatable {
         self.artworkUrl = artworkUrl
         self.url = url
         self.metadata = metadata
+    }
+
+    static func == (lhs: Playlist, rhs: Playlist) -> Bool {
+        lhs.id == rhs.id
+            && lhs.title == rhs.title
+            && lhs.user == rhs.user
+            && lhs.trackCount == rhs.trackCount
+            && lhs.artworkUrl == rhs.artworkUrl
+            && lhs.url == rhs.url
     }
 
     var formattedTrackCount: String? {

@@ -146,14 +146,7 @@ class TracklistService {
         let videos = (jsResult["videos"] as? [[String: Any]] ?? [])
             .compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) }
 
-        var metadata: [String: String] = [:]
-        if let rawMetadata = jsResult["metadata"] as? [String: Any] {
-            for (key, value) in rawMetadata {
-                if let stringValue = value as? String {
-                    metadata[key] = stringValue
-                }
-            }
-        }
+        let metadata = jsResult["metadata"] as? [String: Any] ?? [:]
 
         logger.info("Fetched artist '\(artist.name)': \(songs.count) song(s), \(albums.count) album(s), \(videos.count) video(s)")
 

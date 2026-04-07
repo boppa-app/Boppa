@@ -112,9 +112,9 @@ class PaginatedScriptExecutor {
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
             mediaSourceName: mediaSourceName,
-            artists: self.resolveDictOfFlatDicts(item["artists"]),
-            album: self.resolveDictOfFlatDicts(item["album"]),
-            metadata: self.resolveFlatDict(item["metadata"])
+            artists: item["artists"] as? [String: [String: String]] ?? [:],
+            album: item["album"] as? [String: [String: String]] ?? [:],
+            metadata: item["metadata"] as? [String: Any] ?? [:]
         )
     }
 
@@ -126,7 +126,7 @@ class PaginatedScriptExecutor {
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            metadata: self.resolveFlatDict(item["metadata"])
+            metadata: item["metadata"] as? [String: Any] ?? [:]
         )
     }
 
@@ -136,7 +136,7 @@ class PaginatedScriptExecutor {
             name: name,
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            metadata: self.resolveFlatDict(item["metadata"])
+            metadata: item["metadata"] as? [String: Any] ?? [:]
         )
     }
 
@@ -148,30 +148,8 @@ class PaginatedScriptExecutor {
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            metadata: self.resolveFlatDict(item["metadata"])
+            metadata: item["metadata"] as? [String: Any] ?? [:]
         )
-    }
-
-    func resolveFlatDict(_ value: Any?) -> [String: String] {
-        guard let rawMetadata = value as? [String: Any] else { return [:] }
-        var metadata: [String: String] = [:]
-        for (key, value) in rawMetadata {
-            if let stringValue = value as? String {
-                metadata[key] = stringValue
-            } else {
-                metadata[key] = String(describing: value)
-            }
-        }
-        return metadata
-    }
-
-    func resolveDictOfFlatDicts(_ value: Any?) -> [String: [String: String]] {
-        guard let dict = value as? [String: [String: Any]] else { return [:] }
-        var result: [String: [String: String]] = [:]
-        for (key, value) in dict {
-            result[key] = self.resolveFlatDict(value)
-        }
-        return result
     }
 
     func resolveInt(_ value: Any?) -> Int? {

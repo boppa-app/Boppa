@@ -10,7 +10,7 @@ struct Track: Identifiable, Equatable {
     let mediaSourceName: String?
     let artists: [String: [String: String]]
     let album: [String: [String: String]]
-    let metadata: [String: String]
+    let metadata: [String: Any]
 
     init(
         id: UUID = UUID(),
@@ -22,7 +22,7 @@ struct Track: Identifiable, Equatable {
         mediaSourceName: String? = nil,
         artists: [String: [String: String]] = [:],
         album: [String: [String: String]] = [:],
-        metadata: [String: String] = [:]
+        metadata: [String: Any] = [:]
     ) {
         self.id = id
         self.title = title
@@ -34,6 +34,18 @@ struct Track: Identifiable, Equatable {
         self.artists = artists
         self.album = album
         self.metadata = metadata
+    }
+
+    static func == (lhs: Track, rhs: Track) -> Bool {
+        lhs.id == rhs.id
+            && lhs.title == rhs.title
+            && lhs.subtitle == rhs.subtitle
+            && lhs.duration == rhs.duration
+            && lhs.artworkUrl == rhs.artworkUrl
+            && lhs.url == rhs.url
+            && lhs.mediaSourceName == rhs.mediaSourceName
+            && lhs.artists == rhs.artists
+            && lhs.album == rhs.album
     }
 
     var formattedDuration: String? {

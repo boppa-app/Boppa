@@ -15,8 +15,11 @@ final class StoredTrack {
     @Relationship(inverse: \StoredTracklist.tracks)
     var tracklist: StoredTracklist?
 
-    var metadata: [String: String] {
-        (try? JSONDecoder().decode([String: String].self, from: self.metadataJSON)) ?? [:]
+    var metadata: [String: Any] {
+        guard let dict = try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any] else {
+            return [:]
+        }
+        return dict
     }
 
     init(
@@ -26,7 +29,7 @@ final class StoredTrack {
         artworkUrl: String? = nil,
         url: String? = nil,
         mediaSourceName: String? = nil,
-        metadata: [String: String] = [:],
+        metadata: [String: Any] = [:],
         sortOrder: Int = 0
     ) {
         self.title = title
@@ -35,7 +38,7 @@ final class StoredTrack {
         self.artworkUrl = artworkUrl
         self.url = url
         self.mediaSourceName = mediaSourceName
-        self.metadataJSON = (try? JSONEncoder().encode(metadata)) ?? Data()
+        self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
         self.sortOrder = sortOrder
     }
 
@@ -75,12 +78,12 @@ final class StoredTrack {
         self.identityMatches(track)
             && self.duration == track.duration
             && self.artworkUrl == track.artworkUrl
-            && self.metadata == track.metadata
+            && NSDictionary(dictionary: self.metadata).isEqual(to: track.metadata)
     }
 
     func updateContent(from track: Track) {
         self.duration = track.duration
         self.artworkUrl = track.artworkUrl
-        self.metadataJSON = (try? JSONEncoder().encode(track.metadata)) ?? Data()
+        self.metadataJSON = (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
     }
 }
