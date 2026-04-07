@@ -5,9 +5,9 @@ struct AlbumRow: View {
 
     private var albumPlaceholder: String {
         if #available(iOS 26.0, *) {
-            return "music.note.square.stack"
+            return "music.note.square.stack.fill"
         } else {
-            return "square.stack"
+            return "square.stack.fill"
         }
     }
 

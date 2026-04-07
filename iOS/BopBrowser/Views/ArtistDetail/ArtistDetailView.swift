@@ -161,9 +161,9 @@ struct ArtistDetailView: View {
 
     private var albumsIcon: String {
         if #available(iOS 26.0, *) {
-            return "music.note.square.stack"
+            return "music.note.square.stack.fill"
         } else {
-            return "square.stack"
+            return "square.stack.fill"
         }
     }
 
@@ -210,7 +210,7 @@ struct ArtistDetailView: View {
             mediaSourceName: self.source.name,
             tracks: hasScript ? nil : detail.videos
         )
-        return self.sectionHeaderLabel(title: "Videos", icon: "video")
+        return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
             .background(
                 NavigationLink(destination: TracklistView(
                     tracklist: tracklist,
@@ -240,7 +240,7 @@ struct ArtistDetailView: View {
 
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: "music.microphone")
+            Image(systemName: "person.fill")
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
         }

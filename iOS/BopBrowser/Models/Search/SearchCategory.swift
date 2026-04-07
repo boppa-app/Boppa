@@ -10,13 +10,13 @@ enum SearchCategory: String, CaseIterable {
     var icon: String {
         switch self {
         case .songs: return "music.note"
-        case .videos: return "video"
-        case .artists: return "music.microphone"
+        case .videos: return "video.fill"
+        case .artists: return "person.fill"
         case .albums:
             if #available(iOS 26.0, *) {
-                return "music.note.square.stack"
+                return "music.note.square.stack.fill"
             } else {
-                return "square.stack"
+                return "square.stack.fill"
             }
         case .playlists: return "music.note.list"
         }

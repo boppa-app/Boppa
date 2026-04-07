@@ -94,11 +94,11 @@ struct TracklistListView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             if #available(iOS 26.0, *) {
-                Image(systemName: "music.note.square.stack")
+                Image(systemName: "music.note.square.stack.fill")
                     .font(.system(size: 40))
                     .foregroundColor(Color(.systemGray5))
             } else {
-                Image(systemName: "square.stack")
+                Image(systemName: "square.stack.fill")
                     .font(.system(size: 40))
                     .foregroundColor(Color(.systemGray5))
             }
