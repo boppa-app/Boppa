@@ -40,6 +40,7 @@ struct TracklistView: View {
             self.content
         }
         .navigationBarHidden(true)
+        .enableSwipeBack()
         .onAppear {
             self.viewModel.fallbackTracks = self.fallbackTracks
             self.viewModel.load(

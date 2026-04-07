@@ -20,6 +20,7 @@ struct ArtistDetailView: View {
             self.content
         }
         .navigationBarHidden(true)
+        .enableSwipeBack()
         .onAppear {
             self.viewModel.load(
                 artist: self.artist,

@@ -59,6 +59,7 @@ struct MediaSourceDetailView: View {
             }
         }
         .navigationBarHidden(true)
+        .enableSwipeBack()
         .onAppear {
             self.viewModel.checkLoginStatus()
         }
