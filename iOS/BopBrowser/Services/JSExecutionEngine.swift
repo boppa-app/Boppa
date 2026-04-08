@@ -48,11 +48,15 @@ final class JSExecutionEngine: NSObject {
                 guard !hasCompleted else { return }
                 hasCompleted = true
 
+                let keyOrder = Self.extractKeyOrder(from: value, in: jsContext)
+
                 guard let dict = value.toDictionary() as? [String: Any] else {
                     continuation.resume(throwing: JSExecutionError.invalidResult(detail: "postResult argument is not a valid dictionary"))
                     return
                 }
-                continuation.resume(returning: dict)
+                var result = dict
+                result["__keyOrder"] = keyOrder
+                continuation.resume(returning: result)
             }
 
             let postError: @convention(block) (JSValue) -> Void = { value in
@@ -240,5 +244,14 @@ final class JSExecutionEngine: NSObject {
             executor(resolve, reject)
         }
         return promiseConstructor.construct(withArguments: [unsafeBitCast(executorBlock, to: AnyObject.self)])
+    }
+
+    private static func extractKeyOrder(from value: JSValue, in jsContext: JSContext) -> [String] {
+        guard let objectKeys = jsContext.objectForKeyedSubscript("Object")?.invokeMethod("keys", withArguments: [value]),
+              let keys = objectKeys.toArray() as? [String]
+        else {
+            return []
+        }
+        return keys
     }
 }

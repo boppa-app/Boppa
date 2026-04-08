@@ -155,9 +155,12 @@ class TracklistService {
 
         let metadata = jsResult["metadata"] as? [String: Any] ?? [:]
 
+        let sectionOrder: [ArtistDetailSection] = (jsResult["__keyOrder"] as? [String] ?? [])
+            .compactMap { ArtistDetailSection(rawValue: $0) }
+
         logger.info("Fetched artist '\(artist.name)': \(songs?.count ?? 0) song(s), \(albums?.count ?? 0) album(s), \(videos?.count ?? 0) video(s), \(playlists?.count ?? 0) playlist(s)")
 
-        return ArtistDetail(songs: songs, albums: albums, videos: videos, playlists: playlists, metadata: metadata)
+        return ArtistDetail(songs: songs, albums: albums, videos: videos, playlists: playlists, metadata: metadata, sectionOrder: sectionOrder)
     }
 
     func fetchAlbumsForArtist(

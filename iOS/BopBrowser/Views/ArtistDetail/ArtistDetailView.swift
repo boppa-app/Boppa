@@ -1,6 +1,4 @@
-import SwiftUI\
-
-// TODO: Order the media items in the View the way they are ordered in the response from getArtist
+import SwiftUI
 
 struct ArtistDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -51,20 +49,25 @@ struct ArtistDetailView: View {
     private func detailList(_ detail: ArtistDetail) -> some View {
         ScrollFadeView {
             List {
-                if detail.albums != nil {
-                    self.albumsSection(detail)
-                }
-
-                if detail.songs != nil {
-                    self.songsSection(detail)
-                }
-
-                if detail.videos != nil {
-                    self.videosSection(detail)
-                }
-
-                if detail.playlists != nil {
-                    self.playlistsSection(detail)
+                ForEach(detail.sectionOrder, id: \.self) { section in
+                    switch section {
+                    case .albums:
+                        if detail.albums != nil {
+                            self.albumsSection(detail)
+                        }
+                    case .songs:
+                        if detail.songs != nil {
+                            self.songsSection(detail)
+                        }
+                    case .videos:
+                        if detail.videos != nil {
+                            self.videosSection(detail)
+                        }
+                    case .playlists:
+                        if detail.playlists != nil {
+                            self.playlistsSection(detail)
+                        }
+                    }
                 }
             }
             .listStyle(.plain)
