@@ -1,4 +1,6 @@
-import SwiftUI
+import SwiftUI\
+
+// TODO: Order the media items in the View the way they are ordered in the response from getArtist
 
 struct ArtistDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -10,6 +12,7 @@ struct ArtistDetailView: View {
     private let maxAlbums = 3
     private let maxSongs = 5
     private let maxVideos = 5
+    private let maxPlaylists = 3
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,16 +51,20 @@ struct ArtistDetailView: View {
     private func detailList(_ detail: ArtistDetail) -> some View {
         ScrollFadeView {
             List {
-                if !detail.albums.isEmpty {
+                if detail.albums != nil {
                     self.albumsSection(detail)
                 }
 
-                if !detail.songs.isEmpty {
+                if detail.songs != nil {
                     self.songsSection(detail)
                 }
 
-                if !detail.videos.isEmpty {
+                if detail.videos != nil {
                     self.videosSection(detail)
+                }
+
+                if detail.playlists != nil {
+                    self.playlistsSection(detail)
                 }
             }
             .listStyle(.plain)
@@ -67,7 +74,7 @@ struct ArtistDetailView: View {
     }
 
     private func albumsSection(_ detail: ArtistDetail) -> some View {
-        let albums = Array(detail.albums.prefix(self.maxAlbums))
+        let albums = Array((detail.albums ?? []).prefix(self.maxAlbums))
         return Section {
             self.albumsSectionHeader(detail)
                 .listRowBackground(Color.black)
@@ -102,7 +109,7 @@ struct ArtistDetailView: View {
     }
 
     private func songsSection(_ detail: ArtistDetail) -> some View {
-        let songs = Array(detail.songs.prefix(self.maxSongs))
+        let songs = Array((detail.songs ?? []).prefix(self.maxSongs))
         return Section {
             self.songsSectionHeader(detail)
                 .listRowBackground(Color.black)
@@ -131,7 +138,7 @@ struct ArtistDetailView: View {
     }
 
     private func videosSection(_ detail: ArtistDetail) -> some View {
-        let videos = Array(detail.videos.prefix(self.maxVideos))
+        let videos = Array((detail.videos ?? []).prefix(self.maxVideos))
         return Section {
             self.videosSectionHeader(detail)
                 .listRowBackground(Color.black)
@@ -159,6 +166,41 @@ struct ArtistDetailView: View {
         }
     }
 
+    private func playlistsSection(_ detail: ArtistDetail) -> some View {
+        let playlists = Array((detail.playlists ?? []).prefix(self.maxPlaylists))
+        return Section {
+            self.playlistsSectionHeader(detail)
+                .listRowBackground(Color.black)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowSeparator(.hidden)
+
+            ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
+                if self.source.config.data?.getPlaylist != nil {
+                    NavigationLink {
+                        TracklistView(
+                            tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name),
+                            source: self.source
+                        )
+                    } label: {
+                        PlaylistRow(playlist: playlist)
+                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                    .padding(.trailing, 16)
+                } else {
+                    PlaylistRow(playlist: playlist)
+                        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                }
+            }
+        }
+    }
+
     private var albumsIcon: String {
         if #available(iOS 26.0, *) {
             return "music.note.square.stack.fill"
@@ -168,7 +210,8 @@ struct ArtistDetailView: View {
     }
 
     private func albumsSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.listAlbumsForArtist != nil
+        let hasScript = self.source.config.data?.getAlbumsForArtist != nil
+        let albums = detail.albums ?? []
         return self.sectionHeaderLabel(title: "Albums", icon: self.albumsIcon)
             .background(
                 NavigationLink(destination: TracklistListView(
@@ -176,46 +219,65 @@ struct ArtistDetailView: View {
                     artistDetail: detail,
                     source: self.source,
                     title: "Albums",
-                    preloadedAlbums: hasScript ? nil : detail.albums,
-                    fallbackAlbums: detail.albums
+                    preloadedAlbums: hasScript ? nil : albums,
+                    fallbackAlbums: albums
                 )) { EmptyView() }
                     .opacity(0)
             )
     }
 
     private func songsSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.listSongsForArtist != nil
+        let hasScript = self.source.config.data?.getSongsForArtist != nil
+        let songs = detail.songs ?? []
         let tracklist = Tracklist(
             artist: self.artist,
             type: .artistSongs(self.artist, detail),
             mediaSourceName: self.source.name,
-            tracks: hasScript ? nil : detail.songs
+            tracks: hasScript ? nil : songs
         )
         return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
             .background(
                 NavigationLink(destination: TracklistView(
                     tracklist: tracklist,
                     source: self.source,
-                    fallbackTracks: detail.songs
+                    fallbackTracks: songs
                 )) { EmptyView() }
                     .opacity(0)
             )
     }
 
     private func videosSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.listVideosForArtist != nil
+        let hasScript = self.source.config.data?.getVideosForArtist != nil
+        let videos = detail.videos ?? []
         let tracklist = Tracklist(
             artist: self.artist,
             type: .artistVideos(self.artist, detail),
             mediaSourceName: self.source.name,
-            tracks: hasScript ? nil : detail.videos
+            tracks: hasScript ? nil : videos
         )
         return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
             .background(
                 NavigationLink(destination: TracklistView(
                     tracklist: tracklist,
                     source: self.source,
-                    fallbackTracks: detail.videos
+                    fallbackTracks: videos
+                )) { EmptyView() }
+                    .opacity(0)
+            )
+    }
+
+    private func playlistsSectionHeader(_ detail: ArtistDetail) -> some View {
+        let hasScript = self.source.config.data?.getPlaylistsForArtist != nil
+        let playlists = detail.playlists ?? []
+        return self.sectionHeaderLabel(title: "Playlists", icon: "music.note.list")
+            .background(
+                NavigationLink(destination: TracklistListView(
+                    artist: self.artist,
+                    artistDetail: detail,
+                    source: self.source,
+                    title: "Playlists",
+                    preloadedPlaylists: hasScript ? nil : playlists,
+                    fallbackPlaylists: playlists
                 )) { EmptyView() }
                     .opacity(0)
             )

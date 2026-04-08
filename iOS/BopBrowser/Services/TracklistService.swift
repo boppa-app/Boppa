@@ -79,8 +79,8 @@ class TracklistService {
             return try await self.fetchArtistTracksPage(
                 artist: artist,
                 artistDetail: artistDetail,
-                script: config.data?.listSongsForArtist?.script,
-                scriptName: "listSongsForArtist",
+                script: config.data?.getSongsForArtist?.script,
+                scriptName: "getSongsForArtist",
                 config: config,
                 mediaSourceName: mediaSourceName,
                 mediaSourceContext: mediaSource.contextValues,
@@ -90,8 +90,8 @@ class TracklistService {
             return try await self.fetchArtistTracksPage(
                 artist: artist,
                 artistDetail: artistDetail,
-                script: config.data?.listVideosForArtist?.script,
-                scriptName: "listVideosForArtist",
+                script: config.data?.getVideosForArtist?.script,
+                scriptName: "getVideosForArtist",
                 config: config,
                 mediaSourceName: mediaSourceName,
                 mediaSourceContext: mediaSource.contextValues,
@@ -112,7 +112,7 @@ class TracklistService {
         let mediaSourceName = mediaSource.name
         guard let script = config.data?.getArtist?.script else {
             logger.warning("No getArtist script for '\(mediaSourceName)'")
-            return ArtistDetail(songs: [], albums: [], videos: [])
+            return ArtistDetail()
         }
 
         logger.info("Fetching artist '\(artist.name)' for '\(mediaSourceName)'...")
@@ -137,20 +137,27 @@ class TracklistService {
             mediaSourceContext: mediaSource.contextValues
         )
 
-        let songs = (jsResult["songs"] as? [[String: Any]] ?? [])
-            .compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) }
+        let songs = (jsResult["songs"] as? [[String: Any]])?.compactMap {
+            self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName)
+        }
 
-        let albums = (jsResult["albums"] as? [[String: Any]] ?? [])
-            .compactMap { self.paginated.mapToAlbum($0) }
+        let albums = (jsResult["albums"] as? [[String: Any]])?.compactMap {
+            self.paginated.mapToAlbum($0)
+        }
 
-        let videos = (jsResult["videos"] as? [[String: Any]] ?? [])
-            .compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) }
+        let videos = (jsResult["videos"] as? [[String: Any]])?.compactMap {
+            self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName)
+        }
+
+        let playlists = (jsResult["playlists"] as? [[String: Any]])?.compactMap {
+            self.paginated.mapToPlaylist($0)
+        }
 
         let metadata = jsResult["metadata"] as? [String: Any] ?? [:]
 
-        logger.info("Fetched artist '\(artist.name)': \(songs.count) song(s), \(albums.count) album(s), \(videos.count) video(s)")
+        logger.info("Fetched artist '\(artist.name)': \(songs?.count ?? 0) song(s), \(albums?.count ?? 0) album(s), \(videos?.count ?? 0) video(s), \(playlists?.count ?? 0) playlist(s)")
 
-        return ArtistDetail(songs: songs, albums: albums, videos: videos, metadata: metadata)
+        return ArtistDetail(songs: songs, albums: albums, videos: videos, playlists: playlists, metadata: metadata)
     }
 
     func fetchAlbumsForArtist(
@@ -160,8 +167,8 @@ class TracklistService {
     ) async throws -> [Album] {
         let config = mediaSource.config
         let mediaSourceName = mediaSource.name
-        guard let script = config.data?.listAlbumsForArtist?.script else {
-            logger.warning("No listAlbumsForArtist script for '\(mediaSourceName)'")
+        guard let script = config.data?.getAlbumsForArtist?.script else {
+            logger.warning("No getAlbumsForArtist script for '\(mediaSourceName)'")
             return []
         }
 
@@ -195,6 +202,50 @@ class TracklistService {
 
         logger.info("Fetched \(albums.count) album(s) for artist '\(artist.name)'")
         return albums
+    }
+
+    func fetchPlaylistsForArtist(
+        artist: Artist,
+        artistDetail: ArtistDetail,
+        mediaSource: MediaSource
+    ) async throws -> [Playlist] {
+        let config = mediaSource.config
+        let mediaSourceName = mediaSource.name
+        guard let script = config.data?.getPlaylistsForArtist?.script else {
+            logger.warning("No getPlaylistsForArtist script for '\(mediaSourceName)'")
+            return []
+        }
+
+        logger.info("Fetching all playlists for artist '\(artist.name)' on '\(mediaSourceName)'...")
+
+        var itemParams: [String: Any] = [:]
+        itemParams["name"] = artist.name
+        itemParams["artworkUrl"] = artist.artworkUrl ?? ""
+        for (key, value) in artist.metadata {
+            itemParams[key] = value
+        }
+        for (key, value) in artistDetail.metadata {
+            itemParams[key] = value
+        }
+
+        let context = self.paginated.buildJSContext(
+            params: ["item": itemParams],
+            previousResult: nil
+        )
+
+        let jsResult = try await JSExecutionEngine.shared.execute(
+            script: script,
+            context: context,
+            customUserAgent: config.customUserAgent,
+            domain: config.url,
+            mediaSourceContext: mediaSource.contextValues
+        )
+
+        let playlists = (jsResult["items"] as? [[String: Any]] ?? [])
+            .compactMap { self.paginated.mapToPlaylist($0) }
+
+        logger.info("Fetched \(playlists.count) playlist(s) for artist '\(artist.name)'")
+        return playlists
     }
 
     private func fetchArtistTracksPage(

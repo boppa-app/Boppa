@@ -9,15 +9,28 @@ struct TracklistListView: View {
     let source: MediaSource
     let title: String
     let preloadedAlbums: [Album]?
+    let preloadedPlaylists: [Playlist]?
     var fallbackAlbums: [Album] = []
+    var fallbackPlaylists: [Playlist] = []
 
-    init(artist: Artist, artistDetail: ArtistDetail, source: MediaSource, title: String, preloadedAlbums: [Album]? = nil, fallbackAlbums: [Album] = []) {
+    init(
+        artist: Artist,
+        artistDetail: ArtistDetail,
+        source: MediaSource,
+        title: String,
+        preloadedAlbums: [Album]? = nil,
+        fallbackAlbums: [Album] = [],
+        preloadedPlaylists: [Playlist]? = nil,
+        fallbackPlaylists: [Playlist] = []
+    ) {
         self.artist = artist
         self.artistDetail = artistDetail
         self.source = source
         self.title = title
         self.preloadedAlbums = preloadedAlbums
         self.fallbackAlbums = fallbackAlbums
+        self.preloadedPlaylists = preloadedPlaylists
+        self.fallbackPlaylists = fallbackPlaylists
     }
 
     var body: some View {
@@ -33,11 +46,13 @@ struct TracklistListView: View {
         .enableSwipeBack()
         .onAppear {
             self.viewModel.fallbackAlbums = self.fallbackAlbums
+            self.viewModel.fallbackPlaylists = self.fallbackPlaylists
             self.viewModel.load(
                 artist: self.artist,
                 artistDetail: self.artistDetail,
                 source: self.source,
-                preloadedAlbums: self.preloadedAlbums
+                preloadedAlbums: self.preloadedAlbums,
+                preloadedPlaylists: self.preloadedPlaylists
             )
         }
     }
@@ -46,11 +61,13 @@ struct TracklistListView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
-            } else if self.viewModel.albums.isEmpty && self.viewModel.isLoading {
+            } else if self.viewModel.albums.isEmpty && self.viewModel.playlists.isEmpty && self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.viewModel.albums.isEmpty {
+            } else if self.viewModel.albums.isEmpty && self.viewModel.playlists.isEmpty {
                 self.emptyState
+            } else if !self.viewModel.playlists.isEmpty {
+                self.playlistList
             } else {
                 self.albumList
             }
@@ -83,6 +100,39 @@ struct TracklistListView: View {
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparatorTint(index == self.viewModel.albums.count - 1 ? .clear : Color(.systemGray5))
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+        }
+    }
+
+    private var playlistList: some View {
+        ScrollFadeView {
+            List {
+                ForEach(Array(self.viewModel.playlists.enumerated()), id: \.element.id) { index, playlist in
+                    if self.source.config.data?.getPlaylist != nil {
+                        NavigationLink {
+                            TracklistView(
+                                tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name),
+                                source: self.source
+                            )
+                        } label: {
+                            PlaylistRow(playlist: playlist)
+                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparatorTint(index == self.viewModel.playlists.count - 1 ? .clear : Color(.systemGray5))
+                        .padding(.trailing, 16)
+                    } else {
+                        PlaylistRow(playlist: playlist)
+                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparatorTint(index == self.viewModel.playlists.count - 1 ? .clear : Color(.systemGray5))
                     }
                 }
             }

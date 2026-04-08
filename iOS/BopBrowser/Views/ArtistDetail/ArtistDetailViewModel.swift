@@ -43,7 +43,7 @@ class ArtistDetailViewModel {
                 self.detail = result
                 self.isLoading = false
 
-                logger.info("Loaded artist '\(artist.name)': \(result.songs.count) song(s), \(result.albums.count) album(s), \(result.videos.count) video(s)")
+                logger.info("Loaded artist '\(artist.name)': \(result.songs?.count ?? 0) song(s), \(result.albums?.count ?? 0) album(s), \(result.videos?.count ?? 0) video(s), \(result.playlists?.count ?? 0) playlist(s)")
             } catch {
                 guard !Task.isCancelled else { return }
 
