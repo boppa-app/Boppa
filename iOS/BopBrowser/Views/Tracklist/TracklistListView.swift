@@ -8,30 +8,6 @@ struct TracklistListView: View {
     let artistDetail: ArtistDetail
     let source: MediaSource
     let title: String
-    let preloadedAlbums: [Album]?
-    let preloadedPlaylists: [Playlist]?
-    var fallbackAlbums: [Album] = []
-    var fallbackPlaylists: [Playlist] = []
-
-    init(
-        artist: Artist,
-        artistDetail: ArtistDetail,
-        source: MediaSource,
-        title: String,
-        preloadedAlbums: [Album]? = nil,
-        fallbackAlbums: [Album] = [],
-        preloadedPlaylists: [Playlist]? = nil,
-        fallbackPlaylists: [Playlist] = []
-    ) {
-        self.artist = artist
-        self.artistDetail = artistDetail
-        self.source = source
-        self.title = title
-        self.preloadedAlbums = preloadedAlbums
-        self.fallbackAlbums = fallbackAlbums
-        self.preloadedPlaylists = preloadedPlaylists
-        self.fallbackPlaylists = fallbackPlaylists
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,14 +21,10 @@ struct TracklistListView: View {
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onAppear {
-            self.viewModel.fallbackAlbums = self.fallbackAlbums
-            self.viewModel.fallbackPlaylists = self.fallbackPlaylists
             self.viewModel.load(
                 artist: self.artist,
                 artistDetail: self.artistDetail,
-                source: self.source,
-                preloadedAlbums: self.preloadedAlbums,
-                preloadedPlaylists: self.preloadedPlaylists
+                source: self.source
             )
         }
     }

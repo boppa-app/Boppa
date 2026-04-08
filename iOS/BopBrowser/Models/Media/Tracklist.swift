@@ -14,7 +14,6 @@ struct Tracklist {
         case playlist(Playlist)
         case artistSongs(Artist, ArtistDetail)
         case artistVideos(Artist, ArtistDetail)
-        case preloaded([Track])
     }
 
     var isPersisted: Bool {
@@ -69,17 +68,12 @@ struct Tracklist {
         self.storedTracklist = nil
     }
 
-    init(artist: Artist, type: TracklistType, mediaSourceName: String, tracks: [Track]?) {
+    init(artist: Artist, type: TracklistType, mediaSourceName: String) {
         self.artist = artist
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = artist.artworkUrl
         self.storedTracklist = nil
-
-        if let tracks, !tracks.isEmpty {
-            self.tracklistType = .preloaded(tracks)
-        } else {
-            self.tracklistType = type
-        }
+        self.tracklistType = type
 
         switch type {
         case .artistSongs:

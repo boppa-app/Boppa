@@ -11,7 +11,6 @@ struct TracklistView: View {
 
     let tracklist: Tracklist
     let source: MediaSource
-    var fallbackTracks: [Track] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,7 +41,6 @@ struct TracklistView: View {
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onAppear {
-            self.viewModel.fallbackTracks = self.fallbackTracks
             self.viewModel.load(
                 tracklist: self.tracklist,
                 source: self.source,

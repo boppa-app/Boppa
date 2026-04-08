@@ -99,8 +99,6 @@ class TracklistService {
             )
         case .likes:
             return TracklistResponse(tracks: [], paginationContext: nil)
-        case let .preloaded(tracks):
-            return TracklistResponse(tracks: tracks, paginationContext: nil)
         }
     }
 

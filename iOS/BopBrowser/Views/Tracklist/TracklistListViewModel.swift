@@ -13,8 +13,6 @@ class TracklistListViewModel {
     var playlists: [Playlist] = []
     var isLoading = false
     var errorMessage: String?
-    var fallbackAlbums: [Album] = []
-    var fallbackPlaylists: [Playlist] = []
 
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
@@ -22,20 +20,12 @@ class TracklistListViewModel {
     func load(
         artist: Artist,
         artistDetail: ArtistDetail,
-        source: MediaSource,
-        preloadedAlbums: [Album]?,
-        preloadedPlaylists: [Playlist]?
+        source: MediaSource
     ) {
         guard !self.didLoad else { return }
         self.didLoad = true
 
-        if let preloadedAlbums {
-            self.albums = preloadedAlbums
-            logger.info("Using \(preloadedAlbums.count) preloaded album(s) for artist '\(artist.name)'")
-        } else if let preloadedPlaylists {
-            self.playlists = preloadedPlaylists
-            logger.info("Using \(preloadedPlaylists.count) preloaded playlist(s) for artist '\(artist.name)'")
-        } else if source.config.data?.getPlaylistsForArtist != nil {
+        if source.config.data?.getPlaylistsForArtist != nil {
             self.fetchPlaylists(artist: artist, artistDetail: artistDetail, source: source)
         } else {
             self.fetchAlbums(artist: artist, artistDetail: artistDetail, source: source)
@@ -61,10 +51,10 @@ class TracklistListViewModel {
 
                 guard !Task.isCancelled else { return }
 
-                self.albums = result.isEmpty ? self.fallbackAlbums : result
+                self.albums = result
                 self.isLoading = false
 
-                logger.info("Loaded \(self.albums.count) album(s) for artist '\(artist.name)'\(result.isEmpty && !self.fallbackAlbums.isEmpty ? " (fallback)" : "")")
+                logger.info("Loaded \(self.albums.count) album(s) for artist '\(artist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 
@@ -94,10 +84,10 @@ class TracklistListViewModel {
 
                 guard !Task.isCancelled else { return }
 
-                self.playlists = result.isEmpty ? self.fallbackPlaylists : result
+                self.playlists = result
                 self.isLoading = false
 
-                logger.info("Loaded \(self.playlists.count) playlist(s) for artist '\(artist.name)'\(result.isEmpty && !self.fallbackPlaylists.isEmpty ? " (fallback)" : "")")
+                logger.info("Loaded \(self.playlists.count) playlist(s) for artist '\(artist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 

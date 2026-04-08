@@ -213,74 +213,58 @@ struct ArtistDetailView: View {
     }
 
     private func albumsSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.getAlbumsForArtist != nil
-        let albums = detail.albums ?? []
         return self.sectionHeaderLabel(title: "Albums", icon: self.albumsIcon)
             .background(
                 NavigationLink(destination: TracklistListView(
                     artist: self.artist,
                     artistDetail: detail,
                     source: self.source,
-                    title: "Albums",
-                    preloadedAlbums: hasScript ? nil : albums,
-                    fallbackAlbums: albums
+                    title: "Albums"
                 )) { EmptyView() }
                     .opacity(0)
             )
     }
 
     private func songsSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.getSongsForArtist != nil
-        let songs = detail.songs ?? []
         let tracklist = Tracklist(
             artist: self.artist,
             type: .artistSongs(self.artist, detail),
-            mediaSourceName: self.source.name,
-            tracks: hasScript ? nil : songs
+            mediaSourceName: self.source.name
         )
         return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
             .background(
                 NavigationLink(destination: TracklistView(
                     tracklist: tracklist,
-                    source: self.source,
-                    fallbackTracks: songs
+                    source: self.source
                 )) { EmptyView() }
                     .opacity(0)
             )
     }
 
     private func videosSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.getVideosForArtist != nil
-        let videos = detail.videos ?? []
         let tracklist = Tracklist(
             artist: self.artist,
             type: .artistVideos(self.artist, detail),
-            mediaSourceName: self.source.name,
-            tracks: hasScript ? nil : videos
+            mediaSourceName: self.source.name
         )
         return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
             .background(
                 NavigationLink(destination: TracklistView(
                     tracklist: tracklist,
-                    source: self.source,
-                    fallbackTracks: videos
+                    source: self.source
                 )) { EmptyView() }
                     .opacity(0)
             )
     }
 
     private func playlistsSectionHeader(_ detail: ArtistDetail) -> some View {
-        let hasScript = self.source.config.data?.getPlaylistsForArtist != nil
-        let playlists = detail.playlists ?? []
         return self.sectionHeaderLabel(title: "Playlists", icon: "music.note.list")
             .background(
                 NavigationLink(destination: TracklistListView(
                     artist: self.artist,
                     artistDetail: detail,
                     source: self.source,
-                    title: "Playlists",
-                    preloadedPlaylists: hasScript ? nil : playlists,
-                    fallbackPlaylists: playlists
+                    title: "Playlists"
                 )) { EmptyView() }
                     .opacity(0)
             )
