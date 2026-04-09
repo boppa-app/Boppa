@@ -46,7 +46,7 @@ struct Tracklist {
         case "likes":
             self.tracklistType = .likes
         default:
-            self.tracklistType = .playlist(Playlist(title: storedTracklist.name))
+            self.tracklistType = .playlist(Playlist(id: storedTracklist.id, title: storedTracklist.name))
         }
     }
 

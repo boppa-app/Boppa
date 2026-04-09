@@ -1,14 +1,14 @@
 import Foundation
 
 struct Artist: Identifiable, Equatable {
-    let id: UUID
+    let id: String
     let name: String
     let artworkUrl: String?
     let url: String?
     let metadata: [String: Any]
 
     init(
-        id: UUID = UUID(),
+        id: String,
         name: String,
         artworkUrl: String? = nil,
         url: String? = nil,

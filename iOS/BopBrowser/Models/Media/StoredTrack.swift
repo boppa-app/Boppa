@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class StoredTrack {
+    var id: String
     var title: String
     var subtitle: String?
     var duration: Int?
@@ -23,6 +24,7 @@ final class StoredTrack {
     }
 
     init(
+        id: String,
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,
@@ -32,6 +34,7 @@ final class StoredTrack {
         metadata: [String: Any] = [:],
         sortOrder: Int = 0
     ) {
+        self.id = id
         self.title = title
         self.subtitle = subtitle
         self.duration = duration
@@ -44,6 +47,7 @@ final class StoredTrack {
 
     func toTrack() -> Track {
         Track(
+            id: self.id,
             title: self.title,
             subtitle: self.subtitle,
             duration: self.duration,
@@ -56,6 +60,7 @@ final class StoredTrack {
 
     static func from(_ track: Track, sortOrder: Int) -> StoredTrack {
         StoredTrack(
+            id: track.id,
             title: track.title,
             subtitle: track.subtitle,
             duration: track.duration,

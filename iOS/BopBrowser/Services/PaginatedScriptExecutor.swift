@@ -105,8 +105,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToTrack(_ item: [String: Any], mediaSourceName: String) -> Track? {
-        guard let title = item["title"] as? String else { return nil }
+        guard let title = item["title"] as? String,
+              let id = self.resolveString(item["id"])
+        else { return nil }
         return Track(
+            id: id,
             title: title,
             subtitle: item["subtitle"] as? String,
             duration: self.resolveInt(item["duration"]),
@@ -120,8 +123,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToAlbum(_ item: [String: Any]) -> Album? {
-        guard let title = item["title"] as? String else { return nil }
+        guard let title = item["title"] as? String,
+              let id = self.resolveString(item["id"])
+        else { return nil }
         return Album(
+            id: id,
             title: title,
             subtitle: item["subtitle"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
@@ -132,8 +138,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToArtist(_ item: [String: Any]) -> Artist? {
-        guard let name = (item["name"] as? String) else { return nil }
+        guard let name = (item["name"] as? String),
+              let id = self.resolveString(item["id"])
+        else { return nil }
         return Artist(
+            id: id,
             name: name,
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
@@ -142,8 +151,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToPlaylist(_ item: [String: Any]) -> Playlist? {
-        guard let title = item["title"] as? String else { return nil }
+        guard let title = item["title"] as? String,
+              let id = self.resolveString(item["id"])
+        else { return nil }
         return Playlist(
+            id: id,
             title: title,
             user: item["user"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
@@ -151,6 +163,13 @@ class PaginatedScriptExecutor {
             url: item["url"] as? String,
             metadata: item["metadata"] as? [String: Any] ?? [:]
         )
+    }
+
+    func resolveString(_ value: Any?) -> String? {
+        if let stringValue = value as? String { return stringValue }
+        if let intValue = value as? Int { return String(intValue) }
+        if let doubleValue = value as? Double { return String(Int(doubleValue)) }
+        return nil
     }
 
     func resolveInt(_ value: Any?) -> Int? {

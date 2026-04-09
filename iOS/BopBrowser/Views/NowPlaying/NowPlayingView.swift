@@ -79,7 +79,7 @@ struct NowPlayingView: View {
                 font: .title3,
                 fontWeight: .semibold,
                 foregroundColor: .white,
-                uniqueId: self.viewModel.currentTrack?.id.uuidString
+                uniqueId: self.viewModel.currentTrack?.id
             )
             .frame(maxWidth: .infinity, alignment: .leading)
 

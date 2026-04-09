@@ -69,7 +69,7 @@ struct MiniPlayerView: View {
                 font: .subheadline,
                 fontWeight: .medium,
                 foregroundColor: .white,
-                uniqueId: self.playbackService.currentTrack?.id.uuidString,
+                uniqueId: self.playbackService.currentTrack?.id,
                 visible: !self.showNowPlaying
             )
 

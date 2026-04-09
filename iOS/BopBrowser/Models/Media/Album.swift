@@ -1,7 +1,7 @@
 import Foundation
 
 struct Album: Identifiable, Equatable {
-    let id: UUID
+    let id: String
     let title: String
     let subtitle: String?
     let trackCount: Int?
@@ -10,7 +10,7 @@ struct Album: Identifiable, Equatable {
     let metadata: [String: Any]
 
     init(
-        id: UUID = UUID(),
+        id: String,
         title: String,
         subtitle: String? = nil,
         trackCount: Int? = nil,

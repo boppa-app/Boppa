@@ -1,7 +1,7 @@
 import Foundation
 
 struct Track: Identifiable, Equatable {
-    let id: UUID
+    let id: String
     let title: String
     let subtitle: String?
     let duration: Int?
@@ -13,7 +13,7 @@ struct Track: Identifiable, Equatable {
     let metadata: [String: Any]
 
     init(
-        id: UUID = UUID(),
+        id: String,
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,

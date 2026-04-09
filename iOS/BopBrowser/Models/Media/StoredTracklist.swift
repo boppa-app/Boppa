@@ -34,11 +34,11 @@ enum TracklistSortMode: String, CaseIterable {
 
 @Model
 final class StoredTracklist {
+    var id: String
     var name: String
     var mediaSourceName: String
     var artworkUrl: String?
     var tracklistType: String
-    var remoteId: String?
     var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
 
     @Relationship(deleteRule: .cascade)
@@ -50,17 +50,17 @@ final class StoredTracklist {
     }
 
     init(
+        id: String,
         name: String,
         mediaSourceName: String,
         artworkUrl: String? = nil,
-        tracklistType: String,
-        remoteId: String? = nil
+        tracklistType: String
     ) {
+        self.id = id
         self.name = name
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = artworkUrl
         self.tracklistType = tracklistType
-        self.remoteId = remoteId
     }
 
     var isLikes: Bool {

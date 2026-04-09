@@ -400,6 +400,7 @@ class TracklistService {
         }
 
         let tracklist = StoredTracklist(
+            id: "likes-\(mediaSourceName)",
             name: "Likes",
             mediaSourceName: mediaSourceName,
             tracklistType: "likes"
