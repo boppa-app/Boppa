@@ -16,6 +16,7 @@ class TracklistViewModel {
     var errorMessage: String?
     var sortMode: TracklistSortMode = .defaultOrder
     var hasMorePages = false
+    var pageLoadId = 0
 
     private var fetchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
@@ -170,9 +171,10 @@ class TracklistViewModel {
                 self.tracks = self.unsortedTracks
                 self.paginationContext = response.paginationContext
                 self.hasMorePages = response.paginationContext != nil
+                self.pageLoadId += 1
                 self.isLoading = false
 
-                logger.info("Loaded next page: \(response.tracks.count) track(s), total: \(self.tracks.count)")
+                logger.info("Loaded next page: \(response.tracks.count) track(s), total: \(self.tracks.count), hasMore: \(self.hasMorePages)")
             } catch {
                 guard !Task.isCancelled else { return }
 

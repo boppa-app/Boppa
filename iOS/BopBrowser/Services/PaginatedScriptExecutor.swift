@@ -97,8 +97,9 @@ class PaginatedScriptExecutor {
 
         var paginationData = jsResult
         paginationData.removeValue(forKey: "items")
+        paginationData.removeValue(forKey: "__keyOrder")
         let hasPaginationContext = paginationData.values.contains { !($0 is NSNull) }
-        let paginationContext: [String: Any]? = hasPaginationContext ? jsResult : nil
+        let paginationContext: [String: Any]? = hasPaginationContext ? paginationData : nil
 
         return PageResult(items: items, paginationContext: paginationContext)
     }

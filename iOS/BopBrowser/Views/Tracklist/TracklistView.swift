@@ -124,6 +124,7 @@ struct TracklistView: View {
 
                 if self.viewModel.hasMorePages {
                     ProgressView()
+                        .id(self.viewModel.pageLoadId)
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
                         .listRowBackground(Color.black)
