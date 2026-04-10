@@ -7,9 +7,19 @@ struct MediaSourceDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeaderView(
-                title: self.viewModel.source.name,
+                title: "",
                 onBack: { self.dismiss() }
-            )
+            ) {
+                EmptyView()
+            } centerTrailing: {
+                if let iconSvg = self.viewModel.source.config.iconSvg {
+                    SVGImageView(svgString: iconSvg, size: 24)
+                } else {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }
+            }
 
             List {
                 Section("Enabled") {
