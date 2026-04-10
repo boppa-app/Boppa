@@ -10,9 +10,7 @@ struct SourcePickerSheet: View {
     let sources: [MediaSource]
     let mode: SourcePickerMode
 
-    private let iconSize: CGFloat = 64
-    private let gridSpacing: CGFloat = 24
-    private let minSidePadding: CGFloat = 16
+    @State private var gridPadding: CGFloat = 0
 
     private var title: String {
         switch self.mode {
@@ -21,38 +19,21 @@ struct SourcePickerSheet: View {
         }
     }
 
-    private func columnsForWidth(_ width: CGFloat) -> Int {
-        guard width > 0 else { return 1 }
-        let available = width - 2 * self.minSidePadding
-        if available < self.iconSize { return 1 }
-        return max(1, Int((available + self.gridSpacing) / (self.iconSize + self.gridSpacing)))
-    }
-
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                let cols = self.columnsForWidth(geometry.size.width)
-                let totalIconsWidth = CGFloat(cols) * self.iconSize + CGFloat(cols - 1) * self.gridSpacing
-                let sidePadding = (geometry.size.width - totalIconsWidth) / 2
-
-                let sortedSources = self.sources.sorted(by: { $0.order < $1.order })
-                let rows = sortedSources.chunked(into: cols)
+                let pad = MediaSourceGridView<AnyView>.sidePadding(for: geometry.size.width)
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: self.gridSpacing) {
-                        ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                            HStack(spacing: self.gridSpacing) {
-                                ForEach(row) { source in
-                                    self.sourceButton(source)
-                                }
-                            }
-                        }
+                    MediaSourceGridView(sources: self.sources.sorted(by: { $0.order < $1.order })) { source in
+                        self.sourceButton(source)
                     }
-                    .padding(.top, 16)
-                    .padding(.horizontal, sidePadding)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, -pad + 16)
+                    .padding(.bottom, -pad)
                 }
                 .scrollIndicators(.hidden)
+                .onAppear { self.gridPadding = pad }
+                .onChange(of: geometry.size.width) { _, _ in self.gridPadding = pad }
             }
             .navigationTitle(self.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -85,13 +66,5 @@ struct SourcePickerSheet: View {
             MediaSourceIcon(source: source, isSelected: self.isSelected(source))
         }
         .buttonStyle(.plain)
-    }
-}
-
-private extension Array {
-    func chunked(into size: Int) -> [[Element]] {
-        stride(from: 0, to: self.count, by: size).map {
-            Array(self[$0 ..< Swift.min($0 + size, self.count)])
-        }
     }
 }
