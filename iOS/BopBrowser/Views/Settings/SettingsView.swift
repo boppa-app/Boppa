@@ -128,7 +128,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var editingList: some View {
         ForEach(self.mediaSources) { source in
-            MediaSourceIcon(source: source)
+            MediaSourceIcon(source: source, isSelected: false)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
         }
