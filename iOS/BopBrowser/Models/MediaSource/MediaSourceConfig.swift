@@ -6,6 +6,7 @@ struct MediaSourceConfig: Codable, Sendable {
     let name: String
     let url: String
     let iconSvg: String?
+    let highlightColor: String?
     let customUserAgent: String?
     let login: LoginConfig?
     let parse: [Parse]?
@@ -15,7 +16,7 @@ struct MediaSourceConfig: Codable, Sendable {
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case name, url, iconSvg, customUserAgent, login, parse, data, actions, playback, lastUpdated
+        case name, url, iconSvg, highlightColor, customUserAgent, login, parse, data, actions, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -23,6 +24,7 @@ struct MediaSourceConfig: Codable, Sendable {
         self.name = try container.decode(String.self, forKey: .name)
         self.url = try container.decode(String.self, forKey: .url)
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
+        self.highlightColor = try container.decodeIfPresent(String.self, forKey: .highlightColor)
         self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
         self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
         self.parse = try container.decodeIfPresent([Parse].self, forKey: .parse)
@@ -37,6 +39,7 @@ struct MediaSourceConfig: Codable, Sendable {
         try container.encode(self.name, forKey: .name)
         try container.encode(self.url, forKey: .url)
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)
+        try container.encodeIfPresent(self.highlightColor, forKey: .highlightColor)
         try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
         try container.encodeIfPresent(self.login, forKey: .login)
         try container.encodeIfPresent(self.parse, forKey: .parse)
