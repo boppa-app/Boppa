@@ -5,6 +5,14 @@ struct ArtworkView: View {
     let placeholder: String
     var size: CGFloat = 48
     var isCircular: Bool = false
+    var cornerRadius: CGFloat?
+
+    private var resolvedCornerRadius: CGFloat {
+        if self.isCircular {
+            return self.size / 2
+        }
+        return self.cornerRadius ?? 6
+    }
 
     var body: some View {
         Group {
@@ -12,9 +20,7 @@ struct ArtworkView: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
+                        self.squareArtwork(image: image)
                     case .failure:
                         self.placeholderImage
                     case .empty:
@@ -30,8 +36,25 @@ struct ArtworkView: View {
         }
         .frame(width: self.size, height: self.size)
         .background(Color(.systemGray6))
-        .cornerRadius(self.isCircular ? self.size / 2 : 6)
+        .cornerRadius(self.resolvedCornerRadius)
         .clipped()
+    }
+
+    private func squareArtwork(image: Image) -> some View {
+        ZStack {
+            image
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: self.size, height: self.size)
+                .clipped()
+                .blur(radius: 20)
+                .opacity(0.6)
+
+            image
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: self.size, height: self.size)
+        }
     }
 
     private var placeholderImage: some View {

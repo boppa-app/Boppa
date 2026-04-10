@@ -29,6 +29,7 @@ struct NowPlayingView: View {
             Spacer().frame(height: 32)
             self.trackInfoSection
         }
+        .opacity(self.viewModel.showQueue ? 0 : 1)
         .overlay {
             if self.viewModel.showQueue {
                 QueueView()
@@ -37,39 +38,16 @@ struct NowPlayingView: View {
     }
 
     private var artworkSection: some View {
-        Group {
-            if let url = self.viewModel.artworkURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case let .success(image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure:
-                        self.artworkPlaceholder
-                    case .empty:
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    @unknown default:
-                        self.artworkPlaceholder
-                    }
-                }
-            } else {
-                self.artworkPlaceholder
-            }
+        GeometryReader { geometry in
+            ArtworkView(
+                url: self.viewModel.currentTrack?.artworkUrl,
+                placeholder: "music.note",
+                size: geometry.size.width,
+                cornerRadius: 12
+            )
         }
-        .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-    }
-
-    private var artworkPlaceholder: some View {
-        Image(systemName: "music.note")
-            .font(.system(size: 60))
-            .foregroundColor(Color(.systemGray3))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var trackInfoSection: some View {
