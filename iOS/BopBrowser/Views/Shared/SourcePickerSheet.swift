@@ -10,6 +10,10 @@ struct SourcePickerSheet: View {
     let sources: [MediaSource]
     let mode: SourcePickerMode
 
+    private let iconSize: CGFloat = 64
+    private let gridSpacing: CGFloat = 24
+    private let minSidePadding: CGFloat = 16
+
     private var title: String {
         switch self.mode {
         case .single: return "Select Source"
@@ -17,19 +21,38 @@ struct SourcePickerSheet: View {
         }
     }
 
-    private let columns = [
-        GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 20),
-    ]
+    private func columnsForWidth(_ width: CGFloat) -> Int {
+        guard width > 0 else { return 1 }
+        let available = width - 2 * self.minSidePadding
+        if available < self.iconSize { return 1 }
+        return max(1, Int((available + self.gridSpacing) / (self.iconSize + self.gridSpacing)))
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: self.columns, spacing: 40) {
-                    ForEach(self.sources.sorted(by: { $0.order < $1.order })) { source in
-                        self.sourceCell(source)
+            GeometryReader { geometry in
+                let cols = self.columnsForWidth(geometry.size.width)
+                let totalIconsWidth = CGFloat(cols) * self.iconSize + CGFloat(cols - 1) * self.gridSpacing
+                let sidePadding = (geometry.size.width - totalIconsWidth) / 2
+
+                let sortedSources = self.sources.sorted(by: { $0.order < $1.order })
+                let rows = sortedSources.chunked(into: cols)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: self.gridSpacing) {
+                        ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                            HStack(spacing: self.gridSpacing) {
+                                ForEach(row) { source in
+                                    self.sourceButton(source)
+                                }
+                            }
+                        }
                     }
+                    .padding(.top, 16)
+                    .padding(.horizontal, sidePadding)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(20)
+                .scrollIndicators(.hidden)
             }
             .navigationTitle(self.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -37,17 +60,17 @@ struct SourcePickerSheet: View {
         }
     }
 
-    private func sourceCell(_ source: MediaSource) -> some View {
-        let isSelected: Bool = {
-            switch self.mode {
-            case let .single(selectedID, _):
-                return source.persistentModelID == selectedID
-            case let .multi(selectedNames):
-                return selectedNames.wrappedValue.contains(source.name)
-            }
-        }()
+    private func isSelected(_ source: MediaSource) -> Bool {
+        switch self.mode {
+        case let .single(selectedID, _):
+            return source.persistentModelID == selectedID
+        case let .multi(selectedNames):
+            return selectedNames.wrappedValue.contains(source.name)
+        }
+    }
 
-        return Button {
+    private func sourceButton(_ source: MediaSource) -> some View {
+        Button {
             switch self.mode {
             case let .single(_, onSelect):
                 onSelect(source)
@@ -59,29 +82,16 @@ struct SourcePickerSheet: View {
                 }
             }
         } label: {
-            VStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .stroke(isSelected ? Color.purp : Color(.systemGray2))
-                        .fill(isSelected ? Color.purp.opacity(0.2) : Color(.systemGray6))
-                        .frame(width: 64, height: 64)
-
-                    if let iconSvg = source.config.iconSvg {
-                        SVGImageView(svgString: iconSvg, size: 40)
-                            .frame(width: 40, height: 40)
-                            .opacity(isSelected ? 1.0 : 0.5)
-                    } else {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 24))
-                            .foregroundColor(isSelected ? Color.purp : Color(.systemGray2))
-                    }
-                }
-                Text(source.name)
-                    .font(.caption)
-                    .foregroundColor(isSelected ? .purp : Color(.systemGray2))
-                    .lineLimit(1)
-            }
+            MediaSourceIcon(source: source, isSelected: self.isSelected(source))
         }
         .buttonStyle(.plain)
+    }
+}
+
+private extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: self.count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, self.count)])
+        }
     }
 }

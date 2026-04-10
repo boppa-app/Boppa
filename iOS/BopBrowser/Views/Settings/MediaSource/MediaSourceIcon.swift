@@ -2,9 +2,10 @@ import SwiftUI
 
 struct MediaSourceIcon: View {
     let source: MediaSource
+    var isSelected: Bool?
 
-    private var isEnabled: Bool {
-        self.source.isEnabled
+    private var isHighlighted: Bool {
+        self.isSelected ?? self.source.isEnabled
     }
 
     private var outlineColor: Color {
@@ -15,22 +16,18 @@ struct MediaSourceIcon: View {
     }
 
     var body: some View {
-        self.iconCircle
-    }
-
-    private var iconCircle: some View {
         ZStack {
             Circle()
-                .strokeBorder(self.isEnabled ? self.outlineColor : Color(.systemGray3), lineWidth: 2)
+                .strokeBorder(self.isHighlighted ? self.outlineColor : Color(.systemGray3), lineWidth: 2)
                 .frame(width: 64, height: 64)
 
             if let iconSvg = self.source.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 32)
-                    .opacity(self.isEnabled ? 1.0 : 0.5)
+                    .opacity(self.isHighlighted ? 1.0 : 0.5)
             } else {
                 Image(systemName: "music.note")
                     .font(.system(size: 24))
-                    .foregroundColor(self.isEnabled ? Color.purp : Color(.systemGray2))
+                    .foregroundColor(self.isHighlighted ? Color.purp : Color(.systemGray2))
             }
         }
     }
