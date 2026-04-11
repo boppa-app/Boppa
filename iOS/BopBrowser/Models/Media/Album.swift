@@ -1,6 +1,6 @@
 import Foundation
 
-struct Album: Identifiable, Equatable {
+struct Album: Identifiable, Equatable, Hashable {
     let id: String
     let title: String
     let subtitle: String?
@@ -34,6 +34,10 @@ struct Album: Identifiable, Equatable {
             && lhs.trackCount == rhs.trackCount
             && lhs.artworkUrl == rhs.artworkUrl
             && lhs.url == rhs.url
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(self.id)
     }
 
     var formattedTrackCount: String? {

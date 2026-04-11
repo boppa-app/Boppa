@@ -7,6 +7,9 @@ struct SearchView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
+    @State private var trackForActions: Track?
+    @State private var pendingArtist: Artist?
+    @State private var pendingAlbum: Album?
     @FocusState private var isSearchFieldFocused: Bool
 
     private var showCategorySuggestions: Bool {
@@ -186,19 +189,15 @@ struct SearchView: View {
                 switch self.viewModel.results {
                 case let .songs(tracks), let .videos(tracks):
                     ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
-                        Button {
-                            self.playTrack(track, from: tracks)
-                        } label: {
-                            TrackRow(
-                                track: track,
-                                isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
-                                isLoading: PlaybackService.shared.isLoading,
-                                isPlaying: PlaybackService.shared.isPlaying
-                            )
-                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                        TrackRow(
+                            track: track,
+                            isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                            isLoading: PlaybackService.shared.isLoading,
+                            isPlaying: PlaybackService.shared.isPlaying,
+                            onTap: { self.playTrack(track, from: tracks) },
+                            onEllipsisTap: { self.trackForActions = track }
+                        )
+                        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparatorTint(index == tracks.count - 1 ? .clear : Color(.systemGray5))
@@ -301,6 +300,32 @@ struct SearchView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
+        }
+        .sheet(item: self.$trackForActions) { track in
+            if let source = self.viewModel.selectedSource {
+                TrackActionsSheet(
+                    track: track,
+                    source: source,
+                    onArtistSelected: { artist in self.pendingArtist = artist },
+                    onAlbumSelected: { album in self.pendingAlbum = album }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(.systemGray6))
+            }
+        }
+        .navigationDestination(item: self.$pendingArtist) { artist in
+            if let source = self.viewModel.selectedSource {
+                ArtistDetailView(artist: artist, source: source)
+            }
+        }
+        .navigationDestination(item: self.$pendingAlbum) { album in
+            if let source = self.viewModel.selectedSource {
+                TracklistView(
+                    tracklist: Tracklist(album: album, mediaSourceName: source.name),
+                    source: source
+                )
+            }
         }
     }
 

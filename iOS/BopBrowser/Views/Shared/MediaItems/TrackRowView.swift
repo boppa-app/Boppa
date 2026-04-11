@@ -13,6 +13,8 @@ struct TrackRow: View {
     var isLoading: Bool = false
     var isPlaying: Bool = false
     var style: TrackRowStyle = .regular
+    var onTap: (() -> Void)?
+    var onEllipsisTap: (() -> Void)?
 
     private var artworkSize: CGFloat {
         self.style == .compact ? 36 : 48
@@ -52,6 +54,11 @@ struct TrackRow: View {
                 if self.isSelected && self.isLoading {
                     ProgressView()
                         .tint(.purp)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            self.onEllipsisTap?()
+                        }
                 } else if self.isSelected {
                     ZStack {
                         Image(systemName: "waveform")
@@ -63,18 +70,27 @@ struct TrackRow: View {
                                 .background(Color.black)
                         }
                     }
-                } else {
-                    ZStack {
-                        Button {} label: {
-                            Image(systemName: "ellipsis")
-                                .foregroundColor(Color(.systemGray))
-                        }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        self.onEllipsisTap?()
                     }
+                } else {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(Color(.systemGray))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            self.onEllipsisTap?()
+                        }
                 }
             }
         }
         .padding(.horizontal, self.horizontalPadding)
         .padding(.vertical, self.verticalPadding)
         .contentShape(Rectangle())
+        .onTapGesture {
+            self.onTap?()
+        }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct Artist: Identifiable, Equatable {
+struct Artist: Identifiable, Equatable, Hashable {
     let id: String
     let name: String
     let artworkUrl: String?
@@ -26,5 +26,9 @@ struct Artist: Identifiable, Equatable {
             && lhs.name == rhs.name
             && lhs.artworkUrl == rhs.artworkUrl
             && lhs.url == rhs.url
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(self.id)
     }
 }

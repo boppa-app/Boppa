@@ -125,6 +125,7 @@ struct SettingsView: View {
         }
     }
 
+    // TODO: Setup jiggle iOS home page-style editing for re-ordering and deleting media sources
     @ViewBuilder
     private var editingList: some View {
         ForEach(self.mediaSources) { source in

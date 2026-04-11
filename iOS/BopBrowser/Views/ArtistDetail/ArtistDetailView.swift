@@ -3,6 +3,9 @@ import SwiftUI
 struct ArtistDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = ArtistDetailViewModel()
+    @State private var trackForActions: Track?
+    @State private var pendingArtist: Artist?
+    @State private var pendingAlbum: Album?
 
     let artist: Artist
     let source: MediaSource
@@ -25,6 +28,26 @@ struct ArtistDetailView: View {
         .onAppear {
             self.viewModel.load(
                 artist: self.artist,
+                source: self.source
+            )
+        }
+        .sheet(item: self.$trackForActions) { track in
+            TrackActionsSheet(
+                track: track,
+                source: self.source,
+                onArtistSelected: { artist in self.pendingArtist = artist },
+                onAlbumSelected: { album in self.pendingAlbum = album }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGray6))
+        }
+        .navigationDestination(item: self.$pendingArtist) { artist in
+            ArtistDetailView(artist: artist, source: self.source)
+        }
+        .navigationDestination(item: self.$pendingAlbum) { album in
+            TracklistView(
+                tracklist: Tracklist(album: album, mediaSourceName: self.source.name),
                 source: self.source
             )
         }
@@ -120,19 +143,15 @@ struct ArtistDetailView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(Array(songs.enumerated()), id: \.element.id) { index, track in
-                Button {
-                    self.playTrack(track, from: songs)
-                } label: {
-                    TrackRow(
-                        track: track,
-                        isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
-                        isLoading: PlaybackService.shared.isLoading,
-                        isPlaying: PlaybackService.shared.isPlaying
-                    )
-                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                TrackRow(
+                    track: track,
+                    isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                    isLoading: PlaybackService.shared.isLoading,
+                    isPlaying: PlaybackService.shared.isPlaying,
+                    onTap: { self.playTrack(track, from: songs) },
+                    onEllipsisTap: { self.trackForActions = track }
+                )
+                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparatorTint(index == songs.count - 1 ? .clear : Color(.systemGray5))
@@ -149,19 +168,15 @@ struct ArtistDetailView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(Array(videos.enumerated()), id: \.element.id) { index, track in
-                Button {
-                    self.playTrack(track, from: videos)
-                } label: {
-                    TrackRow(
-                        track: track,
-                        isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
-                        isLoading: PlaybackService.shared.isLoading,
-                        isPlaying: PlaybackService.shared.isPlaying
-                    )
-                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                TrackRow(
+                    track: track,
+                    isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                    isLoading: PlaybackService.shared.isLoading,
+                    isPlaying: PlaybackService.shared.isPlaying,
+                    onTap: { self.playTrack(track, from: videos) },
+                    onEllipsisTap: { self.trackForActions = track }
+                )
+                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparatorTint(index == videos.count - 1 ? .clear : Color(.systemGray5))

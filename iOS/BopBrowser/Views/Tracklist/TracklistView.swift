@@ -8,6 +8,9 @@ struct TracklistView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistViewModel()
     @State private var showSortSheet = false
+    @State private var trackForActions: Track?
+    @State private var pendingArtist: Artist?
+    @State private var pendingAlbum: Album?
 
     let tracklist: Tracklist
     let source: MediaSource
@@ -59,6 +62,26 @@ struct TracklistView: View {
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGray6))
         }
+        .sheet(item: self.$trackForActions) { track in
+            TrackActionsSheet(
+                track: track,
+                source: self.source,
+                onArtistSelected: { artist in self.pendingArtist = artist },
+                onAlbumSelected: { album in self.pendingAlbum = album }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGray6))
+        }
+        .navigationDestination(item: self.$pendingArtist) { artist in
+            ArtistDetailView(artist: artist, source: self.source)
+        }
+        .navigationDestination(item: self.$pendingAlbum) { album in
+            TracklistView(
+                tracklist: Tracklist(album: album, mediaSourceName: self.source.name),
+                source: self.source
+            )
+        }
     }
 
     private var content: some View {
@@ -105,18 +128,14 @@ struct TracklistView: View {
         ScrollFadeView {
             List {
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
-                    Button {
-                        self.playTrack(track)
-                    } label: {
-                        TrackRow(
-                            track: track,
-                            isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
-                            isLoading: PlaybackService.shared.isLoading,
-                            isPlaying: PlaybackService.shared.isPlaying
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    TrackRow(
+                        track: track,
+                        isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                        isLoading: PlaybackService.shared.isLoading,
+                        isPlaying: PlaybackService.shared.isPlaying,
+                        onTap: { self.playTrack(track) },
+                        onEllipsisTap: { self.trackForActions = track }
+                    )
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparatorTint(index == self.viewModel.displayTracks.count - 1 && !self.viewModel.hasMorePages ? .clear : Color(.systemGray5))

@@ -18,23 +18,20 @@ struct QueueView: View {
             List {
                 ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, track in
                     let isCurrent = track == self.queueManager.currentTrack
-                    Button {
-                        if repeatMode != .one {
-                            if let source = self.playbackService.mediaSource {
-                                self.playbackService.playTrack(track, queue: self.queueManager.queue, mediaSource: source)
+                    TrackRow(
+                        track: track,
+                        isSelected: isCurrent,
+                        isLoading: self.playbackService.isLoading,
+                        isPlaying: self.playbackService.isPlaying && isCurrent,
+                        style: .compact,
+                        onTap: {
+                            if repeatMode != .one {
+                                if let source = self.playbackService.mediaSource {
+                                    self.playbackService.playTrack(track, queue: self.queueManager.queue, mediaSource: source)
+                                }
                             }
                         }
-                    } label: {
-                        TrackRow(
-                            track: track,
-                            isSelected: isCurrent,
-                            isLoading: self.playbackService.isLoading,
-                            isPlaying: self.playbackService.isPlaying && isCurrent,
-                            style: .compact
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    )
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparatorTint(index == lastIndex ? .clear : Color(.systemGray6))
