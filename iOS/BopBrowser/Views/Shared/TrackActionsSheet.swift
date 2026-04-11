@@ -8,12 +8,12 @@ struct TrackActionsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    private var artistEntries: [(name: String, metadata: [String: String])] {
-        self.track.artists.map { (name: $0.key, metadata: $0.value) }
+    private var artistEntries: [(name: String, artist: Artist)] {
+        self.track.artists.map { (name: $0.key, artist: $0.value) }
     }
 
-    private var albumEntries: [(name: String, metadata: [String: String])] {
-        self.track.album.map { (name: $0.key, metadata: $0.value) }
+    private var albumEntries: [(name: String, album: Album)] {
+        self.track.albums.map { (name: $0.key, album: $0.value) }
     }
 
     private var albumIcon: String {
@@ -34,14 +34,8 @@ struct TrackActionsSheet: View {
                 ForEach(Array(self.artistEntries.enumerated()), id: \.offset) { _, entry in
                     if self.source.config.data?.getArtist != nil {
                         Button {
-                            let artist = Artist(
-                                id: entry.metadata["id"] ?? entry.name,
-                                name: entry.name,
-                                artworkUrl: entry.metadata["artworkUrl"],
-                                metadata: entry.metadata.mapValues { $0 as Any }
-                            )
                             self.dismiss()
-                            self.onArtistSelected?(artist)
+                            self.onArtistSelected?(entry.artist)
                         } label: {
                             self.rowLabel(
                                 name: entry.name,
@@ -58,15 +52,8 @@ struct TrackActionsSheet: View {
                 ForEach(Array(self.albumEntries.enumerated()), id: \.offset) { _, entry in
                     if self.source.config.data?.getAlbum != nil {
                         Button {
-                            let album = Album(
-                                id: entry.metadata["id"] ?? entry.name,
-                                title: entry.name,
-                                subtitle: entry.metadata["subtitle"],
-                                artworkUrl: entry.metadata["artworkUrl"],
-                                metadata: entry.metadata.mapValues { $0 as Any }
-                            )
                             self.dismiss()
-                            self.onAlbumSelected?(album)
+                            self.onAlbumSelected?(entry.album)
                         } label: {
                             self.rowLabel(
                                 name: entry.name,
