@@ -41,16 +41,9 @@ struct MediaSourceIcon: View {
                         .font(.system(size: 20))
                         .foregroundStyle(.white, Color.purp)
                 }
-                .buttonStyle(DarkenButtonStyle())
+                .buttonStyle(.plain)
             }
         }
-    }
-}
-
-private struct DarkenButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .brightness(configuration.isPressed ? -0.3 : 0)
     }
 }
 
