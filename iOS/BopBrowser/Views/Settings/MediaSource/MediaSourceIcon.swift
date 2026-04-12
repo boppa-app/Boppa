@@ -21,7 +21,7 @@ struct MediaSourceIcon: View {
         ZStack {
             Circle()
                 .strokeBorder(self.isHighlighted ? self.outlineColor : Color(.systemGray3), lineWidth: 2)
-                .frame(width: 64, height: 64)
+                .frame(width: MediaSourceGridLayout.iconSize, height: MediaSourceGridLayout.iconSize)
 
             if let iconSvg = self.source.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 32)

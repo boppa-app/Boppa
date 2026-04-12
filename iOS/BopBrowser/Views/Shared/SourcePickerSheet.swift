@@ -22,7 +22,7 @@ struct SourcePickerSheet: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                let pad = MediaSourceGridView<AnyView>.sidePadding(for: geometry.size.width)
+                let pad = MediaSourceGridLayout.sidePadding(for: geometry.size.width)
 
                 ScrollView {
                     MediaSourceGridView(sources: self.sources.sorted(by: { $0.order < $1.order })) { source in

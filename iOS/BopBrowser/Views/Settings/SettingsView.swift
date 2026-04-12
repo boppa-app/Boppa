@@ -129,32 +129,16 @@ struct SettingsView: View {
         .background(
             GeometryReader { geometry in
                 Color.clear.onAppear {
-                    self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
-                        for: geometry.size.width,
-                        sourceCount: self.mediaSources.count,
-                        isEditing: self.isEditing
-                    )
+                    self.recomputeGridHeight(for: geometry.size.width)
                 }
                 .onChange(of: geometry.size.width) { _, newWidth in
-                    self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
-                        for: newWidth,
-                        sourceCount: self.mediaSources.count,
-                        isEditing: self.isEditing
-                    )
+                    self.recomputeGridHeight(for: newWidth)
                 }
                 .onChange(of: self.mediaSources.count) {
-                    self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
-                        for: geometry.size.width,
-                        sourceCount: self.mediaSources.count,
-                        isEditing: self.isEditing
-                    )
+                    self.recomputeGridHeight(for: geometry.size.width)
                 }
                 .onChange(of: self.isEditing) {
-                    self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
-                        for: geometry.size.width,
-                        sourceCount: self.mediaSources.count,
-                        isEditing: self.isEditing
-                    )
+                    self.recomputeGridHeight(for: geometry.size.width)
                 }
             }
         )
@@ -187,6 +171,14 @@ struct SettingsView: View {
             try? self.modelContext.save()
         }
         NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["names": deletedNames])
+    }
+
+    private func recomputeGridHeight(for width: CGFloat) {
+        self.computedGridHeight = MediaSourceGridLayout.gridHeight(
+            for: width,
+            sourceCount: self.mediaSources.count,
+            isEditing: self.isEditing
+        )
     }
 }
 
