@@ -7,7 +7,7 @@ import SwiftData
 class LibraryViewModel {
     var mediaSources: [MediaSource] = []
     var collapsedSources: Set<String> = []
-    var visibleSourceNames: Set<String> = []
+    var visibleSourceIDs: Set<PersistentIdentifier> = []
     var showFilterSheet = false
 
     func loadSources(modelContext: ModelContext) {
@@ -17,10 +17,10 @@ class LibraryViewModel {
         descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
 
-        let enabledNames = Set(self.mediaSources.map(\.name))
-        self.visibleSourceNames = self.visibleSourceNames.isEmpty
-            ? enabledNames
-            : self.visibleSourceNames.intersection(enabledNames)
+        let enabledIDs = Set(self.mediaSources.map(\.persistentModelID))
+        self.visibleSourceIDs = self.visibleSourceIDs.isEmpty
+            ? enabledIDs
+            : self.visibleSourceIDs.intersection(enabledIDs)
 
         for source in self.mediaSources where self.hasLikesScript(source) {
             _ = TracklistService.shared.ensureLikesPlaylist(
@@ -62,7 +62,7 @@ class LibraryViewModel {
     }
 
     var filteredSources: [MediaSource] {
-        self.mediaSources.filter { self.visibleSourceNames.contains($0.name) }
+        self.mediaSources.filter { self.visibleSourceIDs.contains($0.persistentModelID) }
     }
 
     func hasLikesScript(_ source: MediaSource) -> Bool {

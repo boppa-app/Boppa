@@ -12,21 +12,20 @@ struct SettingsView: View {
     @State private var isEditing = false
     @State private var selectedSource: MediaSource?
     @State private var computedGridHeight: CGFloat = 100
+    @State private var showDeleteConfirmation = false
+    @State private var pendingDeleteIndex: Int?
+    @State private var isDraggingSource = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    if self.isEditing {
-                        self.editingList
-                    } else {
-                        self.mediaSourcesGrid
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowBackground(Color(.systemGray6))
-                    }
+                    self.mediaSourcesGrid
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowBackground(Color(.systemGray6))
                 } header: {
                     HStack {
-                        Text("Media Sources").font(.body)
+                        Text("Media Sources")
                         Spacer()
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -58,7 +57,6 @@ struct SettingsView: View {
                     .disabled(self.isClearingData)
                 }
             }
-            .environment(\.editMode, self.isEditing ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
             .onChange(of: self.selectedTab) { _, newTab in
                 if newTab != 3 {
@@ -80,6 +78,19 @@ struct SettingsView: View {
             } message: {
                 Text("This will delete all cookies, cache, local storage, and session data. You will be logged out of all media sources.")
             }
+            .alert("Remove Media Source?", isPresented: self.$showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    self.pendingDeleteIndex = nil
+                }
+                Button("Remove", role: .destructive) {
+                    if let index = self.pendingDeleteIndex {
+                        self.deleteMediaSource(at: index)
+                    }
+                    self.pendingDeleteIndex = nil
+                }
+            } message: {
+                Text("This media source will be removed. This action cannot be undone.")
+            }
             .alert("Web Data Cleared", isPresented: self.$showDataCleared) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -89,11 +100,29 @@ struct SettingsView: View {
     }
 
     private var mediaSourcesGrid: some View {
-        MediaSourceGridView(sources: Array(self.mediaSources)) { source in
+        MediaSourceGridView(
+            sources: Array(self.mediaSources),
+            isEditing: self.isEditing,
+            onReorder: self.moveMediaSource,
+            onAdd: { self.showingAddSheet = true },
+            onDragStateChanged: { isDragging in
+                self.isDraggingSource = isDragging
+            }
+        ) { source in
             Button {
-                self.selectedSource = source
+                if !self.isEditing {
+                    self.selectedSource = source
+                }
             } label: {
-                MediaSourceIcon(source: source)
+                MediaSourceIcon(
+                    source: source,
+                    onDelete: self.isEditing ? {
+                        if let index = self.mediaSources.firstIndex(where: { $0.persistentModelID == source.persistentModelID }) {
+                            self.confirmDeleteMediaSource(at: index)
+                        }
+                    } : nil,
+                    showDeleteButton: !self.isDraggingSource
+                )
             }
             .buttonStyle(.plain)
         }
@@ -102,19 +131,29 @@ struct SettingsView: View {
                 Color.clear.onAppear {
                     self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
                         for: geometry.size.width,
-                        sourceCount: self.mediaSources.count
+                        sourceCount: self.mediaSources.count,
+                        isEditing: self.isEditing
                     )
                 }
                 .onChange(of: geometry.size.width) { _, newWidth in
                     self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
                         for: newWidth,
-                        sourceCount: self.mediaSources.count
+                        sourceCount: self.mediaSources.count,
+                        isEditing: self.isEditing
                     )
                 }
                 .onChange(of: self.mediaSources.count) {
                     self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
                         for: geometry.size.width,
-                        sourceCount: self.mediaSources.count
+                        sourceCount: self.mediaSources.count,
+                        isEditing: self.isEditing
+                    )
+                }
+                .onChange(of: self.isEditing) {
+                    self.computedGridHeight = MediaSourceGridView<AnyView>.gridHeight(
+                        for: geometry.size.width,
+                        sourceCount: self.mediaSources.count,
+                        isEditing: self.isEditing
                     )
                 }
             }
@@ -125,40 +164,28 @@ struct SettingsView: View {
         }
     }
 
-    // TODO: Setup jiggle iOS home page-style editing for re-ordering and deleting media sources
-    @ViewBuilder
-    private var editingList: some View {
-        ForEach(self.mediaSources) { source in
-            MediaSourceIcon(source: source, isSelected: false)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
-        }
-        .onMove(perform: self.moveMediaSources)
-        .onDelete(perform: self.deleteMediaSources)
-
-        Button {
-            self.showingAddSheet = true
-        } label: {
-            Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
-        }
-    }
-
-    private func moveMediaSources(from source: IndexSet, to destination: Int) {
-        var reordered = self.mediaSources
-        reordered.move(fromOffsets: source, toOffset: destination)
+    private func moveMediaSource(from sourceIndex: Int, to destinationIndex: Int) {
+        var reordered = Array(self.mediaSources)
+        let item = reordered.remove(at: sourceIndex)
+        reordered.insert(item, at: destinationIndex)
         for (index, mediaSource) in reordered.enumerated() {
             mediaSource.order = index
         }
         try? self.modelContext.save()
     }
 
-    private func deleteMediaSources(at offsets: IndexSet) {
-        let deletedNames = offsets.map { self.mediaSources[$0].name }
-        for index in offsets {
-            let mediaSource = self.mediaSources[index]
+    private func confirmDeleteMediaSource(at index: Int) {
+        self.pendingDeleteIndex = index
+        self.showDeleteConfirmation = true
+    }
+
+    private func deleteMediaSource(at index: Int) {
+        let mediaSource = self.mediaSources[index]
+        let deletedNames = [mediaSource.name]
+        withAnimation(.easeInOut(duration: 0.55)) {
             self.modelContext.delete(mediaSource)
+            try? self.modelContext.save()
         }
-        try? self.modelContext.save()
         NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["names": deletedNames])
     }
 }

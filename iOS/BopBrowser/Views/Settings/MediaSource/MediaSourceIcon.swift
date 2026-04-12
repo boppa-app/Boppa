@@ -3,6 +3,8 @@ import SwiftUI
 struct MediaSourceIcon: View {
     let source: MediaSource
     var isSelected: Bool?
+    var onDelete: (() -> Void)?
+    var showDeleteButton: Bool = true
 
     private var isHighlighted: Bool {
         self.isSelected ?? self.source.isEnabled
@@ -30,6 +32,25 @@ struct MediaSourceIcon: View {
                     .foregroundColor(self.isHighlighted ? Color.purp : Color(.systemGray2))
             }
         }
+        .overlay(alignment: .topLeading) {
+            if let onDelete = self.onDelete, self.showDeleteButton {
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(.white, Color.purp)
+                }
+                .buttonStyle(DarkenButtonStyle())
+            }
+        }
+    }
+}
+
+private struct DarkenButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .brightness(configuration.isPressed ? -0.3 : 0)
     }
 }
 
