@@ -11,11 +11,13 @@ class LibraryViewModel {
     var showFilterSheet = false
 
     enum LibrarySection: String, CaseIterable {
+        case likes
         case playlists = "playlist"
         case albums = "album"
 
         var displayName: String {
             switch self {
+            case .likes: return "Likes"
             case .playlists: return "Playlists"
             case .albums: return "Albums"
             }
@@ -23,8 +25,14 @@ class LibraryViewModel {
 
         var icon: String {
             switch self {
+            case .likes: return "heart.fill"
             case .playlists: return "music.note.list"
-            case .albums: return "square.stack"
+            case .albums:
+                if #available(iOS 26.0, *) {
+                    return "music.note.square.stack.fill"
+                } else {
+                    return "square.stack.fill"
+                }
             }
         }
     }
