@@ -11,12 +11,11 @@ struct MediaSourceConfig: Codable, Sendable {
     let login: LoginConfig?
     let parse: [Parse]?
     let data: MediaSourceData?
-    let actions: MediaSourceActions?
     let playback: PlaybackConfig
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case name, url, iconSvg, highlightColor, customUserAgent, login, parse, data, actions, playback, lastUpdated
+        case name, url, iconSvg, highlightColor, customUserAgent, login, parse, data, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -29,7 +28,6 @@ struct MediaSourceConfig: Codable, Sendable {
         self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
         self.parse = try container.decodeIfPresent([Parse].self, forKey: .parse)
         self.data = try container.decodeIfPresent(MediaSourceData.self, forKey: .data)
-        self.actions = try container.decodeIfPresent(MediaSourceActions.self, forKey: .actions)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
         self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
     }
@@ -44,7 +42,6 @@ struct MediaSourceConfig: Codable, Sendable {
         try container.encodeIfPresent(self.login, forKey: .login)
         try container.encodeIfPresent(self.parse, forKey: .parse)
         try container.encodeIfPresent(self.data, forKey: .data)
-        try container.encodeIfPresent(self.actions, forKey: .actions)
         try container.encode(self.playback, forKey: .playback)
         try container.encode(self.lastUpdated, forKey: .lastUpdated)
     }
@@ -107,17 +104,8 @@ struct MediaSourceData: Codable, Sendable {
     let getAlbum: ScriptContent?
     let getArtist: ScriptContent?
     let getPlaylist: ScriptContent?
-    let listLikes: ScriptContent?
     let getAlbumsForArtist: ScriptContent?
     let getSongsForArtist: ScriptContent?
     let getVideosForArtist: ScriptContent?
     let getPlaylistsForArtist: ScriptContent?
 }
-
-struct MediaSourceActions: Codable, Sendable {
-    let searchNextPage: MediaSourceAction?
-    let likesNextPage: MediaSourceAction?
-    let addToLikes: MediaSourceAction?
-}
-
-struct MediaSourceAction: Codable, Sendable {}

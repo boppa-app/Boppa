@@ -6,35 +6,69 @@ import SwiftUI
 struct TracklistView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel = TracklistViewModel()
+    @State private var viewModel: TracklistViewModel
     @State private var showSortSheet = false
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingAlbum: Album?
 
-    let tracklist: Tracklist
-    let source: MediaSource
+    init(tracklist: Tracklist, source: MediaSource) {
+        self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist, source: source))
+    }
+
+    private var isSaved: Bool {
+        self.viewModel.tracklist.isPersisted
+    }
+
+    private var canSave: Bool {
+        switch self.viewModel.tracklist.tracklistType {
+        case .playlist, .album:
+            return true
+        default:
+            return false
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             DetailHeaderView(
-                title: self.tracklist.name,
-                highlightedTitle: self.tracklist.artist?.name,
+                title: self.viewModel.tracklist.name,
+                highlightedTitle: self.viewModel.tracklist.artist?.name,
                 onBack: { self.dismiss() },
                 trailing: {
-                    if self.tracklist.isPersisted {
-                        Button {
-                            self.showSortSheet = true
-                        } label: {
-                            Image(systemName: "arrow.up.arrow.down")
-                                .font(.system(size: 16))
-                                .foregroundColor(self.viewModel.sortMode == .defaultOrder ? .white : .purp)
+                    HStack(spacing: 0) {
+                        if self.isSaved {
+                            Button {
+                                self.showSortSheet = true
+                            } label: {
+                                Image(systemName: "arrow.up.arrow.down")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(self.viewModel.sortMode == .defaultOrder ? .white : .purp)
+                            }
+                            .frame(width: 44, height: 44)
+                        } else if self.canSave {
+                            Button {
+                                self.viewModel.saveToLibrary(modelContext: self.modelContext)
+                            } label: {
+                                Group {
+                                    if self.viewModel.isSaving {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                            .tint(.white)
+                                    } else {
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 18))
+                                            .foregroundColor(.purp)
+                                    }
+                                }
+                            }
+                            .frame(width: 44, height: 44)
+                            .disabled(self.viewModel.isSaving)
                         }
-                        .frame(width: 44, height: 44)
                     }
                 },
                 centerTrailing: {
-                    if self.tracklist.isPersisted {
+                    if self.isSaved {
                         self.refreshButton
                     }
                 }
@@ -44,17 +78,13 @@ struct TracklistView: View {
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onAppear {
-            self.viewModel.load(
-                tracklist: self.tracklist,
-                source: self.source,
-                modelContext: self.modelContext
-            )
+            self.viewModel.load(modelContext: self.modelContext)
         }
         .sheet(isPresented: self.$showSortSheet) {
             SortPickerSheet(
                 currentMode: self.viewModel.sortMode,
                 onSelect: { mode in
-                    self.viewModel.setSortMode(mode, tracklist: self.tracklist, modelContext: self.modelContext)
+                    self.viewModel.setSortMode(mode, modelContext: self.modelContext)
                     self.showSortSheet = false
                 }
             )
@@ -65,7 +95,7 @@ struct TracklistView: View {
         .sheet(item: self.$trackForActions) { track in
             TrackActionsSheet(
                 track: track,
-                source: self.source,
+                source: self.viewModel.source,
                 onArtistSelected: { artist in self.pendingArtist = artist },
                 onAlbumSelected: { album in self.pendingAlbum = album }
             )
@@ -74,12 +104,12 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            ArtistDetailView(artist: artist, source: self.source)
+            ArtistDetailView(artist: artist, source: self.viewModel.source)
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
             TracklistView(
-                tracklist: Tracklist(album: album, mediaSourceName: self.source.name),
-                source: self.source
+                tracklist: Tracklist(album: album, mediaSourceName: self.viewModel.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
+                source: self.viewModel.source
             )
         }
     }
@@ -102,11 +132,7 @@ struct TracklistView: View {
 
     private var refreshButton: some View {
         Button {
-            self.viewModel.refresh(
-                tracklist: self.tracklist,
-                source: self.source,
-                modelContext: self.modelContext
-            )
+            self.viewModel.refresh(modelContext: self.modelContext)
         } label: {
             Group {
                 if self.viewModel.isRefreshing {
@@ -116,7 +142,7 @@ struct TracklistView: View {
                 } else {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 14))
-                        .foregroundColor(.white)
+                        .foregroundColor(.purp)
                 }
             }
             .frame(width: 20, height: 20)
@@ -184,6 +210,6 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track) {
-        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: self.source)
+        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: self.viewModel.source)
     }
 }

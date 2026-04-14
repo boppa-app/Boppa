@@ -11,6 +11,8 @@ final class StoredTrack {
     var url: String?
     var mediaSourceName: String?
     var metadataJSON: Data
+    var artistsJSON: Data = Data()
+    var albumsJSON: Data = Data()
     var sortOrder: Int
 
     @Relationship(inverse: \StoredTracklist.tracks)
@@ -23,6 +25,41 @@ final class StoredTrack {
         return dict
     }
 
+    var artists: [String: Artist] {
+        guard !self.artistsJSON.isEmpty,
+              let raw = try? JSONSerialization.jsonObject(with: self.artistsJSON) as? [String: [String: Any]]
+        else { return [:] }
+        var result: [String: Artist] = [:]
+        for (name, data) in raw {
+            guard let id = data["id"] as? String else { continue }
+            result[name] = Artist(
+                id: id,
+                name: name,
+                artworkUrl: data["artworkUrl"] as? String,
+                metadata: data["metadata"] as? [String: Any] ?? [:]
+            )
+        }
+        return result
+    }
+
+    var albums: [String: Album] {
+        guard !self.albumsJSON.isEmpty,
+              let raw = try? JSONSerialization.jsonObject(with: self.albumsJSON) as? [String: [String: Any]]
+        else { return [:] }
+        var result: [String: Album] = [:]
+        for (name, data) in raw {
+            guard let id = data["id"] as? String else { continue }
+            result[name] = Album(
+                id: id,
+                title: name,
+                subtitle: data["subtitle"] as? String,
+                artworkUrl: data["artworkUrl"] as? String,
+                metadata: data["metadata"] as? [String: Any] ?? [:]
+            )
+        }
+        return result
+    }
+
     init(
         id: String,
         title: String,
@@ -32,6 +69,8 @@ final class StoredTrack {
         url: String? = nil,
         mediaSourceName: String? = nil,
         metadata: [String: Any] = [:],
+        artists: [String: Artist] = [:],
+        albums: [String: Album] = [:],
         sortOrder: Int = 0
     ) {
         self.id = id
@@ -42,6 +81,8 @@ final class StoredTrack {
         self.url = url
         self.mediaSourceName = mediaSourceName
         self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
+        self.artistsJSON = StoredTrack.encodeArtists(artists)
+        self.albumsJSON = StoredTrack.encodeAlbums(albums)
         self.sortOrder = sortOrder
     }
 
@@ -54,6 +95,8 @@ final class StoredTrack {
             artworkUrl: self.artworkUrl,
             url: self.url,
             mediaSourceName: self.mediaSourceName,
+            artists: self.artists,
+            albums: self.albums,
             metadata: self.metadata
         )
     }
@@ -68,6 +111,8 @@ final class StoredTrack {
             url: track.url,
             mediaSourceName: track.mediaSourceName,
             metadata: track.metadata,
+            artists: track.artists,
+            albums: track.albums,
             sortOrder: sortOrder
         )
     }
@@ -84,11 +129,40 @@ final class StoredTrack {
             && self.duration == track.duration
             && self.artworkUrl == track.artworkUrl
             && NSDictionary(dictionary: self.metadata).isEqual(to: track.metadata)
+            && self.artists == track.artists
+            && self.albums == track.albums
     }
 
     func updateContent(from track: Track) {
         self.duration = track.duration
         self.artworkUrl = track.artworkUrl
         self.metadataJSON = (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
+        self.artistsJSON = StoredTrack.encodeArtists(track.artists)
+        self.albumsJSON = StoredTrack.encodeAlbums(track.albums)
+    }
+
+    private static func encodeArtists(_ artists: [String: Artist]) -> Data {
+        guard !artists.isEmpty else { return Data() }
+        var raw: [String: [String: Any]] = [:]
+        for (name, artist) in artists {
+            var data: [String: Any] = ["id": artist.id]
+            if let artworkUrl = artist.artworkUrl { data["artworkUrl"] = artworkUrl }
+            if !artist.metadata.isEmpty { data["metadata"] = artist.metadata }
+            raw[name] = data
+        }
+        return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
+    }
+
+    private static func encodeAlbums(_ albums: [String: Album]) -> Data {
+        guard !albums.isEmpty else { return Data() }
+        var raw: [String: [String: Any]] = [:]
+        for (name, album) in albums {
+            var data: [String: Any] = ["id": album.id]
+            if let subtitle = album.subtitle { data["subtitle"] = subtitle }
+            if let artworkUrl = album.artworkUrl { data["artworkUrl"] = artworkUrl }
+            if !album.metadata.isEmpty { data["metadata"] = album.metadata }
+            raw[name] = data
+        }
+        return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
     }
 }

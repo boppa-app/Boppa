@@ -10,9 +10,12 @@ private let logger = Logger(
 @MainActor
 @Observable
 class TracklistViewModel {
+    var tracklist: Tracklist
+    var source: MediaSource
     var tracks: [Track] = []
     var isLoading = false
     var isRefreshing = false
+    var isSaving = false
     var errorMessage: String?
     var sortMode: TracklistSortMode = .defaultOrder
     var hasMorePages = false
@@ -21,47 +24,62 @@ class TracklistViewModel {
     private var fetchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
     private var paginationContext: [String: Any]?
-    private var currentTracklist: Tracklist?
-    private var currentSource: MediaSource?
+
+    init(tracklist: Tracklist, source: MediaSource) {
+        self.tracklist = tracklist
+        self.source = source
+    }
 
     var displayTracks: [Track] {
         self.applySorting(self.tracks)
     }
 
-    func load(
-        tracklist: Tracklist,
-        source: MediaSource,
-        modelContext: ModelContext
-    ) {
-        self.currentTracklist = tracklist
-        self.currentSource = source
-
-        if let stored = tracklist.storedTracklist {
+    func load(modelContext: ModelContext) {
+        if let stored = self.tracklist.storedTracklist {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 
         if self.tracks.isEmpty {
-            self.fetchAll(tracklist: tracklist, source: source, modelContext: modelContext)
+            self.fetchFirstPage(modelContext: modelContext)
         }
     }
 
-    func refresh(
-        tracklist: Tracklist,
-        source: MediaSource,
-        modelContext: ModelContext
-    ) {
-        guard tracklist.isPersisted else { return }
+    func refresh(modelContext: ModelContext) {
+        guard self.tracklist.isPersisted else { return }
         self.isRefreshing = true
-        self.fetchAll(tracklist: tracklist, source: source, modelContext: modelContext)
+
+        Task {
+            do {
+                let stored = try await TracklistService.shared.saveTracklistToLibrary(
+                    tracklist: self.tracklist,
+                    mediaSource: self.source,
+                    modelContext: modelContext,
+                    onPageFetched: { [weak self] allTracksSoFar in
+                        guard let self else { return }
+                        self.unsortedTracks = allTracksSoFar
+                        self.tracks = allTracksSoFar
+                        self.hasMorePages = false
+                    }
+                )
+
+                self.isRefreshing = false
+
+                logger.info("Refreshed tracklist '\(self.tracklist.name)' with \(self.tracks.count) track(s)")
+            } catch {
+                self.isRefreshing = false
+                self.errorMessage = error.localizedDescription
+                logger.error("Refresh failed for '\(self.tracklist.name)': \(error.localizedDescription)")
+            }
+        }
     }
 
-    func setSortMode(_ mode: TracklistSortMode, tracklist: Tracklist, modelContext: ModelContext) {
+    func setSortMode(_ mode: TracklistSortMode, modelContext: ModelContext) {
         if self.sortMode == mode {
             self.sortMode = .defaultOrder
         } else {
             self.sortMode = mode
         }
-        if let stored = tracklist.storedTracklist {
+        if let stored = self.tracklist.storedTracklist {
             stored.sortMode = self.sortMode
             try? modelContext.save()
         }
@@ -91,65 +109,79 @@ class TracklistViewModel {
         }
     }
 
-    private func fetchAll(
-        tracklist: Tracklist,
-        source: MediaSource,
-        modelContext: ModelContext
-    ) {
+    private func fetchFirstPage(modelContext: ModelContext) {
         self.fetchTask?.cancel()
         self.isLoading = true
         self.errorMessage = nil
 
         self.fetchTask = Task {
             do {
-                switch tracklist.tracklistType {
-                case .likes:
-                    let onPageFetched: ([Track]) -> Void = { [weak self] allTracksSoFar in
-                        guard let self else { return }
-                        self.unsortedTracks = allTracksSoFar
-                        self.tracks = allTracksSoFar
-                    }
-                    guard let stored = tracklist.storedTracklist else { return }
-                    try await TracklistService.shared.fetchLikes(
-                        mediaSource: source,
-                        tracklist: stored,
-                        modelContext: modelContext,
-                        onPageFetched: onPageFetched
-                    )
-                case .album, .playlist, .artistSongs, .artistVideos:
-                    let response = try await TracklistService.shared.fetchTracklist(
-                        tracklist: tracklist,
-                        mediaSource: source,
-                        previousResult: nil
-                    )
-                    guard !Task.isCancelled else { return }
-                    self.unsortedTracks = response.tracks
-                    self.tracks = response.tracks
-                    self.paginationContext = response.tracks.isEmpty ? nil : response.paginationContext
-                    self.hasMorePages = !response.tracks.isEmpty && response.paginationContext != nil
-                }
+                let response = try await TracklistService.shared.fetchTracklist(
+                    tracklist: self.tracklist,
+                    mediaSource: self.source,
+                    previousResult: nil
+                )
+                guard !Task.isCancelled else { return }
+                self.unsortedTracks = response.tracks
+                self.tracks = response.tracks
+                self.paginationContext = response.tracks.isEmpty ? nil : response.paginationContext
+                self.hasMorePages = !response.tracks.isEmpty && response.paginationContext != nil
 
                 guard !Task.isCancelled else { return }
 
                 self.isLoading = false
                 self.isRefreshing = false
 
-                logger.info("Loaded \(self.tracks.count) track(s) for '\(tracklist.name)'")
+                logger.info("Loaded \(self.tracks.count) track(s) for '\(self.tracklist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 
                 self.isLoading = false
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch failed for '\(tracklist.name)': \(error.localizedDescription)")
+                logger.error("Fetch failed for '\(self.tracklist.name)': \(error.localizedDescription)")
             }
         }
     }
 
+    func saveToLibrary(modelContext: ModelContext) {
+        guard !self.isSaving else { return }
+        self.isSaving = true
+
+        Task {
+            do {
+                let stored = try await TracklistService.shared.saveTracklistToLibrary(
+                    tracklist: self.tracklist,
+                    mediaSource: self.source,
+                    modelContext: modelContext,
+                    onPageFetched: { [weak self] allTracksSoFar in
+                        guard let self else { return }
+                        self.unsortedTracks = allTracksSoFar
+                        self.tracks = allTracksSoFar
+                        self.hasMorePages = false
+                    }
+                )
+
+                self.tracklist = Tracklist(storedTracklist: stored)
+                self.isSaving = false
+
+                logger.info("Saved tracklist '\(self.tracklist.name)' to library")
+            } catch {
+                self.isSaving = false
+                self.errorMessage = error.localizedDescription
+                logger.error("Failed to save tracklist '\(self.tracklist.name)': \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func deleteFromLibrary(modelContext: ModelContext) {
+        guard let stored = self.tracklist.storedTracklist else { return }
+        TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
+        logger.info("Deleted tracklist '\(self.tracklist.name)' from library")
+    }
+
     func loadNextPage() {
-        guard let tracklist = self.currentTracklist,
-              let source = self.currentSource,
-              let paginationContext = self.paginationContext,
+        guard let paginationContext = self.paginationContext,
               !self.isLoading
         else {
             return
@@ -160,8 +192,8 @@ class TracklistViewModel {
         Task {
             do {
                 let response = try await TracklistService.shared.fetchTracklist(
-                    tracklist: tracklist,
-                    mediaSource: source,
+                    tracklist: self.tracklist,
+                    mediaSource: self.source,
                     previousResult: paginationContext
                 )
 

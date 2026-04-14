@@ -19,38 +19,6 @@ class TracklistService {
 
     private init() {}
 
-    func fetchLikes(
-        mediaSource: MediaSource,
-        tracklist: StoredTracklist,
-        modelContext: ModelContext,
-        onPageFetched: (([Track]) -> Void)? = nil
-    ) async throws {
-        let config = mediaSource.config
-        let mediaSourceName = mediaSource.name
-        guard let script = config.data?.listLikes?.script else {
-            logger.warning("No listLikes script for '\(mediaSourceName)'")
-            return
-        }
-
-        logger.info("Fetching likes for '\(mediaSourceName)'...")
-
-        let tracks = try await self.paginated.executeAllPages(
-            script: script,
-            params: [:],
-            customUserAgent: config.customUserAgent,
-            domain: config.url,
-            mediaSourceName: mediaSourceName,
-            mediaSourceContext: mediaSource.contextValues,
-            onPageFetched: { allTracksSoFar in
-                onPageFetched?(allTracksSoFar)
-            }
-        )
-
-        self.persistTracks(tracks, into: tracklist, modelContext: modelContext, pruneStale: true)
-        onPageFetched?(tracks)
-        logger.info("Persisted \(tracks.count) liked track(s) for '\(mediaSourceName)'")
-    }
-
     func fetchTracklist(
         tracklist: Tracklist,
         mediaSource: MediaSource,
@@ -97,8 +65,6 @@ class TracklistService {
                 mediaSourceContext: mediaSource.contextValues,
                 previousResult: previousResult
             )
-        case .likes:
-            return TracklistResponse(tracks: [], paginationContext: nil)
         }
     }
 
@@ -390,23 +356,130 @@ class TracklistService {
         try? modelContext.save()
     }
 
-    func ensureLikesPlaylist(mediaSourceName: String, modelContext: ModelContext) -> StoredTracklist? {
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.mediaSourceName == mediaSourceName && $0.tracklistType == "likes" }
+    @MainActor func saveTracklistToLibrary(
+        tracklist: Tracklist,
+        mediaSource: MediaSource,
+        modelContext: ModelContext,
+        onPageFetched: (([Track]) -> Void)? = nil
+    ) async throws -> StoredTracklist {
+        let (script, itemParams) = try self.buildFetchParams(tracklist: tracklist, config: mediaSource.config)
+
+        logger.info("Saving tracklist '\(tracklist.name)' to library for '\(mediaSource.name)'...")
+
+        let tracks = try await self.paginated.executeAllPages(
+            script: script,
+            params: ["item": itemParams],
+            customUserAgent: mediaSource.config.customUserAgent,
+            domain: mediaSource.config.url,
+            mediaSourceName: mediaSource.name,
+            mediaSourceContext: mediaSource.contextValues,
+            onPageFetched: { allTracksSoFar in
+                onPageFetched?(allTracksSoFar)
+            }
         )
 
-        if let existing = try? modelContext.fetch(descriptor).first {
+        let stored = self.upsertStoredTracklist(
+            tracklist: tracklist,
+            mediaSourceName: mediaSource.name,
+            modelContext: modelContext
+        )
+
+        self.persistTracks(tracks, into: stored, modelContext: modelContext, pruneStale: true)
+
+        logger.info("Saved tracklist '\(tracklist.name)' with \(tracks.count) track(s) to library")
+
+        return stored
+    }
+
+    private func buildFetchParams(tracklist: Tracklist, config: MediaSourceConfig) throws -> (script: String, params: [String: Any]) {
+        let script: String?
+        var itemParams: [String: Any] = [:]
+
+        switch tracklist.tracklistType {
+        case let .playlist(playlist):
+            script = config.data?.getPlaylist?.script
+            itemParams["user"] = playlist.user ?? ""
+            itemParams["artworkUrl"] = playlist.artworkUrl ?? ""
+            for (key, value) in playlist.metadata {
+                itemParams[key] = value
+            }
+        case let .album(album):
+            script = config.data?.getAlbum?.script
+            itemParams["subtitle"] = album.subtitle ?? ""
+            itemParams["artworkUrl"] = album.artworkUrl ?? ""
+            for (key, value) in album.metadata {
+                itemParams[key] = value
+            }
+        default:
+            throw NSError(domain: "TracklistService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot save this tracklist type to library"])
+        }
+
+        guard let script else {
+            throw NSError(domain: "TracklistService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No script available for this tracklist type"])
+        }
+
+        return (script, itemParams)
+    }
+
+    @MainActor private func upsertStoredTracklist(
+        tracklist: Tracklist,
+        mediaSourceName: String,
+        modelContext: ModelContext
+    ) -> StoredTracklist {
+        let tracklistType: String
+        let tracklistId: String
+        let subtitle: String?
+        let itemMetadata: [String: Any]
+
+        switch tracklist.tracklistType {
+        case let .playlist(playlist):
+            tracklistType = "playlist"
+            tracklistId = playlist.id
+            subtitle = playlist.user
+            itemMetadata = playlist.metadata
+        case let .album(album):
+            tracklistType = "album"
+            tracklistId = album.id
+            subtitle = album.subtitle
+            itemMetadata = album.metadata
+        default:
+            tracklistType = "playlist"
+            tracklistId = UUID().uuidString
+            subtitle = nil
+            itemMetadata = [:]
+        }
+
+        if let existing = self.findStoredTracklist(id: tracklistId, modelContext: modelContext) {
+            existing.name = tracklist.name
+            existing.subtitle = subtitle
+            existing.artworkUrl = tracklist.artworkUrl
+            existing.metadataJSON = (try? JSONSerialization.data(withJSONObject: itemMetadata)) ?? Data()
             return existing
         }
 
-        let tracklist = StoredTracklist(
-            id: "likes-\(mediaSourceName)",
-            name: "Likes",
+        let stored = StoredTracklist(
+            id: tracklistId,
+            name: tracklist.name,
+            subtitle: subtitle,
             mediaSourceName: mediaSourceName,
-            tracklistType: "likes"
+            artworkUrl: tracklist.artworkUrl,
+            tracklistType: tracklistType,
+            metadata: itemMetadata
         )
-        modelContext.insert(tracklist)
+        modelContext.insert(stored)
+        return stored
+    }
+
+    @MainActor func deleteStoredTracklist(_ storedTracklist: StoredTracklist, modelContext: ModelContext) {
+        modelContext.delete(storedTracklist)
         try? modelContext.save()
-        return tracklist
+        logger.info("Deleted stored tracklist '\(storedTracklist.name)'")
+    }
+
+    func findStoredTracklist(id: String, modelContext: ModelContext) -> StoredTracklist? {
+        let descriptor = FetchDescriptor<StoredTracklist>(
+            predicate: #Predicate { $0.id == id }
+        )
+        return try? modelContext.fetch(descriptor).first
     }
 }

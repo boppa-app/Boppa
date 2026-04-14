@@ -55,14 +55,8 @@ struct LibraryView: View {
     }
 
     private var content: some View {
-        Group {
-            if self.viewModel.filteredSources.isEmpty {
-                self.emptyStateView
-            } else {
-                self.sourceList
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        self.sectionList
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyStateView: some View {
@@ -74,67 +68,59 @@ struct LibraryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var sourceList: some View {
-        ScrollFadeView {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(self.viewModel.filteredSources) { source in
-                        self.sourceSection(source)
-                    }
-                }
+    private var sectionList: some View {
+        List {
+            ForEach(LibraryViewModel.LibrarySection.allCases, id: \.self) { section in
+                self.librarySection(section)
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 
-    @ViewBuilder
-    private func sourceSection(_ source: MediaSource) -> some View {
-        let isCollapsed = self.viewModel.isCollapsed(sourceName: source.name)
-        let playlists = self.viewModel.playlistsForSource(source, modelContext: self.modelContext)
+    private func librarySection(_ section: LibraryViewModel.LibrarySection) -> some View {
+        let isCollapsed = self.viewModel.isCollapsed(section: section.rawValue)
+        let items = self.viewModel.tracklistsForSection(section, modelContext: self.modelContext)
 
-        if !playlists.isEmpty {
-            VStack(spacing: 0) {
-                self.sectionHeader(source: source, isCollapsed: isCollapsed)
-
-                if !isCollapsed {
-                    ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
-                        NavigationLink {
-                            TracklistView(
-                                tracklist: Tracklist(storedTracklist: playlist),
-                                source: source
-                            )
-                        } label: {
-                            self.playlistRow(playlist)
-                        }
-                        .buttonStyle(.plain)
-
-                        if index < playlists.count - 1 {
-                            Divider()
-                                .background(Color(.systemGray5))
-                        }
+        return Section {
+            if !isCollapsed {
+                ForEach(Array(items.enumerated()), id: \.element.0.id) { index, item in
+                    let (tracklist, source) = item
+                    NavigationLink {
+                        TracklistView(
+                            tracklist: Tracklist(storedTracklist: tracklist),
+                            source: source
+                        )
+                    } label: {
+                        self.tracklistRow(tracklist, source: source, section: section)
+                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                     }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparatorTint(index == items.count - 1 ? .clear : Color(.systemGray5))
+                    .padding(.trailing, 16)
                 }
             }
+        } header: {
+            self.sectionHeader(section: section, isCollapsed: isCollapsed)
         }
+        .listSectionSeparator(.hidden)
     }
 
-    private func sectionHeader(source: MediaSource, isCollapsed: Bool) -> some View {
+    private func sectionHeader(section: LibraryViewModel.LibrarySection, isCollapsed: Bool) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
-                self.viewModel.toggleCollapse(sourceName: source.name)
+                self.viewModel.toggleCollapse(section: section.rawValue)
             }
         } label: {
             HStack(spacing: 12) {
-                if let iconSvg = source.config.iconSvg {
-                    SVGImageView(svgString: iconSvg, size: 24)
-                        .frame(width: 24, height: 24)
-                } else {
-                    Image(systemName: "music.note")
-                        .font(.system(size: 16))
-                        .foregroundColor(.purp)
-                        .frame(width: 24, height: 24)
-                }
+                Image(systemName: section.icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(.purp)
+                    .frame(width: 24, height: 24)
 
-                Text(source.name)
+                Text(section.displayName)
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
@@ -148,28 +134,61 @@ struct LibraryView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(Color(.systemGray6).opacity(0.5))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.black)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .textCase(nil)
+        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
     }
 
-    private func playlistRow(_ playlist: StoredTracklist) -> some View {
-        HStack(spacing: 12) {
-            Text(playlist.name)
-                .font(.body)
-                .fontWeight(playlist.isLikes ? .bold : .regular)
-                .foregroundColor(.white)
-                .lineLimit(1)
+    private var albumPlaceholder: String {
+        if #available(iOS 26.0, *) {
+            return "music.note.square.stack.fill"
+        } else {
+            return "square.stack.fill"
+        }
+    }
+
+    private func tracklistRow(_ tracklist: StoredTracklist, source: MediaSource, section: LibraryViewModel.LibrarySection) -> some View {
+        return HStack(spacing: 12) {
+            ArtworkView(
+                url: tracklist.artworkUrl,
+                placeholder: section == .playlists ? "music.note.list" : self.albumPlaceholder,
+                size: 72
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(tracklist.name)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                if let subtitle = tracklist.subtitle {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundColor(Color(.systemGray))
+                        .lineLimit(1)
+                }
+            }
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12))
-                .foregroundColor(Color(.systemGray3))
+            if let iconSvg = source.config.iconSvg {
+                SVGImageView(svgString: iconSvg, size: 20)
+                    .frame(width: 20, height: 20)
+                    .opacity(0.5)
+            } else {
+                Image(systemName: "music.note")
+                    .font(.system(size: 14))
+                    .foregroundColor(.purp)
+                    .frame(width: 20, height: 20)
+                    .opacity(0.5)
+            }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 }

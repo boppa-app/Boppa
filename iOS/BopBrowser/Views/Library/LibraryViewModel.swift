@@ -6,9 +6,28 @@ import SwiftData
 @Observable
 class LibraryViewModel {
     var mediaSources: [MediaSource] = []
-    var collapsedSources: Set<String> = []
+    var collapsedSections: Set<String> = []
     var visibleSourceIDs: Set<PersistentIdentifier> = []
     var showFilterSheet = false
+
+    enum LibrarySection: String, CaseIterable {
+        case playlists = "playlist"
+        case albums = "album"
+
+        var displayName: String {
+            switch self {
+            case .playlists: return "Playlists"
+            case .albums: return "Albums"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .playlists: return "music.note.list"
+            case .albums: return "square.stack"
+            }
+        }
+    }
 
     func loadSources(modelContext: ModelContext) {
         var descriptor = FetchDescriptor<MediaSource>(
@@ -21,51 +40,40 @@ class LibraryViewModel {
         self.visibleSourceIDs = self.visibleSourceIDs.isEmpty
             ? enabledIDs
             : self.visibleSourceIDs.intersection(enabledIDs)
-
-        for source in self.mediaSources where self.hasLikesScript(source) {
-            _ = TracklistService.shared.ensureLikesPlaylist(
-                mediaSourceName: source.name,
-                modelContext: modelContext
-            )
-        }
     }
 
-    func toggleCollapse(sourceName: String) {
-        if self.collapsedSources.contains(sourceName) {
-            self.collapsedSources.remove(sourceName)
+    func toggleCollapse(section: String) {
+        if self.collapsedSections.contains(section) {
+            self.collapsedSections.remove(section)
         } else {
-            self.collapsedSources.insert(sourceName)
+            self.collapsedSections.insert(section)
         }
     }
 
-    func isCollapsed(sourceName: String) -> Bool {
-        self.collapsedSources.contains(sourceName)
+    func isCollapsed(section: String) -> Bool {
+        self.collapsedSections.contains(section)
     }
 
-    func playlistsForSource(_ source: MediaSource, modelContext: ModelContext) -> [StoredTracklist] {
-        let name = source.name
+    func tracklistsForSection(_ section: LibrarySection, modelContext: ModelContext) -> [(StoredTracklist, MediaSource)] {
+        let typeString = section.rawValue
         let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.mediaSourceName == name }
+            predicate: #Predicate { $0.tracklistType == typeString }
         )
 
-        var playlists = (try? modelContext.fetch(descriptor)) ?? []
+        let tracklists = (try? modelContext.fetch(descriptor)) ?? []
+        let visibleSourceNames = Set(self.filteredSources.map(\.name))
+        let sourcesByName = Dictionary(uniqueKeysWithValues: self.mediaSources.map { ($0.name, $0) })
 
-        if !self.hasLikesScript(source) {
-            playlists.removeAll { $0.isLikes }
-        }
-
-        return playlists.sorted { a, b in
-            if a.isLikes, !b.isLikes { return true }
-            if !a.isLikes, b.isLikes { return false }
-            return a.name < b.name
-        }
+        return tracklists
+            .filter { visibleSourceNames.contains($0.mediaSourceName) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            .compactMap { tracklist in
+                guard let source = sourcesByName[tracklist.mediaSourceName] else { return nil }
+                return (tracklist, source)
+            }
     }
 
     var filteredSources: [MediaSource] {
         self.mediaSources.filter { self.visibleSourceIDs.contains($0.persistentModelID) }
-    }
-
-    func hasLikesScript(_ source: MediaSource) -> Bool {
-        source.config.data?.listLikes != nil
     }
 }

@@ -19,11 +19,6 @@ struct PlaylistRow: View {
                 }
             }
             Spacer()
-            if let trackCount = self.playlist.formattedTrackCount {
-                Text(trackCount)
-                    .font(.subheadline)
-                    .foregroundColor(Color(.systemGray))
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

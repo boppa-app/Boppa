@@ -36,10 +36,12 @@ enum TracklistSortMode: String, CaseIterable {
 final class StoredTracklist {
     var id: String
     var name: String
+    var subtitle: String?
     var mediaSourceName: String
     var artworkUrl: String?
     var tracklistType: String
     var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
+    var metadataJSON: Data = Data()
 
     @Relationship(deleteRule: .cascade)
     var tracks: [StoredTrack] = []
@@ -49,22 +51,29 @@ final class StoredTracklist {
         set { self.sortModeRaw = newValue.rawValue }
     }
 
+    var metadata: [String: Any] {
+        guard let dict = try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any] else {
+            return [:]
+        }
+        return dict
+    }
+
     init(
         id: String,
         name: String,
+        subtitle: String? = nil,
         mediaSourceName: String,
         artworkUrl: String? = nil,
-        tracklistType: String
+        tracklistType: String,
+        metadata: [String: Any] = [:]
     ) {
         self.id = id
         self.name = name
+        self.subtitle = subtitle
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = artworkUrl
         self.tracklistType = tracklistType
-    }
-
-    var isLikes: Bool {
-        self.tracklistType == "likes"
+        self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
     }
 
     var trackCount: Int {

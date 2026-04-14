@@ -27,11 +27,6 @@ struct AlbumRow: View {
                 }
             }
             Spacer()
-            if let trackCount = self.album.formattedTrackCount {
-                Text(trackCount)
-                    .font(.subheadline)
-                    .foregroundColor(Color(.systemGray))
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

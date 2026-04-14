@@ -9,7 +9,6 @@ struct Tracklist {
     let storedTracklist: StoredTracklist?
 
     enum TracklistType {
-        case likes
         case album(Album)
         case playlist(Playlist)
         case artistSongs(Artist, ArtistDetail)
@@ -18,11 +17,6 @@ struct Tracklist {
 
     var isPersisted: Bool {
         self.storedTracklist != nil
-    }
-
-    var isLikes: Bool {
-        if case .likes = self.tracklistType { return true }
-        return false
     }
 
     var album: Album? {
@@ -43,29 +37,41 @@ struct Tracklist {
         self.storedTracklist = storedTracklist
 
         switch storedTracklist.tracklistType {
-        case "likes":
-            self.tracklistType = .likes
+        case "album":
+            self.tracklistType = .album(Album(
+                id: storedTracklist.id,
+                title: storedTracklist.name,
+                subtitle: storedTracklist.subtitle,
+                artworkUrl: storedTracklist.artworkUrl,
+                metadata: storedTracklist.metadata
+            ))
         default:
-            self.tracklistType = .playlist(Playlist(id: storedTracklist.id, title: storedTracklist.name))
+            self.tracklistType = .playlist(Playlist(
+                id: storedTracklist.id,
+                title: storedTracklist.name,
+                user: storedTracklist.subtitle,
+                artworkUrl: storedTracklist.artworkUrl,
+                metadata: storedTracklist.metadata
+            ))
         }
     }
 
-    init(album: Album, mediaSourceName: String) {
+    init(album: Album, mediaSourceName: String, storedTracklist: StoredTracklist? = nil) {
         self.name = album.title
         self.artist = nil
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = album.artworkUrl
         self.tracklistType = .album(album)
-        self.storedTracklist = nil
+        self.storedTracklist = storedTracklist
     }
 
-    init(playlist: Playlist, mediaSourceName: String) {
+    init(playlist: Playlist, mediaSourceName: String, storedTracklist: StoredTracklist? = nil) {
         self.name = playlist.title
         self.artist = nil
         self.mediaSourceName = mediaSourceName
         self.artworkUrl = playlist.artworkUrl
         self.tracklistType = .playlist(playlist)
-        self.storedTracklist = nil
+        self.storedTracklist = storedTracklist
     }
 
     init(artist: Artist, type: TracklistType, mediaSourceName: String) {

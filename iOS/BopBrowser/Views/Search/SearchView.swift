@@ -209,7 +209,7 @@ struct SearchView: View {
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(album: album, mediaSourceName: source.name),
+                                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
                                     source: source
                                 )
                             } label: {
@@ -263,7 +263,7 @@ struct SearchView: View {
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(playlist: playlist, mediaSourceName: source.name),
+                                    tracklist: Tracklist(playlist: playlist, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext)),
                                     source: source
                                 )
                             } label: {
@@ -322,7 +322,7 @@ struct SearchView: View {
         .navigationDestination(item: self.$pendingAlbum) { album in
             if let source = self.viewModel.selectedSource {
                 TracklistView(
-                    tracklist: Tracklist(album: album, mediaSourceName: source.name),
+                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
                     source: source
                 )
             }
