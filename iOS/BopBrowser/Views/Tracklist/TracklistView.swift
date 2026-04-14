@@ -12,8 +12,8 @@ struct TracklistView: View {
     @State private var pendingArtist: Artist?
     @State private var pendingAlbum: Album?
 
-    init(tracklist: Tracklist, source: MediaSource) {
-        self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist, source: source))
+    init(tracklist: Tracklist) {
+        self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
     }
 
     private var isSaved: Bool {
@@ -93,23 +93,26 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            TrackActionsSheet(
-                track: track,
-                source: self.viewModel.source,
-                onArtistSelected: { artist in self.pendingArtist = artist },
-                onAlbumSelected: { album in self.pendingAlbum = album }
-            )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(.systemGray6))
+            if let source = TracklistService.shared.resolveSource(name: track.mediaSourceName ?? "", modelContext: self.modelContext) {
+                TrackActionsSheet(
+                    track: track,
+                    source: source,
+                    onArtistSelected: { artist in self.pendingArtist = artist },
+                    onAlbumSelected: { album in self.pendingAlbum = album }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(.systemGray6))
+            }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            ArtistDetailView(artist: artist, source: self.viewModel.source)
+            if let source = TracklistService.shared.resolveSource(name: self.viewModel.tracklist.mediaSourceName, modelContext: self.modelContext) {
+                ArtistDetailView(artist: artist, source: source)
+            }
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
             TracklistView(
-                tracklist: Tracklist(album: album, mediaSourceName: self.viewModel.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
-                source: self.viewModel.source
+                tracklist: Tracklist(album: album, mediaSourceName: self.viewModel.tracklist.mediaSourceName, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
             )
         }
     }
@@ -176,7 +179,7 @@ struct TracklistView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
                         .onAppear {
-                            self.viewModel.loadNextPage()
+                            self.viewModel.loadNextPage(modelContext: self.modelContext)
                         }
                 }
             }
@@ -210,6 +213,7 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track) {
-        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: self.viewModel.source)
+        guard let source = TracklistService.shared.resolveSource(name: track.mediaSourceName ?? "", modelContext: self.modelContext) else { return }
+        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: source)
     }
 }

@@ -209,8 +209,7 @@ struct SearchView: View {
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
-                                    source: source
+                                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                                 )
                             } label: {
                                 AlbumRow(album: album)
@@ -263,8 +262,7 @@ struct SearchView: View {
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(playlist: playlist, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext)),
-                                    source: source
+                                    tracklist: Tracklist(playlist: playlist, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
                                 )
                             } label: {
                                 PlaylistRow(playlist: playlist)
@@ -322,8 +320,7 @@ struct SearchView: View {
         .navigationDestination(item: self.$pendingAlbum) { album in
             if let source = self.viewModel.selectedSource {
                 TracklistView(
-                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
-                    source: source
+                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                 )
             }
         }

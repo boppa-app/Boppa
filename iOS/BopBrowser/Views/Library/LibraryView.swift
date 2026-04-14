@@ -88,8 +88,7 @@ struct LibraryView: View {
                     let (tracklist, source) = item
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(storedTracklist: tracklist),
-                            source: source
+                            tracklist: Tracklist(storedTracklist: tracklist)
                         )
                     } label: {
                         self.tracklistRow(tracklist, source: source, section: section)

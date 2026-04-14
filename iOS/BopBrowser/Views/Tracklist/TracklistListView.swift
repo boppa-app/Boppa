@@ -55,8 +55,7 @@ struct TracklistListView: View {
                     if self.source.config.data?.getAlbum != nil {
                         NavigationLink {
                             TracklistView(
-                                tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
-                                source: self.source
+                                tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                             )
                         } label: {
                             AlbumRow(album: album)
@@ -88,8 +87,7 @@ struct TracklistListView: View {
                     if self.source.config.data?.getPlaylist != nil {
                         NavigationLink {
                             TracklistView(
-                                tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext)),
-                                source: self.source
+                                tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
                             )
                         } label: {
                             PlaylistRow(playlist: playlist)

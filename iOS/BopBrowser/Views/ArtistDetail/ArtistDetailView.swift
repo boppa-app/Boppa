@@ -48,8 +48,7 @@ struct ArtistDetailView: View {
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
             TracklistView(
-                tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
-                source: self.source
+                tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
             )
         }
     }
@@ -112,8 +111,7 @@ struct ArtistDetailView: View {
                 if self.source.config.data?.getAlbum != nil {
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext)),
-                            source: self.source
+                            tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                         )
                     } label: {
                         AlbumRow(album: album)
@@ -197,8 +195,7 @@ struct ArtistDetailView: View {
                 if self.source.config.data?.getPlaylist != nil {
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext)),
-                            source: self.source
+                            tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
                         )
                     } label: {
                         PlaylistRow(playlist: playlist)
@@ -250,8 +247,7 @@ struct ArtistDetailView: View {
         return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
             .background(
                 NavigationLink(destination: TracklistView(
-                    tracklist: tracklist,
-                    source: self.source
+                    tracklist: tracklist
                 )) { EmptyView() }
                     .opacity(0)
             )
@@ -266,8 +262,7 @@ struct ArtistDetailView: View {
         return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
             .background(
                 NavigationLink(destination: TracklistView(
-                    tracklist: tracklist,
-                    source: self.source
+                    tracklist: tracklist
                 )) { EmptyView() }
                     .opacity(0)
             )

@@ -11,7 +11,6 @@ private let logger = Logger(
 @Observable
 class TracklistViewModel {
     var tracklist: Tracklist
-    var source: MediaSource
     var tracks: [Track] = []
     var isLoading = false
     var isRefreshing = false
@@ -25,9 +24,8 @@ class TracklistViewModel {
     private var unsortedTracks: [Track] = []
     private var paginationContext: [String: Any]?
 
-    init(tracklist: Tracklist, source: MediaSource) {
+    init(tracklist: Tracklist) {
         self.tracklist = tracklist
-        self.source = source
     }
 
     var displayTracks: [Track] {
@@ -39,20 +37,24 @@ class TracklistViewModel {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 
-        if self.tracks.isEmpty {
-            self.fetchFirstPage(modelContext: modelContext)
+        if self.tracks.isEmpty,
+           let source = TracklistService.shared.resolveSource(name: self.tracklist.mediaSourceName, modelContext: modelContext)
+        {
+            self.fetchFirstPage(source: source, modelContext: modelContext)
         }
     }
 
     func refresh(modelContext: ModelContext) {
-        guard self.tracklist.isPersisted else { return }
+        guard self.tracklist.isPersisted,
+              let source = TracklistService.shared.resolveSource(name: self.tracklist.mediaSourceName, modelContext: modelContext)
+        else { return }
         self.isRefreshing = true
 
         Task {
             do {
-                let stored = try await TracklistService.shared.saveTracklistToLibrary(
+                _ = try await TracklistService.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
-                    mediaSource: self.source,
+                    mediaSource: source,
                     modelContext: modelContext,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
@@ -109,7 +111,7 @@ class TracklistViewModel {
         }
     }
 
-    private func fetchFirstPage(modelContext: ModelContext) {
+    private func fetchFirstPage(source: MediaSource, modelContext: ModelContext) {
         self.fetchTask?.cancel()
         self.isLoading = true
         self.errorMessage = nil
@@ -118,7 +120,7 @@ class TracklistViewModel {
             do {
                 let response = try await TracklistService.shared.fetchTracklist(
                     tracklist: self.tracklist,
-                    mediaSource: self.source,
+                    mediaSource: source,
                     previousResult: nil
                 )
                 guard !Task.isCancelled else { return }
@@ -145,14 +147,16 @@ class TracklistViewModel {
     }
 
     func saveToLibrary(modelContext: ModelContext) {
-        guard !self.isSaving else { return }
+        guard !self.isSaving,
+              let source = TracklistService.shared.resolveSource(name: self.tracklist.mediaSourceName, modelContext: modelContext)
+        else { return }
         self.isSaving = true
 
         Task {
             do {
                 let stored = try await TracklistService.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
-                    mediaSource: self.source,
+                    mediaSource: source,
                     modelContext: modelContext,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
@@ -180,9 +184,10 @@ class TracklistViewModel {
         logger.info("Deleted tracklist '\(self.tracklist.name)' from library")
     }
 
-    func loadNextPage() {
+    func loadNextPage(modelContext: ModelContext) {
         guard let paginationContext = self.paginationContext,
-              !self.isLoading
+              !self.isLoading,
+              let source = TracklistService.shared.resolveSource(name: self.tracklist.mediaSourceName, modelContext: modelContext)
         else {
             return
         }
@@ -193,7 +198,7 @@ class TracklistViewModel {
             do {
                 let response = try await TracklistService.shared.fetchTracklist(
                     tracklist: self.tracklist,
-                    mediaSource: self.source,
+                    mediaSource: source,
                     previousResult: paginationContext
                 )
 
