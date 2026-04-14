@@ -34,11 +34,16 @@ class TracklistService {
 
     func fetchTracklist(
         tracklist: Tracklist,
-        mediaSource: MediaSource,
+        modelContext: ModelContext,
         previousResult: [String: Any]? = nil
     ) async throws -> TracklistResponse {
+        guard let mediaSourceName = tracklist.mediaSourceName,
+              let mediaSource = self.resolveSource(name: mediaSourceName, modelContext: modelContext)
+        else {
+            return TracklistResponse(tracks: [], paginationContext: nil)
+        }
+
         let config = mediaSource.config
-        let mediaSourceName = tracklist.mediaSourceName
         switch tracklist.tracklistType {
         case let .album(album):
             return try await self.fetchAlbumPage(
@@ -371,20 +376,25 @@ class TracklistService {
 
     @MainActor func saveTracklistToLibrary(
         tracklist: Tracklist,
-        mediaSource: MediaSource,
         modelContext: ModelContext,
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> StoredTracklist {
+        guard let mediaSourceName = tracklist.mediaSourceName,
+              let mediaSource = self.resolveSource(name: mediaSourceName, modelContext: modelContext)
+        else {
+            throw NSError(domain: "TracklistService", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
+        }
+
         let (script, itemParams) = try self.buildFetchParams(tracklist: tracklist, config: mediaSource.config)
 
-        logger.info("Saving tracklist '\(tracklist.name)' to library for '\(mediaSource.name)'...")
+        logger.info("Saving tracklist '\(tracklist.name)' to library for '\(mediaSourceName)'...")
 
         let tracks = try await self.paginated.executeAllPages(
             script: script,
             params: ["item": itemParams],
             customUserAgent: mediaSource.config.customUserAgent,
             domain: mediaSource.config.url,
-            mediaSourceName: mediaSource.name,
+            mediaSourceName: mediaSourceName,
             mediaSourceContext: mediaSource.contextValues,
             onPageFetched: { allTracksSoFar in
                 onPageFetched?(allTracksSoFar)
@@ -393,7 +403,7 @@ class TracklistService {
 
         let stored = self.upsertStoredTracklist(
             tracklist: tracklist,
-            mediaSourceName: mediaSource.name,
+            mediaSourceName: mediaSourceName,
             modelContext: modelContext
         )
 

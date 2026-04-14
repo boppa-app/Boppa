@@ -68,7 +68,7 @@ struct TracklistView: View {
                     }
                 },
                 centerTrailing: {
-                    if self.isSaved {
+                    if self.viewModel.canRefresh {
                         self.refreshButton
                     }
                 }
@@ -106,14 +106,18 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let source = TracklistService.shared.resolveSource(name: self.viewModel.tracklist.mediaSourceName, modelContext: self.modelContext) {
+            if let mediaSourceName = self.viewModel.tracklist.mediaSourceName,
+               let source = TracklistService.shared.resolveSource(name: mediaSourceName, modelContext: self.modelContext)
+            {
                 ArtistDetailView(artist: artist, source: source)
             }
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
-            TracklistView(
-                tracklist: Tracklist(album: album, mediaSourceName: self.viewModel.tracklist.mediaSourceName, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
-            )
+            if let mediaSourceName = self.viewModel.tracklist.mediaSourceName {
+                TracklistView(
+                    tracklist: Tracklist(album: album, mediaSourceName: mediaSourceName, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                )
+            }
         }
     }
 

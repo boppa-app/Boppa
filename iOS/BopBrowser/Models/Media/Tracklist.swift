@@ -3,7 +3,7 @@ import Foundation
 struct Tracklist {
     let name: String
     let artist: Artist?
-    let mediaSourceName: String
+    let mediaSourceName: String?
     let artworkUrl: String?
     let tracklistType: TracklistType
     let storedTracklist: StoredTracklist?
@@ -32,7 +32,8 @@ struct Tracklist {
     init(storedTracklist: StoredTracklist) {
         self.name = storedTracklist.name
         self.artist = nil
-        self.mediaSourceName = storedTracklist.mediaSourceName
+        let sourceName = storedTracklist.mediaSourceName
+        self.mediaSourceName = sourceName.isEmpty ? nil : sourceName
         self.artworkUrl = storedTracklist.artworkUrl
         self.storedTracklist = storedTracklist
 
