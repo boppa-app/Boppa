@@ -43,11 +43,7 @@ class LibraryViewModel {
         )
         descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
-
-        let enabledIDs = Set(self.mediaSources.map(\.persistentModelID))
-        self.visibleMediaSourceIds = self.visibleMediaSourceIds.isEmpty
-            ? enabledIDs
-            : self.visibleMediaSourceIds.intersection(enabledIDs)
+        self.visibleMediaSourceIds = Set(self.mediaSources.map(\.persistentModelID))
     }
 
     func toggleCollapse(section: String) {
