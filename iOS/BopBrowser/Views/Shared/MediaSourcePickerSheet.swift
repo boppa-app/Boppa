@@ -3,7 +3,7 @@ import SwiftUI
 
 enum MediaSourcePickerMode {
     case single(selectedID: PersistentIdentifier?, onSelect: (MediaSource) -> Void)
-    case multi(selectedIDs: Binding<Set<PersistentIdentifier>>)
+    case multi(selectedMediaSourceIds: Binding<Set<PersistentIdentifier>>)
 }
 
 struct MediaSourcePickerSheet: View {
@@ -45,8 +45,8 @@ struct MediaSourcePickerSheet: View {
         switch self.mediaSourcePickerMode {
         case let .single(selectedID, _):
             return mediaSource.persistentModelID == selectedID
-        case let .multi(selectedIDs):
-            return selectedIDs.wrappedValue.contains(mediaSource.persistentModelID)
+        case let .multi(selectedMediaSourceIds):
+            return selectedMediaSourceIds.wrappedValue.contains(mediaSource.persistentModelID)
         }
     }
 
@@ -55,11 +55,11 @@ struct MediaSourcePickerSheet: View {
             switch self.mediaSourcePickerMode {
             case let .single(_, onSelect):
                 onSelect(mediaSource)
-            case let .multi(selectedIDs):
-                if selectedIDs.wrappedValue.contains(mediaSource.persistentModelID) {
-                    selectedIDs.wrappedValue.remove(mediaSource.persistentModelID)
+            case let .multi(selectedMediaSourceIds):
+                if selectedMediaSourceIds.wrappedValue.contains(mediaSource.persistentModelID) {
+                    selectedMediaSourceIds.wrappedValue.remove(mediaSource.persistentModelID)
                 } else {
-                    selectedIDs.wrappedValue.insert(mediaSource.persistentModelID)
+                    selectedMediaSourceIds.wrappedValue.insert(mediaSource.persistentModelID)
                 }
             }
         } label: {

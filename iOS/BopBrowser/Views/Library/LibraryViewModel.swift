@@ -7,7 +7,7 @@ import SwiftData
 class LibraryViewModel {
     var mediaSources: [MediaSource] = []
     var collapsedSections: Set<String> = []
-    var visibleSourceIDs: Set<PersistentIdentifier> = []
+    var visibleMediaSourceIds: Set<PersistentIdentifier> = []
     var showFilterSheet = false
 
     enum LibrarySection: String, CaseIterable {
@@ -45,9 +45,9 @@ class LibraryViewModel {
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
 
         let enabledIDs = Set(self.mediaSources.map(\.persistentModelID))
-        self.visibleSourceIDs = self.visibleSourceIDs.isEmpty
+        self.visibleMediaSourceIds = self.visibleMediaSourceIds.isEmpty
             ? enabledIDs
-            : self.visibleSourceIDs.intersection(enabledIDs)
+            : self.visibleMediaSourceIds.intersection(enabledIDs)
     }
 
     func toggleCollapse(section: String) {
@@ -69,11 +69,11 @@ class LibraryViewModel {
         )
 
         let tracklists = (try? modelContext.fetch(descriptor)) ?? []
-        let visibleSourceIds = Set(self.filteredSources.map(\.id))
+        let visibleMediaSourceIds = Set(self.filteredSources.map(\.id))
         let mediaSourcesById = Dictionary(uniqueKeysWithValues: self.mediaSources.map { ($0.id, $0) })
 
         return tracklists
-            .filter { visibleSourceIds.contains($0.mediaSourceId) }
+            .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             .compactMap { tracklist in
                 guard let mediaSource = mediaSourcesById[tracklist.mediaSourceId] else { return nil }
@@ -82,6 +82,6 @@ class LibraryViewModel {
     }
 
     var filteredSources: [MediaSource] {
-        self.mediaSources.filter { self.visibleSourceIDs.contains($0.persistentModelID) }
+        self.mediaSources.filter { self.visibleMediaSourceIds.contains($0.persistentModelID) }
     }
 }

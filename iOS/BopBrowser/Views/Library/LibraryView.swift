@@ -26,7 +26,7 @@ struct LibraryView: View {
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
                 MediaSourcePickerSheet(
                     mediaSources: self.viewModel.mediaSources,
-                    mediaSourcePickerMode: .multi(selectedIDs: self.$viewModel.visibleSourceIDs)
+                    mediaSourcePickerMode: .multi(selectedMediaSourceIds: self.$viewModel.visibleMediaSourceIds)
                 )
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
