@@ -232,6 +232,7 @@ struct ArtistDetailView: View {
                     artist: self.artist,
                     artistDetail: detail,
                     source: self.source,
+                    type: .albums,
                     title: "Albums"
                 )) { EmptyView() }
                     .opacity(0)
@@ -275,6 +276,7 @@ struct ArtistDetailView: View {
                     artist: self.artist,
                     artistDetail: detail,
                     source: self.source,
+                    type: .playlists,
                     title: "Playlists"
                 )) { EmptyView() }
                     .opacity(0)

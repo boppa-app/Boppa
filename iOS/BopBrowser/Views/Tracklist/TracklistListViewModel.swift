@@ -6,6 +6,11 @@ private let logger = Logger(
     category: "TracklistListViewModel"
 )
 
+enum TracklistListType {
+    case albums
+    case playlists
+}
+
 @MainActor
 @Observable
 class TracklistListViewModel {
@@ -18,6 +23,7 @@ class TracklistListViewModel {
     private var didLoad = false
 
     func load(
+        type: TracklistListType,
         artist: Artist,
         artistDetail: ArtistDetail,
         source: MediaSource
@@ -25,10 +31,11 @@ class TracklistListViewModel {
         guard !self.didLoad else { return }
         self.didLoad = true
 
-        if source.config.data?.getPlaylistsForArtist != nil {
-            self.fetchPlaylists(artist: artist, artistDetail: artistDetail, source: source)
-        } else {
+        switch type {
+        case .albums:
             self.fetchAlbums(artist: artist, artistDetail: artistDetail, source: source)
+        case .playlists:
+            self.fetchPlaylists(artist: artist, artistDetail: artistDetail, source: source)
         }
     }
 

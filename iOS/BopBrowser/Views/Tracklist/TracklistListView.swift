@@ -8,6 +8,7 @@ struct TracklistListView: View {
     let artist: Artist
     let artistDetail: ArtistDetail
     let source: MediaSource
+    let type: TracklistListType
     let title: String
 
     var body: some View {
@@ -23,6 +24,7 @@ struct TracklistListView: View {
         .enableSwipeBack()
         .onAppear {
             self.viewModel.load(
+                type: self.type,
                 artist: self.artist,
                 artistDetail: self.artistDetail,
                 source: self.source
