@@ -124,7 +124,7 @@ class TracklistService {
         }
 
         let albums = (jsResult["albums"] as? [[String: Any]])?.compactMap {
-            self.paginated.mapToAlbum($0)
+            self.paginated.mapToAlbum($0, mediaSourceName: mediaSourceName)
         }
 
         let videos = (jsResult["videos"] as? [[String: Any]])?.compactMap {
@@ -132,7 +132,7 @@ class TracklistService {
         }
 
         let playlists = (jsResult["playlists"] as? [[String: Any]])?.compactMap {
-            self.paginated.mapToPlaylist($0)
+            self.paginated.mapToPlaylist($0, mediaSourceName: mediaSourceName)
         }
 
         let metadata = jsResult["metadata"] as? [String: Any] ?? [:]
@@ -183,7 +183,7 @@ class TracklistService {
         )
 
         let albums = (jsResult["items"] as? [[String: Any]] ?? [])
-            .compactMap { self.paginated.mapToAlbum($0) }
+            .compactMap { self.paginated.mapToAlbum($0, mediaSourceName: mediaSourceName) }
 
         logger.info("Fetched \(albums.count) album(s) for artist '\(artist.name)'")
         return albums
@@ -227,7 +227,7 @@ class TracklistService {
         )
 
         let playlists = (jsResult["items"] as? [[String: Any]] ?? [])
-            .compactMap { self.paginated.mapToPlaylist($0) }
+            .compactMap { self.paginated.mapToPlaylist($0, mediaSourceName: mediaSourceName) }
 
         logger.info("Fetched \(playlists.count) playlist(s) for artist '\(artist.name)'")
         return playlists

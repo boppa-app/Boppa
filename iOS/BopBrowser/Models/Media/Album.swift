@@ -2,6 +2,7 @@ import Foundation
 
 struct Album: Identifiable, Equatable, Hashable {
     let id: String
+    let mediaSourceName: String
     let title: String
     let subtitle: String?
     let trackCount: Int?
@@ -11,6 +12,7 @@ struct Album: Identifiable, Equatable, Hashable {
 
     init(
         id: String,
+        mediaSourceName: String,
         title: String,
         subtitle: String? = nil,
         trackCount: Int? = nil,
@@ -19,6 +21,7 @@ struct Album: Identifiable, Equatable, Hashable {
         metadata: [String: Any] = [:]
     ) {
         self.id = id
+        self.mediaSourceName = mediaSourceName
         self.title = title
         self.subtitle = subtitle
         self.trackCount = trackCount
@@ -29,6 +32,7 @@ struct Album: Identifiable, Equatable, Hashable {
 
     static func == (lhs: Album, rhs: Album) -> Bool {
         lhs.id == rhs.id
+            && lhs.mediaSourceName == rhs.mediaSourceName
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
             && lhs.trackCount == rhs.trackCount

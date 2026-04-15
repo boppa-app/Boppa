@@ -93,7 +93,7 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let source = TracklistService.shared.resolveSource(name: track.mediaSourceName ?? "", modelContext: self.modelContext) {
+            if let source = TracklistService.shared.resolveSource(name: track.mediaSourceName, modelContext: self.modelContext) {
                 TrackActionsSheet(
                     track: track,
                     source: source,
@@ -217,7 +217,7 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track) {
-        guard let source = TracklistService.shared.resolveSource(name: track.mediaSourceName ?? "", modelContext: self.modelContext) else { return }
+        guard let source = TracklistService.shared.resolveSource(name: track.mediaSourceName, modelContext: self.modelContext) else { return }
         PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: source)
     }
 }

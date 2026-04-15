@@ -115,6 +115,7 @@ class PaginatedScriptExecutor {
                 guard let artistId = self.resolveString(data["id"]) else { continue }
                 artists[name] = Artist(
                     id: artistId,
+                    mediaSourceName: mediaSourceName,
                     name: name,
                     artworkUrl: data["artworkUrl"] as? String,
                     metadata: data["metadata"] as? [String: Any] ?? [:]
@@ -128,6 +129,7 @@ class PaginatedScriptExecutor {
                 guard let albumId = self.resolveString(data["id"]) else { continue }
                 albums[name] = Album(
                     id: albumId,
+                    mediaSourceName: mediaSourceName,
                     title: name,
                     subtitle: data["subtitle"] as? String,
                     artworkUrl: data["artworkUrl"] as? String,
@@ -138,24 +140,25 @@ class PaginatedScriptExecutor {
 
         return Track(
             id: id,
+            mediaSourceName: mediaSourceName,
             title: title,
             subtitle: item["subtitle"] as? String,
             duration: self.resolveInt(item["duration"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            mediaSourceName: mediaSourceName,
             artists: artists,
             albums: albums,
             metadata: item["metadata"] as? [String: Any] ?? [:]
         )
     }
 
-    func mapToAlbum(_ item: [String: Any]) -> Album? {
+    func mapToAlbum(_ item: [String: Any], mediaSourceName: String) -> Album? {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
         return Album(
             id: id,
+            mediaSourceName: mediaSourceName,
             title: title,
             subtitle: item["subtitle"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
@@ -165,12 +168,13 @@ class PaginatedScriptExecutor {
         )
     }
 
-    func mapToArtist(_ item: [String: Any]) -> Artist? {
+    func mapToArtist(_ item: [String: Any], mediaSourceName: String) -> Artist? {
         guard let name = (item["name"] as? String),
               let id = self.resolveString(item["id"])
         else { return nil }
         return Artist(
             id: id,
+            mediaSourceName: mediaSourceName,
             name: name,
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
@@ -178,12 +182,13 @@ class PaginatedScriptExecutor {
         )
     }
 
-    func mapToPlaylist(_ item: [String: Any]) -> Playlist? {
+    func mapToPlaylist(_ item: [String: Any], mediaSourceName: String) -> Playlist? {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
         return Playlist(
             id: id,
+            mediaSourceName: mediaSourceName,
             title: title,
             user: item["user"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),

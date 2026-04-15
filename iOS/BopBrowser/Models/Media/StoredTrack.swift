@@ -4,12 +4,12 @@ import SwiftData
 @Model
 final class StoredTrack {
     var id: String
+    var mediaSourceName: String
     var title: String
     var subtitle: String?
     var duration: Int?
     var artworkUrl: String?
     var url: String?
-    var mediaSourceName: String?
     var metadataJSON: Data
     var artistsJSON: Data = Data()
     var albumsJSON: Data = Data()
@@ -34,6 +34,7 @@ final class StoredTrack {
             guard let id = data["id"] as? String else { continue }
             result[name] = Artist(
                 id: id,
+                mediaSourceName: self.mediaSourceName,
                 name: name,
                 artworkUrl: data["artworkUrl"] as? String,
                 metadata: data["metadata"] as? [String: Any] ?? [:]
@@ -51,6 +52,7 @@ final class StoredTrack {
             guard let id = data["id"] as? String else { continue }
             result[name] = Album(
                 id: id,
+                mediaSourceName: self.mediaSourceName,
                 title: name,
                 subtitle: data["subtitle"] as? String,
                 artworkUrl: data["artworkUrl"] as? String,
@@ -62,24 +64,24 @@ final class StoredTrack {
 
     init(
         id: String,
+        mediaSourceName: String,
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
-        mediaSourceName: String? = nil,
         metadata: [String: Any] = [:],
         artists: [String: Artist] = [:],
         albums: [String: Album] = [:],
         sortOrder: Int = 0
     ) {
         self.id = id
+        self.mediaSourceName = mediaSourceName
         self.title = title
         self.subtitle = subtitle
         self.duration = duration
         self.artworkUrl = artworkUrl
         self.url = url
-        self.mediaSourceName = mediaSourceName
         self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
         self.artistsJSON = StoredTrack.encodeArtists(artists)
         self.albumsJSON = StoredTrack.encodeAlbums(albums)
@@ -89,12 +91,12 @@ final class StoredTrack {
     func toTrack() -> Track {
         Track(
             id: self.id,
+            mediaSourceName: self.mediaSourceName,
             title: self.title,
             subtitle: self.subtitle,
             duration: self.duration,
             artworkUrl: self.artworkUrl,
             url: self.url,
-            mediaSourceName: self.mediaSourceName,
             artists: self.artists,
             albums: self.albums,
             metadata: self.metadata
@@ -104,12 +106,12 @@ final class StoredTrack {
     static func from(_ track: Track, sortOrder: Int) -> StoredTrack {
         StoredTrack(
             id: track.id,
+            mediaSourceName: track.mediaSourceName,
             title: track.title,
             subtitle: track.subtitle,
             duration: track.duration,
             artworkUrl: track.artworkUrl,
             url: track.url,
-            mediaSourceName: track.mediaSourceName,
             metadata: track.metadata,
             artists: track.artists,
             albums: track.albums,

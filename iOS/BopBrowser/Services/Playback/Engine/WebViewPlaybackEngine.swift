@@ -128,7 +128,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             "duration": track.duration ?? 0,
             "artworkUrl": track.artworkUrl ?? "",
             "url": track.url ?? "",
-            "mediaSourceName": track.mediaSourceName ?? "",
+            "mediaSourceName": track.mediaSourceName,
             "metadata": track.metadata,
         ]
 

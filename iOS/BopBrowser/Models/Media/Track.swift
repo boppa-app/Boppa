@@ -2,35 +2,35 @@ import Foundation
 
 struct Track: Identifiable, Equatable {
     let id: String
+    let mediaSourceName: String
     let title: String
     let subtitle: String?
     let duration: Int?
     let artworkUrl: String?
     let url: String?
-    let mediaSourceName: String?
     let artists: [String: Artist]
     let albums: [String: Album]
     let metadata: [String: Any]
 
     init(
         id: String,
+        mediaSourceName: String,
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
-        mediaSourceName: String? = nil,
         artists: [String: Artist] = [:],
         albums: [String: Album] = [:],
         metadata: [String: Any] = [:]
     ) {
         self.id = id
+        self.mediaSourceName = mediaSourceName
         self.title = title
         self.subtitle = subtitle
         self.duration = duration
         self.artworkUrl = artworkUrl
         self.url = url
-        self.mediaSourceName = mediaSourceName
         self.artists = artists
         self.albums = albums
         self.metadata = metadata

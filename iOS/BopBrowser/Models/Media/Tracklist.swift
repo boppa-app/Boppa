@@ -41,6 +41,7 @@ struct Tracklist {
         case "album":
             self.tracklistType = .album(Album(
                 id: storedTracklist.id,
+                mediaSourceName: sourceName,
                 title: storedTracklist.name,
                 subtitle: storedTracklist.subtitle,
                 artworkUrl: storedTracklist.artworkUrl,
@@ -49,6 +50,7 @@ struct Tracklist {
         default:
             self.tracklistType = .playlist(Playlist(
                 id: storedTracklist.id,
+                mediaSourceName: sourceName,
                 title: storedTracklist.name,
                 user: storedTracklist.subtitle,
                 artworkUrl: storedTracklist.artworkUrl,
