@@ -96,9 +96,9 @@ final class TrackQueueManager {
         }
     }
 
-    func removeTracks(forMediaSource mediaSourceName: String) {
+    func removeTracks(forMediaSource mediaSourceId: String) {
         let current = self.currentTrack
-        self.queue.removeAll { $0.mediaSourceName == mediaSourceName }
+        self.queue.removeAll { $0.mediaSourceId == mediaSourceId }
         if let current, let newIndex = self.queue.firstIndex(of: current) {
             self.currentIndex = newIndex
         } else {

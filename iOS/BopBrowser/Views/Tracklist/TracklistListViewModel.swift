@@ -26,23 +26,23 @@ class TracklistListViewModel {
         type: TracklistListType,
         artist: Artist,
         artistDetail: ArtistDetail,
-        source: MediaSource
+        mediaSource: MediaSource
     ) {
         guard !self.didLoad else { return }
         self.didLoad = true
 
         switch type {
         case .albums:
-            self.fetchAlbums(artist: artist, artistDetail: artistDetail, source: source)
+            self.fetchAlbums(artist: artist, artistDetail: artistDetail, mediaSource: mediaSource)
         case .playlists:
-            self.fetchPlaylists(artist: artist, artistDetail: artistDetail, source: source)
+            self.fetchPlaylists(artist: artist, artistDetail: artistDetail, mediaSource: mediaSource)
         }
     }
 
     private func fetchAlbums(
         artist: Artist,
         artistDetail: ArtistDetail,
-        source: MediaSource
+        mediaSource: MediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true
@@ -53,7 +53,7 @@ class TracklistListViewModel {
                 let result = try await TracklistService.shared.fetchAlbumsForArtist(
                     artist: artist,
                     artistDetail: artistDetail,
-                    mediaSource: source
+                    mediaSource: mediaSource
                 )
 
                 guard !Task.isCancelled else { return }
@@ -75,7 +75,7 @@ class TracklistListViewModel {
     private func fetchPlaylists(
         artist: Artist,
         artistDetail: ArtistDetail,
-        source: MediaSource
+        mediaSource: MediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true
@@ -86,7 +86,7 @@ class TracklistListViewModel {
                 let result = try await TracklistService.shared.fetchPlaylistsForArtist(
                     artist: artist,
                     artistDetail: artistDetail,
-                    mediaSource: source
+                    mediaSource: mediaSource
                 )
 
                 guard !Task.isCancelled else { return }

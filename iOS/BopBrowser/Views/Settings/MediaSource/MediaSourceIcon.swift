@@ -1,17 +1,17 @@
 import SwiftUI
 
 struct MediaSourceIcon: View {
-    let source: MediaSource
+    let mediaSource: MediaSource
     var isSelected: Bool?
     var onDelete: (() -> Void)?
     var showDeleteButton: Bool = true
 
     private var isHighlighted: Bool {
-        self.isSelected ?? self.source.isEnabled
+        self.isSelected ?? self.mediaSource.isEnabled
     }
 
     private var outlineColor: Color {
-        if let hex = self.source.config.highlightColor {
+        if let hex = self.mediaSource.config.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
@@ -23,7 +23,7 @@ struct MediaSourceIcon: View {
                 .strokeBorder(self.isHighlighted ? self.outlineColor : Color(.systemGray3), lineWidth: 2)
                 .frame(width: MediaSourceGridLayout.iconSize, height: MediaSourceGridLayout.iconSize)
 
-            if let iconSvg = self.source.config.iconSvg {
+            if let iconSvg = self.mediaSource.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 32)
                     .opacity(self.isHighlighted ? 1.0 : 0.5)
             } else {

@@ -3,6 +3,7 @@ import WebKit
 
 // TODO: Add version, updateUrl (URL to check for config updates), and downloadUrl (URL to download config) fields
 struct MediaSourceConfig: Codable, Sendable {
+    let id: String
     let name: String
     let url: String
     let iconSvg: String?
@@ -15,11 +16,12 @@ struct MediaSourceConfig: Codable, Sendable {
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case name, url, iconSvg, highlightColor, customUserAgent, login, parse, data, playback, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, login, parse, data, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
         self.name = try container.decode(String.self, forKey: .name)
         self.url = try container.decode(String.self, forKey: .url)
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
@@ -34,6 +36,7 @@ struct MediaSourceConfig: Codable, Sendable {
 
     nonisolated func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.id, forKey: .id)
         try container.encode(self.name, forKey: .name)
         try container.encode(self.url, forKey: .url)
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)

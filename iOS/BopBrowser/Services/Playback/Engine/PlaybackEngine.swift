@@ -9,7 +9,7 @@ enum PlaybackSource {
 protocol PlaybackEngine: AnyObject {
     var onEvent: ((PlayerEvent) -> Void)? { get set }
 
-    func load(source: PlaybackSource) async -> Bool
+    func load(playbackSource: PlaybackSource) async -> Bool
     func play()
     func pause()
     func seek(to timeSeconds: Double)
@@ -18,10 +18,10 @@ protocol PlaybackEngine: AnyObject {
 
 extension PlaybackEngine {
     func load(track: Track, config: MediaSourceConfig) async -> Bool {
-        await self.load(source: .track(track: track, config: config))
+        await self.load(playbackSource: .track(track: track, config: config))
     }
 
     func load(getTrackResponse: GetTrackResponse) async -> Bool {
-        await self.load(source: .getTrackResponse(getTrackResponse: getTrackResponse))
+        await self.load(playbackSource: .getTrackResponse(getTrackResponse: getTrackResponse))
     }
 }

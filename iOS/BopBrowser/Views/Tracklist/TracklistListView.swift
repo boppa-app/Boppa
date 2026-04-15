@@ -7,7 +7,7 @@ struct TracklistListView: View {
 
     let artist: Artist
     let artistDetail: ArtistDetail
-    let source: MediaSource
+    let mediaSource: MediaSource
     let type: TracklistListType
     let title: String
 
@@ -27,7 +27,7 @@ struct TracklistListView: View {
                 type: self.type,
                 artist: self.artist,
                 artistDetail: self.artistDetail,
-                source: self.source
+                mediaSource: self.mediaSource
             )
         }
     }
@@ -54,10 +54,10 @@ struct TracklistListView: View {
         ScrollFadeView {
             List {
                 ForEach(Array(self.viewModel.albums.enumerated()), id: \.element.id) { index, album in
-                    if self.source.config.data?.getAlbum != nil {
+                    if self.mediaSource.config.data?.getAlbum != nil {
                         NavigationLink {
                             TracklistView(
-                                tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                                tracklist: Tracklist(album: album, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                             )
                         } label: {
                             AlbumRow(album: album)
@@ -86,10 +86,10 @@ struct TracklistListView: View {
         ScrollFadeView {
             List {
                 ForEach(Array(self.viewModel.playlists.enumerated()), id: \.element.id) { index, playlist in
-                    if self.source.config.data?.getPlaylist != nil {
+                    if self.mediaSource.config.data?.getPlaylist != nil {
                         NavigationLink {
                             TracklistView(
-                                tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
+                                tracklist: Tracklist(playlist: playlist, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
                             )
                         } label: {
                             PlaylistRow(playlist: playlist)

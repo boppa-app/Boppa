@@ -22,8 +22,8 @@ final class AVPlayerPlaybackEngine: PlaybackEngine {
 
     private init() {}
 
-    func load(source: PlaybackSource) async -> Bool {
-        switch source {
+    func load(playbackSource: PlaybackSource) async -> Bool {
+        switch playbackSource {
         case let .track(track, config):
             logger.error("No streamUrl provided to AVPlayerPlaybackEngine")
             return false

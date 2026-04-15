@@ -11,9 +11,9 @@ class SearchViewModel {
     var isLoadingNextPage = false
     var hasMorePages = false
     var errorMessage: String?
-    var selectedSource: MediaSource?
+    var selectedMediaSource: MediaSource?
     var mediaSources: [MediaSource] = []
-    var showSourcePicker = false
+    var showMediaSourcePicker = false
     var selectedCategory: SearchCategory = .songs
     var availableCategories: [SearchCategory] = []
 
@@ -37,20 +37,20 @@ class SearchViewModel {
         descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
 
-        if let current = self.selectedSource,
+        if let current = self.selectedMediaSource,
            let match = self.mediaSources.first(where: { $0.persistentModelID == current.persistentModelID })
         {
-            self.selectedSource = match
+            self.selectedMediaSource = match
         } else {
-            self.selectedSource = self.mediaSources.first
+            self.selectedMediaSource = self.mediaSources.first
         }
 
         self.updateAvailableCategories()
     }
 
-    func selectSource(_ source: MediaSource) {
-        self.selectedSource = source
-        self.showSourcePicker = false
+    func selectMediaSource(_ mediaSource: MediaSource) {
+        self.selectedMediaSource = mediaSource
+        self.showMediaSourcePicker = false
         self.updateAvailableCategories()
 
         if self.isQueryActive {
@@ -79,7 +79,7 @@ class SearchViewModel {
             return
         }
 
-        guard let source = self.selectedSource else {
+        guard let mediaSource = self.selectedMediaSource else {
             self.errorMessage = "No media source selected"
             return
         }
@@ -91,7 +91,7 @@ class SearchViewModel {
             do {
                 let response = try await SearchService.shared.search(
                     query: trimmed,
-                    mediaSource: source,
+                    mediaSource: mediaSource,
                     category: self.selectedCategory
                 )
 
@@ -118,7 +118,7 @@ class SearchViewModel {
         guard !self.isLoadingNextPage,
               self.hasMorePages,
               let paginationContext = self.paginationContext,
-              let source = self.selectedSource
+              let mediaSource = self.selectedMediaSource
         else { return }
 
         let trimmed = self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -129,7 +129,7 @@ class SearchViewModel {
             do {
                 let response = try await SearchService.shared.searchNextPage(
                     paginationContext: paginationContext,
-                    mediaSource: source,
+                    mediaSource: mediaSource,
                     category: self.selectedCategory,
                     query: trimmed
                 )
@@ -166,7 +166,7 @@ class SearchViewModel {
     }
 
     private func updateAvailableCategories() {
-        guard let data = self.selectedSource?.config.data else {
+        guard let data = self.selectedMediaSource?.config.data else {
             self.availableCategories = []
             return
         }

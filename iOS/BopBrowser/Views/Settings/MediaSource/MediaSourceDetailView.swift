@@ -12,7 +12,7 @@ struct MediaSourceDetailView: View {
             ) {
                 EmptyView()
             } centerTrailing: {
-                if let iconSvg = self.viewModel.source.config.iconSvg {
+                if let iconSvg = self.viewModel.mediaSource.config.iconSvg {
                     SVGImageView(svgString: iconSvg, size: 24)
                 } else {
                     Image(systemName: "music.note")
@@ -31,8 +31,8 @@ struct MediaSourceDetailView: View {
                 }
 
                 Section("Details") {
-                    LabeledContent("Name", value: self.viewModel.source.name)
-                    LabeledContent("URL", value: self.viewModel.source.url)
+                    LabeledContent("Name", value: self.viewModel.mediaSource.name)
+                    LabeledContent("URL", value: self.viewModel.mediaSource.url)
                 }
 
                 if let _ = self.viewModel.loginURL {
@@ -77,10 +77,10 @@ struct MediaSourceDetailView: View {
             if let loginURL = self.viewModel.loginURL {
                 LoginWebView(viewModel: LoginWebViewModel(
                     url: loginURL,
-                    customUserAgent: self.viewModel.source.config.customUserAgent,
-                    requiredCookies: self.viewModel.source.config.login?.cookies ?? [],
-                    cookieDomain: URL(string: self.viewModel.source.config.url)?.host,
-                    mediaSourceName: self.viewModel.source.name
+                    customUserAgent: self.viewModel.mediaSource.config.customUserAgent,
+                    requiredCookies: self.viewModel.mediaSource.config.login?.cookies ?? [],
+                    cookieDomain: URL(string: self.viewModel.mediaSource.config.url)?.host,
+                    mediaSourceId: self.viewModel.mediaSource.id
                 ))
             }
         }

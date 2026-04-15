@@ -30,9 +30,9 @@ class AddMediaSourceViewModel {
             let existingSources = (try? modelContext.fetch(existingDescriptor)) ?? []
             let maxOrder = existingSources.map(\.order).max() ?? -1
 
-            for (index, source) in mediaSources.enumerated() {
-                source.order = maxOrder + 1 + index
-                modelContext.insert(source)
+            for (index, mediaSource) in mediaSources.enumerated() {
+                mediaSource.order = maxOrder + 1 + index
+                modelContext.insert(mediaSource)
             }
             try modelContext.save()
             let addedNames = mediaSources.map(\.name)

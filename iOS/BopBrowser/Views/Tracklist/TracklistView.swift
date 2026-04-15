@@ -93,10 +93,10 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let source = TracklistService.shared.resolveSource(name: track.mediaSourceName, modelContext: self.modelContext) {
+            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId, modelContext: self.modelContext) {
                 TrackActionsSheet(
                     track: track,
-                    source: source,
+                    mediaSource: mediaSource,
                     onArtistSelected: { artist in self.pendingArtist = artist },
                     onAlbumSelected: { album in self.pendingAlbum = album }
                 )
@@ -106,16 +106,16 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSourceName = self.viewModel.tracklist.mediaSourceName,
-               let source = TracklistService.shared.resolveSource(name: mediaSourceName, modelContext: self.modelContext)
+            if let mediaSourceId = self.viewModel.tracklist.mediaSourceId,
+               let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: mediaSourceId, modelContext: self.modelContext)
             {
-                ArtistDetailView(artist: artist, source: source)
+                ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
-            if let mediaSourceName = self.viewModel.tracklist.mediaSourceName {
+            if let mediaSourceId = self.viewModel.tracklist.mediaSourceId {
                 TracklistView(
-                    tracklist: Tracklist(album: album, mediaSourceName: mediaSourceName, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                    tracklist: Tracklist(album: album, mediaSourceId: mediaSourceId, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                 )
             }
         }
@@ -192,7 +192,7 @@ struct TracklistView: View {
         }
     }
 
-    // TODO: Check if user is signed in and if not display button to go to settings to sign in to media source config
+    // TODO: Check if user is signed in and if not display button to go to settings to sign in to media mediaSource config
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "music.note.list")
@@ -217,7 +217,7 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track) {
-        guard let source = TracklistService.shared.resolveSource(name: track.mediaSourceName, modelContext: self.modelContext) else { return }
-        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: source)
+        guard let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId, modelContext: self.modelContext) else { return }
+        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: mediaSource)
     }
 }

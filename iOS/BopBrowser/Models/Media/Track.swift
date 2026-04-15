@@ -2,7 +2,7 @@ import Foundation
 
 struct Track: Identifiable, Equatable {
     let id: String
-    let mediaSourceName: String
+    let mediaSourceId: String
     let title: String
     let subtitle: String?
     let duration: Int?
@@ -14,7 +14,7 @@ struct Track: Identifiable, Equatable {
 
     init(
         id: String,
-        mediaSourceName: String,
+        mediaSourceId: String,
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,
@@ -25,7 +25,7 @@ struct Track: Identifiable, Equatable {
         metadata: [String: Any] = [:]
     ) {
         self.id = id
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.title = title
         self.subtitle = subtitle
         self.duration = duration
@@ -43,7 +43,7 @@ struct Track: Identifiable, Equatable {
             && lhs.duration == rhs.duration
             && lhs.artworkUrl == rhs.artworkUrl
             && lhs.url == rhs.url
-            && lhs.mediaSourceName == rhs.mediaSourceName
+            && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.artists == rhs.artists
             && lhs.albums == rhs.albums
     }

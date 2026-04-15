@@ -27,8 +27,8 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         super.init()
     }
 
-    func load(source: PlaybackSource) async -> Bool {
-        switch source {
+    func load(playbackSource: PlaybackSource) async -> Bool {
+        switch playbackSource {
         case let .track(track, config):
             if self.webView == nil || self.needsReconfigure(for: config) {
                 self.reconfigureWebView(config: config)
@@ -128,7 +128,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             "duration": track.duration ?? 0,
             "artworkUrl": track.artworkUrl ?? "",
             "url": track.url ?? "",
-            "mediaSourceName": track.mediaSourceName,
+            "mediaSourceId": track.mediaSourceId,
             "metadata": track.metadata,
         ]
 

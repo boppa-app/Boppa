@@ -27,7 +27,7 @@ final class MediaSourceContextProvider: NSObject {
     private var pendingWork: [RefreshWorkItem] = []
     private var activeWebView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
-    private var currentSourceName: String?
+    private var currentMediaSourceId: String?
     private var modelContext: ModelContext?
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
@@ -73,10 +73,10 @@ final class MediaSourceContextProvider: NSObject {
             object: nil,
             queue: .main
         ) { notification in
-            guard let mediaSourceName = notification.userInfo?["mediaSourceName"] as? String else { return }
+            guard let mediaSourceId = notification.userInfo?["mediaSourceId"] as? String else { return }
             MainActor.assumeIsolated {
-                logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceName)', triggering refresh...")
-                MediaSourceContextProvider.shared.refreshSource(named: mediaSourceName)
+                logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceId)', triggering refresh...")
+                MediaSourceContextProvider.shared.refreshSource(id: mediaSourceId)
             }
         }
     }
@@ -98,71 +98,71 @@ final class MediaSourceContextProvider: NSObject {
             return
         }
         let descriptor = FetchDescriptor<MediaSource>()
-        let sources = (try? modelContext.fetch(descriptor)) ?? []
-        logger.info("Fetched \(sources.count) media source(s) from ModelContext")
-        self.startMonitoring(sources: sources)
+        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+        logger.info("Fetched \(mediaSources.count) media mediaSource(s) from ModelContext")
+        self.startMonitoring(mediaSources: mediaSources)
     }
 
     @MainActor
-    private func refreshSource(named sourceName: String) {
+    private func refreshSource(id mediaSourceId: String) {
         guard let modelContext else {
             logger.warning("refreshSource called but no modelContext set")
             return
         }
         let descriptor = FetchDescriptor<MediaSource>()
-        let sources = (try? modelContext.fetch(descriptor)) ?? []
-        guard let source = sources.first(where: { $0.name == sourceName }) else {
-            logger.warning("refreshSource: no source found with name '\(sourceName)'")
+        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+        guard let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId }) else {
+            logger.warning("refreshSource: no mediaSource found with id '\(mediaSourceId)'")
             return
         }
 
-        let config = source.config
+        let config = mediaSource.config
         guard let parses = config.parse, !parses.isEmpty else {
-            logger.debug("refreshSource: source '\(sourceName)' has no parses configured")
+            logger.debug("refreshSource: mediaSource '\(mediaSourceId)' has no parses configured")
             return
         }
 
-        logger.info("Refreshing source '\(sourceName)' with \(parses.count) parse(s) after login")
+        logger.info("Refreshing mediaSource '\(mediaSourceId)' with \(parses.count) parse(s) after login")
         for parse in parses {
-            self.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
+            self.enqueueRefresh(mediaSourceId: config.id, parse: parse, customUserAgent: config.customUserAgent)
         }
     }
 
     @MainActor
-    private func startMonitoring(sources: [MediaSource]) {
-        logger.info("startMonitoring called with \(sources.count) source(s)")
+    private func startMonitoring(mediaSources: [MediaSource]) {
+        logger.info("startMonitoring called with \(mediaSources.count) mediaSource(s)")
 
         self.stopAllTimers()
         self.pendingWork.removeAll()
         self.tearDownWebView()
         self.isProcessing = false
 
-        for source in sources {
-            let config = source.config
+        for mediaSource in mediaSources {
+            let config = mediaSource.config
             guard let parses = config.parse, !parses.isEmpty else {
-                logger.debug("Skipping source '\(config.name)': no parses configured")
+                logger.debug("Skipping mediaSource '\(config.name)': no parses configured")
                 continue
             }
 
             logger.info("Source '\(config.name)' has \(parses.count) parse(s)")
 
             for parse in parses {
-                let timerKey = "\(config.name)|\(parse.url)"
+                let timerKey = "\(config.id)|\(parse.url)"
 
-                logger.info("Enqueueing immediate refresh for '\(config.name)' -> \(parse.url) with \(parse.userScripts.count) script(s)")
-                self.enqueueRefresh(sourceName: config.name, parse: parse, customUserAgent: config.customUserAgent)
+                logger.info("Enqueueing immediate refresh for '\(config.id)' -> \(parse.url) with \(parse.userScripts.count) script(s)")
+                self.enqueueRefresh(mediaSourceId: config.id, parse: parse, customUserAgent: config.customUserAgent)
 
                 let interval = TimeInterval(parse.intervalSeconds)
-                let sourceName = config.name
+                let mediaSourceId = config.id
                 let customUserAgent = config.customUserAgent
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
                     MainActor.assumeIsolated {
-                        logger.info("Timer fired: recurring refresh for '\(sourceName)' -> \(parse.url)")
-                        MediaSourceContextProvider.shared.enqueueRefresh(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
+                        logger.info("Timer fired: recurring refresh for '\(mediaSourceId)' -> \(parse.url)")
+                        MediaSourceContextProvider.shared.enqueueRefresh(mediaSourceId: mediaSourceId, parse: parse, customUserAgent: customUserAgent)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
-                logger.info("Scheduled recurring refresh for '\(config.name)' at \(parse.url) every \(parse.intervalSeconds)s")
+                logger.info("Scheduled recurring refresh for '\(config.id)' at \(parse.url) every \(parse.intervalSeconds)s")
             }
         }
 
@@ -172,12 +172,12 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    private func enqueueRefresh(sourceName: String, parse: Parse, customUserAgent: String?) {
-        let workItem = RefreshWorkItem(sourceName: sourceName, parse: parse, customUserAgent: customUserAgent)
+    private func enqueueRefresh(mediaSourceId: String, parse: Parse, customUserAgent: String?) {
+        let workItem = RefreshWorkItem(mediaSourceId: mediaSourceId, parse: parse, customUserAgent: customUserAgent)
         self.pendingWork.append(workItem)
         let queueSize = self.pendingWork.count
         let processing = self.isProcessing
-        logger.debug("Enqueued refresh for '\(sourceName)'. Queue size: \(queueSize), isProcessing: \(processing)")
+        logger.debug("Enqueued refresh for '\(mediaSourceId)'. Queue size: \(queueSize), isProcessing: \(processing)")
         self.processNextIfIdle()
     }
 
@@ -194,16 +194,16 @@ final class MediaSourceContextProvider: NSObject {
         }
         self.pendingWork.removeFirst()
         self.isProcessing = true
-        self.currentSourceName = workItem.sourceName
+        self.currentMediaSourceId = workItem.mediaSourceId
 
         guard let url = URL(string: workItem.parse.url) else {
-            logger.error("Invalid refresh URL: '\(workItem.parse.url)' for '\(workItem.sourceName)'")
+            logger.error("Invalid refresh URL: '\(workItem.parse.url)' for '\(workItem.mediaSourceId)'")
             self.completeCurrentWork()
             return
         }
 
-        logger.info("Processing: '\(workItem.sourceName)' -> \(url.absoluteString) with \(workItem.parse.userScripts.count) script(s)")
-        self.loadRefreshURL(url: url, scripts: workItem.parse.userScripts, sourceName: workItem.sourceName, customUserAgent: workItem.customUserAgent)
+        logger.info("Processing: '\(workItem.mediaSourceId)' -> \(url.absoluteString) with \(workItem.parse.userScripts.count) script(s)")
+        self.loadRefreshURL(url: url, scripts: workItem.parse.userScripts, mediaSourceId: workItem.mediaSourceId, customUserAgent: workItem.customUserAgent)
     }
 
     @MainActor
@@ -212,14 +212,14 @@ final class MediaSourceContextProvider: NSObject {
         self.timeoutTask = nil
         self.tearDownWebView()
         self.isProcessing = false
-        self.currentSourceName = nil
+        self.currentMediaSourceId = nil
         let remaining = self.pendingWork.count
         logger.debug("Work item complete. \(remaining) item(s) remaining.")
         self.processNextIfIdle()
     }
 
     @MainActor
-    private func loadRefreshURL(url: URL, scripts: [Script], sourceName: String, customUserAgent: String?) {
+    private func loadRefreshURL(url: URL, scripts: [Script], mediaSourceId: String, customUserAgent: String?) {
         let webView = WebViewFactory.makeWebView(
             scripts: scripts,
             contractScript: self.buildContractScript(),
@@ -234,7 +234,7 @@ final class MediaSourceContextProvider: NSObject {
         self.timeoutTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(timeout))
             guard !Task.isCancelled else { return }
-            logger.warning("Timeout (\(timeout)s) for '\(sourceName)'. Moving on.")
+            logger.warning("Timeout (\(timeout)s) for '\(mediaSourceId)'. Moving on.")
             MediaSourceContextProvider.shared.completeCurrentWork()
         }
 
@@ -278,8 +278,8 @@ final class MediaSourceContextProvider: NSObject {
 
     @MainActor
     private func handleContextValues(_ values: [String: Any]) {
-        guard let sourceName = self.currentSourceName else {
-            logger.warning("Received contextValues but no current source name")
+        guard let mediaSourceId = self.currentMediaSourceId else {
+            logger.warning("Received contextValues but no current mediaSource id")
             return
         }
         guard let modelContext else {
@@ -288,23 +288,23 @@ final class MediaSourceContextProvider: NSObject {
         }
 
         let descriptor = FetchDescriptor<MediaSource>()
-        guard let sources = try? modelContext.fetch(descriptor),
-              let source = sources.first(where: { $0.name == sourceName })
+        guard let mediaSources = try? modelContext.fetch(descriptor),
+              let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId })
         else {
-            logger.warning("Could not find MediaSource '\(sourceName)' to store context values")
+            logger.warning("Could not find MediaSource '\(mediaSourceId)' to store context values")
             return
         }
 
         for (key, value) in values {
             if let stringValue = value as? String {
-                source.contextValues[key] = stringValue
+                mediaSource.contextValues[key] = stringValue
             } else {
-                source.contextValues[key] = String(describing: value)
+                mediaSource.contextValues[key] = String(describing: value)
             }
         }
 
         try? modelContext.save()
-        logger.info("Stored \(values.count) context value(s) for '\(sourceName)'")
+        logger.info("Stored \(values.count) context value(s) for '\(mediaSourceId)'")
     }
 }
 
@@ -343,7 +343,7 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
 }
 
 private struct RefreshWorkItem {
-    let sourceName: String
+    let mediaSourceId: String
     let parse: Parse
     let customUserAgent: String?
 }

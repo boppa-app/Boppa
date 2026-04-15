@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class MediaSource {
+    var id: String
     var name: String
     var url: String
     var configData: Data
@@ -14,7 +15,8 @@ final class MediaSource {
         try! JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
 
-    init(name: String, url: String, config: MediaSourceConfig, order: Int = 0, isEnabled: Bool = true) {
+    init(id: String, name: String, url: String, config: MediaSourceConfig, order: Int = 0, isEnabled: Bool = true) {
+        self.id = id
         self.name = name
         self.url = url
         self.configData = (try? JSONEncoder().encode(config)) ?? Data()
@@ -38,7 +40,7 @@ final class MediaSource {
         }
 
         return configs.map { config in
-            MediaSource(name: config.name, url: config.url, config: config)
+            MediaSource(id: config.id, name: config.name, url: config.url, config: config)
         }
     }
 

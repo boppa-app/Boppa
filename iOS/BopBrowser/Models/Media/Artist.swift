@@ -2,7 +2,7 @@ import Foundation
 
 struct Artist: Identifiable, Equatable, Hashable {
     let id: String
-    let mediaSourceName: String
+    let mediaSourceId: String
     let name: String
     let artworkUrl: String?
     let url: String?
@@ -10,14 +10,14 @@ struct Artist: Identifiable, Equatable, Hashable {
 
     init(
         id: String,
-        mediaSourceName: String,
+        mediaSourceId: String,
         name: String,
         artworkUrl: String? = nil,
         url: String? = nil,
         metadata: [String: Any] = [:]
     ) {
         self.id = id
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.name = name
         self.artworkUrl = artworkUrl
         self.url = url
@@ -26,7 +26,7 @@ struct Artist: Identifiable, Equatable, Hashable {
 
     static func == (lhs: Artist, rhs: Artist) -> Bool {
         lhs.id == rhs.id
-            && lhs.mediaSourceName == rhs.mediaSourceName
+            && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.name == rhs.name
             && lhs.artworkUrl == rhs.artworkUrl
             && lhs.url == rhs.url

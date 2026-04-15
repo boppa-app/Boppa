@@ -50,7 +50,7 @@ struct SearchToolbarView: View {
                     }
                 }
 
-                self.sourcePickerButton
+                self.mediaSourcePickerButton
                     .opacity(self.isSearchFieldFocused.wrappedValue ? 1.0 : 0.5)
             }
             .padding(.horizontal, 12)
@@ -62,12 +62,12 @@ struct SearchToolbarView: View {
         .padding(.vertical, 6)
     }
 
-    private var sourcePickerButton: some View {
+    private var mediaSourcePickerButton: some View {
         Button {
-            self.viewModel.showSourcePicker = true
+            self.viewModel.showMediaSourcePicker = true
         } label: {
-            if let source = self.viewModel.selectedSource,
-               let iconSvg = source.config.iconSvg
+            if let mediaSource = self.viewModel.selectedMediaSource,
+               let iconSvg = mediaSource.config.iconSvg
             {
                 SVGImageView(svgString: iconSvg, size: 24)
                     .frame(width: 24, height: 24)
@@ -79,13 +79,13 @@ struct SearchToolbarView: View {
                     .frame(width: 24, height: 24)
             }
         }
-        .sheet(isPresented: self.$viewModel.showSourcePicker) {
-            SourcePickerSheet(
-                sources: self.viewModel.mediaSources,
-                mode: .single(
-                    selectedID: self.viewModel.selectedSource?.persistentModelID,
-                    onSelect: { source in
-                        self.viewModel.selectSource(source)
+        .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {
+            MediaSourcePickerSheet(
+                mediaSources: self.viewModel.mediaSources,
+                mediaSourcePickerMode: .single(
+                    selectedID: self.viewModel.selectedMediaSource?.persistentModelID,
+                    onSelect: { mediaSource in
+                        self.viewModel.selectMediaSource(mediaSource)
                     }
                 )
             )

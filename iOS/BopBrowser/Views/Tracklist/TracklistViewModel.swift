@@ -33,7 +33,7 @@ class TracklistViewModel {
     }
 
     var canRefresh: Bool {
-        self.tracklist.isPersisted && self.tracklist.mediaSourceName != nil
+        self.tracklist.isPersisted && self.tracklist.mediaSourceId != nil
     }
 
     func load(modelContext: ModelContext) {
@@ -41,14 +41,14 @@ class TracklistViewModel {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 
-        if self.tracks.isEmpty, self.tracklist.mediaSourceName != nil {
+        if self.tracks.isEmpty, self.tracklist.mediaSourceId != nil {
             self.fetchFirstPage(modelContext: modelContext)
         }
     }
 
     func refresh(modelContext: ModelContext) {
         guard self.tracklist.isPersisted,
-              self.tracklist.mediaSourceName != nil
+              self.tracklist.mediaSourceId != nil
         else { return }
         self.isRefreshing = true
 
@@ -149,7 +149,7 @@ class TracklistViewModel {
 
     func saveToLibrary(modelContext: ModelContext) {
         guard !self.isSaving,
-              self.tracklist.mediaSourceName != nil
+              self.tracklist.mediaSourceId != nil
         else { return }
         self.isSaving = true
 

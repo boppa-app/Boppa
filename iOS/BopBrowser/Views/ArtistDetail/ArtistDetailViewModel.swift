@@ -17,15 +17,15 @@ class ArtistDetailViewModel {
 
     func load(
         artist: Artist,
-        source: MediaSource
+        mediaSource: MediaSource
     ) {
         guard self.detail == nil else { return }
-        self.fetch(artist: artist, source: source)
+        self.fetch(artist: artist, mediaSource: mediaSource)
     }
 
     private func fetch(
         artist: Artist,
-        source: MediaSource
+        mediaSource: MediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true
@@ -35,7 +35,7 @@ class ArtistDetailViewModel {
             do {
                 let result = try await TracklistService.shared.fetchArtist(
                     artist: artist,
-                    mediaSource: source
+                    mediaSource: mediaSource
                 )
 
                 guard !Task.isCancelled else { return }

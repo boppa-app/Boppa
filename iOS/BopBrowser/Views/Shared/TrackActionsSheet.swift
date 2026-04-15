@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TrackActionsSheet: View {
     let track: Track
-    let source: MediaSource
+    let mediaSource: MediaSource
     var onArtistSelected: ((Artist) -> Void)?
     var onAlbumSelected: ((Album) -> Void)?
 
@@ -32,7 +32,7 @@ struct TrackActionsSheet: View {
 
             List {
                 ForEach(Array(self.artistEntries.enumerated()), id: \.offset) { _, entry in
-                    if self.source.config.data?.getArtist != nil {
+                    if self.mediaSource.config.data?.getArtist != nil {
                         Button {
                             self.dismiss()
                             self.onArtistSelected?(entry.artist)
@@ -50,7 +50,7 @@ struct TrackActionsSheet: View {
                 }
 
                 ForEach(Array(self.albumEntries.enumerated()), id: \.offset) { _, entry in
-                    if self.source.config.data?.getAlbum != nil {
+                    if self.mediaSource.config.data?.getAlbum != nil {
                         Button {
                             self.dismiss()
                             self.onAlbumSelected?(entry.album)

@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class StoredTrack {
     var id: String
-    var mediaSourceName: String
+    var mediaSourceId: String
     var title: String
     var subtitle: String?
     var duration: Int?
@@ -34,7 +34,7 @@ final class StoredTrack {
             guard let id = data["id"] as? String else { continue }
             result[name] = Artist(
                 id: id,
-                mediaSourceName: self.mediaSourceName,
+                mediaSourceId: self.mediaSourceId,
                 name: name,
                 artworkUrl: data["artworkUrl"] as? String,
                 metadata: data["metadata"] as? [String: Any] ?? [:]
@@ -52,7 +52,7 @@ final class StoredTrack {
             guard let id = data["id"] as? String else { continue }
             result[name] = Album(
                 id: id,
-                mediaSourceName: self.mediaSourceName,
+                mediaSourceId: self.mediaSourceId,
                 title: name,
                 subtitle: data["subtitle"] as? String,
                 artworkUrl: data["artworkUrl"] as? String,
@@ -64,7 +64,7 @@ final class StoredTrack {
 
     init(
         id: String,
-        mediaSourceName: String,
+        mediaSourceId: String,
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,
@@ -76,7 +76,7 @@ final class StoredTrack {
         sortOrder: Int = 0
     ) {
         self.id = id
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.title = title
         self.subtitle = subtitle
         self.duration = duration
@@ -91,7 +91,7 @@ final class StoredTrack {
     func toTrack() -> Track {
         Track(
             id: self.id,
-            mediaSourceName: self.mediaSourceName,
+            mediaSourceId: self.mediaSourceId,
             title: self.title,
             subtitle: self.subtitle,
             duration: self.duration,
@@ -106,7 +106,7 @@ final class StoredTrack {
     static func from(_ track: Track, sortOrder: Int) -> StoredTrack {
         StoredTrack(
             id: track.id,
-            mediaSourceName: track.mediaSourceName,
+            mediaSourceId: track.mediaSourceId,
             title: track.title,
             subtitle: track.subtitle,
             duration: track.duration,
@@ -123,7 +123,7 @@ final class StoredTrack {
         self.title == track.title
             && self.subtitle == track.subtitle
             && self.url == track.url
-            && self.mediaSourceName == track.mediaSourceName
+            && self.mediaSourceId == track.mediaSourceId
     }
 
     func contentMatches(_ track: Track) -> Bool {

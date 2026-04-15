@@ -24,9 +24,9 @@ struct LibraryView: View {
                 self.viewModel.loadSources(modelContext: self.modelContext)
             }
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
-                SourcePickerSheet(
-                    sources: self.viewModel.mediaSources,
-                    mode: .multi(selectedIDs: self.$viewModel.visibleSourceIDs)
+                MediaSourcePickerSheet(
+                    mediaSources: self.viewModel.mediaSources,
+                    mediaSourcePickerMode: .multi(selectedIDs: self.$viewModel.visibleSourceIDs)
                 )
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
@@ -85,13 +85,13 @@ struct LibraryView: View {
         return Section {
             if !isCollapsed {
                 ForEach(Array(items.enumerated()), id: \.element.0.id) { index, item in
-                    let (tracklist, source) = item
+                    let (tracklist, mediaSource) = item
                     NavigationLink {
                         TracklistView(
                             tracklist: Tracklist(storedTracklist: tracklist)
                         )
                     } label: {
-                        self.tracklistRow(tracklist, source: source, section: section)
+                        self.tracklistRow(tracklist, mediaSource: mediaSource, section: section)
                             .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                     }
                     .buttonStyle(.plain)
@@ -150,7 +150,7 @@ struct LibraryView: View {
         }
     }
 
-    private func tracklistRow(_ tracklist: StoredTracklist, source: MediaSource, section: LibraryViewModel.LibrarySection) -> some View {
+    private func tracklistRow(_ tracklist: StoredTracklist, mediaSource: MediaSource, section: LibraryViewModel.LibrarySection) -> some View {
         return HStack(spacing: 12) {
             ArtworkView(
                 url: tracklist.artworkUrl,
@@ -174,7 +174,7 @@ struct LibraryView: View {
 
             Spacer()
 
-            if let iconSvg = source.config.iconSvg {
+            if let iconSvg = mediaSource.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 20)
                     .frame(width: 20, height: 20)
                     .opacity(0.5)

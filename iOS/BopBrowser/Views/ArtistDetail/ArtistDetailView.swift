@@ -9,7 +9,7 @@ struct ArtistDetailView: View {
     @State private var pendingAlbum: Album?
 
     let artist: Artist
-    let source: MediaSource
+    let mediaSource: MediaSource
 
     private let maxAlbums = 3
     private let maxSongs = 5
@@ -29,13 +29,13 @@ struct ArtistDetailView: View {
         .onAppear {
             self.viewModel.load(
                 artist: self.artist,
-                source: self.source
+                mediaSource: self.mediaSource
             )
         }
         .sheet(item: self.$trackForActions) { track in
             TrackActionsSheet(
                 track: track,
-                source: self.source,
+                mediaSource: self.mediaSource,
                 onArtistSelected: { artist in self.pendingArtist = artist },
                 onAlbumSelected: { album in self.pendingAlbum = album }
             )
@@ -44,11 +44,11 @@ struct ArtistDetailView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            ArtistDetailView(artist: artist, source: self.source)
+            ArtistDetailView(artist: artist, mediaSource: self.mediaSource)
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
             TracklistView(
-                tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                tracklist: Tracklist(album: album, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
             )
         }
     }
@@ -108,10 +108,10 @@ struct ArtistDetailView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
-                if self.source.config.data?.getAlbum != nil {
+                if self.mediaSource.config.data?.getAlbum != nil {
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(album: album, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                            tracklist: Tracklist(album: album, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                         )
                     } label: {
                         AlbumRow(album: album)
@@ -192,10 +192,10 @@ struct ArtistDetailView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
-                if self.source.config.data?.getPlaylist != nil {
+                if self.mediaSource.config.data?.getPlaylist != nil {
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(playlist: playlist, mediaSourceName: self.source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
+                            tracklist: Tracklist(playlist: playlist, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
                         )
                     } label: {
                         PlaylistRow(playlist: playlist)
@@ -231,7 +231,7 @@ struct ArtistDetailView: View {
                 NavigationLink(destination: TracklistListView(
                     artist: self.artist,
                     artistDetail: detail,
-                    source: self.source,
+                    mediaSource: self.mediaSource,
                     type: .albums,
                     title: "Albums"
                 )) { EmptyView() }
@@ -243,7 +243,7 @@ struct ArtistDetailView: View {
         let tracklist = Tracklist(
             artist: self.artist,
             type: .artistSongs(self.artist, detail),
-            mediaSourceName: self.source.name
+            mediaSourceId: self.mediaSource.id
         )
         return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
             .background(
@@ -258,7 +258,7 @@ struct ArtistDetailView: View {
         let tracklist = Tracklist(
             artist: self.artist,
             type: .artistVideos(self.artist, detail),
-            mediaSourceName: self.source.name
+            mediaSourceId: self.mediaSource.id
         )
         return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
             .background(
@@ -275,7 +275,7 @@ struct ArtistDetailView: View {
                 NavigationLink(destination: TracklistListView(
                     artist: self.artist,
                     artistDetail: detail,
-                    source: self.source,
+                    mediaSource: self.mediaSource,
                     type: .playlists,
                     title: "Playlists"
                 )) { EmptyView() }
@@ -324,6 +324,6 @@ struct ArtistDetailView: View {
     }
 
     private func playTrack(_ track: Track, from tracks: [Track]) {
-        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: self.source)
+        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: self.mediaSource)
     }
 }

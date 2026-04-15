@@ -11,7 +11,7 @@ private let logger = Logger(
 class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
     let url: URL
     let customUserAgent: String?
-    let mediaSourceName: String
+    let mediaSourceId: String
 
     @Published var shouldDismiss = false
 
@@ -21,12 +21,12 @@ class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
     private var hasCompleted = false
     private var pollingTimer: Timer?
 
-    init(url: URL, customUserAgent: String?, requiredCookies: [String], cookieDomain: String?, mediaSourceName: String) {
+    init(url: URL, customUserAgent: String?, requiredCookies: [String], cookieDomain: String?, mediaSourceId: String) {
         self.url = url
         self.customUserAgent = customUserAgent
         self.requiredCookies = requiredCookies
         self.cookieDomain = cookieDomain
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         super.init()
     }
 
@@ -94,7 +94,7 @@ class LoginWebViewModel: NSObject, ObservableObject, WKHTTPCookieStoreObserver {
                     NotificationCenter.default.post(
                         name: .mediaSourceLoginCompleted,
                         object: nil,
-                        userInfo: ["mediaSourceName": self.mediaSourceName]
+                        userInfo: ["mediaSourceId": self.mediaSourceId]
                     )
                     self.dismiss()
                 }

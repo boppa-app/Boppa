@@ -69,15 +69,15 @@ class LibraryViewModel {
         )
 
         let tracklists = (try? modelContext.fetch(descriptor)) ?? []
-        let visibleSourceNames = Set(self.filteredSources.map(\.name))
-        let sourcesByName = Dictionary(uniqueKeysWithValues: self.mediaSources.map { ($0.name, $0) })
+        let visibleSourceIds = Set(self.filteredSources.map(\.id))
+        let mediaSourcesById = Dictionary(uniqueKeysWithValues: self.mediaSources.map { ($0.id, $0) })
 
         return tracklists
-            .filter { visibleSourceNames.contains($0.mediaSourceName) }
+            .filter { visibleSourceIds.contains($0.mediaSourceId) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             .compactMap { tracklist in
-                guard let source = sourcesByName[tracklist.mediaSourceName] else { return nil }
-                return (tracklist, source)
+                guard let mediaSource = mediaSourcesById[tracklist.mediaSourceId] else { return nil }
+                return (tracklist, mediaSource)
             }
     }
 

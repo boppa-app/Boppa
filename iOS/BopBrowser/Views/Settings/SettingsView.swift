@@ -10,7 +10,7 @@ struct SettingsView: View {
     @State private var showDataCleared = false
     @State private var showClearConfirmation = false
     @State private var isEditing = false
-    @State private var selectedSource: MediaSource?
+    @State private var selectedMediaSource: MediaSource?
     @State private var computedGridHeight: CGFloat = 100
     @State private var showDeleteConfirmation = false
     @State private var pendingDeleteIndex: Int?
@@ -101,23 +101,23 @@ struct SettingsView: View {
 
     private var mediaSourcesGrid: some View {
         MediaSourceGridView(
-            sources: Array(self.mediaSources),
+            mediaSources: Array(self.mediaSources),
             isEditing: self.isEditing,
             onReorder: self.moveMediaSource,
             onAdd: { self.showingAddSheet = true },
             onDragStateChanged: { isDragging in
                 self.isDraggingSource = isDragging
             }
-        ) { source in
+        ) { mediaSource in
             Button {
                 if !self.isEditing {
-                    self.selectedSource = source
+                    self.selectedMediaSource = mediaSource
                 }
             } label: {
                 MediaSourceIcon(
-                    source: source,
+                    mediaSource: mediaSource,
                     onDelete: self.isEditing ? {
-                        if let index = self.mediaSources.firstIndex(where: { $0.persistentModelID == source.persistentModelID }) {
+                        if let index = self.mediaSources.firstIndex(where: { $0.persistentModelID == mediaSource.persistentModelID }) {
                             self.confirmDeleteMediaSource(at: index)
                         }
                     } : nil,
@@ -143,8 +143,8 @@ struct SettingsView: View {
             }
         )
         .frame(height: self.computedGridHeight)
-        .navigationDestination(item: self.$selectedSource) { source in
-            MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(source: source, modelContext: self.modelContext))
+        .navigationDestination(item: self.$selectedMediaSource) { mediaSource in
+            MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource, modelContext: self.modelContext))
         }
     }
 
@@ -165,18 +165,18 @@ struct SettingsView: View {
 
     private func deleteMediaSource(at index: Int) {
         let mediaSource = self.mediaSources[index]
-        let deletedNames = [mediaSource.name]
+        let deletedIds = [mediaSource.id]
         withAnimation(.easeInOut(duration: 0.55)) {
             self.modelContext.delete(mediaSource)
             try? self.modelContext.save()
         }
-        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["names": deletedNames])
+        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["ids": deletedIds])
     }
 
     private func recomputeGridHeight(for width: CGFloat) {
         self.computedGridHeight = MediaSourceGridLayout.gridHeight(
             for: width,
-            sourceCount: self.mediaSources.count,
+            mediaSourceCount: self.mediaSources.count,
             isEditing: self.isEditing
         )
     }

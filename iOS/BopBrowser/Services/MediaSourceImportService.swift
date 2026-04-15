@@ -22,7 +22,7 @@ class MediaSourceImportService {
 
     func fetchMediaSources(configProviderUrl: String, mediaSourceUrl: String) async throws -> [MediaSource] {
         guard let url = buildConfigURL(configProviderUrl: configProviderUrl, mediaSourceUrl: mediaSourceUrl) else {
-            self.logger.error("Invalid config URL for provider: \(configProviderUrl), source: \(mediaSourceUrl)")
+            self.logger.error("Invalid config URL for provider: \(configProviderUrl), mediaSource: \(mediaSourceUrl)")
             throw MediaSourceImportError.invalidURL
         }
 

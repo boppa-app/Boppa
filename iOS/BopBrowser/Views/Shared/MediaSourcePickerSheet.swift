@@ -1,19 +1,19 @@
 import SwiftData
 import SwiftUI
 
-enum SourcePickerMode {
+enum MediaSourcePickerMode {
     case single(selectedID: PersistentIdentifier?, onSelect: (MediaSource) -> Void)
     case multi(selectedIDs: Binding<Set<PersistentIdentifier>>)
 }
 
-struct SourcePickerSheet: View {
-    let sources: [MediaSource]
-    let mode: SourcePickerMode
+struct MediaSourcePickerSheet: View {
+    let mediaSources: [MediaSource]
+    let mediaSourcePickerMode: MediaSourcePickerMode
 
     @State private var gridPadding: CGFloat = 0
 
     private var title: String {
-        switch self.mode {
+        switch self.mediaSourcePickerMode {
         case .single: return "Select Source"
         case .multi: return "Filter Sources"
         }
@@ -25,8 +25,8 @@ struct SourcePickerSheet: View {
                 let pad = MediaSourceGridLayout.sidePadding(for: geometry.size.width)
 
                 ScrollView {
-                    MediaSourceGridView(sources: self.sources.sorted(by: { $0.order < $1.order })) { source in
-                        self.sourceButton(source)
+                    MediaSourceGridView(mediaSources: self.mediaSources.sorted(by: { $0.order < $1.order })) { mediaSources in
+                        self.mediaSourceButton(mediaSources)
                     }
                     .padding(.top, -pad + 16)
                     .padding(.bottom, -pad)
@@ -41,29 +41,29 @@ struct SourcePickerSheet: View {
         }
     }
 
-    private func isSelected(_ source: MediaSource) -> Bool {
-        switch self.mode {
+    private func isSelected(_ mediaSource: MediaSource) -> Bool {
+        switch self.mediaSourcePickerMode {
         case let .single(selectedID, _):
-            return source.persistentModelID == selectedID
+            return mediaSource.persistentModelID == selectedID
         case let .multi(selectedIDs):
-            return selectedIDs.wrappedValue.contains(source.persistentModelID)
+            return selectedIDs.wrappedValue.contains(mediaSource.persistentModelID)
         }
     }
 
-    private func sourceButton(_ source: MediaSource) -> some View {
+    private func mediaSourceButton(_ mediaSource: MediaSource) -> some View {
         Button {
-            switch self.mode {
+            switch self.mediaSourcePickerMode {
             case let .single(_, onSelect):
-                onSelect(source)
+                onSelect(mediaSource)
             case let .multi(selectedIDs):
-                if selectedIDs.wrappedValue.contains(source.persistentModelID) {
-                    selectedIDs.wrappedValue.remove(source.persistentModelID)
+                if selectedIDs.wrappedValue.contains(mediaSource.persistentModelID) {
+                    selectedIDs.wrappedValue.remove(mediaSource.persistentModelID)
                 } else {
-                    selectedIDs.wrappedValue.insert(source.persistentModelID)
+                    selectedIDs.wrappedValue.insert(mediaSource.persistentModelID)
                 }
             }
         } label: {
-            MediaSourceIcon(source: source, isSelected: self.isSelected(source))
+            MediaSourceIcon(mediaSource: mediaSource, isSelected: self.isSelected(mediaSource))
         }
         .buttonStyle(.plain)
     }

@@ -36,7 +36,7 @@ class SearchService {
             mediaSourceContext: mediaSource.contextValues
         )
 
-        return self.buildResponse(page: page, category: category, mediaSourceName: config.name)
+        return self.buildResponse(page: page, category: category, mediaSourceId: config.id)
     }
 
     @MainActor
@@ -64,22 +64,22 @@ class SearchService {
             mediaSourceContext: mediaSource.contextValues
         )
 
-        return self.buildResponse(page: page, category: category, mediaSourceName: config.name)
+        return self.buildResponse(page: page, category: category, mediaSourceId: config.id)
     }
 
-    private func buildResponse(page: PageResult, category: SearchCategory, mediaSourceName: String) -> SearchResponse {
+    private func buildResponse(page: PageResult, category: SearchCategory, mediaSourceId: String) -> SearchResponse {
         let result: SearchResult
         switch category {
         case .songs:
-            result = .songs(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) })
+            result = .songs(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) })
         case .videos:
-            result = .videos(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceName: mediaSourceName) })
+            result = .videos(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) })
         case .albums:
-            result = .albums(page.items.compactMap { self.paginated.mapToAlbum($0, mediaSourceName: mediaSourceName) })
+            result = .albums(page.items.compactMap { self.paginated.mapToAlbum($0, mediaSourceId: mediaSourceId) })
         case .artists:
-            result = .artists(page.items.compactMap { self.paginated.mapToArtist($0, mediaSourceName: mediaSourceName) })
+            result = .artists(page.items.compactMap { self.paginated.mapToArtist($0, mediaSourceId: mediaSourceId) })
         case .playlists:
-            result = .playlists(page.items.compactMap { self.paginated.mapToPlaylist($0, mediaSourceName: mediaSourceName) })
+            result = .playlists(page.items.compactMap { self.paginated.mapToPlaylist($0, mediaSourceId: mediaSourceId) })
         }
 
         return SearchResponse(result: result, paginationContext: page.paginationContext)

@@ -20,10 +20,10 @@ enum MediaSourceGridLayout {
         return (width - totalIconsWidth) / 2
     }
 
-    static func gridHeight(for width: CGFloat, sourceCount: Int, isEditing: Bool = false) -> CGFloat {
+    static func gridHeight(for width: CGFloat, mediaSourceCount: Int, isEditing: Bool = false) -> CGFloat {
         let sidePad = self.sidePadding(for: width)
         let cols = self.columnsForWidth(width)
-        let itemCount = isEditing ? sourceCount + 1 : sourceCount
+        let itemCount = isEditing ? mediaSourceCount + 1 : mediaSourceCount
         let rowCount = ceil(Double(itemCount) / Double(cols))
         let contentHeight = CGFloat(rowCount) * self.iconSize + CGFloat(max(rowCount - 1, 0)) * self.gridSpacing
         let editingExtra: CGFloat = isEditing ? self.hintTextHeight : 0
@@ -40,7 +40,7 @@ enum MediaSourceGridLayout {
 }
 
 struct MediaSourceGridView<Content: View>: View {
-    let sources: [MediaSource]
+    let mediaSources: [MediaSource]
     var isEditing: Bool = false
     var onReorder: ((_ from: Int, _ to: Int) -> Void)?
     var onAdd: (() -> Void)?
@@ -61,12 +61,12 @@ struct MediaSourceGridView<Content: View>: View {
             let sidePad = Layout.sidePadding(for: geometry.size.width)
 
             ZStack(alignment: .topLeading) {
-                ForEach(Array(self.sources.enumerated()), id: \.element.id) { index, source in
-                    self.sourceItemView(source, at: index, cols: cols, sidePad: sidePad, geometrySize: geometry.size)
+                ForEach(Array(self.mediaSources.enumerated()), id: \.element.id) { index, mediaSource in
+                    self.mediaSourceItemView(mediaSource, at: index, cols: cols, sidePad: sidePad, geometrySize: geometry.size)
                 }
 
                 if self.isEditing, self.onAdd != nil {
-                    let addPos = Layout.positionForIndex(self.sources.count, cols: cols)
+                    let addPos = Layout.positionForIndex(self.mediaSources.count, cols: cols)
                     self.addButtonView
                         .frame(width: Layout.iconSize, height: Layout.iconSize)
                         .position(addPos)
@@ -92,18 +92,18 @@ struct MediaSourceGridView<Content: View>: View {
         }
     }
 
-    private func sourceItemView(
-        _ source: MediaSource,
+    private func mediaSourceItemView(
+        _ mediaSource: MediaSource,
         at index: Int,
         cols: Int,
         sidePad: CGFloat,
         geometrySize: CGSize
     ) -> some View {
         let gridPos = Layout.positionForIndex(index, cols: cols)
-        let isDragging = self.draggingID == source.persistentModelID
+        let isDragging = self.draggingID == mediaSource.persistentModelID
         let anyDragging = self.draggingID != nil
 
-        return self.content(source)
+        return self.content(mediaSource)
             .frame(width: Layout.iconSize, height: Layout.iconSize)
             .contentShape(Rectangle())
             .scaleEffect(isDragging ? 1.15 : 1.0, anchor: .center)
@@ -117,7 +117,7 @@ struct MediaSourceGridView<Content: View>: View {
             .applyIf(self.isEditing) { view in
                 view.simultaneousGesture(
                     self.reorderDragGesture(
-                        for: source,
+                        for: mediaSource,
                         at: index,
                         cols: cols,
                         sidePad: sidePad,
@@ -145,7 +145,7 @@ struct MediaSourceGridView<Content: View>: View {
     }
 
     private func reorderDragGesture(
-        for source: MediaSource,
+        for mediaSource: MediaSource,
         at index: Int,
         cols: Int,
         sidePad: CGFloat,
@@ -153,7 +153,7 @@ struct MediaSourceGridView<Content: View>: View {
     ) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named("mediaSourceGrid"))
             .onChanged { drag in
-                self.handleDragChanged(drag, source: source, index: index, cols: cols, sidePad: sidePad, geometrySize: geometrySize)
+                self.handleDragChanged(drag, mediaSource: mediaSource, index: index, cols: cols, sidePad: sidePad, geometrySize: geometrySize)
             }
             .onEnded { _ in
                 self.handleDragEnded(cols: cols)
@@ -162,7 +162,7 @@ struct MediaSourceGridView<Content: View>: View {
 
     private func handleDragChanged(
         _ drag: DragGesture.Value,
-        source: MediaSource,
+        mediaSource: MediaSource,
         index: Int,
         cols: Int,
         sidePad: CGFloat,
@@ -171,7 +171,7 @@ struct MediaSourceGridView<Content: View>: View {
         if self.draggingID == nil, self.holdTimer == nil, !self.isReturningToSlot {
             let timer = DispatchWorkItem {
                 withAnimation(.easeInOut(duration: 0.15)) {
-                    self.draggingID = source.persistentModelID
+                    self.draggingID = mediaSource.persistentModelID
                     self.dragPosition = Layout.positionForIndex(index, cols: cols)
                 }
                 self.onDragStateChanged?(true)
@@ -189,7 +189,7 @@ struct MediaSourceGridView<Content: View>: View {
         self.dragPosition = self.clampedPosition(rawPos, gridSize: geometrySize, sidePad: sidePad)
 
         if let currentIdx = self.currentDragIndex(),
-           let targetIndex = self.indexForPosition(self.dragPosition, cols: cols, totalCount: self.sources.count),
+           let targetIndex = self.indexForPosition(self.dragPosition, cols: cols, totalCount: self.mediaSources.count),
            targetIndex != currentIdx
         {
             self.onReorder?(currentIdx, targetIndex)
@@ -224,7 +224,7 @@ struct MediaSourceGridView<Content: View>: View {
 
     private func currentDragIndex() -> Int? {
         guard let id = self.draggingID else { return nil }
-        return self.sources.firstIndex(where: { $0.persistentModelID == id })
+        return self.mediaSources.firstIndex(where: { $0.persistentModelID == id })
     }
 
     private func indexForPosition(_ point: CGPoint, cols: Int, totalCount: Int) -> Int? {

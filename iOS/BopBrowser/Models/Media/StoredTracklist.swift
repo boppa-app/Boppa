@@ -37,7 +37,7 @@ final class StoredTracklist {
     var id: String
     var name: String
     var subtitle: String?
-    var mediaSourceName: String
+    var mediaSourceId: String
     var artworkUrl: String?
     var tracklistType: String
     var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
@@ -62,7 +62,7 @@ final class StoredTracklist {
         id: String,
         name: String,
         subtitle: String? = nil,
-        mediaSourceName: String,
+        mediaSourceId: String,
         artworkUrl: String? = nil,
         tracklistType: String,
         metadata: [String: Any] = [:]
@@ -70,7 +70,7 @@ final class StoredTracklist {
         self.id = id
         self.name = name
         self.subtitle = subtitle
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.artworkUrl = artworkUrl
         self.tracklistType = tracklistType
         self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()

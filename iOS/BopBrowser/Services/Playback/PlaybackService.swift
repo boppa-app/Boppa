@@ -78,8 +78,8 @@ final class PlaybackService {
 
     func next() {
         guard let nextTrack = self.queueManager.advanceToNext() else { return }
-        if let source = self.mediaSource {
-            self.playTrack(nextTrack, mediaSource: source)
+        if let mediaSource = self.mediaSource {
+            self.playTrack(nextTrack, mediaSource: mediaSource)
         }
     }
 
@@ -89,8 +89,8 @@ final class PlaybackService {
             self.seek(to: 0)
         } else {
             guard let prevTrack = self.queueManager.rewindToPrevious() else { return }
-            if let source = self.mediaSource {
-                self.playTrack(prevTrack, mediaSource: source)
+            if let mediaSource = self.mediaSource {
+                self.playTrack(prevTrack, mediaSource: mediaSource)
             }
         }
     }
@@ -157,23 +157,23 @@ final class PlaybackService {
         ) { [weak self] notification in
             Task { @MainActor [weak self] in
                 guard let self,
-                      let names = notification.userInfo?["names"] as? [String]
+                      let ids = notification.userInfo?["ids"] as? [String]
                 else { return }
-                self.handleMediaSourceRemoved(names: names)
+                self.handleMediaSourceRemoved(ids: ids)
             }
         }
     }
 
-    private func handleMediaSourceRemoved(names: [String]) {
-        if let currentSource = self.mediaSource, names.contains(currentSource.name) {
+    private func handleMediaSourceRemoved(ids: [String]) {
+        if let currentMediaSource = self.mediaSource, ids.contains(currentMediaSource.id) {
             self.stop()
-            logger.info("Stopped playback: media source '\(currentSource.name)' was removed")
+            logger.info("Stopped playback: media source '\(currentMediaSource.id)' was removed")
             return
         }
 
-        for name in names {
-            self.queueManager.removeTracks(forMediaSource: name)
-            logger.info("Removed queued tracks for deleted media source: \(name)")
+        for id in ids {
+            self.queueManager.removeTracks(forMediaSource: id)
+            logger.info("Removed queued tracks for deleted media source: \(id)")
         }
     }
 

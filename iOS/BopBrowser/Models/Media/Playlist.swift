@@ -2,7 +2,7 @@ import Foundation
 
 struct Playlist: Identifiable, Equatable {
     let id: String
-    let mediaSourceName: String
+    let mediaSourceId: String
     let title: String
     let user: String?
     let trackCount: Int?
@@ -12,7 +12,7 @@ struct Playlist: Identifiable, Equatable {
 
     init(
         id: String,
-        mediaSourceName: String,
+        mediaSourceId: String,
         title: String,
         user: String? = nil,
         trackCount: Int? = nil,
@@ -21,7 +21,7 @@ struct Playlist: Identifiable, Equatable {
         metadata: [String: Any] = [:]
     ) {
         self.id = id
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.title = title
         self.user = user
         self.trackCount = trackCount
@@ -32,7 +32,7 @@ struct Playlist: Identifiable, Equatable {
 
     static func == (lhs: Playlist, rhs: Playlist) -> Bool {
         lhs.id == rhs.id
-            && lhs.mediaSourceName == rhs.mediaSourceName
+            && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.title == rhs.title
             && lhs.user == rhs.user
             && lhs.trackCount == rhs.trackCount

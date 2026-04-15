@@ -3,7 +3,7 @@ import Foundation
 struct Tracklist {
     let name: String
     let artist: Artist?
-    let mediaSourceName: String?
+    let mediaSourceId: String?
     let artworkUrl: String?
     let tracklistType: TracklistType
     let storedTracklist: StoredTracklist?
@@ -32,8 +32,8 @@ struct Tracklist {
     init(storedTracklist: StoredTracklist) {
         self.name = storedTracklist.name
         self.artist = nil
-        let sourceName = storedTracklist.mediaSourceName
-        self.mediaSourceName = sourceName.isEmpty ? nil : sourceName
+        let mediaSourceId = storedTracklist.mediaSourceId
+        self.mediaSourceId = mediaSourceId.isEmpty ? nil : mediaSourceId
         self.artworkUrl = storedTracklist.artworkUrl
         self.storedTracklist = storedTracklist
 
@@ -41,7 +41,7 @@ struct Tracklist {
         case "album":
             self.tracklistType = .album(Album(
                 id: storedTracklist.id,
-                mediaSourceName: sourceName,
+                mediaSourceId: mediaSourceId,
                 title: storedTracklist.name,
                 subtitle: storedTracklist.subtitle,
                 artworkUrl: storedTracklist.artworkUrl,
@@ -50,7 +50,7 @@ struct Tracklist {
         default:
             self.tracklistType = .playlist(Playlist(
                 id: storedTracklist.id,
-                mediaSourceName: sourceName,
+                mediaSourceId: mediaSourceId,
                 title: storedTracklist.name,
                 user: storedTracklist.subtitle,
                 artworkUrl: storedTracklist.artworkUrl,
@@ -59,27 +59,27 @@ struct Tracklist {
         }
     }
 
-    init(album: Album, mediaSourceName: String, storedTracklist: StoredTracklist? = nil) {
+    init(album: Album, mediaSourceId: String, storedTracklist: StoredTracklist? = nil) {
         self.name = album.title
         self.artist = nil
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.artworkUrl = album.artworkUrl
         self.tracklistType = .album(album)
         self.storedTracklist = storedTracklist
     }
 
-    init(playlist: Playlist, mediaSourceName: String, storedTracklist: StoredTracklist? = nil) {
+    init(playlist: Playlist, mediaSourceId: String, storedTracklist: StoredTracklist? = nil) {
         self.name = playlist.title
         self.artist = nil
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.artworkUrl = playlist.artworkUrl
         self.tracklistType = .playlist(playlist)
         self.storedTracklist = storedTracklist
     }
 
-    init(artist: Artist, type: TracklistType, mediaSourceName: String) {
+    init(artist: Artist, type: TracklistType, mediaSourceId: String) {
         self.artist = artist
-        self.mediaSourceName = mediaSourceName
+        self.mediaSourceId = mediaSourceId
         self.artworkUrl = artist.artworkUrl
         self.storedTracklist = nil
         self.tracklistType = type

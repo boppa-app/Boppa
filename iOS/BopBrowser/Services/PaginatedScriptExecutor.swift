@@ -40,7 +40,7 @@ class PaginatedScriptExecutor {
         params: [String: Any],
         customUserAgent: String?,
         domain: String,
-        mediaSourceName: String,
+        mediaSourceId: String,
         mediaSourceContext: [String: String] = [:],
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> [Track] {
@@ -57,7 +57,7 @@ class PaginatedScriptExecutor {
                 mediaSourceContext: mediaSourceContext
             )
 
-            let tracks = page.items.compactMap { self.mapToTrack($0, mediaSourceName: mediaSourceName) }
+            let tracks = page.items.compactMap { self.mapToTrack($0, mediaSourceId: mediaSourceId) }
             allTracks.append(contentsOf: tracks)
 
             logger.info("Fetched page with \(tracks.count) track(s), total: \(allTracks.count)")
@@ -104,7 +104,7 @@ class PaginatedScriptExecutor {
         return PageResult(items: items, paginationContext: paginationContext)
     }
 
-    func mapToTrack(_ item: [String: Any], mediaSourceName: String) -> Track? {
+    func mapToTrack(_ item: [String: Any], mediaSourceId: String) -> Track? {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
@@ -115,7 +115,7 @@ class PaginatedScriptExecutor {
                 guard let artistId = self.resolveString(data["id"]) else { continue }
                 artists[name] = Artist(
                     id: artistId,
-                    mediaSourceName: mediaSourceName,
+                    mediaSourceId: mediaSourceId,
                     name: name,
                     artworkUrl: data["artworkUrl"] as? String,
                     metadata: data["metadata"] as? [String: Any] ?? [:]
@@ -129,7 +129,7 @@ class PaginatedScriptExecutor {
                 guard let albumId = self.resolveString(data["id"]) else { continue }
                 albums[name] = Album(
                     id: albumId,
-                    mediaSourceName: mediaSourceName,
+                    mediaSourceId: mediaSourceId,
                     title: name,
                     subtitle: data["subtitle"] as? String,
                     artworkUrl: data["artworkUrl"] as? String,
@@ -140,7 +140,7 @@ class PaginatedScriptExecutor {
 
         return Track(
             id: id,
-            mediaSourceName: mediaSourceName,
+            mediaSourceId: mediaSourceId,
             title: title,
             subtitle: item["subtitle"] as? String,
             duration: self.resolveInt(item["duration"]),
@@ -152,13 +152,13 @@ class PaginatedScriptExecutor {
         )
     }
 
-    func mapToAlbum(_ item: [String: Any], mediaSourceName: String) -> Album? {
+    func mapToAlbum(_ item: [String: Any], mediaSourceId: String) -> Album? {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
         return Album(
             id: id,
-            mediaSourceName: mediaSourceName,
+            mediaSourceId: mediaSourceId,
             title: title,
             subtitle: item["subtitle"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
@@ -168,13 +168,13 @@ class PaginatedScriptExecutor {
         )
     }
 
-    func mapToArtist(_ item: [String: Any], mediaSourceName: String) -> Artist? {
+    func mapToArtist(_ item: [String: Any], mediaSourceId: String) -> Artist? {
         guard let name = (item["name"] as? String),
               let id = self.resolveString(item["id"])
         else { return nil }
         return Artist(
             id: id,
-            mediaSourceName: mediaSourceName,
+            mediaSourceId: mediaSourceId,
             name: name,
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
@@ -182,13 +182,13 @@ class PaginatedScriptExecutor {
         )
     }
 
-    func mapToPlaylist(_ item: [String: Any], mediaSourceName: String) -> Playlist? {
+    func mapToPlaylist(_ item: [String: Any], mediaSourceId: String) -> Playlist? {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
         return Playlist(
             id: id,
-            mediaSourceName: mediaSourceName,
+            mediaSourceId: mediaSourceId,
             title: title,
             user: item["user"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),

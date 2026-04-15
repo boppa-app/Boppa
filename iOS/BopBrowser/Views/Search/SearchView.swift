@@ -50,8 +50,8 @@ struct SearchView: View {
                 self.viewModel.loadSources(modelContext: self.modelContext)
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
-                let removedNames = notification.userInfo?["names"] as? [String] ?? []
-                if let selected = self.viewModel.selectedSource, removedNames.contains(selected.name) {
+                let removedIds = notification.userInfo?["ids"] as? [String] ?? []
+                if let selected = self.viewModel.selectedMediaSource, removedIds.contains(selected.id) {
                     self.viewModel.clearSearch()
                 }
                 self.viewModel.loadSources(modelContext: self.modelContext)
@@ -204,12 +204,12 @@ struct SearchView: View {
                     }
                 case let .albums(albums):
                     ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
-                        if let source = self.viewModel.selectedSource,
-                           source.config.data?.getAlbum != nil
+                        if let mediaSource = self.viewModel.selectedMediaSource,
+                           mediaSource.config.data?.getAlbum != nil
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                                    tracklist: Tracklist(album: album, mediaSourceId: mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                                 )
                             } label: {
                                 AlbumRow(album: album)
@@ -230,13 +230,13 @@ struct SearchView: View {
                     }
                 case let .artists(artists):
                     ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
-                        if let source = self.viewModel.selectedSource,
-                           source.config.data?.getArtist != nil
+                        if let mediaSource = self.viewModel.selectedMediaSource,
+                           mediaSource.config.data?.getArtist != nil
                         {
                             NavigationLink {
                                 ArtistDetailView(
                                     artist: artist,
-                                    source: source
+                                    mediaSource: mediaSource
                                 )
                             } label: {
                                 ArtistRow(artist: artist)
@@ -257,12 +257,12 @@ struct SearchView: View {
                     }
                 case let .playlists(playlists):
                     ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
-                        if let source = self.viewModel.selectedSource,
-                           source.config.data?.getPlaylist != nil
+                        if let mediaSource = self.viewModel.selectedMediaSource,
+                           mediaSource.config.data?.getPlaylist != nil
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(playlist: playlist, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
+                                    tracklist: Tracklist(playlist: playlist, mediaSourceId: mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
                                 )
                             } label: {
                                 PlaylistRow(playlist: playlist)
@@ -300,10 +300,10 @@ struct SearchView: View {
             .scrollDismissesKeyboard(.immediately)
         }
         .sheet(item: self.$trackForActions) { track in
-            if let source = self.viewModel.selectedSource {
+            if let mediaSource = self.viewModel.selectedMediaSource {
                 TrackActionsSheet(
                     track: track,
-                    source: source,
+                    mediaSource: mediaSource,
                     onArtistSelected: { artist in self.pendingArtist = artist },
                     onAlbumSelected: { album in self.pendingAlbum = album }
                 )
@@ -313,22 +313,22 @@ struct SearchView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let source = self.viewModel.selectedSource {
-                ArtistDetailView(artist: artist, source: source)
+            if let mediaSource = self.viewModel.selectedMediaSource {
+                ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
         .navigationDestination(item: self.$pendingAlbum) { album in
-            if let source = self.viewModel.selectedSource {
+            if let mediaSource = self.viewModel.selectedMediaSource {
                 TracklistView(
-                    tracklist: Tracklist(album: album, mediaSourceName: source.name, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                    tracklist: Tracklist(album: album, mediaSourceId: mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
                 )
             }
         }
     }
 
     private func playTrack(_ track: Track, from tracks: [Track]) {
-        guard let source = self.viewModel.selectedSource else { return }
-        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: source)
+        guard let mediaSource = self.viewModel.selectedMediaSource else { return }
+        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: mediaSource)
     }
 }
 
