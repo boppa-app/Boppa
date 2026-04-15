@@ -33,7 +33,7 @@ class TracklistViewModel {
     }
 
     var canRefresh: Bool {
-        self.tracklist.isPersisted && self.tracklist.mediaSourceId != nil
+        self.tracklist.isPersisted
     }
 
     func load(modelContext: ModelContext) {
@@ -41,15 +41,13 @@ class TracklistViewModel {
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 
-        if self.tracks.isEmpty, self.tracklist.mediaSourceId != nil {
+        if self.tracks.isEmpty {
             self.fetchFirstPage(modelContext: modelContext)
         }
     }
 
     func refresh(modelContext: ModelContext) {
-        guard self.tracklist.isPersisted,
-              self.tracklist.mediaSourceId != nil
-        else { return }
+        guard self.tracklist.isPersisted else { return }
         self.isRefreshing = true
 
         Task {
@@ -67,11 +65,11 @@ class TracklistViewModel {
 
                 self.isRefreshing = false
 
-                logger.info("Refreshed tracklist '\(self.tracklist.name)' with \(self.tracks.count) track(s)")
+                logger.info("Refreshed tracklist '\(self.tracklist.title)' with \(self.tracks.count) track(s)")
             } catch {
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Refresh failed for '\(self.tracklist.name)': \(error.localizedDescription)")
+                logger.error("Refresh failed for '\(self.tracklist.title)': \(error.localizedDescription)")
             }
         }
     }
@@ -135,22 +133,20 @@ class TracklistViewModel {
                 self.isLoading = false
                 self.isRefreshing = false
 
-                logger.info("Loaded \(self.tracks.count) track(s) for '\(self.tracklist.name)'")
+                logger.info("Loaded \(self.tracks.count) track(s) for '\(self.tracklist.title)'")
             } catch {
                 guard !Task.isCancelled else { return }
 
                 self.isLoading = false
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch failed for '\(self.tracklist.name)': \(error.localizedDescription)")
+                logger.error("Fetch failed for '\(self.tracklist.title)': \(error.localizedDescription)")
             }
         }
     }
 
     func saveToLibrary(modelContext: ModelContext) {
-        guard !self.isSaving,
-              self.tracklist.mediaSourceId != nil
-        else { return }
+        guard !self.isSaving else { return }
         self.isSaving = true
 
         Task {
@@ -169,11 +165,11 @@ class TracklistViewModel {
                 self.tracklist = Tracklist(storedTracklist: stored)
                 self.isSaving = false
 
-                logger.info("Saved tracklist '\(self.tracklist.name)' to library")
+                logger.info("Saved tracklist '\(self.tracklist.title)' to library")
             } catch {
                 self.isSaving = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Failed to save tracklist '\(self.tracklist.name)': \(error.localizedDescription)")
+                logger.error("Failed to save tracklist '\(self.tracklist.title)': \(error.localizedDescription)")
             }
         }
     }
@@ -181,7 +177,7 @@ class TracklistViewModel {
     func deleteFromLibrary(modelContext: ModelContext) {
         guard let stored = self.tracklist.storedTracklist else { return }
         TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
-        logger.info("Deleted tracklist '\(self.tracklist.name)' from library")
+        logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
     }
 
     func loadNextPage(modelContext: ModelContext) {

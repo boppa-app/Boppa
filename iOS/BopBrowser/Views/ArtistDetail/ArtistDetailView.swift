@@ -6,7 +6,7 @@ struct ArtistDetailView: View {
     @State private var viewModel = ArtistDetailViewModel()
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
-    @State private var pendingAlbum: Album?
+    @State private var pendingTracklist: Tracklist?
 
     let artist: Artist
     let mediaSource: MediaSource
@@ -37,7 +37,7 @@ struct ArtistDetailView: View {
                 track: track,
                 mediaSource: self.mediaSource,
                 onArtistSelected: { artist in self.pendingArtist = artist },
-                onAlbumSelected: { album in self.pendingAlbum = album }
+                onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
@@ -46,9 +46,18 @@ struct ArtistDetailView: View {
         .navigationDestination(item: self.$pendingArtist) { artist in
             ArtistDetailView(artist: artist, mediaSource: self.mediaSource)
         }
-        .navigationDestination(item: self.$pendingAlbum) { album in
+        .navigationDestination(item: self.$pendingTracklist) { tracklist in
             TracklistView(
-                tracklist: Tracklist(album: album, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                tracklist: Tracklist(
+                    id: tracklist.id,
+                    mediaSourceId: self.mediaSource.id,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
+                    metadata: tracklist.metadata,
+                    tracklistType: tracklist.tracklistType,
+                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                )
             )
         }
     }
@@ -107,14 +116,23 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
+            ForEach(Array(albums.enumerated()), id: \.element.id) { index, tracklist in
                 if self.mediaSource.config.data?.getAlbum != nil {
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(album: album, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                            tracklist: Tracklist(
+                                id: tracklist.id,
+                                mediaSourceId: self.mediaSource.id,
+                                title: tracklist.title,
+                                subtitle: tracklist.subtitle,
+                                artworkUrl: tracklist.artworkUrl,
+                                metadata: tracklist.metadata,
+                                tracklistType: .album,
+                                storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                            )
                         )
                     } label: {
-                        AlbumRow(album: album)
+                        TracklistRow(tracklist: tracklist)
                             .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                     }
                     .buttonStyle(.plain)
@@ -123,7 +141,7 @@ struct ArtistDetailView: View {
                     .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
                     .padding(.trailing, 16)
                 } else {
-                    AlbumRow(album: album)
+                    TracklistRow(tracklist: tracklist)
                         .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -191,14 +209,23 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
+            ForEach(Array(playlists.enumerated()), id: \.element.id) { index, tracklist in
                 if self.mediaSource.config.data?.getPlaylist != nil {
                     NavigationLink {
                         TracklistView(
-                            tracklist: Tracklist(playlist: playlist, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
+                            tracklist: Tracklist(
+                                id: tracklist.id,
+                                mediaSourceId: self.mediaSource.id,
+                                title: tracklist.title,
+                                subtitle: tracklist.subtitle,
+                                artworkUrl: tracklist.artworkUrl,
+                                metadata: tracklist.metadata,
+                                tracklistType: .playlist,
+                                storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                            )
                         )
                     } label: {
-                        PlaylistRow(playlist: playlist)
+                        TracklistRow(tracklist: tracklist)
                             .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                     }
                     .buttonStyle(.plain)
@@ -207,7 +234,7 @@ struct ArtistDetailView: View {
                     .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
                     .padding(.trailing, 16)
                 } else {
-                    PlaylistRow(playlist: playlist)
+                    TracklistRow(tracklist: tracklist)
                         .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -241,9 +268,13 @@ struct ArtistDetailView: View {
 
     private func songsSectionHeader(_ detail: ArtistDetail) -> some View {
         let tracklist = Tracklist(
+            id: "\(self.artist.id)-songs",
+            mediaSourceId: self.mediaSource.id,
+            title: "Songs",
+            artworkUrl: self.artist.artworkUrl,
+            tracklistType: .artistSongs,
             artist: self.artist,
-            type: .artistSongs(self.artist, detail),
-            mediaSourceId: self.mediaSource.id
+            artistDetail: detail
         )
         return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
             .background(
@@ -256,9 +287,13 @@ struct ArtistDetailView: View {
 
     private func videosSectionHeader(_ detail: ArtistDetail) -> some View {
         let tracklist = Tracklist(
+            id: "\(self.artist.id)-videos",
+            mediaSourceId: self.mediaSource.id,
+            title: "Videos",
+            artworkUrl: self.artist.artworkUrl,
+            tracklistType: .artistVideos,
             artist: self.artist,
-            type: .artistVideos(self.artist, detail),
-            mediaSourceId: self.mediaSource.id
+            artistDetail: detail
         )
         return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
             .background(

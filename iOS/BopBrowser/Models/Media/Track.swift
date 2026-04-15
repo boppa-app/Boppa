@@ -9,7 +9,7 @@ struct Track: Identifiable, Equatable {
     let artworkUrl: String?
     let url: String?
     let artists: [String: Artist]
-    let albums: [String: Album]
+    let albums: [String: Tracklist]
     let metadata: [String: Any]
 
     init(
@@ -21,7 +21,7 @@ struct Track: Identifiable, Equatable {
         artworkUrl: String? = nil,
         url: String? = nil,
         artists: [String: Artist] = [:],
-        albums: [String: Album] = [:],
+        albums: [String: Tracklist] = [:],
         metadata: [String: Any] = [:]
     ) {
         self.id = id

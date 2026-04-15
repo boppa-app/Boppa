@@ -10,7 +10,7 @@ struct TracklistView: View {
     @State private var showSortSheet = false
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
-    @State private var pendingAlbum: Album?
+    @State private var pendingTracklist: Tracklist?
 
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -32,7 +32,7 @@ struct TracklistView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeaderView(
-                title: self.viewModel.tracklist.name,
+                title: self.viewModel.tracklist.title,
                 highlightedTitle: self.viewModel.tracklist.artist?.name,
                 onBack: { self.dismiss() },
                 trailing: {
@@ -98,7 +98,7 @@ struct TracklistView: View {
                     track: track,
                     mediaSource: mediaSource,
                     onArtistSelected: { artist in self.pendingArtist = artist },
-                    onAlbumSelected: { album in self.pendingAlbum = album }
+                    onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
                 )
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
@@ -106,18 +106,23 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSourceId = self.viewModel.tracklist.mediaSourceId,
-               let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: mediaSourceId, modelContext: self.modelContext)
-            {
+            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId, modelContext: self.modelContext) {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
-        .navigationDestination(item: self.$pendingAlbum) { album in
-            if let mediaSourceId = self.viewModel.tracklist.mediaSourceId {
-                TracklistView(
-                    tracklist: Tracklist(album: album, mediaSourceId: mediaSourceId, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+        .navigationDestination(item: self.$pendingTracklist) { tracklist in
+            TracklistView(
+                tracklist: Tracklist(
+                    id: tracklist.id,
+                    mediaSourceId: tracklist.mediaSourceId,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
+                    metadata: tracklist.metadata,
+                    tracklistType: tracklist.tracklistType,
+                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
                 )
-            }
+            )
         }
     }
 

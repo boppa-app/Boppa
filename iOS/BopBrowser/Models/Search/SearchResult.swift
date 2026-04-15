@@ -3,9 +3,9 @@ import Foundation
 enum SearchResult {
     case songs([Track])
     case videos([Track])
-    case albums([Album])
+    case albums([Tracklist])
     case artists([Artist])
-    case playlists([Playlist])
+    case playlists([Tracklist])
 
     var isEmpty: Bool {
         self.count == 0

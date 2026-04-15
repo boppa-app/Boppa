@@ -123,17 +123,18 @@ class PaginatedScriptExecutor {
             }
         }
 
-        var albums: [String: Album] = [:]
+        var albums: [String: Tracklist] = [:]
         if let rawAlbums = item["albums"] as? [String: [String: Any]] {
             for (name, data) in rawAlbums {
                 guard let albumId = self.resolveString(data["id"]) else { continue }
-                albums[name] = Album(
+                albums[name] = Tracklist(
                     id: albumId,
                     mediaSourceId: mediaSourceId,
                     title: name,
                     subtitle: data["subtitle"] as? String,
                     artworkUrl: data["artworkUrl"] as? String,
-                    metadata: data["metadata"] as? [String: Any] ?? [:]
+                    metadata: data["metadata"] as? [String: Any] ?? [:],
+                    tracklistType: .album
                 )
             }
         }
@@ -152,19 +153,20 @@ class PaginatedScriptExecutor {
         )
     }
 
-    func mapToAlbum(_ item: [String: Any], mediaSourceId: String) -> Album? {
+    func mapToTracklist(_ item: [String: Any], mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist? {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
-        return Album(
+        return Tracklist(
             id: id,
             mediaSourceId: mediaSourceId,
             title: title,
-            subtitle: item["subtitle"] as? String,
+            subtitle: item["subtitle"] as? String ?? item["user"] as? String,
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            metadata: item["metadata"] as? [String: Any] ?? [:]
+            metadata: item["metadata"] as? [String: Any] ?? [:],
+            tracklistType: tracklistType
         )
     }
 
@@ -176,22 +178,6 @@ class PaginatedScriptExecutor {
             id: id,
             mediaSourceId: mediaSourceId,
             name: name,
-            artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String,
-            metadata: item["metadata"] as? [String: Any] ?? [:]
-        )
-    }
-
-    func mapToPlaylist(_ item: [String: Any], mediaSourceId: String) -> Playlist? {
-        guard let title = item["title"] as? String,
-              let id = self.resolveString(item["id"])
-        else { return nil }
-        return Playlist(
-            id: id,
-            mediaSourceId: mediaSourceId,
-            title: title,
-            user: item["user"] as? String,
-            trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
             metadata: item["metadata"] as? [String: Any] ?? [:]

@@ -43,20 +43,21 @@ final class StoredTrack {
         return result
     }
 
-    var albums: [String: Album] {
+    var albums: [String: Tracklist] {
         guard !self.albumsJSON.isEmpty,
               let raw = try? JSONSerialization.jsonObject(with: self.albumsJSON) as? [String: [String: Any]]
         else { return [:] }
-        var result: [String: Album] = [:]
+        var result: [String: Tracklist] = [:]
         for (name, data) in raw {
             guard let id = data["id"] as? String else { continue }
-            result[name] = Album(
+            result[name] = Tracklist(
                 id: id,
                 mediaSourceId: self.mediaSourceId,
                 title: name,
                 subtitle: data["subtitle"] as? String,
                 artworkUrl: data["artworkUrl"] as? String,
-                metadata: data["metadata"] as? [String: Any] ?? [:]
+                metadata: data["metadata"] as? [String: Any] ?? [:],
+                tracklistType: .album
             )
         }
         return result
@@ -72,7 +73,7 @@ final class StoredTrack {
         url: String? = nil,
         metadata: [String: Any] = [:],
         artists: [String: Artist] = [:],
-        albums: [String: Album] = [:],
+        albums: [String: Tracklist] = [:],
         sortOrder: Int = 0
     ) {
         self.id = id
@@ -155,7 +156,7 @@ final class StoredTrack {
         return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
     }
 
-    private static func encodeAlbums(_ albums: [String: Album]) -> Data {
+    private static func encodeAlbums(_ albums: [String: Tracklist]) -> Data {
         guard !albums.isEmpty else { return Data() }
         var raw: [String: [String: Any]] = [:]
         for (name, album) in albums {

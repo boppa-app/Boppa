@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct AlbumRow: View {
-    let album: Album
+struct TracklistRow: View {
+    let tracklist: Tracklist
 
     private var albumPlaceholder: String {
         if #available(iOS 26.0, *) {
@@ -11,15 +11,24 @@ struct AlbumRow: View {
         }
     }
 
+    private var placeholder: String {
+        switch self.tracklist.tracklistType {
+        case .album:
+            return self.albumPlaceholder
+        default:
+            return "music.note.list"
+        }
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.album.artworkUrl, placeholder: self.albumPlaceholder, size: 72)
+            ArtworkView(url: self.tracklist.artworkUrl, placeholder: self.placeholder, size: 72)
             VStack(alignment: .leading, spacing: 4) {
-                Text(self.album.title)
+                Text(self.tracklist.title)
                     .font(.headline)
                     .foregroundColor(.white)
                     .lineLimit(1)
-                if let subtitle = self.album.subtitle {
+                if let subtitle = self.tracklist.subtitle {
                     Text(subtitle)
                         .font(.subheadline)
                         .foregroundColor(Color(.systemGray))

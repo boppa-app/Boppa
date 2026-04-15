@@ -9,9 +9,9 @@ enum ArtistDetailSection: String {
 
 struct ArtistDetail {
     let songs: [Track]?
-    let albums: [Album]?
+    let albums: [Tracklist]?
     let videos: [Track]?
-    let playlists: [Playlist]?
+    let playlists: [Tracklist]?
     let metadata: [String: Any]
     let sectionOrder: [ArtistDetailSection]
 
@@ -24,9 +24,9 @@ struct ArtistDetail {
 
     init(
         songs: [Track]? = nil,
-        albums: [Album]? = nil,
+        albums: [Tracklist]? = nil,
         videos: [Track]? = nil,
-        playlists: [Playlist]? = nil,
+        playlists: [Tracklist]? = nil,
         metadata: [String: Any] = [:],
         sectionOrder: [ArtistDetailSection] = [.songs, .albums, .videos, .playlists]
     ) {

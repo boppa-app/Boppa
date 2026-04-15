@@ -75,11 +75,11 @@ class SearchService {
         case .videos:
             result = .videos(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) })
         case .albums:
-            result = .albums(page.items.compactMap { self.paginated.mapToAlbum($0, mediaSourceId: mediaSourceId) })
+            result = .albums(page.items.compactMap { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) })
         case .artists:
             result = .artists(page.items.compactMap { self.paginated.mapToArtist($0, mediaSourceId: mediaSourceId) })
         case .playlists:
-            result = .playlists(page.items.compactMap { self.paginated.mapToPlaylist($0, mediaSourceId: mediaSourceId) })
+            result = .playlists(page.items.compactMap { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist) })
         }
 
         return SearchResponse(result: result, paginationContext: page.paginationContext)

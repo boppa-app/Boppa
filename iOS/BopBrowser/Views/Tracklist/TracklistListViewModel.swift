@@ -14,8 +14,7 @@ enum TracklistListType {
 @MainActor
 @Observable
 class TracklistListViewModel {
-    var albums: [Album] = []
-    var playlists: [Playlist] = []
+    var tracklists: [Tracklist] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -58,10 +57,10 @@ class TracklistListViewModel {
 
                 guard !Task.isCancelled else { return }
 
-                self.albums = result
+                self.tracklists = result
                 self.isLoading = false
 
-                logger.info("Loaded \(self.albums.count) album(s) for artist '\(artist.name)'")
+                logger.info("Loaded \(self.tracklists.count) album(s) for artist '\(artist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 
@@ -91,10 +90,10 @@ class TracklistListViewModel {
 
                 guard !Task.isCancelled else { return }
 
-                self.playlists = result
+                self.tracklists = result
                 self.isLoading = false
 
-                logger.info("Loaded \(self.playlists.count) playlist(s) for artist '\(artist.name)'")
+                logger.info("Loaded \(self.tracklists.count) playlist(s) for artist '\(artist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 

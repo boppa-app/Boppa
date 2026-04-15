@@ -4,7 +4,7 @@ struct TrackActionsSheet: View {
     let track: Track
     let mediaSource: MediaSource
     var onArtistSelected: ((Artist) -> Void)?
-    var onAlbumSelected: ((Album) -> Void)?
+    var onAlbumSelected: ((Tracklist) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -12,7 +12,7 @@ struct TrackActionsSheet: View {
         self.track.artists.map { (name: $0.key, artist: $0.value) }
     }
 
-    private var albumEntries: [(name: String, album: Album)] {
+    private var albumEntries: [(name: String, album: Tracklist)] {
         self.track.albums.map { (name: $0.key, album: $0.value) }
     }
 

@@ -9,7 +9,7 @@ struct SearchView: View {
     @State private var cacheManager = SearchCacheManager()
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
-    @State private var pendingAlbum: Album?
+    @State private var pendingTracklist: Tracklist?
     @FocusState private var isSearchFieldFocused: Bool
 
     private var showCategorySuggestions: Bool {
@@ -202,30 +202,39 @@ struct SearchView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparatorTint(index == tracks.count - 1 ? .clear : Color(.systemGray5))
                     }
-                case let .albums(albums):
-                    ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
+                case let .albums(tracklists):
+                    ForEach(Array(tracklists.enumerated()), id: \.element.id) { index, tracklist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getAlbum != nil
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(album: album, mediaSourceId: mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                                    tracklist: Tracklist(
+                                        id: tracklist.id,
+                                        mediaSourceId: mediaSource.id,
+                                        title: tracklist.title,
+                                        subtitle: tracklist.subtitle,
+                                        artworkUrl: tracklist.artworkUrl,
+                                        metadata: tracklist.metadata,
+                                        tracklistType: .album,
+                                        storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                    )
                                 )
                             } label: {
-                                AlbumRow(album: album)
+                                TracklistRow(tracklist: tracklist)
                                     .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                            .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
                             .padding(.trailing, 16)
                         } else {
-                            AlbumRow(album: album)
+                            TracklistRow(tracklist: tracklist)
                                 .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                                 .listRowBackground(Color.black)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                                .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
                         }
                     }
                 case let .artists(artists):
@@ -255,30 +264,39 @@ struct SearchView: View {
                                 .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
                         }
                     }
-                case let .playlists(playlists):
-                    ForEach(Array(playlists.enumerated()), id: \.element.id) { index, playlist in
+                case let .playlists(tracklists):
+                    ForEach(Array(tracklists.enumerated()), id: \.element.id) { index, tracklist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getPlaylist != nil
                         {
                             NavigationLink {
                                 TracklistView(
-                                    tracklist: Tracklist(playlist: playlist, mediaSourceId: mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
+                                    tracklist: Tracklist(
+                                        id: tracklist.id,
+                                        mediaSourceId: mediaSource.id,
+                                        title: tracklist.title,
+                                        subtitle: tracklist.subtitle,
+                                        artworkUrl: tracklist.artworkUrl,
+                                        metadata: tracklist.metadata,
+                                        tracklistType: .playlist,
+                                        storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                    )
                                 )
                             } label: {
-                                PlaylistRow(playlist: playlist)
+                                TracklistRow(tracklist: tracklist)
                                     .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                            .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
                             .padding(.trailing, 16)
                         } else {
-                            PlaylistRow(playlist: playlist)
+                            TracklistRow(tracklist: tracklist)
                                 .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                                 .listRowBackground(Color.black)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                                .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
                         }
                     }
                 }
@@ -305,7 +323,7 @@ struct SearchView: View {
                     track: track,
                     mediaSource: mediaSource,
                     onArtistSelected: { artist in self.pendingArtist = artist },
-                    onAlbumSelected: { album in self.pendingAlbum = album }
+                    onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
                 )
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
@@ -317,10 +335,19 @@ struct SearchView: View {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
-        .navigationDestination(item: self.$pendingAlbum) { album in
+        .navigationDestination(item: self.$pendingTracklist) { tracklist in
             if let mediaSource = self.viewModel.selectedMediaSource {
                 TracklistView(
-                    tracklist: Tracklist(album: album, mediaSourceId: mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
+                    tracklist: Tracklist(
+                        id: tracklist.id,
+                        mediaSourceId: mediaSource.id,
+                        title: tracklist.title,
+                        subtitle: tracklist.subtitle,
+                        artworkUrl: tracklist.artworkUrl,
+                        metadata: tracklist.metadata,
+                        tracklistType: tracklist.tracklistType,
+                        storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                    )
                 )
             }
         }

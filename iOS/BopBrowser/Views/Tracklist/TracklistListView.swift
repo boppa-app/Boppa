@@ -36,76 +36,60 @@ struct TracklistListView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
-            } else if self.viewModel.albums.isEmpty && self.viewModel.playlists.isEmpty && self.viewModel.isLoading {
+            } else if self.viewModel.tracklists.isEmpty && self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.viewModel.albums.isEmpty && self.viewModel.playlists.isEmpty {
+            } else if self.viewModel.tracklists.isEmpty {
                 self.emptyState
-            } else if !self.viewModel.playlists.isEmpty {
-                self.playlistList
             } else {
-                self.albumList
+                self.tracklistList
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var albumList: some View {
-        ScrollFadeView {
-            List {
-                ForEach(Array(self.viewModel.albums.enumerated()), id: \.element.id) { index, album in
-                    if self.mediaSource.config.data?.getAlbum != nil {
-                        NavigationLink {
-                            TracklistView(
-                                tracklist: Tracklist(album: album, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: album.id, modelContext: self.modelContext))
-                            )
-                        } label: {
-                            AlbumRow(album: album)
-                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == self.viewModel.albums.count - 1 ? .clear : Color(.systemGray5))
-                        .padding(.trailing, 16)
-                    } else {
-                        AlbumRow(album: album)
-                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
-                            .listRowBackground(Color.black)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == self.viewModel.albums.count - 1 ? .clear : Color(.systemGray5))
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
+    private var hasScript: Bool {
+        switch self.type {
+        case .albums:
+            return self.mediaSource.config.data?.getAlbum != nil
+        case .playlists:
+            return self.mediaSource.config.data?.getPlaylist != nil
         }
     }
 
-    private var playlistList: some View {
+    private var tracklistList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.playlists.enumerated()), id: \.element.id) { index, playlist in
-                    if self.mediaSource.config.data?.getPlaylist != nil {
+                ForEach(Array(self.viewModel.tracklists.enumerated()), id: \.element.id) { index, tracklist in
+                    if self.hasScript {
                         NavigationLink {
                             TracklistView(
-                                tracklist: Tracklist(playlist: playlist, mediaSourceId: self.mediaSource.id, storedTracklist: TracklistService.shared.findStoredTracklist(id: playlist.id, modelContext: self.modelContext))
+                                tracklist: Tracklist(
+                                    id: tracklist.id,
+                                    mediaSourceId: self.mediaSource.id,
+                                    title: tracklist.title,
+                                    subtitle: tracklist.subtitle,
+                                    artworkUrl: tracklist.artworkUrl,
+                                    metadata: tracklist.metadata,
+                                    tracklistType: tracklist.tracklistType,
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                )
                             )
                         } label: {
-                            PlaylistRow(playlist: playlist)
+                            TracklistRow(tracklist: tracklist)
                                 .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                         }
                         .buttonStyle(.plain)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == self.viewModel.playlists.count - 1 ? .clear : Color(.systemGray5))
+                        .listRowSeparatorTint(index == self.viewModel.tracklists.count - 1 ? .clear : Color(.systemGray5))
                         .padding(.trailing, 16)
                     } else {
-                        PlaylistRow(playlist: playlist)
+                        TracklistRow(tracklist: tracklist)
                             .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == self.viewModel.playlists.count - 1 ? .clear : Color(.systemGray5))
+                            .listRowSeparatorTint(index == self.viewModel.tracklists.count - 1 ? .clear : Color(.systemGray5))
                     }
                 }
             }
