@@ -56,7 +56,7 @@ struct TracklistView: View {
                                             .scaleEffect(0.7)
                                             .tint(.white)
                                     } else {
-                                        Image(systemName: "plus")
+                                        Image(systemName: "bookmark")
                                             .font(.system(size: 18))
                                             .foregroundColor(.purp)
                                     }
