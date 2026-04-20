@@ -7,7 +7,7 @@ struct TracklistView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: TracklistViewModel
-    @State private var showSortSheet = false
+    @State private var showActionSheet = false
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
@@ -35,30 +35,18 @@ struct TracklistView: View {
                 title: self.viewModel.tracklist.title,
                 highlightedTitle: self.viewModel.tracklist.artist?.name,
                 onBack: { self.dismiss() },
-                centerLeading: {
-                    if self.isSaved {
-                        Button {
-                            self.viewModel.togglePin(modelContext: self.modelContext)
-                        } label: {
-                            Image(systemName: "pin.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(self.viewModel.isPinned ? .purp : .white)
-                        }
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                    }
-                },
                 trailing: {
                     HStack(spacing: 0) {
                         if self.isSaved {
-                            Button {
-                                self.showSortSheet = true
-                            } label: {
-                                Image(systemName: "arrow.up.arrow.down")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(self.viewModel.sortMode == .defaultOrder ? .white : .purp)
-                            }
-                            .frame(width: 44, height: 44)
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
+                                .rotationEffect(.degrees(90))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    self.showActionSheet = true
+                                }
                         } else if self.canSave {
                             Button {
                                 self.viewModel.saveToLibrary(modelContext: self.modelContext)
@@ -81,8 +69,10 @@ struct TracklistView: View {
                     }
                 },
                 centerTrailing: {
-                    if self.viewModel.canRefresh {
-                        self.refreshButton
+                    if self.viewModel.isRefreshing {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .tint(.white)
                     }
                 }
             )
@@ -93,12 +83,20 @@ struct TracklistView: View {
         .onAppear {
             self.viewModel.load(modelContext: self.modelContext)
         }
-        .sheet(isPresented: self.$showSortSheet) {
-            SortPickerSheet(
-                currentMode: self.viewModel.sortMode,
-                onSelect: { mode in
+        .sheet(isPresented: self.$showActionSheet) {
+            TracklistActionSheet(
+                tracklist: self.viewModel.tracklist,
+                isPinned: self.viewModel.isPinned,
+                isRefreshing: self.viewModel.isRefreshing,
+                sortMode: self.viewModel.sortMode,
+                onPin: {
+                    self.viewModel.togglePin(modelContext: self.modelContext)
+                },
+                onRefresh: {
+                    self.viewModel.refresh(modelContext: self.modelContext)
+                },
+                onSortSelected: { mode in
                     self.viewModel.setSortMode(mode, modelContext: self.modelContext)
-                    self.showSortSheet = false
                 }
             )
             .presentationDetents([.medium])
@@ -153,26 +151,6 @@ struct TracklistView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var refreshButton: some View {
-        Button {
-            self.viewModel.refresh(modelContext: self.modelContext)
-        } label: {
-            Group {
-                if self.viewModel.isRefreshing {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .tint(.white)
-                } else {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14))
-                        .foregroundColor(.purp)
-                }
-            }
-            .frame(width: 20, height: 20)
-        }
-        .disabled(self.viewModel.isRefreshing)
     }
 
     private var trackList: some View {
