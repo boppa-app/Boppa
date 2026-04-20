@@ -8,9 +8,14 @@ class LibraryViewModel {
     var mediaSources: [MediaSource] = []
     var visibleMediaSourceIds: Set<PersistentIdentifier> = []
     var showFilterSheet = false
-    var pinnedTracklists: [StoredTracklist] = []
     var isPinnedExpanded = false
+    private var allPinnedTracklists: [StoredTracklist] = []
     private var hasSetInitialPinnedState = false
+
+    var pinnedTracklists: [StoredTracklist] {
+        let visibleIds = self.visibleMediaSourceStringIds
+        return self.allPinnedTracklists.filter { visibleIds.contains($0.mediaSourceId) }
+    }
 
     enum LibrarySection: String, CaseIterable {
         case likes
@@ -66,7 +71,7 @@ class LibraryViewModel {
         let descriptor = FetchDescriptor<StoredTracklist>(
             predicate: #Predicate { $0.isPinned }
         )
-        self.pinnedTracklists = (try? modelContext.fetch(descriptor)) ?? []
+        self.allPinnedTracklists = (try? modelContext.fetch(descriptor)) ?? []
         if !self.hasSetInitialPinnedState {
             self.hasSetInitialPinnedState = true
             self.isPinnedExpanded = !self.pinnedTracklists.isEmpty

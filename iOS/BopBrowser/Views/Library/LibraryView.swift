@@ -64,9 +64,9 @@ struct LibraryView: View {
 
                 if self.viewModel.isPinnedExpanded {
                     if self.viewModel.pinnedTracklists.isEmpty {
-                        Text("Nothing here yet")
-                            .font(.subheadline)
-                            .foregroundColor(Color(.systemGray))
+                        Image(systemName: "zzz")
+                            .font(.system(size: 20))
+                            .foregroundColor(Color(.systemGray3))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 12)
                             .padding(.leading, 76)
