@@ -35,6 +35,19 @@ struct TracklistView: View {
                 title: self.viewModel.tracklist.title,
                 highlightedTitle: self.viewModel.tracklist.artist?.name,
                 onBack: { self.dismiss() },
+                centerLeading: {
+                    if self.isSaved {
+                        Button {
+                            self.viewModel.togglePin(modelContext: self.modelContext)
+                        } label: {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(self.viewModel.isPinned ? .purp : .white)
+                        }
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                    }
+                },
                 trailing: {
                     HStack(spacing: 0) {
                         if self.isSaved {

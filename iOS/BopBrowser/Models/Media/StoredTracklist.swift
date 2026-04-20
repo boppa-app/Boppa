@@ -42,6 +42,7 @@ final class StoredTracklist {
     var tracklistType: String
     var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
     var metadataJSON: Data = Data()
+    var isPinned: Bool = false
 
     @Relationship(deleteRule: .cascade)
     var tracks: [StoredTrack] = []

@@ -15,6 +15,7 @@ class TracklistViewModel {
     var isLoading = false
     var isRefreshing = false
     var isSaving = false
+    var isPinned = false
     var errorMessage: String?
     var sortMode: TracklistSortMode = .defaultOrder
     var hasMorePages = false
@@ -91,6 +92,7 @@ class TracklistViewModel {
         self.unsortedTracks = sortedTracks.map { $0.toTrack() }
         self.tracks = self.unsortedTracks
         self.sortMode = storedTracklist.sortMode
+        self.isPinned = storedTracklist.isPinned
     }
 
     private func applySorting(_ tracks: [Track]) -> [Track] {
@@ -178,6 +180,14 @@ class TracklistViewModel {
         guard let stored = self.tracklist.storedTracklist else { return }
         TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
         logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
+    }
+
+    func togglePin(modelContext: ModelContext) {
+        guard let stored = self.tracklist.storedTracklist else { return }
+        stored.isPinned = !self.isPinned
+        try? modelContext.save()
+        self.isPinned.toggle()
+        logger.info("\(self.isPinned ? "Pinned" : "Unpinned") tracklist '\(self.tracklist.title)'")
     }
 
     func loadNextPage(modelContext: ModelContext) {

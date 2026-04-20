@@ -8,6 +8,9 @@ class LibraryViewModel {
     var mediaSources: [MediaSource] = []
     var visibleMediaSourceIds: Set<PersistentIdentifier> = []
     var showFilterSheet = false
+    var pinnedTracklists: [StoredTracklist] = []
+    var isPinnedExpanded = false
+    private var hasSetInitialPinnedState = false
 
     enum LibrarySection: String, CaseIterable {
         case likes
@@ -54,6 +57,19 @@ class LibraryViewModel {
 
         if oldIds.isEmpty {
             self.visibleMediaSourceIds = newIds
+        }
+
+        self.loadPinnedTracklists(modelContext: modelContext)
+    }
+
+    func loadPinnedTracklists(modelContext: ModelContext) {
+        let descriptor = FetchDescriptor<StoredTracklist>(
+            predicate: #Predicate { $0.isPinned }
+        )
+        self.pinnedTracklists = (try? modelContext.fetch(descriptor)) ?? []
+        if !self.hasSetInitialPinnedState {
+            self.hasSetInitialPinnedState = true
+            self.isPinnedExpanded = !self.pinnedTracklists.isEmpty
         }
     }
 

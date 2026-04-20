@@ -55,13 +55,77 @@ struct LibraryView: View {
     }
 
     private var sectionList: some View {
-        List {
-            ForEach(LibraryViewModel.LibrarySection.allCases, id: \.self) { section in
-                self.sectionButton(section)
+        ScrollFadeView {
+            List {
+                self.pinnedHeader
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparatorTint(Color(.systemGray5))
+
+                if self.viewModel.isPinnedExpanded {
+                    if self.viewModel.pinnedTracklists.isEmpty {
+                        Text("Nothing here yet")
+                            .font(.subheadline)
+                            .foregroundColor(Color(.systemGray))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 12)
+                            .padding(.leading, 76)
+                            .padding(.trailing, 16)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
+                    } else {
+                        ForEach(self.viewModel.pinnedTracklists, id: \.id) { stored in
+                            NavigationLink {
+                                TracklistView(tracklist: Tracklist(storedTracklist: stored))
+                            } label: {
+                                TracklistRow(
+                                    tracklist: Tracklist(storedTracklist: stored),
+                                    showMediaSourceIcon: true
+                                )
+                            }
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparatorTint(Color(.systemGray5))
+                        }
+                    }
+                }
+
+                ForEach(LibraryViewModel.LibrarySection.allCases, id: \.self) { section in
+                    self.sectionButton(section)
+                }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
+    }
+
+    private var pinnedHeader: some View {
+        Button {
+            withAnimation {
+                self.viewModel.isPinnedExpanded.toggle()
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.purp)
+                    .frame(width: 48, height: 48)
+                Text("Pinned")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                Image(systemName: self.viewModel.isPinnedExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(.systemGray))
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.black)
+            .contentShape(Rectangle())
+        }
     }
 
     private func sectionButton(_ section: LibraryViewModel.LibrarySection) -> some View {
@@ -70,7 +134,7 @@ struct LibraryView: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: section.icon)
-                    .font(.system(size: 32))
+                    .font(.system(size: 16))
                     .foregroundColor(.purp)
                     .frame(width: 48, height: 48)
 
