@@ -8,14 +8,6 @@ struct TrackActionsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    private var artistEntries: [(name: String, artist: Artist)] {
-        self.track.artists.map { (name: $0.key, artist: $0.value) }
-    }
-
-    private var albumEntries: [(name: String, album: Tracklist)] {
-        self.track.albums.map { (name: $0.key, album: $0.value) }
-    }
-
     private var albumIcon: String {
         if #available(iOS 26.0, *) {
             return "music.note.square.stack.fill"
@@ -31,14 +23,14 @@ struct TrackActionsSheet: View {
                 .padding(.bottom, 12)
 
             List {
-                ForEach(Array(self.artistEntries.enumerated()), id: \.offset) { _, entry in
+                ForEach(self.track.artists) { artist in
                     if self.mediaSource.config.data?.getArtist != nil {
                         Button {
                             self.dismiss()
-                            self.onArtistSelected?(entry.artist)
+                            self.onArtistSelected?(artist)
                         } label: {
                             self.rowLabel(
-                                name: entry.name,
+                                name: artist.name,
                                 icon: "person.fill"
                             )
                         }
@@ -49,14 +41,14 @@ struct TrackActionsSheet: View {
                     }
                 }
 
-                ForEach(Array(self.albumEntries.enumerated()), id: \.offset) { _, entry in
+                ForEach(self.track.albums) { album in
                     if self.mediaSource.config.data?.getAlbum != nil {
                         Button {
                             self.dismiss()
-                            self.onAlbumSelected?(entry.album)
+                            self.onAlbumSelected?(album)
                         } label: {
                             self.rowLabel(
-                                name: entry.name,
+                                name: album.title,
                                 icon: self.albumIcon
                             )
                         }

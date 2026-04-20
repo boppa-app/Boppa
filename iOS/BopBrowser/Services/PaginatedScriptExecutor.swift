@@ -109,33 +109,37 @@ class PaginatedScriptExecutor {
               let id = self.resolveString(item["id"])
         else { return nil }
 
-        var artists: [String: Artist] = [:]
-        if let rawArtists = item["artists"] as? [String: [String: Any]] {
-            for (name, data) in rawArtists {
-                guard let artistId = self.resolveString(data["id"]) else { continue }
-                artists[name] = Artist(
+        var artists: [Artist] = []
+        if let rawArtists = item["artists"] as? [[String: Any]] {
+            for data in rawArtists {
+                guard let artistId = self.resolveString(data["id"]),
+                      let name = data["name"] as? String
+                else { continue }
+                artists.append(Artist(
                     id: artistId,
                     mediaSourceId: mediaSourceId,
                     name: name,
                     artworkUrl: data["artworkUrl"] as? String,
                     metadata: data["metadata"] as? [String: Any] ?? [:]
-                )
+                ))
             }
         }
 
-        var albums: [String: Tracklist] = [:]
-        if let rawAlbums = item["albums"] as? [String: [String: Any]] {
-            for (name, data) in rawAlbums {
-                guard let albumId = self.resolveString(data["id"]) else { continue }
-                albums[name] = Tracklist(
+        var albums: [Tracklist] = []
+        if let rawAlbums = item["albums"] as? [[String: Any]] {
+            for data in rawAlbums {
+                guard let albumId = self.resolveString(data["id"]),
+                      let title = data["title"] as? String
+                else { continue }
+                albums.append(Tracklist(
                     id: albumId,
                     mediaSourceId: mediaSourceId,
-                    title: name,
+                    title: title,
                     subtitle: data["subtitle"] as? String,
                     artworkUrl: data["artworkUrl"] as? String,
                     metadata: data["metadata"] as? [String: Any] ?? [:],
                     tracklistType: .album
-                )
+                ))
             }
         }
 

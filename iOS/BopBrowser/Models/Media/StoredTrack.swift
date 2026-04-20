@@ -25,14 +25,15 @@ final class StoredTrack {
         return dict
     }
 
-    var artists: [String: Artist] {
+    var artists: [Artist] {
         guard !self.artistsJSON.isEmpty,
-              let raw = try? JSONSerialization.jsonObject(with: self.artistsJSON) as? [String: [String: Any]]
-        else { return [:] }
-        var result: [String: Artist] = [:]
-        for (name, data) in raw {
-            guard let id = data["id"] as? String else { continue }
-            result[name] = Artist(
+              let raw = try? JSONSerialization.jsonObject(with: self.artistsJSON) as? [[String: Any]]
+        else { return [] }
+        return raw.compactMap { data in
+            guard let id = data["id"] as? String,
+                  let name = data["name"] as? String
+            else { return nil }
+            return Artist(
                 id: id,
                 mediaSourceId: self.mediaSourceId,
                 name: name,
@@ -40,27 +41,26 @@ final class StoredTrack {
                 metadata: data["metadata"] as? [String: Any] ?? [:]
             )
         }
-        return result
     }
 
-    var albums: [String: Tracklist] {
+    var albums: [Tracklist] {
         guard !self.albumsJSON.isEmpty,
-              let raw = try? JSONSerialization.jsonObject(with: self.albumsJSON) as? [String: [String: Any]]
-        else { return [:] }
-        var result: [String: Tracklist] = [:]
-        for (name, data) in raw {
-            guard let id = data["id"] as? String else { continue }
-            result[name] = Tracklist(
+              let raw = try? JSONSerialization.jsonObject(with: self.albumsJSON) as? [[String: Any]]
+        else { return [] }
+        return raw.compactMap { data in
+            guard let id = data["id"] as? String,
+                  let title = data["title"] as? String
+            else { return nil }
+            return Tracklist(
                 id: id,
                 mediaSourceId: self.mediaSourceId,
-                title: name,
+                title: title,
                 subtitle: data["subtitle"] as? String,
                 artworkUrl: data["artworkUrl"] as? String,
                 metadata: data["metadata"] as? [String: Any] ?? [:],
                 tracklistType: .album
             )
         }
-        return result
     }
 
     init(
@@ -72,8 +72,8 @@ final class StoredTrack {
         artworkUrl: String? = nil,
         url: String? = nil,
         metadata: [String: Any] = [:],
-        artists: [String: Artist] = [:],
-        albums: [String: Tracklist] = [:],
+        artists: [Artist] = [],
+        albums: [Tracklist] = [],
         sortOrder: Int = 0
     ) {
         self.id = id
@@ -144,27 +144,25 @@ final class StoredTrack {
         self.albumsJSON = StoredTrack.encodeAlbums(track.albums)
     }
 
-    private static func encodeArtists(_ artists: [String: Artist]) -> Data {
+    private static func encodeArtists(_ artists: [Artist]) -> Data {
         guard !artists.isEmpty else { return Data() }
-        var raw: [String: [String: Any]] = [:]
-        for (name, artist) in artists {
-            var data: [String: Any] = ["id": artist.id]
+        let raw: [[String: Any]] = artists.map { artist in
+            var data: [String: Any] = ["id": artist.id, "name": artist.name]
             if let artworkUrl = artist.artworkUrl { data["artworkUrl"] = artworkUrl }
             if !artist.metadata.isEmpty { data["metadata"] = artist.metadata }
-            raw[name] = data
+            return data
         }
         return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
     }
 
-    private static func encodeAlbums(_ albums: [String: Tracklist]) -> Data {
+    private static func encodeAlbums(_ albums: [Tracklist]) -> Data {
         guard !albums.isEmpty else { return Data() }
-        var raw: [String: [String: Any]] = [:]
-        for (name, album) in albums {
-            var data: [String: Any] = ["id": album.id]
+        let raw: [[String: Any]] = albums.map { album in
+            var data: [String: Any] = ["id": album.id, "title": album.title]
             if let subtitle = album.subtitle { data["subtitle"] = subtitle }
             if let artworkUrl = album.artworkUrl { data["artworkUrl"] = artworkUrl }
             if !album.metadata.isEmpty { data["metadata"] = album.metadata }
-            raw[name] = data
+            return data
         }
         return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
     }
