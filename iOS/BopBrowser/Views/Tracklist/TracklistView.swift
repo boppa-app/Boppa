@@ -97,6 +97,10 @@ struct TracklistView: View {
                 },
                 onSortSelected: { mode in
                     self.viewModel.setSortMode(mode, modelContext: self.modelContext)
+                },
+                onDelete: {
+                    self.viewModel.deleteFromLibrary(modelContext: self.modelContext)
+                    self.dismiss()
                 }
             )
             .presentationDetents([.medium])

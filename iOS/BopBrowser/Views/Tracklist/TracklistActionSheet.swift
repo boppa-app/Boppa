@@ -8,9 +8,11 @@ struct TracklistActionSheet: View {
     let onPin: () -> Void
     let onRefresh: () -> Void
     let onSortSelected: (TracklistSortMode) -> Void
+    let onDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var showSortPage = false
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -23,6 +25,7 @@ struct TracklistActionSheet: View {
                     self.refreshRow
                     self.pinRow
                     self.sortRow
+                    self.deleteRow
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
@@ -30,6 +33,15 @@ struct TracklistActionSheet: View {
             .background(Color(.systemGray6))
             .navigationDestination(isPresented: self.$showSortPage) {
                 self.sortPickerPage
+            }
+            .alert("Delete", isPresented: self.$showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    self.onDelete()
+                    self.dismiss()
+                }
+            } message: {
+                Text("Are you sure you want to remove \"\(self.tracklist.title)\" from your library?")
             }
         }
     }
@@ -138,6 +150,23 @@ struct TracklistActionSheet: View {
                     .foregroundColor(.purp)
             }
             .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Color(.systemGray6))
+        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+        .listRowSeparator(.hidden)
+    }
+
+    private var deleteRow: some View {
+        Button {
+            self.showDeleteConfirmation = true
+        } label: {
+            self.rowLabel(
+                title: "Delete",
+                icon: "trash.fill",
+                iconColor: .red,
+                titleColor: .red
+            )
         }
         .buttonStyle(.plain)
         .listRowBackground(Color(.systemGray6))
