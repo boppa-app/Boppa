@@ -24,37 +24,45 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         self.centerTrailing = centerTrailing
     }
 
+    private let buttonWidth: CGFloat = 48
+    private let progressViewSize: CGFloat = 20
+
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                HStack(spacing: 6) {
-                    self.centerLeading()
-                    MarqueeText(
-                        self.title,
-                        highlightedPrefix: self.highlightedTitle,
-                        font: .headline,
-                        fontWeight: .bold,
-                        foregroundColor: .white,
-                        maxWidth: 200,
-                        alignment: .center
-                    )
-                    self.centerTrailing()
-                }
+            GeometryReader { geometry in
+                let reservedPerSide = self.buttonWidth + self.progressViewSize * 1.5
+                let maxTextWidth = max(geometry.size.width - reservedPerSide * 2, 0)
 
-                HStack(spacing: 0) {
-                    Button(action: self.onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.body.weight(.semibold))
-                            .foregroundColor(Color.purp)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                ZStack {
+                    HStack(spacing: 6) {
+                        self.centerLeading()
+                        MarqueeText(
+                            self.title,
+                            highlightedPrefix: self.highlightedTitle,
+                            font: .headline,
+                            fontWeight: .bold,
+                            foregroundColor: .white,
+                            maxWidth: maxTextWidth,
+                            alignment: .center
+                        )
+                        self.centerTrailing()
                     }
 
-                    Spacer()
+                    HStack(spacing: 0) {
+                        Button(action: self.onBack) {
+                            Image(systemName: "chevron.left")
+                                .font(.body.weight(.semibold))
+                                .foregroundColor(Color.purp)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
 
-                    self.trailing()
+                        Spacer()
+
+                        self.trailing()
+                    }
+                    .padding(.horizontal, 4)
                 }
-                .padding(.horizontal, 4)
             }
             .frame(height: 44)
         }
