@@ -41,7 +41,6 @@ struct LibraryView: View {
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
-            Spacer()
             Button {
                 self.viewModel.showFilterSheet = true
             } label: {
@@ -49,6 +48,7 @@ struct LibraryView: View {
                     .font(.system(size: 20))
                     .foregroundColor(.purp)
             }
+            Spacer()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
