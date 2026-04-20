@@ -1,5 +1,6 @@
 import Foundation
 import os
+import SwiftData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
@@ -21,7 +22,7 @@ class TracklistListViewModel {
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
 
-    func load(
+    func loadFromArtist(
         type: TracklistListType,
         artist: Artist,
         artistDetail: ArtistDetail,
@@ -36,6 +37,31 @@ class TracklistListViewModel {
         case .playlists:
             self.fetchPlaylists(artist: artist, artistDetail: artistDetail, mediaSource: mediaSource)
         }
+    }
+
+    func loadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>, modelContext: ModelContext) {
+        guard !self.didLoad else { return }
+        self.didLoad = true
+
+        let typeString: String
+        switch type {
+        case .albums:
+            typeString = "album"
+        case .playlists:
+            typeString = "playlist"
+        }
+
+        let descriptor = FetchDescriptor<StoredTracklist>(
+            predicate: #Predicate { $0.tracklistType == typeString }
+        )
+
+        let storedTracklists = (try? modelContext.fetch(descriptor)) ?? []
+        self.tracklists = storedTracklists
+            .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            .map { Tracklist(storedTracklist: $0) }
+
+        logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 
     private func fetchAlbums(

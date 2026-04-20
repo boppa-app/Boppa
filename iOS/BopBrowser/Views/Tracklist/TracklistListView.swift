@@ -5,17 +5,45 @@ struct TracklistListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
 
-    let artist: Artist
-    let artistDetail: ArtistDetail
-    let mediaSource: MediaSource
+    let artist: Artist?
+    let artistDetail: ArtistDetail?
+    let mediaSource: MediaSource?
     let type: TracklistListType
     let title: String
+    let isLibraryMode: Bool
+    let visibleMediaSourceIds: Set<String>
+
+    init(
+        artist: Artist,
+        artistDetail: ArtistDetail,
+        mediaSource: MediaSource,
+        type: TracklistListType,
+        title: String
+    ) {
+        self.artist = artist
+        self.artistDetail = artistDetail
+        self.mediaSource = mediaSource
+        self.type = type
+        self.title = title
+        self.isLibraryMode = false
+        self.visibleMediaSourceIds = []
+    }
+
+    init(type: TracklistListType, title: String, visibleMediaSourceIds: Set<String>) {
+        self.artist = nil
+        self.artistDetail = nil
+        self.mediaSource = nil
+        self.type = type
+        self.title = title
+        self.isLibraryMode = true
+        self.visibleMediaSourceIds = visibleMediaSourceIds
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             DetailHeaderView(
                 title: self.title,
-                highlightedTitle: self.artist.name,
+                highlightedTitle: self.artist?.name,
                 onBack: { self.dismiss() }
             )
             self.content
@@ -23,12 +51,23 @@ struct TracklistListView: View {
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onAppear {
-            self.viewModel.load(
-                type: self.type,
-                artist: self.artist,
-                artistDetail: self.artistDetail,
-                mediaSource: self.mediaSource
-            )
+            if self.isLibraryMode {
+                self.viewModel.loadFromLibrary(
+                    type: self.type,
+                    visibleMediaSourceIds: self.visibleMediaSourceIds,
+                    modelContext: self.modelContext
+                )
+            } else if let artist = self.artist,
+                      let artistDetail = self.artistDetail,
+                      let mediaSource = self.mediaSource
+            {
+                self.viewModel.loadFromArtist(
+                    type: self.type,
+                    artist: artist,
+                    artistDetail: artistDetail,
+                    mediaSource: mediaSource
+                )
+            }
         }
     }
 
@@ -48,12 +87,14 @@ struct TracklistListView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var hasScript: Bool {
+    private var canNavigateToTracklist: Bool {
+        if self.isLibraryMode { return true }
+        guard let mediaSource = self.mediaSource else { return false }
         switch self.type {
         case .albums:
-            return self.mediaSource.config.data?.getAlbum != nil
+            return mediaSource.config.data?.getAlbum != nil
         case .playlists:
-            return self.mediaSource.config.data?.getPlaylist != nil
+            return mediaSource.config.data?.getPlaylist != nil
         }
     }
 
@@ -61,22 +102,11 @@ struct TracklistListView: View {
         ScrollFadeView {
             List {
                 ForEach(Array(self.viewModel.tracklists.enumerated()), id: \.element.id) { index, tracklist in
-                    if self.hasScript {
+                    if self.canNavigateToTracklist {
                         NavigationLink {
-                            TracklistView(
-                                tracklist: Tracklist(
-                                    id: tracklist.id,
-                                    mediaSourceId: self.mediaSource.id,
-                                    title: tracklist.title,
-                                    subtitle: tracklist.subtitle,
-                                    artworkUrl: tracklist.artworkUrl,
-                                    metadata: tracklist.metadata,
-                                    tracklistType: tracklist.tracklistType,
-                                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
-                                )
-                            )
+                            TracklistView(tracklist: tracklist)
                         } label: {
-                            TracklistRow(tracklist: tracklist)
+                            TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
                                 .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                         }
                         .buttonStyle(.plain)
@@ -85,7 +115,7 @@ struct TracklistListView: View {
                         .listRowSeparatorTint(index == self.viewModel.tracklists.count - 1 ? .clear : Color(.systemGray5))
                         .padding(.trailing, 16)
                     } else {
-                        TracklistRow(tracklist: tracklist)
+                        TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
                             .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

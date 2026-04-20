@@ -6,7 +6,6 @@ import SwiftData
 @Observable
 class LibraryViewModel {
     var mediaSources: [MediaSource] = []
-    var collapsedSections: Set<String> = []
     var visibleMediaSourceIds: Set<PersistentIdentifier> = []
     var showFilterSheet = false
 
@@ -42,42 +41,27 @@ class LibraryViewModel {
             predicate: #Predicate { $0.isEnabled }
         )
         descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
+
+        let oldIds = Set(self.mediaSources.map(\.persistentModelID))
         self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
-        self.visibleMediaSourceIds = Set(self.mediaSources.map(\.persistentModelID))
-    }
+        let newIds = Set(self.mediaSources.map(\.persistentModelID))
 
-    func toggleCollapse(section: String) {
-        if self.collapsedSections.contains(section) {
-            self.collapsedSections.remove(section)
-        } else {
-            self.collapsedSections.insert(section)
+        let added = newIds.subtracting(oldIds)
+        let removed = oldIds.subtracting(newIds)
+
+        self.visibleMediaSourceIds.formUnion(added)
+        self.visibleMediaSourceIds.subtract(removed)
+
+        if oldIds.isEmpty {
+            self.visibleMediaSourceIds = newIds
         }
-    }
-
-    func isCollapsed(section: String) -> Bool {
-        self.collapsedSections.contains(section)
-    }
-
-    func tracklistsForSection(_ section: LibrarySection, modelContext: ModelContext) -> [(StoredTracklist, MediaSource)] {
-        let typeString = section.rawValue
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.tracklistType == typeString }
-        )
-
-        let tracklists = (try? modelContext.fetch(descriptor)) ?? []
-        let visibleMediaSourceIds = Set(self.filteredSources.map(\.id))
-        let mediaSourcesById = Dictionary(uniqueKeysWithValues: self.mediaSources.map { ($0.id, $0) })
-
-        return tracklists
-            .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            .compactMap { tracklist in
-                guard let mediaSource = mediaSourcesById[tracklist.mediaSourceId] else { return nil }
-                return (tracklist, mediaSource)
-            }
     }
 
     var filteredSources: [MediaSource] {
         self.mediaSources.filter { self.visibleMediaSourceIds.contains($0.persistentModelID) }
+    }
+
+    var visibleMediaSourceStringIds: Set<String> {
+        Set(self.filteredSources.map(\.id))
     }
 }
