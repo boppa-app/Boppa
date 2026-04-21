@@ -164,7 +164,7 @@ struct TracklistView: View {
     private var trackList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
+                ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { _, track in
                     TrackRow(
                         track: track,
                         isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
@@ -175,7 +175,7 @@ struct TracklistView: View {
                     )
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(index == self.viewModel.displayTracks.count - 1 && !self.viewModel.hasMorePages ? .clear : Color(.systemGray5))
+                    .listRowSeparator(.hidden)
                 }
 
                 if self.viewModel.hasMorePages {

@@ -94,7 +94,7 @@ struct SearchView: View {
                 .buttonStyle(.plain)
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
-                .listRowSeparatorTint(category == self.viewModel.availableCategories.last ? .clear : Color(.systemGray5))
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.plain)
@@ -188,7 +188,7 @@ struct SearchView: View {
             List {
                 switch self.viewModel.results {
                 case let .songs(tracks), let .videos(tracks):
-                    ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
+                    ForEach(Array(tracks.enumerated()), id: \.element.id) { _, track in
                         TrackRow(
                             track: track,
                             isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
@@ -197,13 +197,12 @@ struct SearchView: View {
                             onTap: { self.playTrack(track, from: tracks) },
                             onEllipsisTap: { self.trackForActions = track }
                         )
-                        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == tracks.count - 1 ? .clear : Color(.systemGray5))
+                        .listRowSeparator(.hidden)
                     }
                 case let .albums(tracklists):
-                    ForEach(Array(tracklists.enumerated()), id: \.element.id) { index, tracklist in
+                    ForEach(Array(tracklists.enumerated()), id: \.element.id) { _, tracklist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getAlbum != nil
                         {
@@ -223,23 +222,20 @@ struct SearchView: View {
                                 )
                             } label: {
                                 TracklistRow(tracklist: tracklist)
-                                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
-                            .padding(.trailing, 16)
+                            .listRowSeparator(.hidden)
                         } else {
                             TracklistRow(tracklist: tracklist)
-                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                                 .listRowBackground(Color.black)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
+                                .listRowSeparator(.hidden)
                         }
                     }
                 case let .artists(artists):
-                    ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
+                    ForEach(Array(artists.enumerated()), id: \.element.id) { _, artist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getArtist != nil
                         {
@@ -250,23 +246,20 @@ struct SearchView: View {
                                 )
                             } label: {
                                 ArtistRow(artist: artist)
-                                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
-                            .padding(.trailing, 16)
+                            .listRowSeparator(.hidden)
                         } else {
                             ArtistRow(artist: artist)
-                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                                 .listRowBackground(Color.black)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparatorTint(index == artists.count - 1 ? .clear : Color(.systemGray5))
+                                .listRowSeparator(.hidden)
                         }
                     }
                 case let .playlists(tracklists):
-                    ForEach(Array(tracklists.enumerated()), id: \.element.id) { index, tracklist in
+                    ForEach(Array(tracklists.enumerated()), id: \.element.id) { _, tracklist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getPlaylist != nil
                         {
@@ -286,19 +279,16 @@ struct SearchView: View {
                                 )
                             } label: {
                                 TracklistRow(tracklist: tracklist)
-                                    .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
-                            .padding(.trailing, 16)
+                            .listRowSeparator(.hidden)
                         } else {
                             TracklistRow(tracklist: tracklist)
-                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                                 .listRowBackground(Color.black)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparatorTint(index == tracklists.count - 1 ? .clear : Color(.systemGray5))
+                                .listRowSeparator(.hidden)
                         }
                     }
                 }

@@ -24,8 +24,12 @@ struct TrackRow: View {
         self.style == .compact ? .subheadline : .body
     }
 
-    private var horizontalPadding: CGFloat {
-        self.style == .compact ? 10 : 16
+    private var leftPadding: CGFloat {
+        self.style == .compact ? 10 : 18
+    }
+
+    private var rightPadding: CGFloat {
+        self.style == .compact ? 10 : 4
     }
 
     private var verticalPadding: CGFloat {
@@ -86,7 +90,8 @@ struct TrackRow: View {
                 }
             }
         }
-        .padding(.horizontal, self.horizontalPadding)
+        .padding(.leading, self.leftPadding)
+        .padding(.trailing, self.rightPadding)
         .padding(.vertical, self.verticalPadding)
         .contentShape(Rectangle())
         .onTapGesture {

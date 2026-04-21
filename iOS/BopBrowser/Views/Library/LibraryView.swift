@@ -60,8 +60,7 @@ struct LibraryView: View {
                 self.pinnedHeader
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(self.viewModel.isPinnedExpanded && !self.viewModel.pinnedTracklists.isEmpty ? .visible : .hidden, edges: .bottom)
-                    .listRowSeparator(.hidden, edges: .top)
+                    .listRowSeparator(.hidden)
 
                 if self.viewModel.isPinnedExpanded {
                     if self.viewModel.pinnedTracklists.isEmpty {
@@ -76,7 +75,7 @@ struct LibraryView: View {
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparator(.hidden)
                     } else {
-                        ForEach(self.viewModel.pinnedTracklists, id: \.id) { stored in
+                        ForEach(Array(self.viewModel.pinnedTracklists.enumerated()), id: \.element.id) { _, stored in
                             NavigationLink {
                                 TracklistView(tracklist: Tracklist(storedTracklist: stored))
                             } label: {
@@ -87,7 +86,7 @@ struct LibraryView: View {
                             }
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(Color(.systemGray5))
+                            .listRowSeparator(.hidden)
                         }
                     }
                 }

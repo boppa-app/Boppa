@@ -65,6 +65,21 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                 }
             }
             .frame(height: 44)
+
+            Rectangle()
+                .fill(Color(.systemGray6))
+                .overlay(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black.opacity(0.5), location: 0),
+                            .init(color: .clear, location: 0.5),
+                            .init(color: .black.opacity(0.5), location: 1),
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 2)
         }
     }
 }

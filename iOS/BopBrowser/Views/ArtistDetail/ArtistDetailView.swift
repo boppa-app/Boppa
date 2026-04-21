@@ -117,7 +117,7 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(albums.enumerated()), id: \.element.id) { index, tracklist in
+            ForEach(Array(albums.enumerated()), id: \.element.id) { _, tracklist in
                 if self.mediaSource.config.data?.getAlbum != nil {
                     NavigationLink {
                         TracklistView(
@@ -135,19 +135,16 @@ struct ArtistDetailView: View {
                         )
                     } label: {
                         TracklistRow(tracklist: tracklist)
-                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                     }
                     .buttonStyle(.plain)
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
-                    .padding(.trailing, 16)
+                    .listRowSeparator(.hidden)
                 } else {
                     TracklistRow(tracklist: tracklist)
-                        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == albums.count - 1 ? .clear : Color(.systemGray5))
+                        .listRowSeparator(.hidden)
                 }
             }
         }
@@ -161,7 +158,7 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(songs.enumerated()), id: \.element.id) { index, track in
+            ForEach(Array(songs.enumerated()), id: \.element.id) { _, track in
                 TrackRow(
                     track: track,
                     isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
@@ -170,10 +167,9 @@ struct ArtistDetailView: View {
                     onTap: { self.playTrack(track, from: songs) },
                     onEllipsisTap: { self.trackForActions = track }
                 )
-                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowSeparatorTint(index == songs.count - 1 ? .clear : Color(.systemGray5))
+                .listRowSeparator(.hidden)
             }
         }
     }
@@ -186,7 +182,7 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(videos.enumerated()), id: \.element.id) { index, track in
+            ForEach(Array(videos.enumerated()), id: \.element.id) { _, track in
                 TrackRow(
                     track: track,
                     isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
@@ -195,10 +191,9 @@ struct ArtistDetailView: View {
                     onTap: { self.playTrack(track, from: videos) },
                     onEllipsisTap: { self.trackForActions = track }
                 )
-                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                 .listRowBackground(Color.black)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowSeparatorTint(index == videos.count - 1 ? .clear : Color(.systemGray5))
+                .listRowSeparator(.hidden)
             }
         }
     }
@@ -211,7 +206,7 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(playlists.enumerated()), id: \.element.id) { index, tracklist in
+            ForEach(Array(playlists.enumerated()), id: \.element.id) { _, tracklist in
                 if self.mediaSource.config.data?.getPlaylist != nil {
                     NavigationLink {
                         TracklistView(
@@ -229,19 +224,16 @@ struct ArtistDetailView: View {
                         )
                     } label: {
                         TracklistRow(tracklist: tracklist)
-                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                     }
                     .buttonStyle(.plain)
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
-                    .padding(.trailing, 16)
+                    .listRowSeparator(.hidden)
                 } else {
                     TracklistRow(tracklist: tracklist)
-                        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == playlists.count - 1 ? .clear : Color(.systemGray5))
+                        .listRowSeparator(.hidden)
                 }
             }
         }

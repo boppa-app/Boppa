@@ -101,25 +101,22 @@ struct TracklistListView: View {
     private var tracklistList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.tracklists.enumerated()), id: \.element.id) { index, tracklist in
+                ForEach(Array(self.viewModel.tracklists.enumerated()), id: \.element.id) { _, tracklist in
                     if self.canNavigateToTracklist {
                         NavigationLink {
                             TracklistView(tracklist: tracklist)
                         } label: {
                             TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
-                                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                         }
                         .buttonStyle(.plain)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparatorTint(index == self.viewModel.tracklists.count - 1 ? .clear : Color(.systemGray5))
-                        .padding(.trailing, 16)
+                        .listRowSeparator(.hidden)
                     } else {
                         TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
-                            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] - 16 }
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparatorTint(index == self.viewModel.tracklists.count - 1 ? .clear : Color(.systemGray5))
+                            .listRowSeparator(.hidden)
                     }
                 }
             }

@@ -292,7 +292,7 @@ struct TracklistActionSheet: View {
                     .buttonStyle(.plain)
                     .listRowBackground(Color(.systemGray6))
                     .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-                    .listRowSeparatorTint(mode == modes.first || mode == modes.last ? .clear : Color(.systemGray5))
+                    .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)
