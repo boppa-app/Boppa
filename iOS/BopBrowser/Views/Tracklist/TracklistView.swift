@@ -48,23 +48,24 @@ struct TracklistView: View {
                                     self.showActionSheet = true
                                 }
                         } else if self.canSave {
-                            Button {
-                                self.viewModel.saveToLibrary(modelContext: self.modelContext)
-                            } label: {
-                                Group {
-                                    if self.viewModel.isSaving {
-                                        ProgressView()
-                                            .scaleEffect(0.7)
-                                            .tint(.white)
-                                    } else {
-                                        Image(systemName: "bookmark")
-                                            .font(.system(size: 18))
-                                            .foregroundColor(.purp)
-                                    }
+                            Group {
+                                if self.viewModel.isSaving {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "bookmark")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.purp)
                                 }
                             }
                             .frame(width: 44, height: 44)
-                            .disabled(self.viewModel.isSaving)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if !self.viewModel.isSaving {
+                                    self.viewModel.saveToLibrary(modelContext: self.modelContext)
+                                }
+                            }
                         }
                     }
                 },
