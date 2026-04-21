@@ -458,6 +458,7 @@ class TracklistService {
             existing.subtitle = tracklist.subtitle
             existing.artworkUrl = tracklist.artworkUrl
             existing.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
+            existing.artistsJSON = StoredTracklist.encodeArtists(tracklist.artists)
             return existing
         }
 
@@ -468,7 +469,8 @@ class TracklistService {
             mediaSourceId: tracklist.mediaSourceId,
             artworkUrl: tracklist.artworkUrl,
             tracklistType: tracklist.tracklistType.rawValue,
-            metadata: tracklist.metadata
+            metadata: tracklist.metadata,
+            artists: tracklist.artists
         )
         modelContext.insert(stored)
         return stored

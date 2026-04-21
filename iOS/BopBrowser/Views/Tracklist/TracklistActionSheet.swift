@@ -2,12 +2,14 @@ import SwiftUI
 
 struct TracklistActionSheet: View {
     let tracklist: Tracklist
+    let mediaSource: MediaSource?
     let isPinned: Bool
     let isRefreshing: Bool
     let sortMode: TracklistSortMode
     let onPin: () -> Void
     let onRefresh: () -> Void
     let onSortSelected: (TracklistSortMode) -> Void
+    let onArtistSelected: ((Artist) -> Void)?
     let onDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -25,6 +27,7 @@ struct TracklistActionSheet: View {
                     self.refreshRow
                     self.pinRow
                     self.sortRow
+                    self.artistRow
                     self.deleteRow
                 }
                 .listStyle(.plain)
@@ -56,7 +59,7 @@ struct TracklistActionSheet: View {
                         font: .title3,
                         fontWeight: .semibold
                     )
-                    if let subtitle = self.tracklist.subtitle ?? self.tracklist.artist?.name {
+                    if let subtitle = self.tracklist.subtitle {
                         MarqueeText(
                             subtitle,
                             font: .subheadline,
@@ -155,6 +158,44 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+    }
+
+    @ViewBuilder
+    private var artistRow: some View {
+        if self.mediaSource?.config.data?.getArtist != nil {
+            ForEach(self.tracklist.artists) { artist in
+                Button {
+                    self.dismiss()
+                    self.onArtistSelected?(artist)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.purp)
+                            .frame(width: 24)
+                        (
+                            Text("Go to ")
+                                .italic()
+                                .foregroundColor(.white)
+                                + Text(artist.name)
+                                .bold()
+                                .foregroundColor(.purp)
+                        )
+                        .font(.body)
+                        .lineLimit(1)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.purp)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Color(.systemGray6))
+                .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                .listRowSeparator(.hidden)
+            }
+        }
     }
 
     private var deleteRow: some View {

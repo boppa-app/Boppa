@@ -161,6 +161,23 @@ class PaginatedScriptExecutor {
         guard let title = item["title"] as? String,
               let id = self.resolveString(item["id"])
         else { return nil }
+
+        var artists: [Artist] = []
+        if let rawArtists = item["artists"] as? [[String: Any]] {
+            for data in rawArtists {
+                guard let artistId = self.resolveString(data["id"]),
+                      let name = data["name"] as? String
+                else { continue }
+                artists.append(Artist(
+                    id: artistId,
+                    mediaSourceId: mediaSourceId,
+                    name: name,
+                    artworkUrl: data["artworkUrl"] as? String,
+                    metadata: data["metadata"] as? [String: Any] ?? [:]
+                ))
+            }
+        }
+
         return Tracklist(
             id: id,
             mediaSourceId: mediaSourceId,
@@ -170,7 +187,8 @@ class PaginatedScriptExecutor {
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
             metadata: item["metadata"] as? [String: Any] ?? [:],
-            tracklistType: tracklistType
+            tracklistType: tracklistType,
+            artists: artists
         )
     }
 

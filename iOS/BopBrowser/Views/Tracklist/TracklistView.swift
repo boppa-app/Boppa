@@ -86,6 +86,7 @@ struct TracklistView: View {
         .sheet(isPresented: self.$showActionSheet) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
+                mediaSource: TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId, modelContext: self.modelContext),
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
                 sortMode: self.viewModel.sortMode,
@@ -98,6 +99,7 @@ struct TracklistView: View {
                 onSortSelected: { mode in
                     self.viewModel.setSortMode(mode, modelContext: self.modelContext)
                 },
+                onArtistSelected: { artist in self.pendingArtist = artist },
                 onDelete: {
                     self.viewModel.deleteFromLibrary(modelContext: self.modelContext)
                     self.dismiss()
@@ -135,6 +137,7 @@ struct TracklistView: View {
                     artworkUrl: tracklist.artworkUrl,
                     metadata: tracklist.metadata,
                     tracklistType: tracklist.tracklistType,
+                    artists: tracklist.artists,
                     storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
                 )
             )

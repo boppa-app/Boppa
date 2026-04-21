@@ -217,6 +217,7 @@ struct SearchView: View {
                                         artworkUrl: tracklist.artworkUrl,
                                         metadata: tracklist.metadata,
                                         tracklistType: .album,
+                                        artists: tracklist.artists,
                                         storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
                                     )
                                 )
@@ -279,6 +280,7 @@ struct SearchView: View {
                                         artworkUrl: tracklist.artworkUrl,
                                         metadata: tracklist.metadata,
                                         tracklistType: .playlist,
+                                        artists: tracklist.artists,
                                         storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
                                     )
                                 )
@@ -346,6 +348,7 @@ struct SearchView: View {
                         artworkUrl: tracklist.artworkUrl,
                         metadata: tracklist.metadata,
                         tracklistType: tracklist.tracklistType,
+                        artists: tracklist.artists,
                         storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
                     )
                 )
