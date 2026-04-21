@@ -16,20 +16,14 @@ class TracklistService {
     static let shared = TracklistService()
 
     private let paginated = PaginatedScriptExecutor.shared
-    private var mediaSourceCache: [String: MediaSource] = [:]
 
     private init() {}
 
     func resolveMediaSource(mediaSourceId: String, modelContext: ModelContext) -> MediaSource? {
-        if let cached = self.mediaSourceCache[mediaSourceId] { return cached }
         let descriptor = FetchDescriptor<MediaSource>(
             predicate: #Predicate { $0.id == mediaSourceId }
         )
-        if let mediaSource = try? modelContext.fetch(descriptor).first {
-            self.mediaSourceCache[mediaSourceId] = mediaSource
-            return mediaSource
-        }
-        return nil
+        return try? modelContext.fetch(descriptor).first
     }
 
     func fetchTracklist(
