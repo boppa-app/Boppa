@@ -43,6 +43,7 @@ final class StoredTracklist {
     var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
     var metadataJSON: Data = Data()
     var artistsJSON: Data = Data()
+    var fromArtistJSON: Data = Data()
     var isPinned: Bool = false
 
     @Relationship(deleteRule: .cascade)
@@ -78,6 +79,21 @@ final class StoredTracklist {
         }
     }
 
+    var fromArtist: Artist? {
+        guard !self.fromArtistJSON.isEmpty,
+              let data = try? JSONSerialization.jsonObject(with: self.fromArtistJSON) as? [String: Any],
+              let id = data["id"] as? String,
+              let name = data["name"] as? String
+        else { return nil }
+        return Artist(
+            id: id,
+            mediaSourceId: self.mediaSourceId,
+            name: name,
+            artworkUrl: data["artworkUrl"] as? String,
+            metadata: data["metadata"] as? [String: Any] ?? [:]
+        )
+    }
+
     init(
         id: String,
         name: String,
@@ -86,7 +102,8 @@ final class StoredTracklist {
         artworkUrl: String? = nil,
         tracklistType: String,
         metadata: [String: Any] = [:],
-        artists: [Artist] = []
+        artists: [Artist] = [],
+        fromArtist: Artist? = nil
     ) {
         self.id = id
         self.name = name
@@ -96,6 +113,7 @@ final class StoredTracklist {
         self.tracklistType = tracklistType
         self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
         self.artistsJSON = StoredTracklist.encodeArtists(artists)
+        self.fromArtistJSON = StoredTracklist.encodeArtist(fromArtist)
     }
 
     var trackCount: Int {
@@ -111,5 +129,13 @@ final class StoredTracklist {
             return data
         }
         return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
+    }
+
+    static func encodeArtist(_ artist: Artist?) -> Data {
+        guard let artist else { return Data() }
+        var data: [String: Any] = ["id": artist.id, "name": artist.name]
+        if let artworkUrl = artist.artworkUrl { data["artworkUrl"] = artworkUrl }
+        if !artist.metadata.isEmpty { data["metadata"] = artist.metadata }
+        return (try? JSONSerialization.data(withJSONObject: data)) ?? Data()
     }
 }

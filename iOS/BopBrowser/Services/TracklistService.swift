@@ -242,7 +242,7 @@ class TracklistService {
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
 
-        guard let artist = tracklist.artist else {
+        guard let artist = tracklist.fromArtist else {
             logger.warning("No artist for \(scriptName) on '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
@@ -453,6 +453,7 @@ class TracklistService {
             existing.artworkUrl = tracklist.artworkUrl
             existing.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
             existing.artistsJSON = StoredTracklist.encodeArtists(tracklist.artists)
+            existing.fromArtistJSON = StoredTracklist.encodeArtist(tracklist.fromArtist)
             return existing
         }
 
@@ -464,7 +465,8 @@ class TracklistService {
             artworkUrl: tracklist.artworkUrl,
             tracklistType: tracklist.tracklistType.rawValue,
             metadata: tracklist.metadata,
-            artists: tracklist.artists
+            artists: tracklist.artists,
+            fromArtist: tracklist.fromArtist
         )
         modelContext.insert(stored)
         return stored

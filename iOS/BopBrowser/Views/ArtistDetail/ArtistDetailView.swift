@@ -276,7 +276,7 @@ struct ArtistDetailView: View {
             title: "Songs",
             artworkUrl: self.artist.artworkUrl,
             tracklistType: .artistSongs,
-            artist: self.artist,
+            fromArtist: self.artist,
             artistDetail: detail
         )
         return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
@@ -295,7 +295,7 @@ struct ArtistDetailView: View {
             title: "Videos",
             artworkUrl: self.artist.artworkUrl,
             tracklistType: .artistVideos,
-            artist: self.artist,
+            fromArtist: self.artist,
             artistDetail: detail
         )
         return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")

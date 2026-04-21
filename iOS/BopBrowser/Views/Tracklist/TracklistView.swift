@@ -33,7 +33,7 @@ struct TracklistView: View {
         VStack(spacing: 0) {
             DetailHeaderView(
                 title: self.viewModel.tracklist.title,
-                highlightedTitle: self.viewModel.tracklist.artist?.name,
+                highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
                 onBack: { self.dismiss() },
                 trailing: {
                     HStack(spacing: 0) {
