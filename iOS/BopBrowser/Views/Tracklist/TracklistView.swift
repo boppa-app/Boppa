@@ -1,7 +1,37 @@
 import SwiftData
 import SwiftUI
 
-// TODO: Add search bar button to the top right and ensure the search bar is always visible when toggled (follows DetailHeaderView)
+private struct ScrollInfo: Equatable {
+    var contentOffset: CGFloat
+    var contentHeight: CGFloat
+    var containerHeight: CGFloat
+}
+
+private struct ScrollDirectionTracker: ViewModifier {
+    let isEnabled: Bool
+    let onScrollChange: (_ oldInfo: ScrollInfo, _ newInfo: ScrollInfo) -> Void
+
+    func body(content: Content) -> some View {
+        if self.isEnabled {
+            if #available(iOS 18.0, *) {
+                content
+                    .onScrollGeometryChange(for: ScrollInfo.self) { geometry in
+                        ScrollInfo(
+                            contentOffset: geometry.contentOffset.y,
+                            contentHeight: geometry.contentSize.height,
+                            containerHeight: geometry.visibleRect.height
+                        )
+                    } action: { oldInfo, newInfo in
+                        self.onScrollChange(oldInfo, newInfo)
+                    }
+            } else {
+                content
+            }
+        } else {
+            content
+        }
+    }
+}
 
 struct TracklistView: View {
     @Environment(\.modelContext) private var modelContext
@@ -11,6 +41,8 @@ struct TracklistView: View {
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
+    @State private var searchText = ""
+    @State private var showSearchBar = true
 
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -75,8 +107,12 @@ struct TracklistView: View {
                             .scaleEffect(0.7)
                             .tint(.white)
                     }
-                }
+                },
+                searchText: self.isSaved ? self.$searchText : nil,
+                showSearchBar: self.isSaved ? self.$showSearchBar : nil,
+                searchPlaceholder: "Search tracks"
             )
+
             self.content
         }
         .navigationBarHidden(true)
@@ -193,6 +229,33 @@ struct TracklistView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.immediately)
+            .modifier(ScrollDirectionTracker(
+                isEnabled: self.isSaved,
+                onScrollChange: self.handleScrollChange
+            ))
+        }
+    }
+
+    private func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo) {
+        let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
+        guard isScrollable else { return }
+
+        let delta = newInfo.contentOffset - oldInfo.contentOffset
+        let scrollThreshold: CGFloat = 15
+
+        if delta > scrollThreshold, newInfo.contentOffset > 50 {
+            if self.showSearchBar {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.showSearchBar = false
+                }
+            }
+        } else if delta < -scrollThreshold {
+            if !self.showSearchBar {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.showSearchBar = true
+                }
+            }
         }
     }
 
