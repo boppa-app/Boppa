@@ -79,7 +79,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                         endPoint: .trailing
                     )
                 )
-                .frame(height: 2)
+                .frame(height: 3)
         }
     }
 }
