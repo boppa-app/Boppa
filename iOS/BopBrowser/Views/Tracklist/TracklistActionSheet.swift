@@ -87,7 +87,7 @@ struct TracklistActionSheet: View {
         } label: {
             self.rowLabel(
                 title: self.isPinned ? "Unpin" : "Pin",
-                icon: "pin.fill",
+                icon: self.isPinned ? "pin.slash.fill" : "pin.fill",
                 iconColor: self.isPinned ? .purp : .white
             )
         }
