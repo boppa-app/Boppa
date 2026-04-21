@@ -60,7 +60,8 @@ struct LibraryView: View {
                 self.pinnedHeader
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparatorTint(Color(.systemGray5))
+                    .listRowSeparator(self.viewModel.isPinnedExpanded && !self.viewModel.pinnedTracklists.isEmpty ? .visible : .hidden, edges: .bottom)
+                    .listRowSeparator(.hidden, edges: .top)
 
                 if self.viewModel.isPinnedExpanded {
                     if self.viewModel.pinnedTracklists.isEmpty {
@@ -129,29 +130,35 @@ struct LibraryView: View {
     }
 
     private func sectionButton(_ section: LibraryViewModel.LibrarySection) -> some View {
-        NavigationLink {
-            self.destinationView(for: section)
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: section.icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(.purp)
-                    .frame(width: 48, height: 48)
+        HStack(spacing: 12) {
+            Image(systemName: section.icon)
+                .font(.system(size: 16))
+                .foregroundColor(.purp)
+                .frame(width: 48, height: 48)
 
-                Text(section.displayName)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.black)
-            .contentShape(Rectangle())
+            Text(section.displayName)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.purp)
+
+            Spacer()
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black)
+        .contentShape(Rectangle())
+        .background(
+            NavigationLink(destination: self.destinationView(for: section)) { EmptyView() }
+                .opacity(0)
+        )
         .listRowBackground(Color.black)
         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-        .listRowSeparatorTint(Color(.systemGray5))
+        .listRowSeparator(.hidden)
     }
 
     @ViewBuilder

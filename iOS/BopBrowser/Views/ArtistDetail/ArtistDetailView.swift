@@ -330,8 +330,8 @@ struct ArtistDetailView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
-            Image(systemName: "arrow.right")
-                .font(.headline)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.purp)
         }
         .padding(.horizontal, 16)
