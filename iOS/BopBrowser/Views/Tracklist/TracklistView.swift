@@ -313,8 +313,21 @@ struct TracklistView: View {
         // Show on accumulated scroll up exceeds threshold
         else if self.accumulatedScrollDelta < -scrollThreshold {
             if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.4)) {
-                    self.showSearchBar = true
+                // When near the top, show immediately without animation so the
+                // search bar is fully visible before the black spacer is exposed
+                let velocity = abs(delta)
+                let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : .infinity
+                let animationFrames: CGFloat = 48 // ~0.4s at 120fps (ProMotion)
+                if framesUntilTop < animationFrames {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        self.showSearchBar = true
+                    }
+                } else {
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        self.showSearchBar = true
+                    }
                 }
                 self.accumulatedScrollDelta = 0
             }
