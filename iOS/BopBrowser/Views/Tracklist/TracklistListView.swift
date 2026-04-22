@@ -4,6 +4,8 @@ struct TracklistListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
+    @State private var scrollHandler = SearchBarScrollHandler()
+    @FocusState private var isSearchFieldFocused: Bool
 
     let artist: Artist?
     let artistDetail: ArtistDetail?
@@ -40,13 +42,39 @@ struct TracklistListView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            DetailHeaderView(
-                title: self.title,
-                highlightedTitle: self.artist?.name,
-                onBack: { self.dismiss() }
-            )
-            self.content
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                DetailHeaderView(
+                    title: self.title,
+                    highlightedTitle: self.artist?.name,
+                    onBack: { self.dismiss() },
+                    isSeparatorHidden: self.isLibraryMode && self.scrollHandler.showSearchBar
+                )
+                self.content
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                self.isSearchFieldFocused = false
+            }
+
+            if self.isLibraryMode {
+                StoredSearchToolbar(
+                    searchText: Binding(
+                        get: { self.viewModel.searchHandler.searchText },
+                        set: { self.viewModel.updateSearch($0) }
+                    ),
+                    showSearchBar: Binding(
+                        get: { self.scrollHandler.showSearchBar },
+                        set: { self.scrollHandler.showSearchBar = $0 }
+                    ),
+                    placeholder: "Find in library",
+                    isSearchFieldFocused: self.$isSearchFieldFocused,
+                    isSearching: self.viewModel.searchHandler.isFuzzySearching,
+                    fadeOpacity: self.scrollHandler.searchBarTopFade,
+                    fadeHeight: self.scrollHandler.fadeHeight
+                )
+                .padding(.top, 40)
+            }
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
@@ -101,7 +129,15 @@ struct TracklistListView: View {
     private var tracklistList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.tracklists.enumerated()), id: \.element.id) { _, tracklist in
+                if self.isLibraryMode {
+                    Color.black
+                        .frame(height: self.scrollHandler.searchBarHeight)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                }
+
+                ForEach(Array(self.viewModel.displayTracklists.enumerated()), id: \.element.id) { _, tracklist in
                     if self.canNavigateToTracklist {
                         NavigationLink {
                             TracklistView(tracklist: tracklist)
@@ -122,6 +158,16 @@ struct TracklistListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .modifier(ScrollDirectionTracker(
+                isEnabled: self.isLibraryMode,
+                onScrollChange: { oldInfo, newInfo in
+                    self.scrollHandler.handleScrollChange(
+                        oldInfo: oldInfo,
+                        newInfo: newInfo,
+                        isSearchFieldFocused: self.isSearchFieldFocused
+                    )
+                }
+            ))
         }
     }
 

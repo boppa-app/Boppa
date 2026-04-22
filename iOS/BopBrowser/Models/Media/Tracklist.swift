@@ -94,3 +94,13 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         return "\(trackCount) track\(trackCount == 1 ? "" : "s")"
     }
 }
+
+extension Tracklist: FuzzySearchable {
+    var fuzzyTitle: String {
+        self.title
+    }
+
+    var fuzzySubtitle: String? {
+        self.subtitle
+    }
+}

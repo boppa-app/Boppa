@@ -1,38 +1,6 @@
 import SwiftData
 import SwiftUI
 
-private struct ScrollInfo: Equatable {
-    var contentOffset: CGFloat
-    var contentHeight: CGFloat
-    var containerHeight: CGFloat
-}
-
-private struct ScrollDirectionTracker: ViewModifier {
-    let isEnabled: Bool
-    let onScrollChange: (_ oldInfo: ScrollInfo, _ newInfo: ScrollInfo) -> Void
-
-    func body(content: Content) -> some View {
-        if self.isEnabled {
-            if #available(iOS 18.0, *) {
-                content
-                    .onScrollGeometryChange(for: ScrollInfo.self) { geometry in
-                        ScrollInfo(
-                            contentOffset: geometry.contentOffset.y,
-                            contentHeight: geometry.contentSize.height,
-                            containerHeight: geometry.visibleRect.height
-                        )
-                    } action: { oldInfo, newInfo in
-                        self.onScrollChange(oldInfo, newInfo)
-                    }
-            } else {
-                content
-            }
-        } else {
-            content
-        }
-    }
-}
-
 struct TracklistView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -41,10 +9,8 @@ struct TracklistView: View {
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
-    @State private var showSearchBar = true
+    @State private var scrollHandler = SearchBarScrollHandler()
     @FocusState private var isSearchFieldFocused: Bool
-    @State private var accumulatedScrollDelta: CGFloat = 0
-    @State private var searchBarTopFade: CGFloat = 0
 
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -112,7 +78,7 @@ struct TracklistView: View {
                                 .tint(.white)
                         }
                     },
-                    isSeparatorHidden: self.isSaved && self.showSearchBar
+                    isSeparatorHidden: self.isSaved && self.scrollHandler.showSearchBar
                 )
 
                 self.content
@@ -125,15 +91,18 @@ struct TracklistView: View {
             if self.isSaved {
                 StoredSearchToolbar(
                     searchText: Binding(
-                        get: { self.viewModel.searchText },
+                        get: { self.viewModel.searchHandler.searchText },
                         set: { self.viewModel.updateSearch($0) }
                     ),
-                    showSearchBar: self.$showSearchBar,
-                    placeholder: "Find in music",
+                    showSearchBar: Binding(
+                        get: { self.scrollHandler.showSearchBar },
+                        set: { self.scrollHandler.showSearchBar = $0 }
+                    ),
+                    placeholder: "Find in library",
                     isSearchFieldFocused: self.$isSearchFieldFocused,
-                    isSearching: self.viewModel.isFuzzySearching,
-                    fadeOpacity: self.searchBarTopFade,
-                    fadeHeight: self.fadeHeight
+                    isSearching: self.viewModel.searchHandler.isFuzzySearching,
+                    fadeOpacity: self.scrollHandler.searchBarTopFade,
+                    fadeHeight: self.scrollHandler.fadeHeight
                 )
                 .padding(.top, 40)
             }
@@ -220,15 +189,12 @@ struct TracklistView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private let searchBarHeight: CGFloat = 52
-    private let fadeHeight: CGFloat = 40
-
     private var trackList: some View {
         ScrollFadeView {
             List {
                 if self.isSaved {
                     Color.black
-                        .frame(height: self.searchBarHeight)
+                        .frame(height: self.scrollHandler.searchBarHeight)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
@@ -271,69 +237,14 @@ struct TracklistView: View {
             .scrollContentBackground(.hidden)
             .modifier(ScrollDirectionTracker(
                 isEnabled: self.isSaved,
-                onScrollChange: self.handleScrollChange
+                onScrollChange: { oldInfo, newInfo in
+                    self.scrollHandler.handleScrollChange(
+                        oldInfo: oldInfo,
+                        newInfo: newInfo,
+                        isSearchFieldFocused: self.isSearchFieldFocused
+                    )
+                }
             ))
-        }
-    }
-
-    private func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo) {
-        // Update fade based on scroll offset
-        self.searchBarTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
-
-        let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
-        guard isScrollable, !self.isSearchFieldFocused else { return }
-
-        let delta = newInfo.contentOffset - oldInfo.contentOffset
-        let scrollThreshold: CGFloat = 50
-
-        // Always show when at or near the top
-        if newInfo.contentOffset <= 0 {
-            self.accumulatedScrollDelta = 0
-            if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.4)) {
-                    self.showSearchBar = true
-                }
-            }
-            return
-        }
-
-        // Accumulate delta in the same direction, reset if direction changes
-        if (delta > 0 && self.accumulatedScrollDelta < 0) || (delta < 0 && self.accumulatedScrollDelta > 0) {
-            self.accumulatedScrollDelta = 0
-        }
-
-        self.accumulatedScrollDelta += delta
-
-        // Hide on accumulated scroll down exceeds threshold
-        if self.accumulatedScrollDelta > scrollThreshold {
-            if self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.4)) {
-                    self.showSearchBar = false
-                }
-                self.accumulatedScrollDelta = 0
-            }
-        }
-        // Show on accumulated scroll up exceeds threshold
-        else if self.accumulatedScrollDelta < -scrollThreshold {
-            if !self.showSearchBar {
-                // When near the top, show immediately without animation so the
-                // search bar is fully visible before the black spacer is exposed
-                let velocity = abs(delta)
-                let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : .infinity
-                let animationFrames: CGFloat = 48 // ~0.4s at 120fps (ProMotion)
-                if framesUntilTop < animationFrames {
-                    var transaction = Transaction()
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) {
-                        self.showSearchBar = true
-                    }
-                } else {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        self.showSearchBar = true
-                    }
-                }
-                self.accumulatedScrollDelta = 0
-            }
         }
     }
 

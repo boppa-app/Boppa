@@ -19,8 +19,18 @@ class TracklistListViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    let searchHandler = FuzzySearchHandler<Tracklist>()
+
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
+
+    var displayTracklists: [Tracklist] {
+        self.searchHandler.displayItems(from: self.tracklists)
+    }
+
+    func updateSearch(_ text: String) {
+        self.searchHandler.updateSearch(text, items: self.tracklists)
+    }
 
     func loadFromArtist(
         type: TracklistListType,

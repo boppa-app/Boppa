@@ -60,3 +60,13 @@ struct Track: Identifiable, Equatable {
         return String(format: "%d:%02d", minutes, secs)
     }
 }
+
+extension Track: FuzzySearchable {
+    var fuzzyTitle: String {
+        self.title
+    }
+
+    var fuzzySubtitle: String? {
+        self.subtitle
+    }
+}
