@@ -8,10 +8,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
     @ViewBuilder let trailing: () -> TrailingContent
     @ViewBuilder let centerTrailing: () -> CenterContent
 
-    private var searchText: Binding<String>?
-    private var showSearchBar: Binding<Bool>?
-    private var searchPlaceholder: String
-    private var isSearchFieldFocused: FocusState<Bool>.Binding?
+    private var isSeparatorHidden: Bool
 
     init(
         title: String,
@@ -20,10 +17,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         @ViewBuilder centerLeading: @escaping () -> CenterLeadingContent = { EmptyView() },
         @ViewBuilder trailing: @escaping () -> TrailingContent = { EmptyView() },
         @ViewBuilder centerTrailing: @escaping () -> CenterContent = { EmptyView() },
-        searchText: Binding<String>? = nil,
-        showSearchBar: Binding<Bool>? = nil,
-        searchPlaceholder: String = "Search",
-        isSearchFieldFocused: FocusState<Bool>.Binding? = nil
+        isSeparatorHidden: Bool = false
     ) {
         self.title = title
         self.highlightedTitle = highlightedTitle
@@ -31,32 +25,14 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         self.centerLeading = centerLeading
         self.trailing = trailing
         self.centerTrailing = centerTrailing
-        self.searchText = searchText
-        self.showSearchBar = showSearchBar
-        self.searchPlaceholder = searchPlaceholder
-        self.isSearchFieldFocused = isSearchFieldFocused
+        self.isSeparatorHidden = isSeparatorHidden
     }
 
     private let buttonWidth: CGFloat = 48
     private let progressViewSize: CGFloat = 20
 
-    private var hasSearchBar: Bool {
-        self.searchText != nil && self.showSearchBar != nil
-    }
-
-    private var isSearchBarVisible: Bool {
-        self.showSearchBar?.wrappedValue ?? false
-    }
-
     var body: some View {
-        if self.hasSearchBar {
-            ZStack(alignment: .top) {
-                self.header
-                self.searchBarView
-            }
-        } else {
-            self.header
-        }
+        self.header
     }
 
     private var header: some View {
@@ -98,7 +74,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
             }
             .frame(height: 44)
 
-            if !self.isSearchBarVisible {
+            if !self.isSeparatorHidden {
                 Rectangle()
                     .fill(Color(.systemGray6))
                     .overlay(
@@ -114,22 +90,6 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                     )
                     .frame(height: 3)
             }
-        }
-    }
-
-    @ViewBuilder
-    private var searchBarView: some View {
-        if let searchText = self.searchText,
-           let showSearchBar = self.showSearchBar,
-           let isSearchFieldFocused = self.isSearchFieldFocused
-        {
-            StoredSearchToolbar(
-                searchText: searchText,
-                showSearchBar: showSearchBar,
-                placeholder: self.searchPlaceholder,
-                isSearchFieldFocused: isSearchFieldFocused
-            )
-            .padding(.top, 40)
         }
     }
 }

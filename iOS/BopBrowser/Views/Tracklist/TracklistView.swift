@@ -45,6 +45,7 @@ struct TracklistView: View {
     @State private var showSearchBar = true
     @FocusState private var isSearchFieldFocused: Bool
     @State private var accumulatedScrollDelta: CGFloat = 0
+    @State private var searchBarTopFade: CGFloat = 0
 
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -64,63 +65,74 @@ struct TracklistView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            DetailHeaderView(
-                title: self.viewModel.tracklist.title,
-                highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
-                onBack: { self.dismiss() },
-                trailing: {
-                    HStack(spacing: 0) {
-                        if self.isSaved {
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 16))
-                                .foregroundColor(.purp)
-                                .rotationEffect(.degrees(90))
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                DetailHeaderView(
+                    title: self.viewModel.tracklist.title,
+                    highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
+                    onBack: { self.dismiss() },
+                    trailing: {
+                        HStack(spacing: 0) {
+                            if self.isSaved {
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.purp)
+                                    .rotationEffect(.degrees(90))
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        self.showActionSheet = true
+                                    }
+                            } else if self.canSave {
+                                Group {
+                                    if self.viewModel.isSaving {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                            .tint(.white)
+                                    } else {
+                                        Image(systemName: "bookmark")
+                                            .font(.system(size: 18))
+                                            .foregroundColor(.purp)
+                                    }
+                                }
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
-                                    self.showActionSheet = true
-                                }
-                        } else if self.canSave {
-                            Group {
-                                if self.viewModel.isSaving {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: "bookmark")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(.purp)
-                                }
-                            }
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                if !self.viewModel.isSaving {
-                                    self.viewModel.saveToLibrary(modelContext: self.modelContext)
+                                    if !self.viewModel.isSaving {
+                                        self.viewModel.saveToLibrary(modelContext: self.modelContext)
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-                centerTrailing: {
-                    if self.viewModel.isRefreshing {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .tint(.white)
-                    }
-                },
-                searchText: self.isSaved ? self.$searchText : nil,
-                showSearchBar: self.isSaved ? self.$showSearchBar : nil,
-                searchPlaceholder: "Search tracks",
-                isSearchFieldFocused: self.isSaved ? self.$isSearchFieldFocused : nil
-            )
+                    },
+                    centerTrailing: {
+                        if self.viewModel.isRefreshing {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .tint(.white)
+                        }
+                    },
+                    isSeparatorHidden: self.isSaved && self.showSearchBar
+                )
 
-            self.content
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    self.isSearchFieldFocused = false
-                }
+                self.content
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        self.isSearchFieldFocused = false
+                    }
+            }
+
+            if self.isSaved {
+                StoredSearchToolbar(
+                    searchText: self.$searchText,
+                    showSearchBar: self.$showSearchBar,
+                    placeholder: "Search tracks",
+                    isSearchFieldFocused: self.$isSearchFieldFocused,
+                    fadeOpacity: self.searchBarTopFade,
+                    fadeHeight: self.fadeHeight
+                )
+                .padding(.top, 40)
+            }
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
@@ -208,9 +220,20 @@ struct TracklistView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private let searchBarHeight: CGFloat = 52
+    private let fadeHeight: CGFloat = 40
+
     private var trackList: some View {
         ScrollFadeView {
             List {
+                if self.isSaved {
+                    Color.black
+                        .frame(height: self.searchBarHeight)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                }
+
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { _, track in
                     TrackRow(
                         track: track,
@@ -254,7 +277,6 @@ struct TracklistView: View {
         }
     }
 
-    // TODO: Place StoredSearchToolbar on top of list, add padding to the top of the list
     private func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo) {
         let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
         guard isScrollable else { return }
@@ -262,11 +284,14 @@ struct TracklistView: View {
         let delta = newInfo.contentOffset - oldInfo.contentOffset
         let scrollThreshold: CGFloat = 50
 
+        // Update fade based on scroll offset
+        self.searchBarTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
+
         // Always show when at or near the top
         if newInfo.contentOffset <= 0 {
             self.accumulatedScrollDelta = 0
             if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.easeInOut(duration: 0.6)) {
                     self.showSearchBar = true
                 }
             }
@@ -277,13 +302,13 @@ struct TracklistView: View {
         if (delta > 0 && self.accumulatedScrollDelta < 0) || (delta < 0 && self.accumulatedScrollDelta > 0) {
             self.accumulatedScrollDelta = 0
         }
-        
+
         self.accumulatedScrollDelta += delta
 
         // Hide on accumulated scroll down exceeds threshold
         if self.accumulatedScrollDelta > scrollThreshold {
             if self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.easeInOut(duration: 0.6)) {
                     self.showSearchBar = false
                 }
                 self.accumulatedScrollDelta = 0
@@ -292,7 +317,7 @@ struct TracklistView: View {
         // Show on accumulated scroll up exceeds threshold
         else if self.accumulatedScrollDelta < -scrollThreshold {
             if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.easeInOut(duration: 0.6)) {
                     self.showSearchBar = true
                 }
                 self.accumulatedScrollDelta = 0
