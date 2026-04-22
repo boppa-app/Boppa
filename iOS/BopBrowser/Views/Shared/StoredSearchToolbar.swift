@@ -57,11 +57,10 @@ struct StoredSearchToolbar: View {
                                     .padding(.vertical, 2)
 
                                 Button {
-                                    self.searchText = ""
                                     self.isSearchFieldFocused.wrappedValue = false
                                 } label: {
-                                    Text("Cancel")
-                                        .font(.system(size: 15, weight: .bold))
+                                    Text("Done")
+                                        .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(.purp)
                                 }
                                 .padding(.horizontal, 12)
