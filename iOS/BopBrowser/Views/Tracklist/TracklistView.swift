@@ -81,6 +81,7 @@ struct TracklistView: View {
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
+                                        self.isSearchFieldFocused = false
                                         self.showActionSheet = true
                                     }
                             } else if self.canSave {
@@ -116,10 +117,10 @@ struct TracklistView: View {
                 )
 
                 self.content
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        self.isSearchFieldFocused = false
-                    }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                self.isSearchFieldFocused = false
             }
 
             if self.isSaved {
@@ -207,10 +208,6 @@ struct TracklistView: View {
             } else if self.viewModel.tracks.isEmpty && self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        self.isSearchFieldFocused = false
-                    }
             } else if self.viewModel.tracks.isEmpty {
                 self.emptyState
             } else {
@@ -269,7 +266,6 @@ struct TracklistView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .scrollDismissesKeyboard(.immediately)
             .modifier(ScrollDirectionTracker(
                 isEnabled: self.isSaved,
                 onScrollChange: self.handleScrollChange
@@ -278,20 +274,20 @@ struct TracklistView: View {
     }
 
     private func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo) {
+        // Update fade based on scroll offset
+        self.searchBarTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
+
         let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
-        guard isScrollable else { return }
+        guard isScrollable, !self.isSearchFieldFocused else { return }
 
         let delta = newInfo.contentOffset - oldInfo.contentOffset
         let scrollThreshold: CGFloat = 50
-
-        // Update fade based on scroll offset
-        self.searchBarTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
 
         // Always show when at or near the top
         if newInfo.contentOffset <= 0 {
             self.accumulatedScrollDelta = 0
             if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.6)) {
+                withAnimation(.easeInOut(duration: 0.4)) {
                     self.showSearchBar = true
                 }
             }
@@ -308,7 +304,7 @@ struct TracklistView: View {
         // Hide on accumulated scroll down exceeds threshold
         if self.accumulatedScrollDelta > scrollThreshold {
             if self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.6)) {
+                withAnimation(.easeInOut(duration: 0.4)) {
                     self.showSearchBar = false
                 }
                 self.accumulatedScrollDelta = 0
@@ -317,7 +313,7 @@ struct TracklistView: View {
         // Show on accumulated scroll up exceeds threshold
         else if self.accumulatedScrollDelta < -scrollThreshold {
             if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.6)) {
+                withAnimation(.easeInOut(duration: 0.4)) {
                     self.showSearchBar = true
                 }
                 self.accumulatedScrollDelta = 0
@@ -333,10 +329,6 @@ struct TracklistView: View {
                 .foregroundColor(Color(.systemGray5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
     }
 
     private func errorView(message: String) -> some View {
@@ -351,10 +343,6 @@ struct TracklistView: View {
                 .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
     }
 
     private func playTrack(_ track: Track) {
