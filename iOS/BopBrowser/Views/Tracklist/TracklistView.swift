@@ -43,6 +43,8 @@ struct TracklistView: View {
     @State private var pendingTracklist: Tracklist?
     @State private var searchText = ""
     @State private var showSearchBar = true
+    @FocusState private var isSearchFieldFocused: Bool
+    @State private var accumulatedScrollDelta: CGFloat = 0
 
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -110,10 +112,15 @@ struct TracklistView: View {
                 },
                 searchText: self.isSaved ? self.$searchText : nil,
                 showSearchBar: self.isSaved ? self.$showSearchBar : nil,
-                searchPlaceholder: "Search tracks"
+                searchPlaceholder: "Search tracks",
+                isSearchFieldFocused: self.isSaved ? self.$isSearchFieldFocused : nil
             )
 
             self.content
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    self.isSearchFieldFocused = false
+                }
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
@@ -188,6 +195,10 @@ struct TracklistView: View {
             } else if self.viewModel.tracks.isEmpty && self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        self.isSearchFieldFocused = false
+                    }
             } else if self.viewModel.tracks.isEmpty {
                 self.emptyState
             } else {
@@ -206,8 +217,14 @@ struct TracklistView: View {
                         isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
-                        onTap: { self.playTrack(track) },
-                        onEllipsisTap: { self.trackForActions = track }
+                        onTap: {
+                            self.isSearchFieldFocused = false
+                            self.playTrack(track)
+                        },
+                        onEllipsisTap: {
+                            self.isSearchFieldFocused = false
+                            self.trackForActions = track
+                        }
                     )
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -237,24 +254,48 @@ struct TracklistView: View {
         }
     }
 
+    // TODO: Place StoredSearchToolbar on top of list, add padding to the top of the list
     private func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo) {
         let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
         guard isScrollable else { return }
 
         let delta = newInfo.contentOffset - oldInfo.contentOffset
-        let scrollThreshold: CGFloat = 15
+        let scrollThreshold: CGFloat = 50
 
-        if delta > scrollThreshold, newInfo.contentOffset > 50 {
-            if self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    self.showSearchBar = false
-                }
-            }
-        } else if delta < -scrollThreshold {
+        // Always show when at or near the top
+        if newInfo.contentOffset <= 0 {
+            self.accumulatedScrollDelta = 0
             if !self.showSearchBar {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     self.showSearchBar = true
                 }
+            }
+            return
+        }
+
+        // Accumulate delta in the same direction, reset if direction changes
+        if (delta > 0 && self.accumulatedScrollDelta < 0) || (delta < 0 && self.accumulatedScrollDelta > 0) {
+            self.accumulatedScrollDelta = 0
+        }
+        
+        self.accumulatedScrollDelta += delta
+
+        // Hide on accumulated scroll down exceeds threshold
+        if self.accumulatedScrollDelta > scrollThreshold {
+            if self.showSearchBar {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.showSearchBar = false
+                }
+                self.accumulatedScrollDelta = 0
+            }
+        }
+        // Show on accumulated scroll up exceeds threshold
+        else if self.accumulatedScrollDelta < -scrollThreshold {
+            if !self.showSearchBar {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.showSearchBar = true
+                }
+                self.accumulatedScrollDelta = 0
             }
         }
     }
@@ -267,6 +308,10 @@ struct TracklistView: View {
                 .foregroundColor(Color(.systemGray5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            self.isSearchFieldFocused = false
+        }
     }
 
     private func errorView(message: String) -> some View {
@@ -281,6 +326,10 @@ struct TracklistView: View {
                 .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            self.isSearchFieldFocused = false
+        }
     }
 
     private func playTrack(_ track: Track) {

@@ -11,6 +11,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
     private var searchText: Binding<String>?
     private var showSearchBar: Binding<Bool>?
     private var searchPlaceholder: String
+    private var isSearchFieldFocused: FocusState<Bool>.Binding?
 
     init(
         title: String,
@@ -21,7 +22,8 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         @ViewBuilder centerTrailing: @escaping () -> CenterContent = { EmptyView() },
         searchText: Binding<String>? = nil,
         showSearchBar: Binding<Bool>? = nil,
-        searchPlaceholder: String = "Search"
+        searchPlaceholder: String = "Search",
+        isSearchFieldFocused: FocusState<Bool>.Binding? = nil
     ) {
         self.title = title
         self.highlightedTitle = highlightedTitle
@@ -32,6 +34,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         self.searchText = searchText
         self.showSearchBar = showSearchBar
         self.searchPlaceholder = searchPlaceholder
+        self.isSearchFieldFocused = isSearchFieldFocused
     }
 
     private let buttonWidth: CGFloat = 48
@@ -95,34 +98,38 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
             }
             .frame(height: 44)
 
-            Rectangle()
-                .fill(Color(.systemGray6))
-                .overlay(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .black.opacity(0.5), location: 0),
-                            .init(color: .clear, location: 0.5),
-                            .init(color: .black.opacity(0.5), location: 1),
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
+            if !self.isSearchBarVisible {
+                Rectangle()
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black.opacity(0.5), location: 0),
+                                .init(color: .clear, location: 0.5),
+                                .init(color: .black.opacity(0.5), location: 1),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     )
-                )
-                .frame(height: 3)
+                    .frame(height: 3)
+            }
         }
     }
 
     @ViewBuilder
     private var searchBarView: some View {
         if let searchText = self.searchText,
-           let showSearchBar = self.showSearchBar
+           let showSearchBar = self.showSearchBar,
+           let isSearchFieldFocused = self.isSearchFieldFocused
         {
             StoredSearchToolbar(
                 searchText: searchText,
                 showSearchBar: showSearchBar,
-                placeholder: self.searchPlaceholder
+                placeholder: self.searchPlaceholder,
+                isSearchFieldFocused: isSearchFieldFocused
             )
-            .padding(.top, 38)
+            .padding(.top, 40)
         }
     }
 }
