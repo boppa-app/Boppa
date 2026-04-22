@@ -5,6 +5,7 @@ struct StoredSearchToolbar: View {
     @Binding var showSearchBar: Bool
     var placeholder: String = "Search"
     var isSearchFieldFocused: FocusState<Bool>.Binding
+    var isSearching: Bool = false
     var fadeOpacity: CGFloat = 0
     var fadeHeight: CGFloat = 40
 
@@ -36,6 +37,12 @@ struct StoredSearchToolbar: View {
                             .autocapitalization(.none)
                             .autocorrectionDisabled()
                             .focused(self.isSearchFieldFocused)
+
+                            if self.isSearching {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                    .tint(Color(.systemGray))
+                            }
 
                             if !self.searchText.isEmpty {
                                 Button {

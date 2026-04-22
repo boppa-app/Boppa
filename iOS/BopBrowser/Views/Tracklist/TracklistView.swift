@@ -41,7 +41,6 @@ struct TracklistView: View {
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
-    @State private var searchText = ""
     @State private var showSearchBar = true
     @FocusState private var isSearchFieldFocused: Bool
     @State private var accumulatedScrollDelta: CGFloat = 0
@@ -125,10 +124,14 @@ struct TracklistView: View {
 
             if self.isSaved {
                 StoredSearchToolbar(
-                    searchText: self.$searchText,
+                    searchText: Binding(
+                        get: { self.viewModel.searchText },
+                        set: { self.viewModel.updateSearch($0) }
+                    ),
                     showSearchBar: self.$showSearchBar,
-                    placeholder: "Search tracks",
+                    placeholder: "Find in music",
                     isSearchFieldFocused: self.$isSearchFieldFocused,
+                    isSearching: self.viewModel.isFuzzySearching,
                     fadeOpacity: self.searchBarTopFade,
                     fadeHeight: self.fadeHeight
                 )

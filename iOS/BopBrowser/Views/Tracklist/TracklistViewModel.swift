@@ -1,4 +1,5 @@
 import Foundation
+import Ifrit
 import os
 import SwiftData
 
@@ -20,17 +21,59 @@ class TracklistViewModel {
     var sortMode: TracklistSortMode = .defaultOrder
     var hasMorePages = false
     var pageLoadId = 0
+    var isFuzzySearching = false
+    var searchText = ""
 
     private var fetchTask: Task<Void, Never>?
+    private var fuzzySearchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
     private var paginationContext: [String: Any]?
+    private var fuzzyFilteredTracks: [Track]?
+    private let fuse = Fuse(threshold: 0.4, tokenize: true)
 
     init(tracklist: Tracklist) {
         self.tracklist = tracklist
     }
 
     var displayTracks: [Track] {
-        self.applySorting(self.tracks)
+        if let filtered = self.fuzzyFilteredTracks {
+            return self.applySorting(filtered)
+        }
+        return self.applySorting(self.tracks)
+    }
+
+    func updateSearch(_ text: String) {
+        self.searchText = text
+
+        self.fuzzySearchTask?.cancel()
+
+        if text.trimmingCharacters(in: .whitespaces).isEmpty {
+            self.fuzzyFilteredTracks = nil
+            self.isFuzzySearching = false
+            return
+        }
+
+        self.isFuzzySearching = true
+
+        let tracksSnapshot = self.tracks
+        let query = text
+        let fuseInstance = self.fuse
+
+        self.fuzzySearchTask = Task {
+            let fuseProps: [[FuseProp]] = tracksSnapshot.map { track in
+                [
+                    FuseProp(track.title, weight: 0.6),
+                    FuseProp(track.subtitle ?? "", weight: 0.4),
+                ]
+            }
+
+            let results = await fuseInstance.search(query, in: fuseProps)
+
+            guard !Task.isCancelled else { return }
+
+            self.fuzzyFilteredTracks = results.map { tracksSnapshot[$0.index] }
+            self.isFuzzySearching = false
+        }
     }
 
     var canRefresh: Bool {
