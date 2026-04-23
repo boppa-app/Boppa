@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ScrollInfo: Equatable {
     var contentOffset: CGFloat
@@ -57,27 +58,15 @@ class SearchBarScrollHandler {
         let scrollDownThreshold: CGFloat = 300 // Distance threshold for hiding on scroll down
         let scrollUpThreshold: CGFloat = 100 // Distance threshold for showing on scroll up
 
-        // Always show when at or near the top
-        if newInfo.contentOffset <= 0 {
-            self.accumulatedScrollDown = 0
-            self.accumulatedScrollUp = 0
-            if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    self.showSearchBar = true
-                }
-            }
-            return
-        }
-
         // Scrolling down - use distance-based detection
         if delta > 0 {
             self.accumulatedScrollDown += delta
             self.accumulatedScrollUp = 0 // Reset scroll up accumulator
-            
+
             // Hide when accumulated scroll down exceeds threshold
             if self.accumulatedScrollDown > scrollDownThreshold {
                 if self.showSearchBar {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
                         self.showSearchBar = false
                     }
                     self.accumulatedScrollDown = 0
@@ -87,27 +76,24 @@ class SearchBarScrollHandler {
         // Scrolling up - use velocity + distance-based detection
         else if delta < 0 {
             self.accumulatedScrollDown = 0 // Reset scroll down accumulator
-            
-            // Only accumulate if velocity is high enough
-            if velocity > velocityThreshold {
+
+            // Accumulate if velocity is high enough OR if the spacer is about to become visible (contentOffset < searchBarHeight).
+            // This ensures the search bar always appears before the black spacer is exposed, even during very slow scrolls.
+            let spacerAboutToShow = newInfo.contentOffset < self.searchBarHeight
+            if velocity > velocityThreshold || spacerAboutToShow {
                 self.accumulatedScrollUp += abs(delta)
-                
+
                 // Show when both velocity and distance thresholds are met
-                if self.accumulatedScrollUp > scrollUpThreshold && !self.showSearchBar {
-                    // When near the top, show immediately without animation so the
-                    // search bar is fully visible before the black spacer is exposed
-                    let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : .infinity
-                    let animationFrames: CGFloat = 48 // ~0.4s at 120fps
-                    if framesUntilTop < animationFrames {
-                        var transaction = Transaction()
-                        transaction.disablesAnimations = true
-                        withTransaction(transaction) {
-                            self.showSearchBar = true
-                        }
-                    } else {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            self.showSearchBar = true
-                        }
+                if self.accumulatedScrollUp > scrollUpThreshold || spacerAboutToShow, !self.showSearchBar {
+                    // Dynamically calculate animation duration based on how quickly the scroll will reach the top.
+                    // This ensures the search bar finishes appearing before the spacer is fully exposed.
+                    let maxFPS = CGFloat(UIScreen.main.maximumFramesPerSecond)
+                    let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : 0
+                    let secondsUntilTop = framesUntilTop / maxFPS
+                    let duration = min(2 * secondsUntilTop, 0.3)
+
+                    withAnimation(.easeInOut(duration: duration)) {
+                        self.showSearchBar = true
                     }
                     self.accumulatedScrollUp = 0
                 }
