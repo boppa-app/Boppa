@@ -20,18 +20,18 @@ struct MediaSourceIcon: View {
     var body: some View {
         ZStack {
             Circle()
-                .strokeBorder(self.isHighlighted ? self.outlineColor : Color(.systemGray3), lineWidth: 2)
+                .strokeBorder(self.mediaSource.isEnabled ? self.outlineColor : Color(.systemGray), lineWidth: 2)
                 .frame(width: MediaSourceGridLayout.iconSize, height: MediaSourceGridLayout.iconSize)
 
             if let iconSvg = self.mediaSource.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 32)
-                    .opacity(self.isHighlighted ? 1.0 : 0.5)
             } else {
                 Image(systemName: "music.note")
                     .font(.system(size: 24))
-                    .foregroundColor(self.isHighlighted ? Color.purp : Color(.systemGray2))
+                    .foregroundColor(Color.purp)
             }
         }
+        .opacity(self.isHighlighted ? 1.0 : 0.35)
         .overlay(alignment: .topLeading) {
             if let onDelete = self.onDelete, self.showDeleteButton {
                 Button {
