@@ -5,6 +5,7 @@ struct TracklistListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
     @State private var scrollHandler = SearchBarScrollHandler()
+    @State private var selectedTracklistId: String?
     @FocusState private var isSearchFieldFocused: Bool
 
     let artist: Artist?
@@ -50,6 +51,7 @@ struct TracklistListView: View {
                     onBack: { self.dismiss() },
                     isSeparatorHidden: self.isLibraryMode && self.scrollHandler.showSearchBar
                 )
+
                 self.content
             }
             .contentShape(Rectangle())
@@ -138,22 +140,25 @@ struct TracklistListView: View {
                 }
 
                 ForEach(Array(self.viewModel.displayTracklists.enumerated()), id: \.element.id) { _, tracklist in
-                    if self.canNavigateToTracklist {
-                        NavigationLink {
-                            TracklistView(tracklist: tracklist)
-                        } label: {
-                            TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
+                    TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            self.isSearchFieldFocused = false
+                            if self.canNavigateToTracklist {
+                                self.selectedTracklistId = tracklist.id
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .background(
+                            NavigationLink(
+                                destination: TracklistView(tracklist: tracklist),
+                                tag: tracklist.id,
+                                selection: self.$selectedTracklistId
+                            ) { EmptyView() }
+                                .opacity(0)
+                        )
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
-                    } else {
-                        TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
-                            .listRowBackground(Color.black)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparator(.hidden)
-                    }
                 }
             }
             .listStyle(.plain)
