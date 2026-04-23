@@ -2,6 +2,10 @@ import Foundation
 import os
 import SwiftData
 
+extension Notification.Name {
+    static let tracklistPinChanged = Notification.Name("tracklistPinChanged")
+}
+
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
     category: "TracklistViewModel"
@@ -193,6 +197,7 @@ class TracklistViewModel {
         stored.isPinned = !self.isPinned
         try? modelContext.save()
         self.isPinned.toggle()
+        NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
         logger.info("\(self.isPinned ? "Pinned" : "Unpinned") tracklist '\(self.tracklist.title)'")
     }
 

@@ -23,6 +23,9 @@ struct LibraryView: View {
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceUpdated)) { _ in
                 self.viewModel.loadSources(modelContext: self.modelContext)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .tracklistPinChanged)) { _ in
+                self.viewModel.loadPinnedTracklists(modelContext: self.modelContext)
+            }
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
                 MediaSourcePickerSheet(
                     mediaSources: self.viewModel.mediaSources,
