@@ -41,7 +41,8 @@ class SearchBarScrollHandler {
     let searchBarHeight: CGFloat = 52
     let fadeHeight: CGFloat = 40
 
-    private var accumulatedScrollDelta: CGFloat = 0
+    private var accumulatedScrollDown: CGFloat = 0
+    private var accumulatedScrollUp: CGFloat = 0
 
     func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo, isSearchFieldFocused: Bool) {
         // Update fade based on scroll offset
@@ -51,55 +52,68 @@ class SearchBarScrollHandler {
         guard isScrollable, !isSearchFieldFocused else { return }
 
         let delta = newInfo.contentOffset - oldInfo.contentOffset
-        let scrollThreshold: CGFloat = 50
+        let velocity = abs(delta)
+        let velocityThreshold: CGFloat = 30.0 // Minimum velocity to trigger show on scroll up
+        let scrollDownThreshold: CGFloat = 300 // Distance threshold for hiding on scroll down
+        let scrollUpThreshold: CGFloat = 100 // Distance threshold for showing on scroll up
 
         // Always show when at or near the top
         if newInfo.contentOffset <= 0 {
-            self.accumulatedScrollDelta = 0
+            self.accumulatedScrollDown = 0
+            self.accumulatedScrollUp = 0
             if !self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.4)) {
+                withAnimation(.easeInOut(duration: 0.2)) {
                     self.showSearchBar = true
                 }
             }
             return
         }
 
-        // Accumulate delta in the same direction, reset if direction changes
-        if (delta > 0 && self.accumulatedScrollDelta < 0) || (delta < 0 && self.accumulatedScrollDelta > 0) {
-            self.accumulatedScrollDelta = 0
-        }
-
-        self.accumulatedScrollDelta += delta
-
-        // Hide on accumulated scroll down exceeds threshold
-        if self.accumulatedScrollDelta > scrollThreshold {
-            if self.showSearchBar {
-                withAnimation(.easeInOut(duration: 0.4)) {
-                    self.showSearchBar = false
+        // Scrolling down - use distance-based detection
+        if delta > 0 {
+            self.accumulatedScrollDown += delta
+            self.accumulatedScrollUp = 0 // Reset scroll up accumulator
+            
+            // Hide when accumulated scroll down exceeds threshold
+            if self.accumulatedScrollDown > scrollDownThreshold {
+                if self.showSearchBar {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.showSearchBar = false
+                    }
+                    self.accumulatedScrollDown = 0
                 }
-                self.accumulatedScrollDelta = 0
             }
         }
-        // Show on accumulated scroll up exceeds threshold
-        else if self.accumulatedScrollDelta < -scrollThreshold {
-            if !self.showSearchBar {
-                // When near the top, show immediately without animation so the
-                // search bar is fully visible before the black spacer is exposed
-                let velocity = abs(delta)
-                let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : .infinity
-                let animationFrames: CGFloat = 48 // ~0.4s at 120fps
-                if framesUntilTop < animationFrames {
-                    var transaction = Transaction()
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) {
-                        self.showSearchBar = true
+        // Scrolling up - use velocity + distance-based detection
+        else if delta < 0 {
+            self.accumulatedScrollDown = 0 // Reset scroll down accumulator
+            
+            // Only accumulate if velocity is high enough
+            if velocity > velocityThreshold {
+                self.accumulatedScrollUp += abs(delta)
+                
+                // Show when both velocity and distance thresholds are met
+                if self.accumulatedScrollUp > scrollUpThreshold && !self.showSearchBar {
+                    // When near the top, show immediately without animation so the
+                    // search bar is fully visible before the black spacer is exposed
+                    let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : .infinity
+                    let animationFrames: CGFloat = 48 // ~0.4s at 120fps
+                    if framesUntilTop < animationFrames {
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) {
+                            self.showSearchBar = true
+                        }
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            self.showSearchBar = true
+                        }
                     }
-                } else {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        self.showSearchBar = true
-                    }
+                    self.accumulatedScrollUp = 0
                 }
-                self.accumulatedScrollDelta = 0
+            } else {
+                // Reset if velocity drops below threshold
+                self.accumulatedScrollUp = 0
             }
         }
     }
