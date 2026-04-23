@@ -6,6 +6,7 @@ struct TracklistRow: View {
 
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
+    var showChevron: Bool = false
 
     private var albumPlaceholder: String {
         if #available(iOS 26.0, *) {
@@ -53,6 +54,11 @@ struct TracklistRow: View {
             Spacer()
             if let mediaSource = self.resolvedMediaSource {
                 self.mediaSourceIcon(mediaSource)
+            }
+            if self.showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.purp)
             }
         }
         .padding(.horizontal, 16)

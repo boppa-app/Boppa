@@ -119,27 +119,26 @@ struct ArtistDetailView: View {
 
             ForEach(Array(albums.enumerated()), id: \.element.id) { _, tracklist in
                 if self.mediaSource.config.data?.getAlbum != nil {
-                    NavigationLink {
-                        TracklistView(
-                            tracklist: Tracklist(
-                                id: tracklist.id,
-                                mediaSourceId: self.mediaSource.id,
-                                title: tracklist.title,
-                                subtitle: tracklist.subtitle,
-                                artworkUrl: tracklist.artworkUrl,
-                                metadata: tracklist.metadata,
-                                tracklistType: .album,
-                                artists: tracklist.artists,
-                                storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
-                            )
+                    TracklistRow(tracklist: tracklist, showChevron: true)
+                        .background(
+                            NavigationLink(destination: TracklistView(
+                                tracklist: Tracklist(
+                                    id: tracklist.id,
+                                    mediaSourceId: self.mediaSource.id,
+                                    title: tracklist.title,
+                                    subtitle: tracklist.subtitle,
+                                    artworkUrl: tracklist.artworkUrl,
+                                    metadata: tracklist.metadata,
+                                    tracklistType: .album,
+                                    artists: tracklist.artists,
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                )
+                            )) { EmptyView() }
+                                .opacity(0)
                         )
-                    } label: {
-                        TracklistRow(tracklist: tracklist)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
                 } else {
                     TracklistRow(tracklist: tracklist)
                         .listRowBackground(Color.black)
@@ -208,27 +207,26 @@ struct ArtistDetailView: View {
 
             ForEach(Array(playlists.enumerated()), id: \.element.id) { _, tracklist in
                 if self.mediaSource.config.data?.getPlaylist != nil {
-                    NavigationLink {
-                        TracklistView(
-                            tracklist: Tracklist(
-                                id: tracklist.id,
-                                mediaSourceId: self.mediaSource.id,
-                                title: tracklist.title,
-                                subtitle: tracklist.subtitle,
-                                artworkUrl: tracklist.artworkUrl,
-                                metadata: tracklist.metadata,
-                                tracklistType: .playlist,
-                                artists: tracklist.artists,
-                                storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
-                            )
+                    TracklistRow(tracklist: tracklist, showChevron: true)
+                        .background(
+                            NavigationLink(destination: TracklistView(
+                                tracklist: Tracklist(
+                                    id: tracklist.id,
+                                    mediaSourceId: self.mediaSource.id,
+                                    title: tracklist.title,
+                                    subtitle: tracklist.subtitle,
+                                    artworkUrl: tracklist.artworkUrl,
+                                    metadata: tracklist.metadata,
+                                    tracklistType: .playlist,
+                                    artists: tracklist.artists,
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                )
+                            )) { EmptyView() }
+                                .opacity(0)
                         )
-                    } label: {
-                        TracklistRow(tracklist: tracklist)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
                 } else {
                     TracklistRow(tracklist: tracklist)
                         .listRowBackground(Color.black)

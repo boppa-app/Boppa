@@ -140,7 +140,7 @@ struct TracklistListView: View {
                 }
 
                 ForEach(Array(self.viewModel.displayTracklists.enumerated()), id: \.element.id) { _, tracklist in
-                    TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
+                    TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode, showChevron: self.canNavigateToTracklist)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             self.isSearchFieldFocused = false

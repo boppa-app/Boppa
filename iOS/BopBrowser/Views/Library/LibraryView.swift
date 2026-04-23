@@ -76,14 +76,15 @@ struct LibraryView: View {
                             .listRowSeparator(.hidden)
                     } else {
                         ForEach(Array(self.viewModel.pinnedTracklists.enumerated()), id: \.element.id) { _, stored in
-                            NavigationLink {
-                                TracklistView(tracklist: Tracklist(storedTracklist: stored))
-                            } label: {
-                                TracklistRow(
-                                    tracklist: Tracklist(storedTracklist: stored),
-                                    showMediaSourceIcon: true
-                                )
-                            }
+                            TracklistRow(
+                                tracklist: Tracklist(storedTracklist: stored),
+                                showMediaSourceIcon: true,
+                                showChevron: true
+                            )
+                            .background(
+                                NavigationLink(destination: TracklistView(tracklist: Tracklist(storedTracklist: stored))) { EmptyView() }
+                                    .opacity(0)
+                            )
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparator(.hidden)
