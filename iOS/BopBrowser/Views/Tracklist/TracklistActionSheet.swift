@@ -37,9 +37,9 @@ struct TracklistActionSheet: View {
             .navigationDestination(isPresented: self.$showSortPage) {
                 self.sortPickerPage
             }
-            .alert("Delete", isPresented: self.$showDeleteConfirmation) {
+            .alert("Remove from library", isPresented: self.$showDeleteConfirmation) {
                 Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
+                Button("Remove", role: .destructive) {
                     self.onDelete()
                     self.dismiss()
                 }
@@ -203,8 +203,8 @@ struct TracklistActionSheet: View {
             self.showDeleteConfirmation = true
         } label: {
             self.rowLabel(
-                title: "Delete",
-                icon: "trash.fill",
+                title: "Remove from library",
+                icon: "bookmark.slash",
                 iconColor: .red,
                 titleColor: .red
             )
