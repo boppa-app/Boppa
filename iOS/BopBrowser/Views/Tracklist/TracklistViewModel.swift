@@ -36,7 +36,11 @@ class TracklistViewModel {
     }
 
     var displayTracks: [Track] {
-        self.applySorting(self.searchHandler.displayItems(from: self.tracks))
+        let items = self.searchHandler.displayItems(from: self.tracks)
+        if self.searchHandler.filteredItems != nil {
+            return items
+        }
+        return self.applySorting(items)
     }
 
     func updateSearch(_ text: String) {
