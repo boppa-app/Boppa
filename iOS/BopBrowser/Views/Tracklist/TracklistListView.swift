@@ -100,7 +100,7 @@ struct TracklistListView: View {
                 type: self.type,
                 sortMode: self.viewModel.sortMode,
                 onSortSelected: { mode in
-                    self.viewModel.setSortMode(mode)
+                    self.viewModel.setSortMode(mode, type: self.type)
                 }
             )
             .presentationDetents([.medium])
@@ -109,6 +109,7 @@ struct TracklistListView: View {
         }
         .onAppear {
             if self.isLibraryMode {
+                self.viewModel.loadSortMode(type: self.type)
                 self.viewModel.loadFromLibrary(
                     type: self.type,
                     visibleMediaSourceIds: self.visibleMediaSourceIds,

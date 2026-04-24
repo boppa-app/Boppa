@@ -37,11 +37,27 @@ class TracklistListViewModel {
         self.searchHandler.updateSearch(text, items: self.tracklists)
     }
 
-    func setSortMode(_ mode: SortMode) {
+    func setSortMode(_ mode: SortMode, type: TracklistListType) {
         if self.sortMode == mode {
             self.sortMode = .defaultOrder
         } else {
             self.sortMode = mode
+        }
+        UserDefaults.standard.set(self.sortMode.rawValue, forKey: Self.sortModeKey(for: type))
+    }
+
+    func loadSortMode(type: TracklistListType) {
+        if let raw = UserDefaults.standard.string(forKey: Self.sortModeKey(for: type)),
+           let mode = SortMode(rawValue: raw)
+        {
+            self.sortMode = mode
+        }
+    }
+
+    private static func sortModeKey(for type: TracklistListType) -> String {
+        switch type {
+        case .albums: return "tracklistListSortMode.albums"
+        case .playlists: return "tracklistListSortMode.playlists"
         }
     }
 
