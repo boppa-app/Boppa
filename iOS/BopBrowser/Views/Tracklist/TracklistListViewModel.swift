@@ -18,6 +18,7 @@ class TracklistListViewModel {
     var tracklists: [Tracklist] = []
     var isLoading = false
     var errorMessage: String?
+    var sortMode: SortMode = .defaultOrder
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
@@ -25,11 +26,40 @@ class TracklistListViewModel {
     private var didLoad = false
 
     var displayTracklists: [Tracklist] {
-        self.searchHandler.displayItems(from: self.tracklists)
+        let items = self.searchHandler.displayItems(from: self.tracklists)
+        if self.searchHandler.filteredItems != nil {
+            return items
+        }
+        return self.applySorting(items)
     }
 
     func updateSearch(_ text: String) {
         self.searchHandler.updateSearch(text, items: self.tracklists)
+    }
+
+    func setSortMode(_ mode: SortMode) {
+        if self.sortMode == mode {
+            self.sortMode = .defaultOrder
+        } else {
+            self.sortMode = mode
+        }
+    }
+
+    private func applySorting(_ tracklists: [Tracklist]) -> [Tracklist] {
+        switch self.sortMode {
+        case .defaultOrder:
+            return tracklists
+        case .reversed:
+            return tracklists.reversed()
+        case .nameAZ:
+            return tracklists.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case .nameZA:
+            return tracklists.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
+        case .authorAZ:
+            return tracklists.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedAscending }
+        case .authorZA:
+            return tracklists.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedDescending }
+        }
     }
 
     func loadFromArtist(

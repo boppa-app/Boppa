@@ -6,6 +6,7 @@ struct TracklistListView: View {
     @State private var viewModel = TracklistListViewModel()
     @State private var scrollHandler = SearchBarScrollHandler()
     @State private var selectedTracklistId: String?
+    @State private var showActionSheet = false
     @FocusState private var isSearchFieldFocused: Bool
 
     let artist: Artist?
@@ -49,6 +50,20 @@ struct TracklistListView: View {
                     title: self.title,
                     highlightedTitle: self.artist?.name,
                     onBack: { self.dismiss() },
+                    trailing: {
+                        if self.isLibraryMode {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
+                                .rotationEffect(.degrees(90))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    self.isSearchFieldFocused = false
+                                    self.showActionSheet = true
+                                }
+                        }
+                    },
                     isSeparatorHidden: self.isLibraryMode && self.scrollHandler.showSearchBar
                 )
 
@@ -80,6 +95,18 @@ struct TracklistListView: View {
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
+        .sheet(isPresented: self.$showActionSheet) {
+            TracklistListActionSheet(
+                type: self.type,
+                sortMode: self.viewModel.sortMode,
+                onSortSelected: { mode in
+                    self.viewModel.setSortMode(mode)
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGray6))
+        }
         .onAppear {
             if self.isLibraryMode {
                 self.viewModel.loadFromLibrary(

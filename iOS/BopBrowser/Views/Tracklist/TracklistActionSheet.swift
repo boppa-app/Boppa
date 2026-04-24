@@ -5,10 +5,10 @@ struct TracklistActionSheet: View {
     let mediaSource: MediaSource?
     let isPinned: Bool
     let isRefreshing: Bool
-    let sortMode: TracklistSortMode
+    let sortMode: SortMode
     let onPin: () -> Void
     let onRefresh: () -> Void
-    let onSortSelected: (TracklistSortMode) -> Void
+    let onSortSelected: (SortMode) -> Void
     let onArtistSelected: ((Artist) -> Void)?
     let onDelete: () -> Void
 
@@ -237,7 +237,7 @@ struct TracklistActionSheet: View {
     }
 
     private var sortPickerPage: some View {
-        let modes = TracklistSortMode.allCases.filter { $0 != .defaultOrder }
+        let modes = SortMode.allCases.filter { $0 != .defaultOrder }
 
         return VStack(spacing: 0) {
             Spacer().frame(height: 20)

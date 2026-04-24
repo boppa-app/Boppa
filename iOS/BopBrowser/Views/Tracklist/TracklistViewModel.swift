@@ -21,7 +21,7 @@ class TracklistViewModel {
     var isSaving = false
     var isPinned = false
     var errorMessage: String?
-    var sortMode: TracklistSortMode = .defaultOrder
+    var sortMode: SortMode = .defaultOrder
     var hasMorePages = false
     var pageLoadId = 0
 
@@ -89,7 +89,7 @@ class TracklistViewModel {
         }
     }
 
-    func setSortMode(_ mode: TracklistSortMode) {
+    func setSortMode(_ mode: SortMode) {
         if self.sortMode == mode {
             self.sortMode = .defaultOrder
         } else {
