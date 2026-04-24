@@ -30,6 +30,8 @@ class SearchViewModel {
         !self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private static let selectedMediaSourceKey = "search.selectedMediaSourceId"
+
     func loadSources(modelContext: ModelContext) {
         var descriptor = FetchDescriptor<MediaSource>(
             predicate: #Predicate { $0.isEnabled }
@@ -39,6 +41,10 @@ class SearchViewModel {
 
         if let current = self.selectedMediaSource,
            let match = self.mediaSources.first(where: { $0.persistentModelID == current.persistentModelID })
+        {
+            self.selectedMediaSource = match
+        } else if let savedId = UserDefaults.standard.string(forKey: Self.selectedMediaSourceKey),
+                  let match = self.mediaSources.first(where: { $0.id == savedId })
         {
             self.selectedMediaSource = match
         } else {
@@ -51,6 +57,7 @@ class SearchViewModel {
     func selectMediaSource(_ mediaSource: MediaSource) {
         self.selectedMediaSource = mediaSource
         self.showMediaSourcePicker = false
+        UserDefaults.standard.set(mediaSource.id, forKey: Self.selectedMediaSourceKey)
         self.updateAvailableCategories()
 
         if self.isQueryActive {
