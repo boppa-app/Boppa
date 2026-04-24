@@ -89,15 +89,11 @@ class TracklistViewModel {
         }
     }
 
-    func setSortMode(_ mode: TracklistSortMode, modelContext: ModelContext) {
+    func setSortMode(_ mode: TracklistSortMode) {
         if self.sortMode == mode {
             self.sortMode = .defaultOrder
         } else {
             self.sortMode = mode
-        }
-        if let stored = self.tracklist.storedTracklist {
-            stored.sortMode = self.sortMode
-            try? modelContext.save()
         }
     }
 
@@ -105,7 +101,6 @@ class TracklistViewModel {
         let sortedTracks = storedTracklist.tracks.sorted { $0.sortOrder < $1.sortOrder }
         self.unsortedTracks = sortedTracks.map { $0.toTrack() }
         self.tracks = self.unsortedTracks
-        self.sortMode = storedTracklist.sortMode
         self.isPinned = storedTracklist.isPinned
     }
 

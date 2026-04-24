@@ -40,7 +40,6 @@ final class StoredTracklist {
     var mediaSourceId: String
     var artworkUrl: String?
     var tracklistType: String
-    var sortModeRaw: String = TracklistSortMode.defaultOrder.rawValue
     var metadataJSON: Data = Data()
     var artistsJSON: Data = Data()
     var fromArtistJSON: Data = Data()
@@ -48,11 +47,6 @@ final class StoredTracklist {
 
     @Relationship(deleteRule: .cascade)
     var tracks: [StoredTrack] = []
-
-    var sortMode: TracklistSortMode {
-        get { TracklistSortMode(rawValue: self.sortModeRaw) ?? .defaultOrder }
-        set { self.sortModeRaw = newValue.rawValue }
-    }
 
     var metadata: [String: Any] {
         guard let dict = try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any] else {

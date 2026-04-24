@@ -26,8 +26,8 @@ struct TracklistActionSheet: View {
                 List {
                     self.refreshRow
                     self.pinRow
-                    self.sortRow
                     self.artistRow
+                    self.sortRow
                     self.deleteRow
                 }
                 .listStyle(.plain)
@@ -143,7 +143,7 @@ struct TracklistActionSheet: View {
                     .foregroundColor(.white)
                     .padding([.trailing], -12)
                 if self.sortMode != .defaultOrder {
-                    Text(" (\(self.sortMode.label)")
+                    Text(" (\(self.sortMode.label))")
                         .font(.body)
                         .foregroundColor(.purp)
                 }

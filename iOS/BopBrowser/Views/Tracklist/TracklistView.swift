@@ -126,7 +126,7 @@ struct TracklistView: View {
                     self.viewModel.refresh(modelContext: self.modelContext)
                 },
                 onSortSelected: { mode in
-                    self.viewModel.setSortMode(mode, modelContext: self.modelContext)
+                    self.viewModel.setSortMode(mode)
                 },
                 onArtistSelected: { artist in self.pendingArtist = artist },
                 onDelete: {
