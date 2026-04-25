@@ -457,18 +457,32 @@ class TracklistService {
             return existing
         }
 
+        let typeString = tracklist.tracklistType.rawValue
+        let descriptor = FetchDescriptor<StoredTracklist>(
+            predicate: #Predicate { $0.tracklistType == typeString && $0.nextId == nil }
+        )
+        let currentTail = (try? modelContext.fetch(descriptor))?.first
+
         let stored = StoredTracklist(
             id: tracklist.id,
             name: tracklist.title,
             subtitle: tracklist.subtitle,
             mediaSourceId: tracklist.mediaSourceId,
             artworkUrl: tracklist.artworkUrl,
-            tracklistType: tracklist.tracklistType.rawValue,
+            tracklistType: typeString,
             metadata: tracklist.metadata,
             artists: tracklist.artists,
             fromArtist: tracklist.fromArtist
         )
+        stored.prevId = currentTail?.id
+        stored.nextId = nil
         modelContext.insert(stored)
+
+        if let tail = currentTail {
+            tail.nextId = stored.id
+        }
+
+        try? modelContext.save()
         return stored
     }
 

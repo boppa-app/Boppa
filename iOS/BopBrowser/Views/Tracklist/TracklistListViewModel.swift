@@ -1,6 +1,7 @@
 import Foundation
 import os
 import SwiftData
+import SwiftUI
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "BopBrowser",
@@ -19,6 +20,7 @@ class TracklistListViewModel {
     var isLoading = false
     var errorMessage: String?
     var sortMode: SortMode = .defaultOrder
+    var isEditing = false
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
@@ -26,6 +28,9 @@ class TracklistListViewModel {
     private var didLoad = false
 
     var displayTracklists: [Tracklist] {
+        if self.isEditing {
+            return self.tracklists
+        }
         let items = self.searchHandler.displayItems(from: self.tracklists)
         if self.searchHandler.filteredItems != nil {
             return items
@@ -78,6 +83,58 @@ class TracklistListViewModel {
         }
     }
 
+    func enterEditMode(type: TracklistListType) {
+        self.sortMode = .defaultOrder
+        UserDefaults.standard.set(SortMode.defaultOrder.rawValue, forKey: Self.sortModeKey(for: type))
+        self.isEditing = true
+    }
+
+    func exitEditMode() {
+        self.isEditing = false
+    }
+
+    func deleteTracklistById(_ id: String, modelContext: ModelContext) {
+        guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
+        let tracklist = self.tracklists[index]
+        if let stored = tracklist.storedTracklist {
+            let prevStored = stored.prevId.flatMap { TracklistService.shared.findStoredTracklist(id: $0, modelContext: modelContext) }
+            let nextStored = stored.nextId.flatMap { TracklistService.shared.findStoredTracklist(id: $0, modelContext: modelContext) }
+            prevStored?.nextId = stored.nextId
+            nextStored?.prevId = stored.prevId
+
+            TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
+        }
+        self.tracklists.remove(at: index)
+        try? modelContext.save()
+    }
+
+    func moveTracklist(from source: IndexSet, to destination: Int, modelContext: ModelContext) {
+        self.tracklists.move(fromOffsets: source, toOffset: destination)
+        self.persistDLLOrder(modelContext: modelContext)
+    }
+
+    func togglePin(tracklist: Tracklist, modelContext: ModelContext) {
+        guard let stored = tracklist.storedTracklist else { return }
+        stored.isPinned.toggle()
+        try? modelContext.save()
+        NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
+
+        if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
+            self.tracklists[index] = Tracklist(storedTracklist: stored)
+        }
+
+        logger.info("\(stored.isPinned ? "Pinned" : "Unpinned") tracklist '\(stored.name)'")
+    }
+
+    private func persistDLLOrder(modelContext: ModelContext) {
+        for (index, tracklist) in self.tracklists.enumerated() {
+            guard let stored = tracklist.storedTracklist else { continue }
+            stored.prevId = index > 0 ? self.tracklists[index - 1].id : nil
+            stored.nextId = index < self.tracklists.count - 1 ? self.tracklists[index + 1].id : nil
+        }
+        try? modelContext.save()
+    }
+
     func loadFromArtist(
         type: TracklistListType,
         artist: Artist,
@@ -105,11 +162,26 @@ class TracklistListViewModel {
             predicate: #Predicate { $0.tracklistType == typeString }
         )
 
-        let storedTracklists = (try? modelContext.fetch(descriptor)) ?? []
-        self.tracklists = storedTracklists
-            .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            .map { Tracklist(storedTracklist: $0) }
+        let allStored = (try? modelContext.fetch(descriptor)) ?? []
+        let filtered = allStored.filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
+
+        let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
+        var ordered: [StoredTracklist] = []
+
+        if let head = filtered.first(where: { $0.prevId == nil }) {
+            var current: StoredTracklist? = head
+            while let node = current {
+                ordered.append(node)
+                current = node.nextId.flatMap { lookup[$0] }
+            }
+        }
+
+        let orderedIds = Set(ordered.map { $0.id })
+        for item in filtered where !orderedIds.contains(item.id) {
+            ordered.append(item)
+        }
+
+        self.tracklists = ordered.map { Tracklist(storedTracklist: $0) }
 
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }

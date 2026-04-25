@@ -7,6 +7,7 @@ struct TracklistListView: View {
     @State private var scrollHandler = SearchBarScrollHandler()
     @State private var selectedTracklistId: String?
     @State private var showActionSheet = false
+    @State private var tracklistToDelete: Tracklist?
     @FocusState private var isSearchFieldFocused: Bool
 
     let artist: Artist?
@@ -49,22 +50,39 @@ struct TracklistListView: View {
                 DetailHeaderView(
                     title: self.title,
                     highlightedTitle: self.artist?.name,
-                    onBack: { self.dismiss() },
-                    trailing: {
-                        if self.isLibraryMode {
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 16))
-                                .foregroundColor(.purp)
-                                .rotationEffect(.degrees(90))
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    self.isSearchFieldFocused = false
-                                    self.showActionSheet = true
-                                }
+                    onBack: {
+                        if self.viewModel.isEditing {
+                            self.viewModel.exitEditMode()
+                        } else {
+                            self.dismiss()
                         }
                     },
-                    isSeparatorHidden: self.isLibraryMode && self.scrollHandler.showSearchBar
+                    trailing: {
+                        if self.isLibraryMode {
+                            if self.viewModel.isEditing {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.purp)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        self.viewModel.exitEditMode()
+                                    }
+                            } else {
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.purp)
+                                    .rotationEffect(.degrees(90))
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        self.isSearchFieldFocused = false
+                                        self.showActionSheet = true
+                                    }
+                            }
+                        }
+                    },
+                    isSeparatorHidden: self.isLibraryMode && !self.viewModel.isEditing && self.scrollHandler.showSearchBar
                 )
 
                 self.content
@@ -74,7 +92,7 @@ struct TracklistListView: View {
                 self.isSearchFieldFocused = false
             }
 
-            if self.isLibraryMode {
+            if self.isLibraryMode && !self.viewModel.isEditing {
                 StoredSearchToolbar(
                     searchText: Binding(
                         get: { self.viewModel.searchHandler.searchText },
@@ -101,11 +119,32 @@ struct TracklistListView: View {
                 sortMode: self.viewModel.sortMode,
                 onSortSelected: { mode in
                     self.viewModel.setSortMode(mode, type: self.type)
+                },
+                onEdit: {
+                    self.viewModel.enterEditMode(type: self.type)
                 }
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGray6))
+        }
+        .alert("Remove from library", isPresented: Binding(
+            get: { self.tracklistToDelete != nil },
+            set: { if !$0 { self.tracklistToDelete = nil } }
+        )) {
+            Button("Cancel", role: .cancel) {
+                self.tracklistToDelete = nil
+            }
+            Button("Remove", role: .destructive) {
+                if let tracklist = self.tracklistToDelete {
+                    self.viewModel.deleteTracklistById(tracklist.id, modelContext: self.modelContext)
+                    self.tracklistToDelete = nil
+                }
+            }
+        } message: {
+            if let tracklist = self.tracklistToDelete {
+                Text("Are you sure you want to remove \"\(tracklist.title)\" from your library?")
+            }
         }
         .onAppear {
             if self.isLibraryMode {
@@ -159,7 +198,7 @@ struct TracklistListView: View {
     private var tracklistList: some View {
         ScrollFadeView {
             List {
-                if self.isLibraryMode {
+                if self.isLibraryMode && !self.viewModel.isEditing {
                     Color.black
                         .frame(height: self.scrollHandler.searchBarHeight)
                         .listRowBackground(Color.black)
@@ -167,32 +206,67 @@ struct TracklistListView: View {
                         .listRowSeparator(.hidden)
                 }
 
-                ForEach(Array(self.viewModel.displayTracklists.enumerated()), id: \.element.id) { _, tracklist in
-                    TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode, showChevron: self.canNavigateToTracklist)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            self.isSearchFieldFocused = false
-                            if self.canNavigateToTracklist {
-                                self.selectedTracklistId = tracklist.id
+                ForEach(self.viewModel.displayTracklists) { tracklist in
+                    if self.viewModel.isEditing {
+                        HStack(spacing: 0) {
+                            Button {
+                                self.viewModel.togglePin(tracklist: tracklist, modelContext: self.modelContext)
+                            } label: {
+                                Image(systemName: tracklist.storedTracklist?.isPinned == true ? "pin.slash.fill" : "pin.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(tracklist.storedTracklist?.isPinned == true ? .purp : Color(.systemGray))
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                self.tracklistToDelete = tracklist
+                            } label: {
+                                Image(systemName: "bookmark.slash")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.red)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
                         }
-                        .background(
-                            NavigationLink(
-                                destination: TracklistView(tracklist: tracklist),
-                                tag: tracklist.id,
-                                selection: self.$selectedTracklistId
-                            ) { EmptyView() }
-                                .opacity(0)
-                        )
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
+                    } else {
+                        TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode, showChevron: self.canNavigateToTracklist)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                self.isSearchFieldFocused = false
+                                if self.canNavigateToTracklist {
+                                    self.selectedTracklistId = tracklist.id
+                                }
+                            }
+                            .background(
+                                NavigationLink(
+                                    destination: TracklistView(tracklist: tracklist),
+                                    tag: tracklist.id,
+                                    selection: self.$selectedTracklistId
+                                ) { EmptyView() }
+                                    .opacity(0)
+                            )
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
+                    }
+                }
+                .onMove { source, destination in
+                    self.viewModel.moveTracklist(from: source, to: destination, modelContext: self.modelContext)
                 }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
             .modifier(ScrollDirectionTracker(
-                isEnabled: self.isLibraryMode,
+                isEnabled: self.isLibraryMode && !self.viewModel.isEditing,
                 onScrollChange: { oldInfo, newInfo in
                     self.scrollHandler.handleScrollChange(
                         oldInfo: oldInfo,

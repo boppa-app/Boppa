@@ -13,6 +13,8 @@ final class StoredTracklist {
     var artistsJSON: Data = Data()
     var fromArtistJSON: Data = Data()
     var isPinned: Bool = false
+    var prevId: String?
+    var nextId: String?
 
     @Relationship(deleteRule: .cascade)
     var tracks: [StoredTrack] = []
