@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import MediaPlayer
 import os
 
 private let logger = Logger(
@@ -61,11 +62,13 @@ final class PlaybackService {
     func play() {
         self.playbackManager.play()
         self.isPlaying = true
+        MPNowPlayingInfoCenter.default().playbackState = .playing
     }
 
     func pause() {
         self.playbackManager.pause()
         self.isPlaying = false
+        MPNowPlayingInfoCenter.default().playbackState = .paused
     }
 
     func togglePlayPause() {
