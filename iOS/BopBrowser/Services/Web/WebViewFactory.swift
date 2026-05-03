@@ -10,8 +10,6 @@ private let logger = Logger(
 
 @MainActor
 final class WebViewFactory {
-    static let sharedProcessPool = WKProcessPool()
-
     static func makeWebView(
         scripts: [Script] = [],
         contractScript: String? = nil,

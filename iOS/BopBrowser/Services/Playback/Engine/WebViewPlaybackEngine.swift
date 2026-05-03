@@ -1,4 +1,3 @@
-import AVFoundation
 import Foundation
 import os
 import UIKit
@@ -23,11 +22,9 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     private var webView: WKWebView?
     private var currentConfigName: String?
     private var lastWebViewUpdatedTime: Date?
-    private var interruptionObserver: NSObjectProtocol?
 
     override private init() {
         super.init()
-        self.observeAudioInterruption()
     }
 
     func load(playbackSource: PlaybackSource) async -> Bool {
@@ -203,30 +200,6 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     func stop() {
         self.pause()
         logger.info("WebViewPlaybackEngine stopped")
-    }
-
-    private func observeAudioInterruption() {
-        self.interruptionObserver = NotificationCenter.default.addObserver(
-            forName: AVAudioSession.interruptionNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                guard let info = notification.userInfo,
-                      let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-                      let type = AVAudioSession.InterruptionType(rawValue: typeValue)
-                else { return }
-
-                if type == .began {
-                    logger.info("Audio session interrupted — stopping")
-                    self.webView?.evaluateJavaScript(
-                        "if (window.bopBrowserStop) window.bopBrowserStop();"
-                    )
-                    self.onEvent?(.paused)
-                }
-            }
-        }
     }
 
     private func needsReconfigure(for config: MediaSourceConfig) -> Bool {
