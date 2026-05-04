@@ -25,6 +25,10 @@ final class WebViewFactory {
         configuration.websiteDataStore = customUserAgent != nil
             ? WebDataStore.shared.getDesktopDataStore()
             : WebDataStore.shared.getDataStore()
+        
+        let preferences = WKPreferences()
+        preferences.inactiveSchedulingPolicy = .none
+        configuration.preferences = preferences
 
         let userContentController = WKUserContentController()
 
