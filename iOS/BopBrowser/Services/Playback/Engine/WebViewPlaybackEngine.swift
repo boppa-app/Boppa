@@ -8,6 +8,29 @@ private let logger = Logger(
     category: "WebViewPlaybackEngine"
 )
 
+// MARK: - Little-endian byte helpers for WAV generation
+
+private extension UInt16 {
+    var littleEndianBytes: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout<UInt16>.size)
+    }
+}
+
+private extension UInt32 {
+    var littleEndianBytes: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout<UInt32>.size)
+    }
+}
+
+private extension Int16 {
+    var littleEndianBytes: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout<Int16>.size)
+    }
+}
+
 // TODO: Integration with seek and prev/next is broken, total track time also broken (seems like its only when switching mid track)
 // TODO: Keep paused state when executing prev/next
 // TODO: Add support for triggering pop-up with webview by posting a message back to Swift
@@ -23,6 +46,12 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     private var currentConfigName: String?
     private var lastWebViewUpdatedTime: Date?
 
+    /// Tracks whether the persistent iframe page (with silent audio) has been loaded
+    private var iframePageLoaded = false
+
+    /// Cached silent WAV data URI (generated once)
+    private lazy var silentAudioDataURI: String = Self.generateSilentWAVDataURI()
+
     override private init() {
         super.init()
     }
@@ -32,10 +61,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         case let .track(track, config):
             if self.webView == nil || self.needsReconfigure(for: config) {
                 self.reconfigureWebView(config: config)
+                self.iframePageLoaded = false
                 return self.loadTrackIntoPage(track: track, config: config)
             }
 
-            // TEMPORARILY RELOAD PAGE ON ANY NAVIGATION
+            // For iframe-based playback, update only the iframe src and metadata
+            if config.playback.url != nil, self.iframePageLoaded {
+                return self.updateIframeAndMetadata(track: track, config: config)
+            }
+
+            // For iframe-based playback on first load
             if config.playback.url != nil {
                 return self.loadTrackIntoPage(track: track, config: config)
             }
@@ -88,6 +123,76 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         }
     }
 
+    /// Updates only the iframe src and mediaSession metadata without destroying the page.
+    /// This preserves the silent audio element and its AudioSession.
+    private func updateIframeAndMetadata(track: Track, config: MediaSourceConfig) -> Bool {
+        guard let webView = self.webView else {
+            logger.error("WebView not available for iframe update")
+            return false
+        }
+
+        guard let trackURL = track.url else {
+            logger.error("Track has no URL")
+            return false
+        }
+
+        let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
+
+        guard let urlTemplate = config.playback.url else {
+            logger.error("Config has no URL template")
+            return false
+        }
+
+        let resolvedURLString = urlTemplate.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
+        let title = Self.escapeForJS(track.title)
+        let artist = Self.escapeForJS(track.subtitle ?? "Unknown Artist")
+        let artworkUrl = Self.escapeForJS(track.artworkUrl ?? "")
+        let duration = Double(track.duration ?? 0) / 1000.0
+
+        let script = """
+        (function() {
+            // Update iframe src
+            var iframe = document.getElementById('bopBrowserIframe');
+            if (iframe) {
+                iframe.src = '\(Self.escapeForJS(resolvedURLString))';
+            }
+
+            // Update mediaSession metadata
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: '\(title)',
+                    artist: '\(artist)',
+                    album: '',
+                    artwork: [
+                        { src: '\(artworkUrl)', sizes: '512x512', type: 'image/jpeg' }
+                    ]
+                });
+
+                if ('setPositionState' in navigator.mediaSession) {
+                    try {
+                        navigator.mediaSession.setPositionState({
+                            duration: \(duration),
+                            playbackRate: 1.0,
+                            position: 0
+                        });
+                    } catch (e) {}
+                }
+
+                navigator.mediaSession.playbackState = 'playing';
+            }
+        })();
+        """
+
+        webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Failed to update iframe and metadata: \(error.localizedDescription)")
+            }
+        }
+
+        logger.info("Updated iframe src and metadata for: \(track.title) at \(resolvedURLString)")
+        return true
+    }
+
     private func loadTrackIntoPage(track: Track, config: MediaSourceConfig) -> Bool {
         guard let webView = self.webView else {
             logger.error("Failed to create web view")
@@ -107,10 +212,15 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         if let htmlTemplate = playback.html {
             let resolvedHTML = htmlTemplate.script.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
             webView.loadHTMLString(resolvedHTML, baseURL: nil)
+            self.iframePageLoaded = false
             logger.info("Loading track via HTML: \(track.title)")
             return true
         } else if let urlTemplate = playback.url {
             let resolvedURLString = urlTemplate.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
+            let title = Self.escapeForJS(track.title)
+            let artist = Self.escapeForJS(track.subtitle ?? "Unknown Artist")
+            let artworkUrl = Self.escapeForJS(track.artworkUrl ?? "")
+            let duration = Double(track.duration ?? 0) / 1000.0
 
             let iframeHTML = """
             <!DOCTYPE html>
@@ -124,13 +234,83 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                 </style>
             </head>
             <body>
-                <iframe src="\(resolvedURLString)" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <audio id="bopBrowserKeepaliveAudio" src="\(self.silentAudioDataURI)" loop autoplay></audio>
+                <iframe id="bopBrowserIframe" src="\(resolvedURLString)" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <script>
+                    (function() {
+                        'use strict';
+
+                        var audio = document.getElementById('bopBrowserKeepaliveAudio');
+                        audio.volume = 0.001;
+
+                        // Ensure audio keeps playing to maintain AudioSession
+                        audio.addEventListener('pause', function() {
+                            audio.play().catch(function(err) {});
+                        });
+
+                        if ('mediaSession' in navigator) {
+                            navigator.mediaSession.metadata = new MediaMetadata({
+                                title: '\(title)',
+                                artist: '\(artist)',
+                                album: '',
+                                artwork: [
+                                    { src: '\(artworkUrl)', sizes: '512x512', type: 'image/jpeg' }
+                                ]
+                            });
+
+                            if ('setPositionState' in navigator.mediaSession) {
+                                try {
+                                    navigator.mediaSession.setPositionState({
+                                        duration: \(duration),
+                                        playbackRate: 1.0,
+                                        position: 0
+                                    });
+                                } catch (e) {}
+                            }
+
+                            navigator.mediaSession.playbackState = 'playing';
+
+                            // Wire mediaSession controls to iframe playback (NOT the silent audio)
+                            navigator.mediaSession.setActionHandler('play', function() {
+                                if (window.bopBrowserPlay) {
+                                    window.bopBrowserPlay();
+                                } else {
+                                    var iframe = document.getElementById('bopBrowserIframe');
+                                    if (iframe && iframe.contentWindow) {
+                                        iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'play' }, '*');
+                                    }
+                                }
+                                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPlay'});
+                            });
+                            navigator.mediaSession.setActionHandler('pause', function() {
+                                if (window.bopBrowserPause) {
+                                    window.bopBrowserPause();
+                                } else {
+                                    var iframe = document.getElementById('bopBrowserIframe');
+                                    if (iframe && iframe.contentWindow) {
+                                        iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'pause' }, '*');
+                                    }
+                                }
+                                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPause'});
+                            });
+                            navigator.mediaSession.setActionHandler('previoustrack', function() {
+                                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'previoustrack'});
+                            });
+                            navigator.mediaSession.setActionHandler('nexttrack', function() {
+                                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'nexttrack'});
+                            });
+                        }
+
+                        audio.play().catch(function(err) {});
+                    })();
+                </script>
             </body>
             </html>
             """
 
             webView.loadHTMLString(iframeHTML, baseURL: URL(string: resolvedURLString))
-            logger.info("Loading track via iframe URL: \(track.title) at \(resolvedURLString)")
+            self.iframePageLoaded = true
+            logger.info("Loading track via iframe URL with keepalive audio: \(track.title) at \(resolvedURLString)")
             return true
         }
 
@@ -168,12 +348,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             if (window.bopBrowserPlay) {
                 window.bopBrowserPlay();
             } else {
-                var iframe = document.querySelector('iframe');
+                var iframe = document.getElementById('bopBrowserIframe') || document.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'play' }, '*');
                 } else {
                     console.error('No play function available');
                 }
+            }
+            // Update mediaSession playback state
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'playing';
             }
         })();
         """
@@ -190,12 +374,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             if (window.bopBrowserPause) {
                 window.bopBrowserPause();
             } else {
-                var iframe = document.querySelector('iframe');
+                var iframe = document.getElementById('bopBrowserIframe') || document.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'pause' }, '*');
                 } else {
                     console.error('No pause function available');
                 }
+            }
+            // Update mediaSession playback state
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'paused';
             }
         })();
         """
@@ -213,7 +401,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             if (window.bopBrowserSeek) {
                 window.bopBrowserSeek(\(ms));
             } else {
-                var iframe = document.querySelector('iframe');
+                var iframe = document.getElementById('bopBrowserIframe') || document.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'seek', value: \(ms) }, '*');
                 } else {
@@ -333,6 +521,18 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                 PlaybackService.shared.next()
             }
             return
+        case "mediaSessionPlay":
+            logger.info("Received mediaSession play action")
+            Task { @MainActor in
+                PlaybackService.shared.play()
+            }
+            return
+        case "mediaSessionPause":
+            logger.info("Received mediaSession pause action")
+            Task { @MainActor in
+                PlaybackService.shared.pause()
+            }
+            return
         default:
             break
         }
@@ -368,6 +568,55 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         if let intValue = dict[key] as? Int { return Double(intValue) }
         if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
         return 0
+    }
+
+    // MARK: - Silent WAV Generation
+
+    /// Generates a 10-second silent WAV file as a data URI for keeping the AudioSession alive
+    private static func generateSilentWAVDataURI() -> String {
+        let sampleRate: UInt32 = 44100
+        let duration: UInt32 = 10 // 10 seconds
+        let numSamples = sampleRate * duration
+        let dataSize = numSamples * 2 // 16-bit = 2 bytes per sample
+
+        var wavData = Data()
+
+        // WAV header
+        wavData.append("RIFF".data(using: .ascii)!) // ChunkID
+        wavData.append(UInt32(36 + dataSize).littleEndianBytes) // ChunkSize
+        wavData.append("WAVE".data(using: .ascii)!) // Format
+        wavData.append("fmt ".data(using: .ascii)!) // Subchunk1ID
+        wavData.append(UInt32(16).littleEndianBytes) // Subchunk1Size (PCM)
+        wavData.append(UInt16(1).littleEndianBytes) // AudioFormat (PCM)
+        wavData.append(UInt16(1).littleEndianBytes) // NumChannels (mono)
+        wavData.append(sampleRate.littleEndianBytes) // SampleRate
+        wavData.append((sampleRate * 2).littleEndianBytes) // ByteRate
+        wavData.append(UInt16(2).littleEndianBytes) // BlockAlign
+        wavData.append(UInt16(16).littleEndianBytes) // BitsPerSample
+        wavData.append("data".data(using: .ascii)!) // Subchunk2ID
+        wavData.append(dataSize.littleEndianBytes) // Subchunk2Size
+
+        // Audio data: near-silence (very low amplitude sine wave at 20Hz)
+        for i in 0 ..< numSamples {
+            let t = Double(i) / Double(sampleRate)
+            let sample = Int16(sin(2.0 * .pi * 20.0 * t) * 3.0) // Very low amplitude
+            wavData.append(sample.littleEndianBytes)
+        }
+
+        // Convert to base64 data URI
+        let base64 = wavData.base64EncodedString()
+        return "data:audio/wav;base64,\(base64)"
+    }
+
+    // MARK: - JS String Escaping
+
+    private static func escapeForJS(_ string: String) -> String {
+        return string
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
     }
 }
 
