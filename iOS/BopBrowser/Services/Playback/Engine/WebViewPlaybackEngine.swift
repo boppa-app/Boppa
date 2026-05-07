@@ -35,6 +35,11 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                 return self.loadTrackIntoPage(track: track, config: config)
             }
 
+            // TEMPORARILY RELOAD PAGE ON ANY NAVIGATION
+            if config.playback.url != nil {
+                return self.loadTrackIntoPage(track: track, config: config)
+            }
+
             guard let webView = self.webView else {
                 logger.error("WebView not available")
                 return false
@@ -107,13 +112,25 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         } else if let urlTemplate = playback.url {
             let resolvedURLString = urlTemplate.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
 
-            guard let url = URL(string: resolvedURLString) else {
-                logger.error("Invalid playback URL: \(resolvedURLString)")
-                return false
-            }
+            let iframeHTML = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    * { margin: 0; padding: 0; }
+                    html, body { width: 100%; height: 100%; overflow: hidden; }
+                    iframe { width: 100%; height: 100%; border: none; }
+                </style>
+            </head>
+            <body>
+                <iframe src="\(resolvedURLString)" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </body>
+            </html>
+            """
 
-            webView.load(URLRequest(url: url))
-            logger.info("Loading track via URL: \(track.title) at \(url.absoluteString)")
+            webView.loadHTMLString(iframeHTML, baseURL: URL(string: resolvedURLString))
+            logger.info("Loading track via iframe URL: \(track.title) at \(resolvedURLString)")
             return true
         }
 
@@ -151,7 +168,12 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             if (window.bopBrowserPlay) {
                 window.bopBrowserPlay();
             } else {
-                console.error('No play function available');
+                var iframe = document.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'play' }, '*');
+                } else {
+                    console.error('No play function available');
+                }
             }
         })();
         """
@@ -168,7 +190,12 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             if (window.bopBrowserPause) {
                 window.bopBrowserPause();
             } else {
-                console.error('No pause function available');
+                var iframe = document.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'pause' }, '*');
+                } else {
+                    console.error('No pause function available');
+                }
             }
         })();
         """
@@ -186,7 +213,12 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             if (window.bopBrowserSeek) {
                 window.bopBrowserSeek(\(ms));
             } else {
-                console.error('No seek function available');
+                var iframe = document.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'seek', value: \(ms) }, '*');
+                } else {
+                    console.error('No seek function available');
+                }
             }
         })();
         """
@@ -254,6 +286,21 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             window.bopBrowserPause = null;
             window.bopBrowserSeek = null;
             window.bopBrowserLoadTrack = null;
+
+            // Listen for commands from parent frame (when running inside an iframe)
+            window.addEventListener('message', function(event) {
+                if (!event.data || event.data.type !== 'bopBrowser') return;
+                var command = event.data.command;
+                if (command === 'play' && window.bopBrowserPlay) {
+                    window.bopBrowserPlay();
+                } else if (command === 'pause' && window.bopBrowserPause) {
+                    window.bopBrowserPause();
+                } else if (command === 'seek' && window.bopBrowserSeek) {
+                    window.bopBrowserSeek(event.data.value);
+                } else if (command === 'loadTrack' && window.bopBrowserLoadTrack) {
+                    window.bopBrowserLoadTrack(event.data.trackData);
+                }
+            });
         })();
         """
     }
