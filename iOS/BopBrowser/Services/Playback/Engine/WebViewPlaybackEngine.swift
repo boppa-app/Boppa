@@ -43,6 +43,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
     var onEvent: ((PlayerEvent) -> Void)?
 
     private var webView: WKWebView?
+    private var pendingWebView: WKWebView?
     private var currentConfigName: String?
     private var lastWebViewUpdatedTime: Date?
 
@@ -65,9 +66,9 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                 return self.loadTrackIntoPage(track: track, config: config)
             }
 
-            // For iframe-based playback, update only the iframe src and metadata
+            // For iframe-based playback, pause old and construct new webview
             if config.playback.url != nil, self.iframePageLoaded {
-                return self.updateIframeAndMetadata(track: track, config: config)
+                return self.loadTrackIntoNewWebView(track: track, config: config)
             }
 
             // For iframe-based playback on first load
@@ -123,73 +124,141 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         }
     }
 
-    /// Updates only the iframe src and mediaSession metadata without destroying the page.
-    /// This preserves the silent audio element and its AudioSession.
-    private func updateIframeAndMetadata(track: Track, config: MediaSourceConfig) -> Bool {
-        guard let webView = self.webView else {
-            logger.error("WebView not available for iframe update")
-            return false
-        }
-
+    /// Pauses the current webview and constructs a new webview with the new track.
+    /// The old webview will be destroyed when the new one sends an `initialPlay` message.
+    private func loadTrackIntoNewWebView(track: Track, config: MediaSourceConfig) -> Bool {
         guard let trackURL = track.url else {
             logger.error("Track has no URL")
             return false
         }
-
-        let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
 
         guard let urlTemplate = config.playback.url else {
             logger.error("Config has no URL template")
             return false
         }
 
+        // Pause the current webview (targets self.webView since pendingWebView is nil or about to be replaced)
+        self.pause()
+
+        // Clean up any existing pending webview from a previous rapid track change
+        if let existingPending = self.pendingWebView {
+            existingPending.stopLoading()
+            existingPending.configuration.userContentController.removeAllScriptMessageHandlers()
+            existingPending.removeFromSuperview()
+            self.pendingWebView = nil
+        }
+
+        // Create a new webview for the new track
+        let newWebView = WebViewFactory.makeWebView(
+            scripts: config.playback.userScripts ?? [],
+            contractScript: Self.contractScript(),
+            customUserAgent: config.customUserAgent,
+            allowsInlineMediaPlayback: true,
+            isHidden: true
+        )
+
+        newWebView.configuration.userContentController.add(self, name: Self.messageHandlerName)
+        self.attachToWindow(newWebView)
+
+        // Store as pending - will be promoted on initialPlay
+        self.pendingWebView = newWebView
+
+        // Load the track HTML into the new webview
+        let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
         let resolvedURLString = urlTemplate.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
         let title = Self.escapeForJS(track.title)
         let artist = Self.escapeForJS(track.subtitle ?? "Unknown Artist")
         let artworkUrl = Self.escapeForJS(track.artworkUrl ?? "")
         let duration = Double(track.duration ?? 0) / 1000.0
 
-        let script = """
-        (function() {
-            // Update iframe src
-            var iframe = document.getElementById('bopBrowserIframe');
-            if (iframe) {
-                iframe.src = '\(Self.escapeForJS(resolvedURLString))';
-            }
+        let iframeHTML = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                * { margin: 0; padding: 0; }
+                html, body { width: 100%; height: 100%; overflow: hidden; }
+                iframe { width: 100%; height: 100%; border: none; }
+            </style>
+        </head>
+        <body>
+            <audio id="bopBrowserKeepaliveAudio" src="\(self.silentAudioDataURI)" loop autoplay></audio>
+            <iframe id="bopBrowserIframe" src="\(resolvedURLString)" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <script>
+                (function() {
+                    'use strict';
 
-            // Update mediaSession metadata
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: '\(title)',
-                    artist: '\(artist)',
-                    album: '',
-                    artwork: [
-                        { src: '\(artworkUrl)', sizes: '512x512', type: 'image/jpeg' }
-                    ]
-                });
+                    var audio = document.getElementById('bopBrowserKeepaliveAudio');
+                    audio.volume = 0.001;
 
-                if ('setPositionState' in navigator.mediaSession) {
-                    try {
-                        navigator.mediaSession.setPositionState({
-                            duration: \(duration),
-                            playbackRate: 1.0,
-                            position: 0
+                    // Ensure audio keeps playing to maintain AudioSession
+                    // audio.addEventListener('pause', function() {
+                    //     audio.play().catch(function(err) {});
+                    // });
+
+                    if ('mediaSession' in navigator) {
+                        navigator.mediaSession.metadata = new MediaMetadata({
+                            title: '\(title)',
+                            artist: '\(artist)',
+                            album: '',
+                            artwork: [
+                                { src: '\(artworkUrl)', sizes: '512x512', type: 'image/jpeg' }
+                            ]
                         });
-                    } catch (e) {}
-                }
 
-                navigator.mediaSession.playbackState = 'playing';
-            }
-        })();
+                        if ('setPositionState' in navigator.mediaSession) {
+                            try {
+                                navigator.mediaSession.setPositionState({
+                                    duration: \(duration),
+                                    playbackRate: 1.0,
+                                    position: 0
+                                });
+                            } catch (e) {}
+                        }
+
+                        navigator.mediaSession.playbackState = 'playing';
+
+                        // Wire mediaSession controls to iframe playback (NOT the silent audio)
+                        navigator.mediaSession.setActionHandler('play', function() {
+                            if (window.bopBrowserPlay) {
+                                window.bopBrowserPlay();
+                            } else {
+                                var iframe = document.getElementById('bopBrowserIframe');
+                                if (iframe && iframe.contentWindow) {
+                                    iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'play' }, '*');
+                                }
+                            }
+                            window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPlay'});
+                        });
+                        navigator.mediaSession.setActionHandler('pause', function() {
+                            if (window.bopBrowserPause) {
+                                window.bopBrowserPause();
+                            } else {
+                                var iframe = document.getElementById('bopBrowserIframe');
+                                if (iframe && iframe.contentWindow) {
+                                    iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'pause' }, '*');
+                                }
+                            }
+                            window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPause'});
+                        });
+                        navigator.mediaSession.setActionHandler('previoustrack', function() {
+                            window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'previoustrack'});
+                        });
+                        navigator.mediaSession.setActionHandler('nexttrack', function() {
+                            window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'nexttrack'});
+                        });
+                    }
+
+                    audio.play().catch(function(err) {});
+                })();
+            </script>
+        </body>
+        </html>
         """
 
-        webView.evaluateJavaScript(script) { _, error in
-            if let error {
-                logger.error("Failed to update iframe and metadata: \(error.localizedDescription)")
-            }
-        }
-
-        logger.info("Updated iframe src and metadata for: \(track.title) at \(resolvedURLString)")
+        newWebView.loadHTMLString(iframeHTML, baseURL: URL(string: resolvedURLString))
+        logger.info("Created pending webview for track: \(track.title) at \(resolvedURLString)")
         return true
     }
 
@@ -244,9 +313,9 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                         audio.volume = 0.001;
 
                         // Ensure audio keeps playing to maintain AudioSession
-                        audio.addEventListener('pause', function() {
-                            audio.play().catch(function(err) {});
-                        });
+                        // audio.addEventListener('pause', function() {
+                        //     audio.play().catch(function(err) {});
+                        // });
 
                         if ('mediaSession' in navigator) {
                             navigator.mediaSession.metadata = new MediaMetadata({
@@ -271,28 +340,28 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                             navigator.mediaSession.playbackState = 'playing';
 
                             // Wire mediaSession controls to iframe playback (NOT the silent audio)
-                            navigator.mediaSession.setActionHandler('play', function() {
-                                if (window.bopBrowserPlay) {
-                                    window.bopBrowserPlay();
-                                } else {
-                                    var iframe = document.getElementById('bopBrowserIframe');
-                                    if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'play' }, '*');
-                                    }
-                                }
-                                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPlay'});
-                            });
-                            navigator.mediaSession.setActionHandler('pause', function() {
-                                if (window.bopBrowserPause) {
-                                    window.bopBrowserPause();
-                                } else {
-                                    var iframe = document.getElementById('bopBrowserIframe');
-                                    if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'pause' }, '*');
-                                    }
-                                }
-                                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPause'});
-                            });
+                            // navigator.mediaSession.setActionHandler('play', function() {
+                            //     if (window.bopBrowserPlay) {
+                            //         window.bopBrowserPlay();
+                            //     } else {
+                            //         var iframe = document.getElementById('bopBrowserIframe');
+                            //         if (iframe && iframe.contentWindow) {
+                            //             iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'play' }, '*');
+                            //         }
+                            //     }
+                            //     window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPlay'});
+                            // });
+                            // navigator.mediaSession.setActionHandler('pause', function() {
+                            //     if (window.bopBrowserPause) {
+                            //         window.bopBrowserPause();
+                            //     } else {
+                            //         var iframe = document.getElementById('bopBrowserIframe');
+                            //         if (iframe && iframe.contentWindow) {
+                            //             iframe.contentWindow.postMessage({ type: 'bopBrowser', command: 'pause' }, '*');
+                            //         }
+                            //     }
+                            //     window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'mediaSessionPause'});
+                            // });
                             navigator.mediaSession.setActionHandler('previoustrack', function() {
                                 window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'previoustrack'});
                             });
@@ -342,6 +411,12 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             .replacingOccurrences(of: "\r", with: "\\r")
     }
 
+    /// Returns the webview that should receive playback commands.
+    /// Prefers the pending webview (new track) if it exists, otherwise the current one.
+    private var activeWebView: WKWebView? {
+        self.pendingWebView ?? self.webView
+    }
+
     func play() {
         let script = """
         (function() {
@@ -361,7 +436,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        self.webView?.evaluateJavaScript(script) { _, error in
+        self.activeWebView?.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
             }
@@ -387,7 +462,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        self.webView?.evaluateJavaScript(script) { _, error in
+        self.activeWebView?.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
             }
@@ -410,7 +485,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        self.webView?.evaluateJavaScript(script) { _, error in
+        self.activeWebView?.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Seek command error: \(error.localizedDescription)")
             }
@@ -419,6 +494,13 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
 
     func stop() {
         self.pause()
+        // Clean up pending webview if it exists
+        if let pendingWebView = self.pendingWebView {
+            pendingWebView.stopLoading()
+            pendingWebView.configuration.userContentController.removeAllScriptMessageHandlers()
+            pendingWebView.removeFromSuperview()
+            self.pendingWebView = nil
+        }
         logger.info("WebViewPlaybackEngine stopped")
     }
 
@@ -458,6 +540,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         self.attachToWindow(webView)
 
         logger.info("WebViewPlaybackEngine reconfigured for '\(config.name)'")
+    }
+
+    /// Destroys the current (old) webview, stopping playback and removing it from the view hierarchy.
+    private func destroyOldWebView() {
+        guard let oldWebView = self.webView else { return }
+        oldWebView.stopLoading()
+        oldWebView.configuration.userContentController.removeAllScriptMessageHandlers()
+        oldWebView.removeFromSuperview()
+        self.webView = nil
+        logger.info("Destroyed old webview")
     }
 
     private static func contractScript() -> String {
@@ -539,7 +631,16 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
 
         let event: PlayerEvent
         switch type {
-        case "play", "initialPlay":
+        case "initialPlay":
+            // Promote pending webview and destroy the old one
+            if let pendingWebView = self.pendingWebView {
+                self.destroyOldWebView()
+                self.webView = pendingWebView
+                self.pendingWebView = nil
+                logger.info("Promoted pending webview on initialPlay, destroyed old webview")
+            }
+            event = .playing
+        case "play":
             event = .playing
         case "pause":
             event = .paused
