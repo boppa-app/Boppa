@@ -101,7 +101,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
 
         if let htmlTemplate = playback.html {
             let resolvedHTML = htmlTemplate.script.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
-            webView.loadHTMLString(resolvedHTML, baseURL: nil)
+            webView.loadHTMLString(resolvedHTML, baseURL: config.url)
             logger.info("Loading track via HTML: \(track.title)")
             return true
         } else if let urlTemplate = playback.url {
