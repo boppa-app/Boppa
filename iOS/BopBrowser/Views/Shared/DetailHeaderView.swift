@@ -8,16 +8,13 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
     @ViewBuilder let trailing: () -> TrailingContent
     @ViewBuilder let centerTrailing: () -> CenterContent
 
-    private var isSeparatorHidden: Bool
-
     init(
         title: String,
         highlightedTitle: String? = nil,
         onBack: @escaping () -> Void,
         @ViewBuilder centerLeading: @escaping () -> CenterLeadingContent = { EmptyView() },
         @ViewBuilder trailing: @escaping () -> TrailingContent = { EmptyView() },
-        @ViewBuilder centerTrailing: @escaping () -> CenterContent = { EmptyView() },
-        isSeparatorHidden: Bool = false
+        @ViewBuilder centerTrailing: @escaping () -> CenterContent = { EmptyView() }
     ) {
         self.title = title
         self.highlightedTitle = highlightedTitle
@@ -25,7 +22,6 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         self.centerLeading = centerLeading
         self.trailing = trailing
         self.centerTrailing = centerTrailing
-        self.isSeparatorHidden = isSeparatorHidden
     }
 
     private let buttonWidth: CGFloat = 48
@@ -60,7 +56,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                         Button(action: self.onBack) {
                             Image(systemName: "chevron.left")
                                 .font(.body.weight(.semibold))
-                                .foregroundColor(Color.purp)
+                                .foregroundColor(.white)
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
@@ -73,23 +69,22 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                 }
             }
             .frame(height: 44)
+            .background(
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: Color.purp.opacity(0.1), location: 0.5),
+                        .init(color: Color.purp.opacity(0.2), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
 
-            if !self.isSeparatorHidden {
-                Rectangle()
-                    .fill(Color(.systemGray6))
-                    .overlay(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black.opacity(0.5), location: 0),
-                                .init(color: .clear, location: 0.5),
-                                .init(color: .black.opacity(0.5), location: 1),
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(height: 3)
-            }
+            Rectangle()
+                .fill(Color.purp)
+                // .shadow(color: Color.purp.opacity(0.6), radius: 8, x: 0, y: 0)
+                .frame(height: 2)
         }
     }
 }

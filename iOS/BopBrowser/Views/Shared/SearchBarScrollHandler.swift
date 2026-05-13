@@ -39,7 +39,7 @@ class SearchBarScrollHandler {
     var showSearchBar = true
     var searchBarTopFade: CGFloat = 0
 
-    let searchBarHeight: CGFloat = 52
+    let searchBarHeight: CGFloat = 46
     let fadeHeight: CGFloat = 40
 
     private var accumulatedScrollDown: CGFloat = 0

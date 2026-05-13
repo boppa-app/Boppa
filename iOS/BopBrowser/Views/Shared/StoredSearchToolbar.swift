@@ -72,36 +72,56 @@ struct StoredSearchToolbar: View {
                                 }
                                 .padding(.horizontal, 12)
                             }
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                            .transition(.opacity)
                         }
                     }
                     .frame(height: 40)
-                    .background(.black)
-                    .cornerRadius(10)
+                    .background(
+                        VStack(spacing: 0) {
+                            Color.clear.frame(height: 2)
+                            Color.black
+                        }
+                    )
+                    .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(
-                                LinearGradient(
-                                    stops: self.showFocus
-                                        ? [
-                                            .init(color: .purp.opacity(0.8), location: 0),
-                                            .init(color: .purp.opacity(0.5), location: 0.5),
-                                            .init(color: .purp.opacity(0.8), location: 1),
-                                        ]
-                                        : [
-                                            .init(color: .purp.opacity(0.3), location: 0),
-                                            .init(color: .purp.opacity(0.5), location: 0.5),
-                                            .init(color: .purp.opacity(0.3), location: 1),
-                                        ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                ),
-                                lineWidth: 2
-                            )
+                        GeometryReader { geo in
+                            let borderColor = self.showFocus
+                                ? Color.purp
+                                : Color.purp.opacity(0.5)
+                            let w: CGFloat = 2
+                            let r: CGFloat = 10
+
+                            Path { path in
+                                // Start at top-left
+                                path.move(to: CGPoint(x: 0, y: 0))
+                                // Left side down
+                                path.addLine(to: CGPoint(x: 0, y: geo.size.height - r))
+                                // Bottom-left corner
+                                path.addQuadCurve(
+                                    to: CGPoint(x: r, y: geo.size.height),
+                                    control: CGPoint(x: 0, y: geo.size.height)
+                                )
+                                // Bottom edge
+                                path.addLine(to: CGPoint(x: geo.size.width - r, y: geo.size.height))
+                                // Bottom-right corner
+                                path.addQuadCurve(
+                                    to: CGPoint(x: geo.size.width, y: geo.size.height - r),
+                                    control: CGPoint(x: geo.size.width, y: geo.size.height)
+                                )
+                                // Right side up
+                                path.addLine(to: CGPoint(x: geo.size.width, y: 0))
+                            }
+                            .stroke(borderColor, lineWidth: w)
+                        }
                     )
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
-                    .background(.black)
+                    .background(
+                        VStack(spacing: 0) {
+                            Color.clear.frame(height: 10)
+                            Color.black
+                        }
+                    )
 
                     LinearGradient(
                         colors: [.black.opacity(self.fadeOpacity), .black.opacity(0)],
@@ -111,7 +131,7 @@ struct StoredSearchToolbar: View {
                     .frame(height: self.fadeHeight)
                     .allowsHitTesting(false)
                 }
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .transition(.move(edge: .top))
             }
         }
         .clipped()
@@ -122,3 +142,4 @@ struct StoredSearchToolbar: View {
         }
     }
 }
+

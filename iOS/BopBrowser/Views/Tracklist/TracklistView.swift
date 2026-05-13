@@ -41,7 +41,7 @@ struct TracklistView: View {
                             if self.isSaved {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.purp)
+                                    .foregroundColor(.white)
                                     .rotationEffect(.degrees(90))
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
@@ -58,7 +58,7 @@ struct TracklistView: View {
                                     } else {
                                         Image(systemName: "bookmark")
                                             .font(.system(size: 18))
-                                            .foregroundColor(.purp)
+                                            .foregroundColor(.white)
                                     }
                                 }
                                 .frame(width: 44, height: 44)
@@ -77,8 +77,7 @@ struct TracklistView: View {
                                 .scaleEffect(0.7)
                                 .tint(.white)
                         }
-                    },
-                    isSeparatorHidden: self.isSaved && self.scrollHandler.showSearchBar
+                    }
                 )
 
                 self.content
@@ -104,7 +103,7 @@ struct TracklistView: View {
                     fadeOpacity: self.scrollHandler.searchBarTopFade,
                     fadeHeight: self.scrollHandler.fadeHeight
                 )
-                .padding(.top, 40)
+                .padding(.top, 38)
             }
         }
         .navigationBarHidden(true)
@@ -234,6 +233,7 @@ struct TracklistView: View {
                 }
             }
             .listStyle(.plain)
+            .environment(\.defaultMinListRowHeight, self.scrollHandler.searchBarHeight)
             .scrollContentBackground(.hidden)
             .modifier(ScrollDirectionTracker(
                 isEnabled: self.isSaved,

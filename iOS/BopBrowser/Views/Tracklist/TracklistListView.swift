@@ -62,7 +62,7 @@ struct TracklistListView: View {
                             if self.viewModel.isEditing {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.purp)
+                                    .foregroundColor(.white)
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
@@ -71,7 +71,7 @@ struct TracklistListView: View {
                             } else {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.purp)
+                                    .foregroundColor(.white)
                                     .rotationEffect(.degrees(90))
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
@@ -81,8 +81,7 @@ struct TracklistListView: View {
                                     }
                             }
                         }
-                    },
-                    isSeparatorHidden: self.isLibraryMode && !self.viewModel.isEditing && self.scrollHandler.showSearchBar
+                    }
                 )
 
                 self.content
@@ -108,7 +107,7 @@ struct TracklistListView: View {
                     fadeOpacity: self.scrollHandler.searchBarTopFade,
                     fadeHeight: self.scrollHandler.fadeHeight
                 )
-                .padding(.top, 40)
+                .padding(.top, 38)
             }
         }
         .navigationBarHidden(true)
@@ -199,7 +198,8 @@ struct TracklistListView: View {
         ScrollFadeView {
             List {
                 if self.isLibraryMode && !self.viewModel.isEditing {
-                    Color.black
+                    Rectangle()
+                        .fill(Color.black)
                         .frame(height: self.scrollHandler.searchBarHeight)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -264,6 +264,7 @@ struct TracklistListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, self.scrollHandler.searchBarHeight)
             .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
             .modifier(ScrollDirectionTracker(
                 isEnabled: self.isLibraryMode && !self.viewModel.isEditing,
