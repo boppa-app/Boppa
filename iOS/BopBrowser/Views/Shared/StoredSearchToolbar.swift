@@ -115,7 +115,8 @@ struct StoredSearchToolbar: View {
                         }
                     )
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
+                    .padding(.top, 6)
+                    .padding(.bottom, 2)
                     .background(
                         VStack(spacing: 0) {
                             Color.clear.frame(height: 10)
@@ -142,4 +143,3 @@ struct StoredSearchToolbar: View {
         }
     }
 }
-
