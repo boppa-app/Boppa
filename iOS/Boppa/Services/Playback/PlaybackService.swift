@@ -7,8 +7,6 @@ private let logger = Logger(
     category: "PlaybackService"
 )
 
-// TODO: Set seek to 0 when loading next track
-
 @Observable
 @MainActor
 final class PlaybackService {
@@ -26,21 +24,19 @@ final class PlaybackService {
     }
 
     private let queueManager = TrackQueueManager.shared
-    private let playbackManager = PlaybackManager.shared
+    private let registry = WebViewPlaybackEngineRegistry.shared
+    private var activeEngine: WebViewPlaybackEngine?
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
 
     private init() {
         self.setupAudioSession()
-        self.playbackManager.onEvent = { [weak self] event in
-            self?.handleManagerEvent(event)
-        }
         self.observeMediaSourceRemoved()
         logger.info("PlaybackService initialized")
     }
 
     func playTrack(_ track: Track, queue: [Track] = [], mediaSource: MediaSource) {
-        self.playbackManager.stop()
+        self.activeEngine?.stop()
 
         self.currentTrack = track
         self.mediaSource = mediaSource
@@ -53,18 +49,36 @@ final class PlaybackService {
             self.queueManager.setQueue(queue, startingAt: track)
         }
 
+        // TODO: Stop the current engine (set page to blanks) if engine swaps to a different one after different one loads
         Task {
-            await self.playbackManager.load(track: track, mediaSource: mediaSource)
+            guard let engine = self.registry.engine(for: mediaSource.id) else {
+                logger.error("No playback engine for media source '\(mediaSource.id)'")
+                self.isLoading = false
+                return
+            }
+
+            engine.onEvent = { [weak self] event in
+                self?.handleEngineEvent(event)
+            }
+
+            self.activeEngine = engine
+
+            if await engine.load(track: track) {
+                logger.info("Loaded '\(track.title)' via WebViewPlaybackEngine")
+            } else {
+                logger.error("Failed to load '\(track.title)'")
+                self.isLoading = false
+            }
         }
     }
 
     func play() {
-        self.playbackManager.play()
+        self.activeEngine?.play()
         self.isPlaying = true
     }
 
     func pause() {
-        self.playbackManager.pause()
+        self.activeEngine?.pause()
         self.isPlaying = false
     }
 
@@ -97,19 +111,32 @@ final class PlaybackService {
 
     func seek(to time: Double) {
         self.currentTime = time
-        self.playbackManager.seek(to: time)
+        self.activeEngine?.seek(to: time)
     }
 
-    private func handleManagerEvent(_ event: PlayerEvent) {
+    func stop() {
+        self.activeEngine?.stop()
+        self.activeEngine = nil
+        self.currentTrack = nil
+        self.mediaSource = nil
+        self.isPlaying = false
+        self.isLoading = false
+        self.currentTime = 0
+        self.duration = 0
+        self.queueManager.clearQueue()
+        logger.info("Playback stopped and cleared")
+    }
+
+    private func handleEngineEvent(_ event: PlayerEvent) {
         switch event {
         case .playing:
             self.isPlaying = true
             self.isLoading = false
-            logger.debug("Manager: playing")
+            logger.debug("Engine: playing")
 
         case .paused:
             self.isPlaying = false
-            logger.debug("Manager: paused")
+            logger.debug("Engine: paused")
 
         case let .progress(currentTime, duration):
             self.currentTime = currentTime
@@ -119,34 +146,22 @@ final class PlaybackService {
 
         case let .durationResolved(duration):
             self.duration = duration
-            logger.debug("Manager: duration resolved = \(duration)s")
+            logger.debug("Engine: duration resolved = \(duration)s")
 
         case .finished:
-            logger.info("Manager: track finished")
+            logger.info("Engine: track finished")
             self.next()
 
         case let .error(message):
             self.isLoading = false
-            logger.error("Manager error: \(message)")
+            logger.error("Engine error: \(message)")
 
         case .loading:
             self.isLoading = true
 
         case .ready:
-            logger.debug("Manager: ready")
+            logger.debug("Engine: ready")
         }
-    }
-
-    func stop() {
-        self.playbackManager.stop()
-        self.currentTrack = nil
-        self.mediaSource = nil
-        self.isPlaying = false
-        self.isLoading = false
-        self.currentTime = 0
-        self.duration = 0
-        self.queueManager.clearQueue()
-        logger.info("Playback stopped and cleared")
     }
 
     private func observeMediaSourceRemoved() {

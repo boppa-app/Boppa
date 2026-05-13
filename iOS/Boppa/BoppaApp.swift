@@ -60,6 +60,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = hostingController
             window.makeKeyAndVisible()
             self.window = window
+
+            WebViewPlaybackEngineRegistry.shared.start(modelContainer: appDelegate.modelContainer)
         }
     }
 }

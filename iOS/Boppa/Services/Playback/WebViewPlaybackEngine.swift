@@ -8,100 +8,89 @@ private let logger = Logger(
     category: "WebViewPlaybackEngine"
 )
 
-// TODO: Integration with seek and prev/next is broken, total track time also broken (seems like its only when switching mid track)
-// TODO: Keep paused state when executing prev/next
-// TODO: Add support for triggering pop-up with webview by posting a message back to Swift
-
 @MainActor
-final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
-    static let shared = WebViewPlaybackEngine()
+final class WebViewPlaybackEngine: NSObject {
     static let messageHandlerName = "playerCallback"
 
     var onEvent: ((PlayerEvent) -> Void)?
 
-    private var webView: WKWebView?
-    private var currentConfigName: String?
-    private var lastWebViewUpdatedTime: Date?
+    private let webView: WKWebView
+    private let config: MediaSourceConfig
 
-    override private init() {
+    init(config: MediaSourceConfig) {
+        self.config = config
+        self.webView = WebViewFactory.makeWebView(
+            scripts: config.playback.userScripts ?? [],
+            contractScript: Self.contractScript(),
+            customUserAgent: config.customUserAgent,
+            allowsInlineMediaPlayback: true,
+            isHidden: true
+        )
         super.init()
+        self.webView.configuration.userContentController.add(self, name: Self.messageHandlerName)
+        self.attachToWindow(self.webView)
+        logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
-    func load(playbackSource: PlaybackSource) async -> Bool {
-        switch playbackSource {
-        case let .track(track, config):
-            if self.webView == nil || self.needsReconfigure(for: config) {
-                self.reconfigureWebView(config: config)
-                return self.loadTrackIntoPage(track: track, config: config)
-            }
-
-            guard let webView = self.webView else {
-                logger.error("WebView not available")
-                return false
-            }
-
-            guard let escapedJSON: String = self.seralizeTrackData(track: track) else {
-                logger.error("Failed to serialize track data")
-                return false
-            }
-
-            let loadTrackScript = """
-            (function() {
-                try {
-                    var trackData = JSON.parse('\(escapedJSON)');
-                    if (window.boppaLoadTrack) {
-                        window.boppaLoadTrack(trackData);
-                    } else {
-                        console.error('boppaLoadTrack function not found');
-                    }
-                } catch (e) {
-                    console.error('Error loading track:', e);
-                }
-            })();
-            """
-
-            return await withCheckedContinuation { continuation in
-                webView.evaluateJavaScript(loadTrackScript) { [weak self] _, error in
-                    guard let self else {
-                        continuation.resume(returning: false)
-                        return
-                    }
-
-                    if let error {
-                        logger.error("Load track message error: \(error.localizedDescription), falling back to page reload")
-                        let success = self.loadTrackIntoPage(track: track, config: config)
-                        continuation.resume(returning: success)
-                    } else {
-                        logger.info("Sent load track message: \(track.title)")
-                        continuation.resume(returning: true)
-                    }
-                }
-            }
-        case .getTrackResponse:
-            logger.error("WebViewPlaybackEngine does not support loading from GetTrackResponse")
-            return false
-        }
-    }
-
-    private func loadTrackIntoPage(track: Track, config: MediaSourceConfig) -> Bool {
-        guard let webView = self.webView else {
-            logger.error("Failed to create web view")
-            return false
-        }
-
+    func load(track: Track) async -> Bool {
         guard let trackURL = track.url else {
             logger.error("Track has no URL")
             return false
         }
 
-        webView.stopLoading()
+        guard let escapedJSON = self.serializeTrackData(track: track) else {
+            logger.error("Failed to serialize track data")
+            return false
+        }
+
+        let loadTrackScript = """
+        (function() {
+            try {
+                var trackData = JSON.parse('\(escapedJSON)');
+                if (window.boppaLoadTrack) {
+                    window.boppaLoadTrack(trackData);
+                } else {
+                    console.error('boppaLoadTrack function not found');
+                }
+            } catch (e) {
+                console.error('Error loading track:', e);
+            }
+        })();
+        """
 
         let encodedTrackURL = trackURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trackURL
-        let playback = config.playback
+        let playback = self.config.playback
+
+        if self.webView.url == nil {
+            // WebView hasn't loaded anything yet — load the initial page
+            return self.loadTrackIntoPage(track: track, encodedTrackURL: encodedTrackURL, playback: playback)
+        }
+
+        return await withCheckedContinuation { continuation in
+            self.webView.evaluateJavaScript(loadTrackScript) { [weak self] _, error in
+                guard let self else {
+                    continuation.resume(returning: false)
+                    return
+                }
+
+                if let error {
+                    logger.error("Load track message error: \(error.localizedDescription), falling back to page reload")
+                    let success = self.loadTrackIntoPage(track: track, encodedTrackURL: encodedTrackURL, playback: playback)
+                    continuation.resume(returning: success)
+                } else {
+                    logger.info("Sent load track message: \(track.title)")
+                    continuation.resume(returning: true)
+                }
+            }
+        }
+    }
+
+    private func loadTrackIntoPage(track: Track, encodedTrackURL: String, playback: PlaybackConfig) -> Bool {
+        self.webView.stopLoading()
 
         if let htmlTemplate = playback.html {
             let resolvedHTML = htmlTemplate.script.replacingOccurrences(of: "<TRACK_URL>", with: encodedTrackURL)
-            webView.loadHTMLString(resolvedHTML, baseURL: URL(string: config.url))
+            self.webView.loadHTMLString(resolvedHTML, baseURL: URL(string: self.config.url))
             logger.info("Loading track via HTML: \(track.title)")
             return true
         } else if let urlTemplate = playback.url {
@@ -112,7 +101,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
                 return false
             }
 
-            webView.load(URLRequest(url: url))
+            self.webView.load(URLRequest(url: url))
             logger.info("Loading track via URL: \(track.title) at \(url.absoluteString)")
             return true
         }
@@ -121,7 +110,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         return false
     }
 
-    private func seralizeTrackData(track: Track) -> String? {
+    private func serializeTrackData(track: Track) -> String? {
         let trackData: [String: Any] = [
             "title": track.title,
             "subtitle": track.subtitle ?? "",
@@ -155,7 +144,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        self.webView?.evaluateJavaScript(script) { _, error in
+        self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
             }
@@ -172,7 +161,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        self.webView?.evaluateJavaScript(script) { _, error in
+        self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
             }
@@ -190,7 +179,7 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
             }
         })();
         """
-        self.webView?.evaluateJavaScript(script) { _, error in
+        self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Seek command error: \(error.localizedDescription)")
             }
@@ -202,42 +191,11 @@ final class WebViewPlaybackEngine: NSObject, PlaybackEngine {
         logger.info("WebViewPlaybackEngine stopped")
     }
 
-    private func needsReconfigure(for config: MediaSourceConfig) -> Bool {
-        if self.currentConfigName != config.name {
-            return true
-        }
-        if let webViewUpdated = self.lastWebViewUpdatedTime,
-           config.lastUpdated > webViewUpdated
-        {
-            return true
-        }
-        return false
-    }
-
-    private func reconfigureWebView(config: MediaSourceConfig) {
-        if let oldWebView = self.webView {
-            oldWebView.stopLoading()
-            oldWebView.configuration.userContentController.removeAllScriptMessageHandlers()
-            oldWebView.removeFromSuperview()
-        }
-
-        let webView = WebViewFactory.makeWebView(
-            scripts: config.playback.userScripts ?? [],
-            contractScript: Self.contractScript(),
-            customUserAgent: config.customUserAgent,
-            allowsInlineMediaPlayback: true,
-            isHidden: true
-        )
-
-        webView.configuration.userContentController.add(self, name: Self.messageHandlerName)
-
-        self.webView = webView
-        self.currentConfigName = config.name
-        self.lastWebViewUpdatedTime = Date()
-
-        self.attachToWindow(webView)
-
-        logger.info("WebViewPlaybackEngine reconfigured for '\(config.name)'")
+    func tearDown() {
+        self.webView.stopLoading()
+        self.webView.configuration.userContentController.removeAllScriptMessageHandlers()
+        self.webView.removeFromSuperview()
+        logger.info("WebViewPlaybackEngine torn down for '\(self.config.name)'")
     }
 
     private static func contractScript() -> String {
