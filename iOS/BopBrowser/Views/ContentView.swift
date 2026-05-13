@@ -88,7 +88,6 @@ struct ContentTabView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !self.hideSeparator {
-                Spacer().frame(height: 6)
                 Rectangle()
                     .fill(Color(.systemGray6))
                     .overlay(
