@@ -8,6 +8,27 @@ private let logger = Logger(
     category: "WebViewPlaybackEngine"
 )
 
+private extension UInt16 {
+    var littleEndianBytes: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout<UInt16>.size)
+    }
+}
+
+private extension UInt32 {
+    var littleEndianBytes: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout<UInt32>.size)
+    }
+}
+
+private extension Int16 {
+    var littleEndianBytes: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout<Int16>.size)
+    }
+}
+
 @MainActor
 final class WebViewPlaybackEngine: NSObject {
     static let messageHandlerName = "playerCallback"
@@ -19,6 +40,8 @@ final class WebViewPlaybackEngine: NSObject {
 
     private var hasLoadedHTML = false
     private var navigationContinuation: CheckedContinuation<Void, Never>?
+
+    private static let silentAudioDataURI: String = generateSilentWAVDataURI()
 
     init(config: MediaSourceConfig) {
         self.config = config
@@ -91,7 +114,17 @@ final class WebViewPlaybackEngine: NSObject {
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>* { margin: 0; padding: 0; } html, body, iframe { width: 100%; height: 100%; border: none; overflow: hidden; }</style>
         </head>
-        <body>\(bodyContent)</body>
+        <body>
+            <audio id="boppa-keepalive-audio" src="\(Self.silentAudioDataURI)" loop autoplay></audio>
+            <script>
+                (function() {
+                    var audio = document.getElementById('boppa-keepalive-audio');
+                    audio.volume = 0.001;
+                    audio.play().catch(function(err) {});
+                })();
+            </script>
+            \(bodyContent)
+        </body>
         </html>
         """
         self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(self.config.url)"))
@@ -123,7 +156,13 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func play() {
-        let script = "if (window.boppaPlay) window.boppaPlay();"
+        let script = """
+        (function() {
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (audio) audio.play().catch(function(e){});
+            if (window.boppaPlay) window.boppaPlay();
+        })();
+        """
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
@@ -132,7 +171,13 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func pause() {
-        let script = "if (window.boppaPause) window.boppaPause();"
+        let script = """
+        (function() {
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (audio) audio.pause();
+            if (window.boppaPause) window.boppaPause();
+        })();
+        """
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
@@ -169,33 +214,55 @@ final class WebViewPlaybackEngine: NSObject {
             window.postEvent = function(eventObj) {
                 window.webkit.messageHandlers.\(self.messageHandlerName).postMessage(eventObj);
             };
-            
-            // Placeholder functions for play/pause/seek/loadTrack
-            // User scripts must define these functions to handle playback control
-            window.boppaPlay = null;
-            window.boppaPause = null;
-            window.boppaSeek = null;
-            window.boppaLoadTrack = null;
 
-            // Listen for commands from parent frame (iframe mode)
-            window.addEventListener('message', function(event) {
-                var msg = event.data;
-                if (!msg || !msg.type) return;
-                switch (msg.type) {
-                    case 'boppaLoadTrack':
-                        if (window.boppaLoadTrack) window.boppaLoadTrack(msg.data);
-                        break;
-                    case 'boppaPlay':
-                        if (window.boppaPlay) window.boppaPlay();
-                        break;
-                    case 'boppaPause':
-                        if (window.boppaPause) window.boppaPause();
-                        break;
-                    case 'boppaSeek':
-                        if (window.boppaSeek) window.boppaSeek(msg.data);
-                        break;
+            if ('mediaSession' in navigator) {
+                var originalSetActionHandler = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+                var protectedActions = new Set(['previoustrack', 'nexttrack', 'seekbackward', 'seekforward']);
+
+                navigator.mediaSession.setActionHandler = function(action, handler) {
+                    if (protectedActions.has(action)) return;
+                    originalSetActionHandler(action, handler);
+                };
+
+                originalSetActionHandler('play', function() {
+                    // var ka = document.getElementById('boppa-keepalive-audio');
+                    // if (ka) ka.play().catch(function(e){});
+                    if (window.boppaPlay) window.boppaPlay();
+                });
+                originalSetActionHandler('pause', function() {
+                    // var ka = document.getElementById('boppa-keepalive-audio');
+                    // if (ka) ka.pause();
+                    if (window.boppaPause) window.boppaPause();
+                });
+                originalSetActionHandler('seekbackward', null);
+                originalSetActionHandler('seekforward', null);
+                originalSetActionHandler('previoustrack', function() {
+                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'previoustrack'});
+                });
+                originalSetActionHandler('nexttrack', function() {
+                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'nexttrack'});
+                });
+
+                // Intercept metadata setter to maintain control over Now Playing info
+                var metadataDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'metadata')
+                    || Object.getOwnPropertyDescriptor(navigator.mediaSession, 'metadata');
+                var originalMetadataSetter = metadataDescriptor && metadataDescriptor.set;
+                var boppaMetadata = new MediaMetadata({ title: 'Title', artist: 'Artist' });
+
+                if (originalMetadataSetter) {
+                    originalMetadataSetter.call(navigator.mediaSession, boppaMetadata);
+                    Object.defineProperty(navigator.mediaSession, 'metadata', {
+                        get: function() { return boppaMetadata; },
+                        set: function(val) {
+                            // Intercept: always set our controlled metadata via the real setter
+                            originalMetadataSetter.call(navigator.mediaSession, boppaMetadata);
+                        },
+                        configurable: true
+                    });
+                } else {
+                    navigator.mediaSession.metadata = boppaMetadata;
                 }
-            });
+            }
         })();
         """
     }
@@ -263,6 +330,40 @@ final class WebViewPlaybackEngine: NSObject {
         if let intValue = dict[key] as? Int { return Double(intValue) }
         if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
         return 0
+    }
+
+    private static func generateSilentWAVDataURI() -> String {
+        let sampleRate: UInt32 = 44100
+        let duration: UInt32 = 1
+        let numSamples = sampleRate * duration
+        let dataSize = numSamples * 2 // 16-bit = 2 bytes per sample
+
+        var wavData = Data()
+
+        // WAV header
+        wavData.append("RIFF".data(using: .ascii)!)
+        wavData.append(UInt32(36 + dataSize).littleEndianBytes)
+        wavData.append("WAVE".data(using: .ascii)!)
+        wavData.append("fmt ".data(using: .ascii)!)
+        wavData.append(UInt32(16).littleEndianBytes) // PCM
+        wavData.append(UInt16(1).littleEndianBytes) // AudioFormat (PCM)
+        wavData.append(UInt16(1).littleEndianBytes) // NumChannels (mono)
+        wavData.append(sampleRate.littleEndianBytes)
+        wavData.append((sampleRate * 2).littleEndianBytes) // ByteRate
+        wavData.append(UInt16(2).littleEndianBytes) // BlockAlign
+        wavData.append(UInt16(16).littleEndianBytes) // BitsPerSample
+        wavData.append("data".data(using: .ascii)!)
+        wavData.append(dataSize.littleEndianBytes)
+
+        // Audio data: near-silence (very low amplitude sine wave at 20Hz)
+        for i in 0 ..< numSamples {
+            let t = Double(i) / Double(sampleRate)
+            let sample = Int16(sin(2.0 * .pi * 20.0 * t) * 3.0)
+            wavData.append(sample.littleEndianBytes)
+        }
+
+        let base64 = wavData.base64EncodedString()
+        return "data:audio/wav;base64,\(base64)"
     }
 }
 
