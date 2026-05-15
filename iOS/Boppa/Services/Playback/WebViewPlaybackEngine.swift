@@ -52,10 +52,7 @@ final class WebViewPlaybackEngine: NSObject {
         (function() {
             try {
                 var trackData = JSON.parse('\(escapedJSON)');
-                var frame = document.getElementById('boppa-player');
-                if (frame) {
-                    frame.contentWindow.postMessage({type: 'boppaLoadTrack', data: trackData}, '*');
-                } else if (window.boppaLoadTrack) {
+                if (window.boppaLoadTrack) {
                     window.boppaLoadTrack(trackData);
                 } else {
                     console.error('boppaLoadTrack not available');
@@ -86,9 +83,19 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     private func loadWebView() {
-        let html = self.config.playback.html.script
+        let bodyContent = self.config.playback.bodyHtml.script
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>* { margin: 0; padding: 0; } html, body, iframe { width: 100%; height: 100%; border: none; overflow: hidden; }</style>
+        </head>
+        <body>\(bodyContent)</body>
+        </html>
+        """
         self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(self.config.url)"))
-        logger.info("Loaded static HTML for '\(self.config.name)'")
+        logger.info("Loaded HTML for '\(self.config.name)'")
     }
 
     private func serializeTrackData(track: Track) -> String? {
@@ -116,25 +123,26 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func play() {
-        self.postCommandToFrame("boppaPlay")
+        let script = "if (window.boppaPlay) window.boppaPlay();"
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Play command error: \(error.localizedDescription)")
+            }
+        }
     }
 
     func pause() {
-        self.postCommandToFrame("boppaPause")
+        let script = "if (window.boppaPause) window.boppaPause();"
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Pause command error: \(error.localizedDescription)")
+            }
+        }
     }
 
     func seek(to timeSeconds: Double) {
         let ms = Int(timeSeconds * 1000)
-        let script = """
-        (function() {
-            var frame = document.getElementById('boppa-player');
-            if (frame) {
-                frame.contentWindow.postMessage({type: 'boppaSeek', data: \(ms)}, '*');
-            } else if (window.boppaSeek) {
-                window.boppaSeek(\(ms));
-            }
-        })();
-        """
+        let script = "if (window.boppaSeek) window.boppaSeek(\(ms));"
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Seek command error: \(error.localizedDescription)")
@@ -152,24 +160,6 @@ final class WebViewPlaybackEngine: NSObject {
         self.webView.configuration.userContentController.removeAllScriptMessageHandlers()
         self.webView.removeFromSuperview()
         logger.info("WebViewPlaybackEngine torn down for '\(self.config.name)'")
-    }
-
-    private func postCommandToFrame(_ command: String) {
-        let script = """
-        (function() {
-            var frame = document.getElementById('boppa-player');
-            if (frame) {
-                frame.contentWindow.postMessage({type: '\(command)'}, '*');
-            } else if (window.\(command)) {
-                window.\(command)();
-            }
-        })();
-        """
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error {
-                logger.error("\(command) error: \(error.localizedDescription)")
-            }
-        }
     }
 
     private static func contractScript() -> String {
