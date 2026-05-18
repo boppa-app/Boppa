@@ -38,7 +38,9 @@ final class PlaybackService {
     }
 
     func playTrack(_ track: Track, queue: [Track] = [], mediaSource: MediaSource) {
-        self.activeEngine?.stop()
+       
+        // TODO: Stop the current engine (set page to blanks) if engine swaps to a different one after different one loads
+        // self.activeEngine?.stop()
 
         self.currentTrack = track
         self.mediaSource = mediaSource

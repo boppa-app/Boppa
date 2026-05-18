@@ -46,7 +46,7 @@ final class WebViewPlaybackEngine: NSObject {
     init(config: MediaSourceConfig) {
         self.config = config
         self.webView = WebViewFactory.makeWebView(
-            scripts: config.playback.userScripts ?? [],
+            scripts: config.playback.userScripts,
             contractScript: Self.contractScript(),
             customUserAgent: config.customUserAgent,
             allowsInlineMediaPlayback: true,
@@ -106,7 +106,6 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     private func loadWebView() {
-        let bodyContent = self.config.playback.bodyHtml.script
         let html = """
         <!DOCTYPE html>
         <html>
@@ -123,7 +122,6 @@ final class WebViewPlaybackEngine: NSObject {
                     audio.play().catch(function(err) {});
                 })();
             </script>
-            \(bodyContent)
         </body>
         </html>
         """
