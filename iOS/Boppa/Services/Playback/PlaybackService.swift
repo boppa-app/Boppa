@@ -32,7 +32,6 @@ final class PlaybackService {
     private var mediaSourceRemovedObserver: NSObjectProtocol?
 
     private init() {
-        self.setupAudioSession()
         self.observeMediaSourceRemoved()
         logger.info("PlaybackService initialized")
     }
@@ -193,16 +192,6 @@ final class PlaybackService {
         for id in ids {
             self.queueManager.removeTracks(forMediaSource: id)
             logger.info("Removed queued tracks for deleted media source: \(id)")
-        }
-    }
-
-    private func setupAudioSession() {
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-            logger.info("Audio session configured for playback")
-        } catch {
-            logger.error("Audio session error: \(error.localizedDescription)")
         }
     }
 }
