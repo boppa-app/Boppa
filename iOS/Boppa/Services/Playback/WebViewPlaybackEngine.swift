@@ -71,6 +71,12 @@ final class WebViewPlaybackEngine: NSObject {
             return false
         }
 
+        self.setMediaSessionMetadata(
+            title: track.title,
+            artist: track.subtitle ?? "",
+            artworkUrl: "" // TODO: serve artwork over localhost
+        )
+
         let loadTrackScript = """
         (function() {
             try {
@@ -95,6 +101,62 @@ final class WebViewPlaybackEngine: NSObject {
                     logger.info("Sent boppaLoadTrack: \(track.title)")
                     continuation.resume(returning: true)
                 }
+            }
+        }
+    }
+
+    private func setMediaSessionMetadata(title: String, artist: String, artworkUrl: String) {
+        let escapedTitle = title
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let escapedArtist = artist
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let escapedArtworkUrl = artworkUrl
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+
+        let script = """
+        (function() {
+            if (!('mediaSession' in navigator)) return;
+
+            var metadataInit = {
+                title: '\(escapedTitle)',
+                artist: '\(escapedArtist)'
+            };
+            if ('\(escapedArtworkUrl)') {
+                metadataInit.artwork = [{ src: '\(escapedArtworkUrl)' }];
+            }
+            var newMetadata = new MediaMetadata(metadataInit);
+
+            var desc = Object.getOwnPropertyDescriptor(navigator.mediaSession, 'metadata');
+            if (desc && desc.set) {
+                var originalSetter = Object.getOwnPropertyDescriptor(
+                    navigator.mediaSession.__proto__, 'metadata'
+                );
+                if (originalSetter && originalSetter.set) {
+                    originalSetter.set.call(navigator.mediaSession, newMetadata);
+                }
+                Object.defineProperty(navigator.mediaSession, 'metadata', {
+                    get: function() { return newMetadata; },
+                    set: function(val) {
+                        if (originalSetter && originalSetter.set) {
+                            originalSetter.set.call(navigator.mediaSession, newMetadata);
+                        }
+                    },
+                    configurable: true
+                });
+            } else {
+                navigator.mediaSession.metadata = newMetadata;
+            }
+        })();
+        """
+
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Set media session metadata error: \(error.localizedDescription)")
+            } else {
+                logger.info("Updated media session metadata: \(title)")
             }
         }
     }
