@@ -48,6 +48,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         Task {
             // await AdBlockService.shared.loadContentRuleList()
+            await ArtworkServer.shared.waitUntilReady()
             MediaSourceContextProvider.shared.startMonitoring(modelContainer: appDelegate.modelContainer)
 
             let rootView = ContentView()

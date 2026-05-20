@@ -71,10 +71,17 @@ final class WebViewPlaybackEngine: NSObject {
             return false
         }
 
+        var artworkLocalUrl = ""
+        if let remoteArtworkUrl = track.artworkUrl, !remoteArtworkUrl.isEmpty {
+            if let localUrl = await ArtworkServer.shared.prefetch(from: remoteArtworkUrl) {
+                artworkLocalUrl = localUrl
+            }
+        }
+
         self.setMediaSessionDetails(
             title: track.title,
             artist: track.subtitle ?? "",
-            artworkUrl: "", // TODO: serve artwork over localhost
+            // artworkUrl: artworkLocalUrl, // TODO: Add preloading of URLs as <img>
             duration: track.duration.map { Double($0) / 1000.0 },
             playbackRate: 0.0,
             position: 0,

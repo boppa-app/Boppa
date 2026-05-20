@@ -14,9 +14,14 @@ struct ArtworkView: View {
         return self.cornerRadius ?? 6
     }
 
+    private var resolvedURL: URL? {
+        guard let localURLString = ArtworkServer.localURL(for: self.url) else { return nil }
+        return URL(string: localURLString)
+    }
+
     var body: some View {
         Group {
-            if let artworkUrl = self.url, let url = URL(string: artworkUrl) {
+            if let url = self.resolvedURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
