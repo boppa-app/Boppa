@@ -71,10 +71,14 @@ final class WebViewPlaybackEngine: NSObject {
             return false
         }
 
-        self.setMediaSessionMetadata(
+        self.setMediaSessionDetails(
             title: track.title,
             artist: track.subtitle ?? "",
-            artworkUrl: "" // TODO: serve artwork over localhost
+            artworkUrl: "", // TODO: serve artwork over localhost
+            duration: track.duration.map { Double($0) / 1000.0 },
+            playbackRate: 0.0,
+            position: 0,
+            playbackState: "playing"
         )
 
         let loadTrackScript = """
@@ -105,21 +109,39 @@ final class WebViewPlaybackEngine: NSObject {
         }
     }
 
-    private func setMediaSessionMetadata(title: String, artist: String, artworkUrl: String) {
-        let escapedTitle = title
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-        let escapedArtist = artist
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-        let escapedArtworkUrl = artworkUrl
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
+    private func setMediaSessionDetails(
+        title: String? = nil,
+        artist: String? = nil,
+        artworkUrl: String? = nil,
+        duration: Double? = nil,
+        playbackRate: Double? = nil,
+        position: Double? = nil,
+        playbackState: String? = nil
+    ) {
+        var scriptParts: [String] = []
+        scriptParts.append("if (!('mediaSession' in navigator)) return;")
 
-        let script = """
-        (function() {
-            if (!('mediaSession' in navigator)) return;
+        if let playbackState {
+            scriptParts.append("""
+            window.__boppaPlaybackState = '\(playbackState)';
+            if (window.__boppaOriginalPlaybackStateSetter) {
+                window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, '\(playbackState)');
+            }
+            """)
+        }
 
+        if title != nil || artist != nil || artworkUrl != nil {
+            let escapedTitle = (title ?? "")
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+            let escapedArtist = (artist ?? "")
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+            let escapedArtworkUrl = (artworkUrl ?? "")
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+
+            scriptParts.append("""
             var metadataInit = {
                 title: '\(escapedTitle)',
                 artist: '\(escapedArtist)'
@@ -149,14 +171,44 @@ final class WebViewPlaybackEngine: NSObject {
             } else {
                 navigator.mediaSession.metadata = newMetadata;
             }
-        })();
-        """
+            """)
+        }
+
+        if duration != nil || playbackRate != nil || position != nil {
+            var updates: [String] = []
+            if let duration {
+                updates.append("window.__boppaDuration = \(duration);")
+            }
+            if let playbackRate {
+                updates.append("window.__boppaPlaybackRate = \(playbackRate);")
+            }
+            if let position {
+                updates.append("window.__boppaPosition = \(position);")
+            }
+
+            scriptParts.append("""
+            var currentPos = window.__boppaGetCurrentPosition ? window.__boppaGetCurrentPosition() : 0;
+            \(updates.joined(separator: "\n"))
+            if (window.__boppaOriginalSetPositionState && window.__boppaDuration > 0) {
+                try {
+                    var pos = \(position != nil ? "Math.min(window.__boppaPosition, window.__boppaDuration)" : "Math.min(currentPos, window.__boppaDuration)");
+                    window.__boppaPosition = pos;
+                    window.__boppaPositionTimestamp = Date.now();
+                    window.__boppaOriginalSetPositionState.call(navigator.mediaSession, {
+                        duration: window.__boppaDuration,
+                        playbackRate: window.__boppaPlaybackRate ?? 1.0,
+                        position: pos
+                    });
+                } catch (e) {}
+            }
+            """)
+        }
+
+        let script = "(function() { \(scriptParts.joined(separator: "\n")) })();"
 
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
-                logger.error("Set media session metadata error: \(error.localizedDescription)")
-            } else {
-                logger.info("Updated media session metadata: \(title)")
+                logger.error("Set media session details error: \(error.localizedDescription)")
             }
         }
     }
@@ -180,7 +232,8 @@ final class WebViewPlaybackEngine: NSObject {
             <script>
                 (function() {
                     var audio = document.getElementById('boppa-keepalive-audio');
-                    audio.volume = 0.001;
+                    audio.volume = 0.0001;
+                    audio.playbackRate = 0.0001;
                     audio.play().catch(function(err) {});
                 })();
             </script>
@@ -216,21 +269,31 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func play() {
-        let script = "if (window.boppaPlay) window.boppaPlay();"
+        let script = """
+        (function() {
+            if (window.boppaPlay) window.boppaPlay();
+        })();
+        """
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
             }
         }
+        self.setMediaSessionDetails(playbackRate: 1.0, playbackState: "playing")
     }
 
     func pause() {
-        let script = "if (window.boppaPause) window.boppaPause();"
+        let script = """
+        (function() {
+            if (window.boppaPause) window.boppaPause();
+        })();
+        """
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
             }
         }
+        self.setMediaSessionDetails(playbackRate: 0.0001, playbackState: "paused")
     }
 
     func seek(to timeSeconds: Double) {
@@ -241,6 +304,7 @@ final class WebViewPlaybackEngine: NSObject {
                 logger.error("Seek command error: \(error.localizedDescription)")
             }
         }
+        self.setMediaSessionDetails(position: timeSeconds)
     }
 
     func stop() {
@@ -265,7 +329,7 @@ final class WebViewPlaybackEngine: NSObject {
 
             if ('mediaSession' in navigator) {
                 var originalSetActionHandler = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
-                var protectedActions = new Set(['previoustrack', 'nexttrack', 'seekbackward', 'seekforward']);
+                var protectedActions = new Set(['play', 'pause', 'previoustrack', 'nexttrack', 'seekbackward', 'seekforward']);
 
                 navigator.mediaSession.setActionHandler = function(action, handler) {
                     if (protectedActions.has(action)) return;
@@ -273,23 +337,51 @@ final class WebViewPlaybackEngine: NSObject {
                 };
 
                 originalSetActionHandler('play', function() {
-                    // var ka = document.getElementById('boppa-keepalive-audio');
-                    // if (ka) ka.play().catch(function(e){});
-                    if (window.boppaPlay) window.boppaPlay();
+                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'playCommand'});
                 });
                 originalSetActionHandler('pause', function() {
-                    // var ka = document.getElementById('boppa-keepalive-audio');
-                    // if (ka) ka.pause();
-                    if (window.boppaPause) window.boppaPause();
+                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'pauseCommand'});
                 });
                 originalSetActionHandler('seekbackward', null);
                 originalSetActionHandler('seekforward', null);
                 originalSetActionHandler('previoustrack', function() {
-                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'previoustrack'});
+                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'previoustrackCommand'});
                 });
                 originalSetActionHandler('nexttrack', function() {
-                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'nexttrack'});
+                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'nexttrackCommand'});
                 });
+
+                // Intercept playbackState so media sources can't override our state
+                var playbackStateDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'playbackState')
+                    || Object.getOwnPropertyDescriptor(navigator.mediaSession, 'playbackState');
+                window.__boppaOriginalPlaybackStateSetter = playbackStateDescriptor && playbackStateDescriptor.set
+                    ? playbackStateDescriptor.set.bind(navigator.mediaSession) : null;
+                window.__boppaPlaybackState = 'paused';
+                if (window.__boppaOriginalPlaybackStateSetter) {
+                    window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, 'paused');
+                    Object.defineProperty(navigator.mediaSession, 'playbackState', {
+                        get: function() { return window.__boppaPlaybackState; },
+                        set: function(val) {
+                            // No-op: only allow changes via __boppaOriginalPlaybackStateSetter
+                        },
+                        configurable: true
+                    });
+                }
+
+                // Intercept setPositionState so media sources can't override our position info
+                window.__boppaOriginalSetPositionState = navigator.mediaSession.setPositionState.bind(navigator.mediaSession);
+                window.__boppaDuration = 0;
+                window.__boppaPlaybackRate = 1.0;
+                window.__boppaPosition = 0;
+                window.__boppaPositionTimestamp = Date.now();
+                window.__boppaGetCurrentPosition = function() {
+                    var elapsed = (Date.now() - window.__boppaPositionTimestamp) / 1000.0;
+                    var pos = window.__boppaPosition + elapsed * window.__boppaPlaybackRate;
+                    return Math.max(0, Math.min(pos, window.__boppaDuration || pos));
+                };
+                navigator.mediaSession.setPositionState = function(state) {
+                    // No-op: only allow calls via __boppaOriginalSetPositionState
+                };
 
                 // Intercept metadata setter to maintain control over Now Playing info
                 var metadataDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'metadata')
@@ -331,14 +423,22 @@ final class WebViewPlaybackEngine: NSObject {
         }
 
         switch type {
-        case "previoustrack":
-            logger.info("Received previoustrack message from webview")
+        case "playCommand":
+            logger.info("Received playCommand from webview")
+            self.play()
+            return
+        case "pauseCommand":
+            logger.info("Received pauseCommand from webview")
+            self.pause()
+            return
+        case "previoustrackCommand":
+            logger.info("Received previoustrackCommand from webview")
             Task { @MainActor in
                 PlaybackService.shared.previous()
             }
             return
-        case "nexttrack":
-            logger.info("Received nexttrack message from webview")
+        case "nexttrackCommand":
+            logger.info("Received nexttrackCommand from webview")
             Task { @MainActor in
                 PlaybackService.shared.next()
             }
@@ -350,7 +450,7 @@ final class WebViewPlaybackEngine: NSObject {
         let event: PlayerEvent
         switch type {
         case "play", "initialPlay":
-            self.removeSilentAudioElement()
+            self.setMediaSessionDetails(playbackRate: 1.0)
             event = .playing
         case "pause":
             event = .paused
@@ -379,25 +479,6 @@ final class WebViewPlaybackEngine: NSObject {
         if let intValue = dict[key] as? Int { return Double(intValue) }
         if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
         return 0
-    }
-
-    private func removeSilentAudioElement() {
-        let script = """
-        (function() {
-            var audio = document.getElementById('boppa-keepalive-audio');
-            if (audio) {
-                audio.pause();
-                audio.remove();
-            }
-        })();
-        """
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error {
-                logger.error("Remove silent audio error: \(error.localizedDescription)")
-            } else {
-                logger.info("Removed silent keepalive audio element")
-            }
-        }
     }
 
     private static func generateSilentWAVDataURI() -> String {
