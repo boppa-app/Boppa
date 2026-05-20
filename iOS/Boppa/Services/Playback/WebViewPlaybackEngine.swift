@@ -216,13 +216,7 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func play() {
-        let script = """
-        (function() {
-            var audio = document.getElementById('boppa-keepalive-audio');
-            if (audio) audio.play().catch(function(e){});
-            if (window.boppaPlay) window.boppaPlay();
-        })();
-        """
+        let script = "if (window.boppaPlay) window.boppaPlay();"
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Play command error: \(error.localizedDescription)")
@@ -231,13 +225,7 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func pause() {
-        let script = """
-        (function() {
-            var audio = document.getElementById('boppa-keepalive-audio');
-            if (audio) audio.pause();
-            if (window.boppaPause) window.boppaPause();
-        })();
-        """
+        let script = "if (window.boppaPause) window.boppaPause();"
         self.webView.evaluateJavaScript(script) { _, error in
             if let error {
                 logger.error("Pause command error: \(error.localizedDescription)")
@@ -362,6 +350,7 @@ final class WebViewPlaybackEngine: NSObject {
         let event: PlayerEvent
         switch type {
         case "play", "initialPlay":
+            self.removeSilentAudioElement()
             event = .playing
         case "pause":
             event = .paused
@@ -390,6 +379,25 @@ final class WebViewPlaybackEngine: NSObject {
         if let intValue = dict[key] as? Int { return Double(intValue) }
         if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
         return 0
+    }
+
+    private func removeSilentAudioElement() {
+        let script = """
+        (function() {
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (audio) {
+                audio.pause();
+                audio.remove();
+            }
+        })();
+        """
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Remove silent audio error: \(error.localizedDescription)")
+            } else {
+                logger.info("Removed silent keepalive audio element")
+            }
+        }
     }
 
     private static func generateSilentWAVDataURI() -> String {
