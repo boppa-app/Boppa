@@ -88,10 +88,10 @@ final class WebViewPlaybackEngine: NSObject {
         (function() {
             try {
                 var trackData = JSON.parse('\(escapedJSON)');
-                if (window.boppaLoadTrack) {
-                    window.boppaLoadTrack(trackData);
+                if (window.boppaLoad) {
+                    window.boppaLoad(trackData);
                 } else {
-                    console.error('boppaLoadTrack not available');
+                    console.error('boppaLoad not available');
                 }
                 if (\(shouldRestartKeepalive)) {
                     var audio = document.getElementById('boppa-keepalive-audio');
@@ -112,7 +112,7 @@ final class WebViewPlaybackEngine: NSObject {
                     logger.error("Load track error: \(error.localizedDescription)")
                     continuation.resume(returning: false)
                 } else {
-                    logger.info("Sent boppaLoadTrack: \(track.title)")
+                    logger.info("Sent boppaLoad: \(track.title)")
                     continuation.resume(returning: true)
                 }
             }
