@@ -245,6 +245,12 @@ final class WebViewPlaybackEngine: NSObject {
                     audio.volume = 0.0001;
                     audio.playbackRate = 0.0001;
                     audio.play().catch(function(err) {});
+                    audio.addEventListener('pause', function() {
+                        if (window.boppaPause) window.boppaPause();
+                    });
+                    audio.addEventListener('play', function() {
+                        if (window.boppaPlay) window.boppaPlay();
+                    });
                 })();
             </script>
         </body>
@@ -282,8 +288,8 @@ final class WebViewPlaybackEngine: NSObject {
         let script = """
         (function() {
             if (window.boppaPlay) window.boppaPlay();
-            // var audio = document.getElementById('boppa-keepalive-audio');
-            // if (audio && audio.paused) audio.play();
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (audio && audio.paused) audio.play();
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
@@ -298,8 +304,7 @@ final class WebViewPlaybackEngine: NSObject {
         let script = """
         (function() {
             if (window.boppaPause) window.boppaPause();
-            // var audio = document.getElementById('boppa-keepalive-audio');
-            // if (audio && !audio.paused) audio.pause();
+            // DO NOT PAUSE KEEP ALIVE HERE (messes with position, NowPlayingInfo)
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
