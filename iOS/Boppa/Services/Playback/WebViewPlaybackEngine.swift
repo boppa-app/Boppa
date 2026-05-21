@@ -74,17 +74,10 @@ final class WebViewPlaybackEngine: NSObject {
             return false
         }
 
-        var artworkLocalUrl = ""
-        if let remoteArtworkUrl = track.artworkUrl, !remoteArtworkUrl.isEmpty {
-            if let localUrl = await ArtworkServer.shared.prefetch(from: remoteArtworkUrl) {
-                artworkLocalUrl = localUrl
-            }
-        }
-
         self.setMediaSessionDetails(
             title: track.title,
             artist: track.subtitle ?? "",
-            // artworkUrl: artworkLocalUrl, // TODO: Add preloading of URLs as <img>
+            artworkUrl: ArtworkServer.localURL(for: track.artworkUrl) ?? "",
             duration: track.duration.map { Double($0) / 1000.0 },
             playbackRate: 0.0,
             position: 0,
@@ -320,6 +313,44 @@ final class WebViewPlaybackEngine: NSObject {
     func stop() {
         self.pause()
         logger.info("WebViewPlaybackEngine stopped")
+    }
+
+    func preloadArtwork(urls: [String]) {
+        guard !urls.isEmpty else { return }
+        let escapedUrls = urls.compactMap { url -> String? in
+            guard !url.isEmpty else { return nil }
+            return url
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+        }
+        guard !escapedUrls.isEmpty else { return }
+
+        let calls = escapedUrls.map { "window.__boppaPreloadArtwork('\($0)');" }.joined(separator: "\n")
+        let script = "(function() { \(calls) })();"
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Preload artwork error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func removeArtwork(urls: [String]) {
+        guard !urls.isEmpty else { return }
+        let escapedUrls = urls.compactMap { url -> String? in
+            guard !url.isEmpty else { return nil }
+            return url
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+        }
+        guard !escapedUrls.isEmpty else { return }
+
+        let calls = escapedUrls.map { "window.__boppaRemoveArtwork('\($0)');" }.joined(separator: "\n")
+        let script = "(function() { \(calls) })();"
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error {
+                logger.error("Remove artwork error: \(error.localizedDescription)")
+            }
+        }
     }
 
     func tearDown() {

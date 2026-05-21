@@ -14,6 +14,8 @@ private let logger = Logger(
 final class PlaybackService {
     static let shared = PlaybackService()
 
+    private static let artworkPreloadWindow = 50
+
     private(set) var currentTrack: Track?
     private(set) var mediaSource: MediaSource?
     private(set) var isPlaying: Bool = false
@@ -30,6 +32,7 @@ final class PlaybackService {
     private var activeEngine: WebViewPlaybackEngine?
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
+    private var preloadedArtworkUrls: Set<String> = []
 
     private init() {
         self.observeMediaSourceRemoved()
@@ -72,6 +75,8 @@ final class PlaybackService {
                 logger.error("Failed to load '\(track.title)'")
                 self.isLoading = false
             }
+
+            self.updateArtworkPreloads()
         }
     }
 
@@ -112,6 +117,41 @@ final class PlaybackService {
         }
     }
 
+    // MARK: - Artwork Preloading
+
+    private func updateArtworkPreloads() {
+        guard let engine = self.activeEngine else { return }
+
+        let queue = self.queueManager.queue
+        let currentIndex = self.queueManager.currentIndex
+        guard !queue.isEmpty else { return }
+
+        let window = Self.artworkPreloadWindow
+        let startIndex = max(0, currentIndex - window)
+        let endIndex = min(queue.count - 1, currentIndex + window)
+
+        var desiredUrls: Set<String> = []
+        for i in startIndex ... endIndex {
+            if let remoteUrl = queue[i].artworkUrl,
+               let localUrl = ArtworkServer.localURL(for: remoteUrl)
+            {
+                desiredUrls.insert(localUrl)
+            }
+        }
+
+        let toAdd = desiredUrls.subtracting(self.preloadedArtworkUrls)
+        let toRemove = self.preloadedArtworkUrls.subtracting(desiredUrls)
+
+        if !toAdd.isEmpty {
+            engine.preloadArtwork(urls: Array(toAdd))
+        }
+        if !toRemove.isEmpty {
+            engine.removeArtwork(urls: Array(toRemove))
+        }
+
+        self.preloadedArtworkUrls = desiredUrls
+    }
+
     func seek(to time: Double) {
         self.currentTime = time
         self.activeEngine?.seek(to: time)
@@ -126,6 +166,7 @@ final class PlaybackService {
         self.isLoading = false
         self.currentTime = 0
         self.duration = 0
+        self.preloadedArtworkUrls = []
         self.queueManager.clearQueue()
         logger.info("Playback stopped and cleared")
     }

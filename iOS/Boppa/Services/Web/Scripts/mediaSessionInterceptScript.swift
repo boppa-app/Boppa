@@ -93,6 +93,35 @@ func getMediaSessionInterceptScript(messageHandlerName: String) -> WKUserScript 
         } else {
             navigator.mediaSession.metadata = boppaMetadata;
         }
+
+        // Artwork preloading: create/remove hidden <img> elements to cache artwork
+        window.__boppaArtworkHash = function(url) {
+            var hash = 0;
+            for (var i = 0; i < url.length; i++) {
+                var chr = url.charCodeAt(i);
+                hash = ((hash << 5) - hash) + chr;
+                hash |= 0;
+            }
+            return 'boppa-artwork-' + Math.abs(hash).toString(36);
+        };
+
+        window.__boppaPreloadArtwork = function(url) {
+            if (!url) return;
+            var id = window.__boppaArtworkHash(url);
+            if (document.getElementById(id)) return;
+            var img = document.createElement('img');
+            img.id = id;
+            img.src = url;
+            img.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+            document.body.appendChild(img);
+        };
+
+        window.__boppaRemoveArtwork = function(url) {
+            if (!url) return;
+            var id = window.__boppaArtworkHash(url);
+            var el = document.getElementById(id);
+            if (el) el.remove();
+        };
     })();
     """
     return WKUserScript(
