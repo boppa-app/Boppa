@@ -38,7 +38,7 @@ final class ArtworkServer: @unchecked Sendable {
         guard let encoded = remoteURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             return nil
         }
-        return "\(shared.baseURL)/artwork?url=\(encoded)"
+        return "\(self.shared.baseURL)/artwork?url=\(encoded)"
     }
 
     private init() {

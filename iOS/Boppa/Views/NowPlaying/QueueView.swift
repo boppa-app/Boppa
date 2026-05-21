@@ -9,6 +9,7 @@ struct QueueView: View {
         TrackQueueManager.shared
     }
 
+    // TODO: Add icon (text.badge.plus) for when track was manually added to queue
     var body: some View {
         let displayQueue = self.queueManager.displayQueue
         let repeatMode = self.queueManager.repeatMode

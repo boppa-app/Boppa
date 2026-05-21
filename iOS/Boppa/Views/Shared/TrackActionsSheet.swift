@@ -23,13 +23,27 @@ struct TrackActionsSheet: View {
                 .padding(.bottom, 12)
 
             List {
+                Button {
+                    TrackQueueManager.shared.playNext(self.track)
+                    self.dismiss()
+                } label: {
+                    self.actionRowLabel(
+                        name: "Play Next",
+                        icon: "text.line.first.and.arrowtriangle.forward"
+                    )
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Color(.systemGray6))
+                .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                .listRowSeparator(.hidden)
+
                 ForEach(self.track.artists) { artist in
                     if self.mediaSource.config.data?.getArtist != nil {
                         Button {
                             self.dismiss()
                             self.onArtistSelected?(artist)
                         } label: {
-                            self.rowLabel(
+                            self.navigationRowLabel(
                                 name: artist.name,
                                 icon: "person.fill"
                             )
@@ -47,7 +61,7 @@ struct TrackActionsSheet: View {
                             self.dismiss()
                             self.onAlbumSelected?(album)
                         } label: {
-                            self.rowLabel(
+                            self.navigationRowLabel(
                                 name: album.title,
                                 icon: self.albumIcon
                             )
@@ -96,7 +110,23 @@ struct TrackActionsSheet: View {
         }
     }
 
-    private func rowLabel(name: String, icon: String) -> some View {
+    private func actionRowLabel(name: String, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(.purp)
+                .frame(width: 24)
+            Text(name)
+                .bold()
+                .foregroundColor(.white)
+                .font(.body)
+                .lineLimit(1)
+            Spacer()
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func navigationRowLabel(name: String, icon: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16))
