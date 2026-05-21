@@ -54,6 +54,9 @@ final class WebViewPlaybackEngine: NSObject {
         )
         super.init()
         self.webView.configuration.userContentController.add(self, name: Self.messageHandlerName)
+        self.webView.configuration.userContentController.addUserScript(
+            getMediaSessionInterceptScript(messageHandlerName: Self.messageHandlerName)
+        )
         self.webView.navigationDelegate = self
         self.attachToWindow(self.webView)
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
@@ -333,83 +336,6 @@ final class WebViewPlaybackEngine: NSObject {
             window.postEvent = function(eventObj) {
                 window.webkit.messageHandlers.\(self.messageHandlerName).postMessage(eventObj);
             };
-
-            if ('mediaSession' in navigator) {
-                var originalSetActionHandler = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
-                var protectedActions = new Set(['play', 'pause', 'previoustrack', 'nexttrack', 'seekbackward', 'seekforward']);
-
-                navigator.mediaSession.setActionHandler = function(action, handler) {
-                    if (protectedActions.has(action)) return;
-                    originalSetActionHandler(action, handler);
-                };
-
-                originalSetActionHandler('play', function() {
-                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'playCommand'});
-                });
-                originalSetActionHandler('pause', function() {
-                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'pauseCommand'});
-                });
-                originalSetActionHandler('seekbackward', null);
-                originalSetActionHandler('seekforward', null);
-                originalSetActionHandler('previoustrack', function() {
-                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'previoustrackCommand'});
-                });
-                originalSetActionHandler('nexttrack', function() {
-                    window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({type: 'nexttrackCommand'});
-                });
-
-                // Intercept playbackState so media sources can't override our state
-                var playbackStateDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'playbackState')
-                    || Object.getOwnPropertyDescriptor(navigator.mediaSession, 'playbackState');
-                window.__boppaOriginalPlaybackStateSetter = playbackStateDescriptor && playbackStateDescriptor.set
-                    ? playbackStateDescriptor.set.bind(navigator.mediaSession) : null;
-                window.__boppaPlaybackState = 'paused';
-                if (window.__boppaOriginalPlaybackStateSetter) {
-                    window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, 'paused');
-                    Object.defineProperty(navigator.mediaSession, 'playbackState', {
-                        get: function() { return window.__boppaPlaybackState; },
-                        set: function(val) {
-                            // No-op: only allow changes via __boppaOriginalPlaybackStateSetter
-                        },
-                        configurable: true
-                    });
-                }
-
-                // Intercept setPositionState so media sources can't override our position info
-                window.__boppaOriginalSetPositionState = navigator.mediaSession.setPositionState.bind(navigator.mediaSession);
-                window.__boppaDuration = 0;
-                window.__boppaPlaybackRate = 1.0;
-                window.__boppaPosition = 0;
-                window.__boppaPositionTimestamp = Date.now();
-                window.__boppaGetCurrentPosition = function() {
-                    var elapsed = (Date.now() - window.__boppaPositionTimestamp) / 1000.0;
-                    var pos = window.__boppaPosition + elapsed * window.__boppaPlaybackRate;
-                    return Math.max(0, Math.min(pos, window.__boppaDuration || pos));
-                };
-                navigator.mediaSession.setPositionState = function(state) {
-                    // No-op: only allow calls via __boppaOriginalSetPositionState
-                };
-
-                // Intercept metadata setter to maintain control over Now Playing info
-                var metadataDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'metadata')
-                    || Object.getOwnPropertyDescriptor(navigator.mediaSession, 'metadata');
-                var originalMetadataSetter = metadataDescriptor && metadataDescriptor.set;
-                var boppaMetadata = new MediaMetadata({ title: 'Title', artist: 'Artist' });
-
-                if (originalMetadataSetter) {
-                    originalMetadataSetter.call(navigator.mediaSession, boppaMetadata);
-                    Object.defineProperty(navigator.mediaSession, 'metadata', {
-                        get: function() { return boppaMetadata; },
-                        set: function(val) {
-                            // Intercept: always set our controlled metadata via the real setter
-                            originalMetadataSetter.call(navigator.mediaSession, boppaMetadata);
-                        },
-                        configurable: true
-                    });
-                } else {
-                    navigator.mediaSession.metadata = boppaMetadata;
-                }
-            }
         })();
         """
     }
