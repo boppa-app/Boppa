@@ -27,9 +27,7 @@ struct QueueView: View {
                         style: .compact,
                         onTap: {
                             if repeatMode != .one {
-                                if let mediaSource = self.playbackService.mediaSource {
-                                    self.playbackService.playTrack(track, queue: self.queueManager.queue, mediaSource: mediaSource)
-                                }
+                                self.playbackService.playTrack(track, queue: self.queueManager.queue)
                             }
                         }
                     )

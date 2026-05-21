@@ -17,7 +17,6 @@ final class PlaybackService {
     private static let artworkPreloadWindow = 50
 
     private(set) var currentTrack: Track?
-    private(set) var mediaSource: MediaSource?
     private(set) var isPlaying: Bool = false
     private(set) var isLoading: Bool = false
     private(set) var currentTime: Double = 0
@@ -40,12 +39,11 @@ final class PlaybackService {
         logger.info("PlaybackService initialized")
     }
 
-    func playTrack(_ track: Track, queue: [Track] = [], mediaSource: MediaSource) {
-        // TODO: Stop the current engine (set page to blanks) if engine swaps to a different one after different one loads
-        // self.activeEngine?.stop()
+    func playTrack(_ track: Track, queue: [Track] = []) {
+        let mediaSourceId = track.mediaSourceId
+        logger.info("playTrack: using mediaSource '\(mediaSourceId)'")
 
         self.currentTrack = track
-        self.mediaSource = mediaSource
         self.isPlaying = false
         self.isLoading = true
         self.currentTime = 0
@@ -55,12 +53,16 @@ final class PlaybackService {
             self.queueManager.setQueue(queue, startingAt: track)
         }
 
-        // TODO: Stop the current engine (set page to blanks) if engine swaps to a different one after different one loads
         Task {
-            guard let engine = self.registry.engine(for: mediaSource.id) else {
-                logger.error("No playback engine for media source '\(mediaSource.id)'")
+            guard let engine = self.registry.engine(for: mediaSourceId) else {
+                logger.error("No playback engine for media source '\(mediaSourceId)'")
                 self.isLoading = false
                 return
+            }
+
+            if let currentEngine = self.activeEngine, currentEngine !== engine {
+                logger.info("Engine switch detected — pausing previous engine")
+                currentEngine.pause()
             }
 
             engine.onEvent = { [weak self] event in
@@ -103,9 +105,7 @@ final class PlaybackService {
 
     func next() {
         guard let nextTrack = self.queueManager.advanceToNext() else { return }
-        if let mediaSource = self.mediaSource {
-            self.playTrack(nextTrack, mediaSource: mediaSource)
-        }
+        self.playTrack(nextTrack)
     }
 
     func previous() {
@@ -114,9 +114,7 @@ final class PlaybackService {
             self.seek(to: 0)
         } else {
             guard let prevTrack = self.queueManager.rewindToPrevious() else { return }
-            if let mediaSource = self.mediaSource {
-                self.playTrack(prevTrack, mediaSource: mediaSource)
-            }
+            self.playTrack(prevTrack)
         }
     }
 
@@ -164,7 +162,6 @@ final class PlaybackService {
         self.activeEngine?.stop()
         self.activeEngine = nil
         self.currentTrack = nil
-        self.mediaSource = nil
         self.isPlaying = false
         self.isLoading = false
         self.currentTime = 0
@@ -229,9 +226,9 @@ final class PlaybackService {
     }
 
     private func handleMediaSourceRemoved(ids: [String]) {
-        if let currentMediaSource = self.mediaSource, ids.contains(currentMediaSource.id) {
+        if let currentTrack = self.currentTrack, ids.contains(currentTrack.mediaSourceId) {
             self.stop()
-            logger.info("Stopped playback: media source '\(currentMediaSource.id)' was removed")
+            logger.info("Stopped playback: media source '\(currentTrack.mediaSourceId)' was removed")
             return
         }
 

@@ -286,7 +286,6 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track) {
-        guard let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId, modelContext: self.modelContext) else { return }
-        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, mediaSource: mediaSource)
+        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks)
     }
 }

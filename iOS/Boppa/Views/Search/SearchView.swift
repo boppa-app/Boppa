@@ -344,8 +344,7 @@ struct SearchView: View {
     }
 
     private func playTrack(_ track: Track, from tracks: [Track]) {
-        guard let mediaSource = self.viewModel.selectedMediaSource else { return }
-        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: mediaSource)
+        PlaybackService.shared.playTrack(track, queue: tracks)
     }
 }
 

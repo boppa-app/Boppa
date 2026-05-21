@@ -352,6 +352,6 @@ struct ArtistDetailView: View {
     }
 
     private func playTrack(_ track: Track, from tracks: [Track]) {
-        PlaybackService.shared.playTrack(track, queue: tracks, mediaSource: self.mediaSource)
+        PlaybackService.shared.playTrack(track, queue: tracks)
     }
 }
