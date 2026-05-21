@@ -423,6 +423,11 @@ final class WebViewPlaybackEngine: NSObject {
                 PlaybackService.shared.next()
             }
             return
+        case "seekCommand":
+            let seekTime = self.extractDouble(from: dict, key: "seekTime")
+            logger.info("Received seekCommand from webview: \(seekTime)s")
+            PlaybackService.shared.seek(to: seekTime)
+            return
         default:
             break
         }

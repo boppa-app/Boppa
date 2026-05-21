@@ -6,7 +6,7 @@ func getMediaSessionInterceptScript(messageHandlerName: String) -> WKUserScript 
         if (!('mediaSession' in navigator)) return;
 
         var originalSetActionHandler = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
-        var protectedActions = new Set(['play', 'pause', 'previoustrack', 'nexttrack', 'seekbackward', 'seekforward']);
+        var protectedActions = new Set(['play', 'pause', 'previoustrack', 'nexttrack', 'seekbackward', 'seekforward', 'seekto']);
 
         navigator.mediaSession.setActionHandler = function(action, handler) {
             if (protectedActions.has(action)) return;
@@ -21,6 +21,10 @@ func getMediaSessionInterceptScript(messageHandlerName: String) -> WKUserScript 
         });
         originalSetActionHandler('seekbackward', null);
         originalSetActionHandler('seekforward', null);
+        originalSetActionHandler('seekto', function(details) {
+            var seekTime = details && details.seekTime != null ? details.seekTime : 0;
+            window.webkit.messageHandlers.\(messageHandlerName).postMessage({type: 'seekCommand', seekTime: seekTime});
+        });
         originalSetActionHandler('previoustrack', function() {
             window.webkit.messageHandlers.\(messageHandlerName).postMessage({type: 'previoustrackCommand'});
         });
