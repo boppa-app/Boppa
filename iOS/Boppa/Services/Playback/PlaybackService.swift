@@ -33,6 +33,7 @@ final class PlaybackService {
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
     private var preloadedArtworkUrls: Set<String> = []
+    private var userPaused: Bool = false
 
     private init() {
         self.observeMediaSourceRemoved()
@@ -69,7 +70,12 @@ final class PlaybackService {
 
             self.activeEngine = engine
 
-            if await engine.load(track: track) {
+            let shouldRestartKeepalive = self.userPaused
+            if shouldRestartKeepalive {
+                self.userPaused = false
+            }
+
+            if await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive) {
                 logger.info("Loaded '\(track.title)' via WebViewPlaybackEngine")
             } else {
                 logger.error("Failed to load '\(track.title)'")
@@ -82,12 +88,10 @@ final class PlaybackService {
 
     func play() {
         self.activeEngine?.play()
-        self.isPlaying = true
     }
 
     func pause() {
         self.activeEngine?.pause()
-        self.isPlaying = false
     }
 
     func togglePlayPause() {
@@ -176,10 +180,12 @@ final class PlaybackService {
         case .playing:
             self.isPlaying = true
             self.isLoading = false
+            self.userPaused = false
             logger.debug("Engine: playing")
 
         case .paused:
             self.isPlaying = false
+            self.userPaused = true
             logger.debug("Engine: paused")
 
         case let .progress(currentTime, duration):

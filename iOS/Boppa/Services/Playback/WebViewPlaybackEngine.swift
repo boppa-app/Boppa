@@ -62,7 +62,7 @@ final class WebViewPlaybackEngine: NSObject {
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
-    func load(track: Track) async -> Bool {
+    func load(track: Track, shouldRestartKeepalive: Bool = false) async -> Bool {
         if !self.hasLoadedHTML {
             self.loadWebView()
             self.hasLoadedHTML = true
@@ -92,6 +92,13 @@ final class WebViewPlaybackEngine: NSObject {
                     window.boppaLoadTrack(trackData);
                 } else {
                     console.error('boppaLoadTrack not available');
+                }
+                if (\(shouldRestartKeepalive)) {
+                    var audio = document.getElementById('boppa-keepalive-audio');
+                    if (audio) {
+                        audio.pause();
+                        setTimeout(function() { audio.play().catch(function(e){}); }, 100);
+                    }
                 }
             } catch (e) {
                 console.error('Error loading track:', e);
@@ -275,6 +282,8 @@ final class WebViewPlaybackEngine: NSObject {
         let script = """
         (function() {
             if (window.boppaPlay) window.boppaPlay();
+            // var audio = document.getElementById('boppa-keepalive-audio');
+            // if (audio && audio.paused) audio.play();
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
@@ -289,6 +298,8 @@ final class WebViewPlaybackEngine: NSObject {
         let script = """
         (function() {
             if (window.boppaPause) window.boppaPause();
+            // var audio = document.getElementById('boppa-keepalive-audio');
+            // if (audio && !audio.paused) audio.pause();
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
@@ -389,11 +400,11 @@ final class WebViewPlaybackEngine: NSObject {
         switch type {
         case "playCommand":
             logger.info("Received playCommand from webview")
-            self.play()
+            PlaybackService.shared.play()
             return
         case "pauseCommand":
             logger.info("Received pauseCommand from webview")
-            self.pause()
+            PlaybackService.shared.pause()
             return
         case "previoustrackCommand":
             logger.info("Received previoustrackCommand from webview")
