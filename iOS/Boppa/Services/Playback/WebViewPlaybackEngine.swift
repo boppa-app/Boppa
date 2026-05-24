@@ -71,12 +71,6 @@ final class WebViewPlaybackEngine: NSObject {
                     var audio = document.getElementById('boppa-keepalive-audio');
                     audio.volume = 0.0001;
                     audio.playbackRate = 0.0001;
-                    audio.addEventListener('pause', function() {
-                        window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'playCommand'});
-                    });
-                    audio.addEventListener('play', function() {
-                        window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'pauseCommand'});
-                    });
                 })();
             </script>
         </body>
@@ -142,14 +136,44 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func activateNowPlayingInfo() {
-        self.webView.evaluateJavaScript("document.getElementById('boppa-keepalive-audio').muted = false;") { _, error in
-            if let error { logger.error("activateNowPlayingInfoActive error: \(error.localizedDescription)") }
+        let script = """
+        (function() {
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (!audio) return;
+            audio.__boppaPauseHandler = function() {
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'playCommand'});
+            };
+            audio.__boppaPlayHandler = function() {
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'pauseCommand'});
+            };
+            audio.addEventListener('pause', audio.__boppaPauseHandler);
+            audio.addEventListener('play', audio.__boppaPlayHandler);
+            document.getElementById('boppa-keepalive-audio').muted = false;
+        })();
+        """
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error { logger.error("activateNowPlayingInfo error: \(error.localizedDescription)") }
         }
     }
 
     func deactivateNowPlayingInfo() {
-        self.webView.evaluateJavaScript("document.getElementById('boppa-keepalive-audio').muted = true;") { _, error in
-            if let error { logger.error("deactivateNowPlayingInfoActive error: \(error.localizedDescription)") }
+        let script = """
+        (function() {
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (!audio) return;
+            if (audio.__boppaPauseHandler) {
+                audio.removeEventListener('pause', audio.__boppaPauseHandler);
+                delete audio.__boppaPauseHandler;
+            }
+            if (audio.__boppaPlayHandler) {
+                audio.removeEventListener('play', audio.__boppaPlayHandler);
+                delete audio.__boppaPlayHandler;
+            }
+            document.getElementById('boppa-keepalive-audio').muted = true;
+        })();
+        """
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error { logger.error("deactivateNowPlayingInfo error: \(error.localizedDescription)") }
         }
     }
 
