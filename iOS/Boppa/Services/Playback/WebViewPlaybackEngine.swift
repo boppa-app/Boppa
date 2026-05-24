@@ -72,10 +72,10 @@ final class WebViewPlaybackEngine: NSObject {
                     audio.volume = 0.0001;
                     audio.playbackRate = 0.0001;
                     audio.addEventListener('pause', function() {
-                        if (window.boppaPause) window.boppaPause();
+                        window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'playCommand'});
                     });
                     audio.addEventListener('play', function() {
-                        if (window.boppaPlay) window.boppaPlay();
+                        window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'pauseCommand'});
                     });
                 })();
             </script>
@@ -92,16 +92,6 @@ final class WebViewPlaybackEngine: NSObject {
             return false
         }
 
-        self.setMediaSessionDetails(
-            title: track.title,
-            artist: track.subtitle ?? "",
-            artworkUrl: ArtworkServer.localURL(for: track.artworkUrl) ?? "",
-            duration: track.duration.map { Double($0) / 1000.0 },
-            playbackRate: 0.0,
-            position: 0,
-            playbackState: "playing"
-        )
-
         let loadTrackScript = """
         (function() {
             try {
@@ -111,11 +101,13 @@ final class WebViewPlaybackEngine: NSObject {
                 } else {
                     console.error('boppaLoad not available');
                 }
-                if (\(shouldRestartKeepalive)) {
-                    var audio = document.getElementById('boppa-keepalive-audio');
-                    if (audio) {
+                var audio = document.getElementById('boppa-keepalive-audio');
+                if (audio) {
+                    if (\(shouldRestartKeepalive)) {
                         audio.pause();
                         setTimeout(function() { audio.play().catch(function(e){}); }, 100);
+                    } else {
+                        audio.play();
                     }
                 }
             } catch (e) {
@@ -134,6 +126,30 @@ final class WebViewPlaybackEngine: NSObject {
                     continuation.resume(returning: true)
                 }
             }
+        }
+    }
+
+    func setNowPlayingInfo(track: Track) {
+        self.setMediaSessionDetails(
+            title: track.title,
+            artist: track.subtitle ?? "",
+            artworkUrl: ArtworkServer.localURL(for: track.artworkUrl) ?? "",
+            duration: track.duration.map { Double($0) / 1000.0 },
+            playbackRate: 0.0,
+            position: 0,
+            playbackState: "playing"
+        )
+    }
+
+    func activateNowPlayingInfo() {
+        self.webView.evaluateJavaScript("document.getElementById('boppa-keepalive-audio').muted = false;") { _, error in
+            if let error { logger.error("activateNowPlayingInfoActive error: \(error.localizedDescription)") }
+        }
+    }
+
+    func deactivateNowPlayingInfo() {
+        self.webView.evaluateJavaScript("document.getElementById('boppa-keepalive-audio').muted = true;") { _, error in
+            if let error { logger.error("deactivateNowPlayingInfoActive error: \(error.localizedDescription)") }
         }
     }
 

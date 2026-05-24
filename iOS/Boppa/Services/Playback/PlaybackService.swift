@@ -76,6 +76,8 @@ final class PlaybackService {
                 self.userPaused = false
             }
 
+            engine.setNowPlayingInfo(track: track)
+            engine.activateNowPlayingInfo()
             if await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive) {
                 logger.info("Loaded '\(track.title)' via WebViewPlaybackEngine")
             } else {
