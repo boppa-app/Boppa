@@ -57,16 +57,9 @@ final class PlaybackService {
                 return
             }
 
-            if let currentEngine = self.activeEngine, currentEngine !== engine {
-                logger.info("Engine switch detected — pausing previous engine")
-                currentEngine.pause()
-                currentEngine.deactivateNowPlayingInfo()
-            }
-
             engine.onEvent = { [weak self] event in
                 self?.handleEngineEvent(event)
             }
-            self.activeEngine = engine
             let shouldRestartKeepalive = self.userPaused
             if shouldRestartKeepalive {
                 self.userPaused = false
@@ -80,6 +73,13 @@ final class PlaybackService {
                 logger.error("Failed to load '\(track.title)'")
                 self.isLoading = false
             }
+
+            if let currentEngine = self.activeEngine, currentEngine !== engine {
+                logger.info("Engine switch detected — deactivating previous engine")
+                currentEngine.deactivateNowPlayingInfo()
+                currentEngine.pause()
+            }
+            self.activeEngine = engine
         }
     }
 

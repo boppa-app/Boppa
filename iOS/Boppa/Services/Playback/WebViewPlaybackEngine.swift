@@ -140,15 +140,7 @@ final class WebViewPlaybackEngine: NSObject {
         (function() {
             var audio = document.getElementById('boppa-keepalive-audio');
             if (!audio) return;
-            audio.__boppaPauseHandler = function() {
-                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'playCommand'});
-            };
-            audio.__boppaPlayHandler = function() {
-                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({type: 'pauseCommand'});
-            };
-            audio.addEventListener('pause', audio.__boppaPauseHandler);
-            audio.addEventListener('play', audio.__boppaPlayHandler);
-            document.getElementById('boppa-keepalive-audio').muted = false;
+            audio.muted = false;
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
@@ -161,15 +153,7 @@ final class WebViewPlaybackEngine: NSObject {
         (function() {
             var audio = document.getElementById('boppa-keepalive-audio');
             if (!audio) return;
-            if (audio.__boppaPauseHandler) {
-                audio.removeEventListener('pause', audio.__boppaPauseHandler);
-                delete audio.__boppaPauseHandler;
-            }
-            if (audio.__boppaPlayHandler) {
-                audio.removeEventListener('play', audio.__boppaPlayHandler);
-                delete audio.__boppaPlayHandler;
-            }
-            document.getElementById('boppa-keepalive-audio').muted = true;
+            audio.muted = true;
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
