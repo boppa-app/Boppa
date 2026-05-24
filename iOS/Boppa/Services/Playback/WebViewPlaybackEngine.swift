@@ -38,7 +38,6 @@ final class WebViewPlaybackEngine: NSObject {
     private let webView: WKWebView
     private let config: MediaSourceConfig
 
-    private var hasLoadedHTML = false
     private var navigationContinuation: CheckedContinuation<Void, Never>?
 
     private static let silentAudioDataURI: String = generateSilentWAVDataURI()
@@ -57,18 +56,37 @@ final class WebViewPlaybackEngine: NSObject {
         self.webView.configuration.userContentController.addUserScript(
             getMediaSessionInterceptScript(messageHandlerName: Self.messageHandlerName)
         )
-        self.webView.navigationDelegate = self
         self.attachToWindow(self.webView)
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>* { margin: 0; padding: 0; } html, body, iframe { width: 100%; height: 100%; border: none; overflow: hidden; }</style>
+        </head>
+        <body>
+            <audio id="boppa-keepalive-audio" src="\(Self.silentAudioDataURI)" muted loop></audio>
+            <script>
+                (function() {
+                    var audio = document.getElementById('boppa-keepalive-audio');
+                    audio.volume = 0.0001;
+                    audio.playbackRate = 0.0001;
+                    audio.addEventListener('pause', function() {
+                        if (window.boppaPause) window.boppaPause();
+                    });
+                    audio.addEventListener('play', function() {
+                        if (window.boppaPlay) window.boppaPlay();
+                    });
+                })();
+            </script>
+        </body>
+        </html>
+        """
+        self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(config.url)"))
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
     func load(track: Track, shouldRestartKeepalive: Bool = false) async -> Bool {
-        if !self.hasLoadedHTML {
-            self.loadWebView()
-            self.hasLoadedHTML = true
-            await self.waitForNavigation()
-        }
-
         guard let escapedJSON = self.serializeTrackData(track: track) else {
             logger.error("Failed to serialize track data")
             return false
@@ -227,37 +245,6 @@ final class WebViewPlaybackEngine: NSObject {
         await withCheckedContinuation { continuation in
             self.navigationContinuation = continuation
         }
-    }
-
-    private func loadWebView() {
-        let html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>* { margin: 0; padding: 0; } html, body, iframe { width: 100%; height: 100%; border: none; overflow: hidden; }</style>
-        </head>
-        <body>
-            <audio id="boppa-keepalive-audio" src="\(Self.silentAudioDataURI)" loop autoplay></audio>
-            <script>
-                (function() {
-                    var audio = document.getElementById('boppa-keepalive-audio');
-                    audio.volume = 0.0001;
-                    audio.playbackRate = 0.0001;
-                    audio.play().catch(function(err) {});
-                    audio.addEventListener('pause', function() {
-                        if (window.boppaPause) window.boppaPause();
-                    });
-                    audio.addEventListener('play', function() {
-                        if (window.boppaPlay) window.boppaPlay();
-                    });
-                })();
-            </script>
-        </body>
-        </html>
-        """
-        self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(self.config.url)"))
-        logger.info("Loaded HTML for '\(self.config.name)'")
     }
 
     private func serializeTrackData(track: Track) -> String? {
@@ -518,28 +505,6 @@ extension WebViewPlaybackEngine: WKScriptMessageHandler {
 
         Task { @MainActor in
             self.handleMessage(dict)
-        }
-    }
-}
-
-extension WebViewPlaybackEngine: WKNavigationDelegate {
-    nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        Task { @MainActor in
-            if let continuation = self.navigationContinuation {
-                self.navigationContinuation = nil
-                continuation.resume()
-                logger.info("WebView navigation finished for '\(self.config.name)'")
-            }
-        }
-    }
-
-    nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in
-            if let continuation = self.navigationContinuation {
-                self.navigationContinuation = nil
-                continuation.resume()
-                logger.error("WebView navigation failed: \(error.localizedDescription)")
-            }
         }
     }
 }
