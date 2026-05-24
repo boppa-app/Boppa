@@ -10,6 +10,11 @@ final class TrackQueueManager {
     private(set) var currentIndex: Int = 0
     private(set) var repeatMode: RepeatMode = .off
 
+    private static let artworkPreloadWindow = 50
+
+    private let registry = WebViewPlaybackEngineRegistry.shared
+    private var preloadedArtworkUrls: Set<String> = []
+
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
         category: "TrackQueueManager"
@@ -38,6 +43,7 @@ final class TrackQueueManager {
     func setQueue(_ tracks: [Track], startingAt track: Track) {
         self.queue = tracks
         self.currentIndex = tracks.firstIndex(of: track) ?? 0
+        self.updateArtworkPreloads()
     }
 
     func advanceToNext() -> Track? {
@@ -58,6 +64,7 @@ final class TrackQueueManager {
             self.currentIndex = nextIndex
         }
 
+        self.updateArtworkPreloads()
         return self.currentTrack
     }
 
@@ -72,11 +79,13 @@ final class TrackQueueManager {
             return nil
         }
 
+        self.updateArtworkPreloads()
         return self.currentTrack
     }
 
     func addToQueue(_ track: Track) {
         self.queue.append(track)
+        self.updateArtworkPreloads()
     }
 
     func playNext(_ track: Track) {
@@ -86,6 +95,33 @@ final class TrackQueueManager {
         } else {
             self.queue.insert(track, at: insertIndex)
         }
+        self.updateArtworkPreloads()
+    }
+
+    private func updateArtworkPreloads() {
+        guard !self.queue.isEmpty else { return }
+
+        let window = Self.artworkPreloadWindow
+        let startIndex = max(0, self.currentIndex - window)
+        let endIndex = min(self.queue.count - 1, self.currentIndex + window)
+
+        var desiredUrls: Set<String> = []
+        for i in startIndex ... endIndex {
+            if let remoteUrl = self.queue[i].artworkUrl,
+               let localUrl = ArtworkServer.localURL(for: remoteUrl)
+            {
+                desiredUrls.insert(localUrl)
+            }
+        }
+
+        let toAdd = desiredUrls.subtracting(self.preloadedArtworkUrls)
+        let toRemove = self.preloadedArtworkUrls.subtracting(desiredUrls)
+
+        let engines = self.registry.allEngines
+        if !toAdd.isEmpty { engines.forEach { $0.preloadArtwork(urls: Array(toAdd)) } }
+        if !toRemove.isEmpty { engines.forEach { $0.removeArtwork(urls: Array(toRemove)) } }
+
+        self.preloadedArtworkUrls = desiredUrls
     }
 
     func removeFromQueue(at index: Int) {

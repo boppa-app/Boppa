@@ -30,6 +30,10 @@ final class WebViewPlaybackEngineRegistry {
         self.engines[mediaSourceId]
     }
 
+    var allEngines: [WebViewPlaybackEngine] {
+        Array(self.engines.values)
+    }
+
     private func createEnginesForExistingSources() {
         guard let modelContext else { return }
         let descriptor = FetchDescriptor<MediaSource>()
