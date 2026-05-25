@@ -57,16 +57,24 @@ final class PlaybackService {
                 return
             }
 
+            // Silence old engine's event handler immediately, before any await, so 
+            // interruption-induced pause/play events from it doesn't pollute our state.
+            let previousEngine = self.activeEngine !== engine ? self.activeEngine : nil
+            previousEngine?.onEvent = nil
+
             engine.onEvent = { [weak self] event in
                 self?.handleEngineEvent(event)
             }
-            let shouldRestartKeepalive = self.userPaused
+
+            let isSwitchingEngines = previousEngine != nil
+            let shouldRestartKeepalive = !isSwitchingEngines && self.userPaused
             if shouldRestartKeepalive {
                 self.userPaused = false
             }
+
             engine.setNowPlayingInfo(track: track)
             engine.activateNowPlayingInfo()
-            
+
             if await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive) {
                 logger.info("Loaded '\(track.title)' via WebViewPlaybackEngine")
             } else {
@@ -74,10 +82,10 @@ final class PlaybackService {
                 self.isLoading = false
             }
 
-            if let currentEngine = self.activeEngine, currentEngine !== engine {
+            if let previousEngine {
                 logger.info("Engine switch detected — deactivating previous engine")
-                currentEngine.deactivateNowPlayingInfo()
-                currentEngine.pause()
+                previousEngine.deactivateNowPlayingInfo()
+                previousEngine.pause()
             }
             self.activeEngine = engine
         }
