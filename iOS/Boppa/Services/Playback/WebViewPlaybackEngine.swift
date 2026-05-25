@@ -315,7 +315,11 @@ final class WebViewPlaybackEngine: NSObject {
         let script = """
         (function() {
             if (window.boppaPause) window.boppaPause();
-            // DO NOT PAUSE KEEP ALIVE HERE (messes with position, NowPlayingInfo)
+            // Need to pause keep alive because otherwsie play/pause state drifts when 
+            // pausing externally (ex: AirPods/CarPlay). However messes with position
+            // in NowPlayingInfo, sometimes will glitch position to 0 when resuming.
+            var audio = document.getElementById('boppa-keepalive-audio');
+            if (audio && audio.play) audio.pause();
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
