@@ -75,6 +75,10 @@ final class PlaybackService {
             }
 
             engine.setNowPlayingInfo(track: track)
+            // Modify the previous engine's MediaSession metadata current so that subsequent
+            // loads on it trigger MediaSession metadata mutation and avoid blank artwork 
+            // in the NowPlaying widget.
+            if isSwitchingEngines { previousEngine?.setNowPlayingInfo(track: track) }
             engine.activateNowPlayingInfo()
 
             let loaded = await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive)
