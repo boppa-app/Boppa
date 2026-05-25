@@ -29,6 +29,7 @@ final class PlaybackService {
     private var activeEngine: WebViewPlaybackEngine?
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
+    private var activePlayTask: Task<Void, Never>?
     private var userPaused: Bool = false
 
     private init() {
@@ -50,14 +51,15 @@ final class PlaybackService {
             self.queueManager.setQueue(queue, startingAt: track)
         }
 
-        Task {
+        self.activePlayTask?.cancel()
+        self.activePlayTask = Task {
             guard let engine = self.registry.engine(for: mediaSourceId) else {
                 logger.error("No playback engine for media source '\(mediaSourceId)'")
                 self.isLoading = false
                 return
             }
 
-            // Silence old engine's event handler immediately, before any await, so 
+            // Silence old engine's event handler immediately, before any await, so
             // interruption-induced pause/play events from it doesn't pollute our state.
             let previousEngine = self.activeEngine !== engine ? self.activeEngine : nil
             previousEngine?.onEvent = nil
@@ -75,11 +77,16 @@ final class PlaybackService {
             engine.setNowPlayingInfo(track: track)
             engine.activateNowPlayingInfo()
 
-            if await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive) {
+            let loaded = await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive)
+
+            guard !Task.isCancelled else { return }
+
+            if loaded {
                 logger.info("Loaded '\(track.title)' via WebViewPlaybackEngine")
             } else {
                 logger.error("Failed to load '\(track.title)'")
                 self.isLoading = false
+                return
             }
 
             if let previousEngine {
@@ -128,6 +135,8 @@ final class PlaybackService {
     }
 
     func stop() {
+        self.activePlayTask?.cancel()
+        self.activePlayTask = nil
         self.activeEngine?.stop()
         self.activeEngine = nil
         self.currentTrack = nil
