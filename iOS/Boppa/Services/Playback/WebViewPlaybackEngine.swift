@@ -80,7 +80,7 @@ final class WebViewPlaybackEngine: NSObject {
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
-    func load(track: Track, shouldRestartKeepalive: Bool = false) async -> Bool {
+    func load(track: Track) async -> Bool {
         guard let escapedJSON = self.serializeTrackData(track: track) else {
             logger.error("Failed to serialize track data")
             return false
@@ -95,22 +95,13 @@ final class WebViewPlaybackEngine: NSObject {
                 } else {
                     console.error('boppaLoad not available');
                 }
-                var audio = document.getElementById('boppa-keepalive-audio');
-                if (audio) {
-                    if (\(shouldRestartKeepalive)) {
-                        audio.pause();
-                        setTimeout(function() { audio.play().catch(function(e){}); }, 100);
-                    } else {
-                        audio.play();
-                    }
-                }
             } catch (e) {
                 console.error('Error loading track:', e);
             }
         })();
         """
 
-        return await withCheckedContinuation { continuation in
+        let loaded = await withCheckedContinuation { continuation in
             self.webView.evaluateJavaScript(loadTrackScript) { _, error in
                 if let error {
                     logger.error("Load track error: \(error.localizedDescription)")
@@ -121,6 +112,8 @@ final class WebViewPlaybackEngine: NSObject {
                 }
             }
         }
+        self.play();
+        return loaded;
     }
 
     func setNowPlayingInfo(track: Track) {

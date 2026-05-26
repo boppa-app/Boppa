@@ -69,10 +69,6 @@ final class PlaybackService {
             }
 
             let isSwitchingEngines = previousEngine != nil
-            let shouldRestartKeepalive = !isSwitchingEngines && self.userPaused
-            if shouldRestartKeepalive {
-                self.userPaused = false
-            }
 
             engine.setNowPlayingInfo(track: track)
             // Modify the previous engine's MediaSession metadata so that subsequent loads on it
@@ -80,7 +76,7 @@ final class PlaybackService {
             if isSwitchingEngines { previousEngine?.setNowPlayingInfo(track: track) }
             engine.activateNowPlayingInfo()
 
-            let loaded = await engine.load(track: track, shouldRestartKeepalive: shouldRestartKeepalive)
+            let loaded = await engine.load(track: track)
 
             guard !Task.isCancelled else { return }
 
