@@ -29,11 +29,13 @@ final class PlaybackService {
     private var activeEngine: WebViewPlaybackEngine?
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
+    private var mediaSourceDisabledObserver: NSObjectProtocol?
     private var activePlayTask: Task<Void, Never>?
     private var userPaused: Bool = false
 
     private init() {
         self.observeMediaSourceRemoved()
+        self.observeMediaSourceDisabled()
         logger.info("PlaybackService initialized")
     }
 
@@ -197,6 +199,21 @@ final class PlaybackService {
                       let ids = notification.userInfo?["ids"] as? [String]
                 else { return }
                 self.handleMediaSourceRemoved(ids: ids)
+            }
+        }
+    }
+
+    private func observeMediaSourceDisabled() {
+        self.mediaSourceDisabledObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceDisabled,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      let id = notification.userInfo?["id"] as? String
+                else { return }
+                self.handleMediaSourceRemoved(ids: [id])
             }
         }
     }

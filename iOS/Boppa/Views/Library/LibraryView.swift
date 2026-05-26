@@ -26,7 +26,10 @@ struct LibraryView: View {
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { _ in
                 self.viewModel.loadSources(modelContext: self.modelContext)
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceUpdated)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
+                self.viewModel.loadSources(modelContext: self.modelContext)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
                 self.viewModel.loadSources(modelContext: self.modelContext)
             }
             .onReceive(NotificationCenter.default.publisher(for: .tracklistPinChanged)) { _ in

@@ -6,7 +6,8 @@ import WebKit
 extension Notification.Name {
     static let mediaSourceAdded = Notification.Name("mediaSourceAdded")
     static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
-    static let mediaSourceUpdated = Notification.Name("mediaSourceUpdated")
+    static let mediaSourceEnabled = Notification.Name("mediaSourceEnabled")
+    static let mediaSourceDisabled = Notification.Name("mediaSourceDisabled")
     static let mediaSourceLoginCompleted = Notification.Name("mediaSourceLoginCompleted")
 }
 
@@ -64,6 +65,28 @@ final class MediaSourceContextProvider: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceRemoved notification, refreshing...")
+                MediaSourceContextProvider.shared.refreshFromModelContext()
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .mediaSourceEnabled,
+            object: nil,
+            queue: .main
+        ) { _ in
+            MainActor.assumeIsolated {
+                logger.info("Received mediaSourceEnabled notification, refreshing...")
+                MediaSourceContextProvider.shared.refreshFromModelContext()
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .mediaSourceDisabled,
+            object: nil,
+            queue: .main
+        ) { _ in
+            MainActor.assumeIsolated {
+                logger.info("Received mediaSourceDisabled notification, refreshing...")
                 MediaSourceContextProvider.shared.refreshFromModelContext()
             }
         }

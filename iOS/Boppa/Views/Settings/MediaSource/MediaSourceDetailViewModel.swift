@@ -16,7 +16,8 @@ class MediaSourceDetailViewModel {
         set {
             self.mediaSource.isEnabled = newValue
             try? self.modelContext.save()
-            NotificationCenter.default.post(name: .mediaSourceUpdated, object: nil, userInfo: ["name": self.mediaSource.name])
+            let name: Notification.Name = newValue ? .mediaSourceEnabled : .mediaSourceDisabled
+            NotificationCenter.default.post(name: name, object: nil, userInfo: ["id": self.mediaSource.id])
         }
     }
 

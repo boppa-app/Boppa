@@ -14,7 +14,8 @@ final class WebViewPlaybackEngineRegistry {
     private var engines: [String: WebViewPlaybackEngine] = [:]
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
-    private var mediaSourceUpdatedObserver: NSObjectProtocol?
+    private var mediaSourceEnabledObserver: NSObjectProtocol?
+    private var mediaSourceDisabledObserver: NSObjectProtocol?
     private var modelContext: ModelContext?
 
     private init() {}
@@ -69,14 +70,26 @@ final class WebViewPlaybackEngineRegistry {
             }
         }
 
-        self.mediaSourceUpdatedObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourceUpdated,
+        self.mediaSourceEnabledObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceEnabled,
             object: nil,
             queue: .main
         ) { notification in
             MainActor.assumeIsolated {
                 if let id = notification.userInfo?["id"] as? String {
-                    self.handleMediaSourceUpdated(id: id)
+                    self.handleMediaSourceEnabled(id: id)
+                }
+            }
+        }
+
+        self.mediaSourceDisabledObserver = NotificationCenter.default.addObserver(
+            forName: .mediaSourceDisabled,
+            object: nil,
+            queue: .main
+        ) { notification in
+            MainActor.assumeIsolated {
+                if let id = notification.userInfo?["id"] as? String {
+                    self.handleMediaSourceDisabled(id: id)
                 }
             }
         }
@@ -100,19 +113,22 @@ final class WebViewPlaybackEngineRegistry {
         }
     }
 
-    private func handleMediaSourceUpdated(id: String) {
+    private func handleMediaSourceEnabled(id: String) {
+        guard self.engines[id] == nil else { return }
         guard let modelContext else { return }
         let descriptor = FetchDescriptor<MediaSource>()
         let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
-
         guard let mediaSource = mediaSources.first(where: { $0.id == id }) else {
-            logger.warning("Updated source '\(id)' not found in model context")
+            logger.warning("Enabled source '\(id)' not found in model context")
             return
         }
-
-        self.destroyEngine(for: id)
         self.createEngine(for: mediaSource)
-        logger.info("Recreated engine for updated source '\(mediaSource.name)'")
+        logger.info("Created engine for enabled source '\(mediaSource.name)'")
+    }
+
+    private func handleMediaSourceDisabled(id: String) {
+        self.destroyEngine(for: id)
+        logger.info("Destroyed engine for disabled source '\(id)'")
     }
 
     private func createEngine(for mediaSource: MediaSource) {
