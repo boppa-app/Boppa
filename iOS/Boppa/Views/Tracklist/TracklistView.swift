@@ -36,6 +36,12 @@ struct TracklistView: View {
                     title: self.viewModel.tracklist.title,
                     highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
                     onBack: { self.dismiss() },
+                    onTitleTap: {
+                        guard self.isSaved else { return }
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            self.scrollHandler.showSearchBar.toggle()
+                        }
+                    },
                     trailing: {
                         HStack(spacing: 0) {
                             if self.isSaved {
@@ -189,15 +195,17 @@ struct TracklistView: View {
     }
 
     private var trackList: some View {
-        ScrollFadeView {
-            List {
-                if self.isSaved {
-                    Color.black
-                        .frame(height: self.scrollHandler.searchBarHeight)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                }
+        ScrollViewReader { proxy in
+            ScrollFadeView {
+                List {
+                    if self.isSaved {
+                        Color.black
+                            .frame(height: self.scrollHandler.searchBarHeight)
+                            .id("listTop")
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
+                    }
 
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { _, track in
                     TrackRow(
@@ -245,6 +253,10 @@ struct TracklistView: View {
                     )
                 }
             ))
+        }
+        .onChange(of: self.viewModel.searchHandler.searchText) { _, _ in
+            proxy.scrollTo("listTop", anchor: .top)
+        }
         }
     }
 

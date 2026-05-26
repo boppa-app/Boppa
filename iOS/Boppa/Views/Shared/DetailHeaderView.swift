@@ -4,6 +4,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
     let title: String
     let highlightedTitle: String?
     let onBack: () -> Void
+    let onTitleTap: (() -> Void)?
     @ViewBuilder let centerLeading: () -> CenterLeadingContent
     @ViewBuilder let trailing: () -> TrailingContent
     @ViewBuilder let centerTrailing: () -> CenterContent
@@ -12,6 +13,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         title: String,
         highlightedTitle: String? = nil,
         onBack: @escaping () -> Void,
+        onTitleTap: (() -> Void)? = nil,
         @ViewBuilder centerLeading: @escaping () -> CenterLeadingContent = { EmptyView() },
         @ViewBuilder trailing: @escaping () -> TrailingContent = { EmptyView() },
         @ViewBuilder centerTrailing: @escaping () -> CenterContent = { EmptyView() }
@@ -19,6 +21,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
         self.title = title
         self.highlightedTitle = highlightedTitle
         self.onBack = onBack
+        self.onTitleTap = onTitleTap
         self.centerLeading = centerLeading
         self.trailing = trailing
         self.centerTrailing = centerTrailing
@@ -51,6 +54,8 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                         )
                         self.centerTrailing()
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture { self.onTitleTap?() }
 
                     HStack(spacing: 0) {
                         Button(action: self.onBack) {

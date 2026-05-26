@@ -57,6 +57,12 @@ struct TracklistListView: View {
                             self.dismiss()
                         }
                     },
+                    onTitleTap: {
+                        guard self.isLibraryMode && !self.viewModel.isEditing else { return }
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            self.scrollHandler.showSearchBar.toggle()
+                        }
+                    },
                     trailing: {
                         if self.isLibraryMode {
                             if self.viewModel.isEditing {
@@ -195,12 +201,14 @@ struct TracklistListView: View {
     }
 
     private var tracklistList: some View {
+        ScrollViewReader { proxy in
         ScrollFadeView {
             List {
                 if self.isLibraryMode && !self.viewModel.isEditing {
                     Rectangle()
                         .fill(Color.black)
                         .frame(height: self.scrollHandler.searchBarHeight)
+                        .id("listTop")
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
@@ -276,6 +284,10 @@ struct TracklistListView: View {
                     )
                 }
             ))
+        }
+        .onChange(of: self.viewModel.searchHandler.searchText) { _, _ in
+            proxy.scrollTo("listTop", anchor: .top)
+        }
         }
     }
 
