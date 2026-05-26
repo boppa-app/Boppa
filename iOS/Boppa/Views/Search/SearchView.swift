@@ -11,6 +11,8 @@ struct SearchView: View {
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
     @FocusState private var isSearchFieldFocused: Bool
+    var navigationResetId: Int = 0
+    @Binding var isAtNavigationRoot: Bool
 
     private var showCategorySuggestions: Bool {
         self.isSearchFieldFocused && self.viewModel.isQueryActive
@@ -45,6 +47,10 @@ struct SearchView: View {
             .onAppear {
                 self.viewModel.loadSources(modelContext: self.modelContext)
                 self.cacheManager.load(modelContext: self.modelContext)
+                self.isAtNavigationRoot = true
+            }
+            .onDisappear {
+                self.isAtNavigationRoot = false
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources(modelContext: self.modelContext)
@@ -60,6 +66,7 @@ struct SearchView: View {
                 self.viewModel.loadSources(modelContext: self.modelContext)
             }
         }
+        .id(self.navigationResetId)
     }
 
     private var categorySuggestions: some View {
@@ -349,7 +356,7 @@ struct SearchView: View {
 }
 
 #Preview {
-    SearchView()
+    SearchView(isAtNavigationRoot: .constant(true))
         .modelContainer(for: MediaSource.self, inMemory: true)
         .preferredColorScheme(.dark)
 }

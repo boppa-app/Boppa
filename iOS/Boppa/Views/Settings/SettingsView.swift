@@ -3,6 +3,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @Binding var selectedTab: Int
+    var navigationResetId: Int = 0
+    @Binding var isAtNavigationRoot: Bool
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \MediaSource.order) private var mediaSources: [MediaSource]
     @State private var showingAddSheet = false
@@ -58,6 +60,18 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .onAppear {
+                self.isAtNavigationRoot = true
+            }
+            .onDisappear {
+                self.isAtNavigationRoot = false
+            }
+            .onChange(of: self.selectedMediaSource) { _, newValue in
+                self.isAtNavigationRoot = (newValue == nil)
+            }
+            .onChange(of: self.navigationResetId) { _, _ in
+                self.selectedMediaSource = nil
+            }
             .onChange(of: self.selectedTab) { _, newTab in
                 if newTab != 3 {
                     self.isEditing = false
@@ -183,6 +197,6 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(selectedTab: .constant(3))
+    SettingsView(selectedTab: .constant(3), isAtNavigationRoot: .constant(true))
         .modelContainer(for: MediaSource.self, inMemory: true)
 }

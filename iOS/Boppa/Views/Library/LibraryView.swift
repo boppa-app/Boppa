@@ -4,6 +4,8 @@ import SwiftUI
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = LibraryViewModel()
+    var navigationResetId: Int = 0
+    @Binding var isAtNavigationRoot: Bool
 
     var body: some View {
         NavigationStack {
@@ -13,6 +15,10 @@ struct LibraryView: View {
             }
             .onAppear {
                 self.viewModel.loadSources(modelContext: self.modelContext)
+                self.isAtNavigationRoot = true
+            }
+            .onDisappear {
+                self.isAtNavigationRoot = false
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources(modelContext: self.modelContext)
@@ -36,6 +42,7 @@ struct LibraryView: View {
                 .presentationBackground(Color(.systemGray6))
             }
         }
+        .id(self.navigationResetId)
     }
 
     private var toolbar: some View {
@@ -186,7 +193,7 @@ struct LibraryView: View {
 }
 
 #Preview {
-    LibraryView()
+    LibraryView(isAtNavigationRoot: .constant(true))
         .modelContainer(for: [MediaSource.self, StoredTracklist.self, StoredTrack.self], inMemory: true)
         .preferredColorScheme(.dark)
 }
