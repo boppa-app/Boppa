@@ -1,7 +1,8 @@
 import Foundation
 
 struct Track: Identifiable, Equatable {
-    let id: String
+    let id: UUID
+    let mediaId: String
     let mediaSourceId: String
     let title: String
     let subtitle: String?
@@ -13,7 +14,7 @@ struct Track: Identifiable, Equatable {
     let metadata: [String: Any]
 
     init(
-        id: String,
+        mediaId: String,
         mediaSourceId: String,
         title: String,
         subtitle: String? = nil,
@@ -24,7 +25,8 @@ struct Track: Identifiable, Equatable {
         albums: [Tracklist] = [],
         metadata: [String: Any] = [:]
     ) {
-        self.id = id
+        self.id = UUID()
+        self.mediaId = mediaId
         self.mediaSourceId = mediaSourceId
         self.title = title
         self.subtitle = subtitle
@@ -37,7 +39,7 @@ struct Track: Identifiable, Equatable {
     }
 
     static func == (lhs: Track, rhs: Track) -> Bool {
-        lhs.id == rhs.id
+        lhs.mediaId == rhs.mediaId
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
             && lhs.duration == rhs.duration

@@ -93,12 +93,12 @@ class TracklistListViewModel {
         self.isEditing = false
     }
 
-    func deleteTracklistById(_ id: String, modelContext: ModelContext) {
+    func deleteTracklistById(_ id: UUID, modelContext: ModelContext) {
         guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
-            let prevStored = stored.prevId.flatMap { TracklistService.shared.findStoredTracklist(id: $0, modelContext: modelContext) }
-            let nextStored = stored.nextId.flatMap { TracklistService.shared.findStoredTracklist(id: $0, modelContext: modelContext) }
+            let prevStored = stored.prevId.flatMap { TracklistService.shared.findStoredTracklistByStoredId($0, modelContext: modelContext) }
+            let nextStored = stored.nextId.flatMap { TracklistService.shared.findStoredTracklistByStoredId($0, modelContext: modelContext) }
             prevStored?.nextId = stored.nextId
             nextStored?.prevId = stored.prevId
 
@@ -129,8 +129,8 @@ class TracklistListViewModel {
     private func persistDLLOrder(modelContext: ModelContext) {
         for (index, tracklist) in self.tracklists.enumerated() {
             guard let stored = tracklist.storedTracklist else { continue }
-            stored.prevId = index > 0 ? self.tracklists[index - 1].id : nil
-            stored.nextId = index < self.tracklists.count - 1 ? self.tracklists[index + 1].id : nil
+            stored.prevId = index > 0 ? self.tracklists[index - 1].storedTracklist?.id : nil
+            stored.nextId = index < self.tracklists.count - 1 ? self.tracklists[index + 1].storedTracklist?.id : nil
         }
         try? modelContext.save()
     }

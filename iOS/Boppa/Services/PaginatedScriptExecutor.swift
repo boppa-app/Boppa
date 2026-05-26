@@ -116,7 +116,7 @@ class PaginatedScriptExecutor {
                       let name = data["name"] as? String
                 else { continue }
                 artists.append(Artist(
-                    id: artistId,
+                    mediaId: artistId,
                     mediaSourceId: mediaSourceId,
                     name: name,
                     artworkUrl: data["artworkUrl"] as? String,
@@ -132,7 +132,7 @@ class PaginatedScriptExecutor {
                       let title = data["title"] as? String
                 else { continue }
                 albums.append(Tracklist(
-                    id: albumId,
+                    mediaId: albumId,
                     mediaSourceId: mediaSourceId,
                     title: title,
                     subtitle: data["subtitle"] as? String,
@@ -144,7 +144,7 @@ class PaginatedScriptExecutor {
         }
 
         return Track(
-            id: id,
+            mediaId: id,
             mediaSourceId: mediaSourceId,
             title: title,
             subtitle: item["subtitle"] as? String,
@@ -169,7 +169,7 @@ class PaginatedScriptExecutor {
                       let name = data["name"] as? String
                 else { continue }
                 artists.append(Artist(
-                    id: artistId,
+                    mediaId: artistId,
                     mediaSourceId: mediaSourceId,
                     name: name,
                     artworkUrl: data["artworkUrl"] as? String,
@@ -179,7 +179,7 @@ class PaginatedScriptExecutor {
         }
 
         return Tracklist(
-            id: id,
+            mediaId: id,
             mediaSourceId: mediaSourceId,
             title: title,
             subtitle: item["subtitle"] as? String,
@@ -197,7 +197,7 @@ class PaginatedScriptExecutor {
               let id = self.resolveString(item["id"])
         else { return nil }
         return Artist(
-            id: id,
+            mediaId: id,
             mediaSourceId: mediaSourceId,
             name: name,
             artworkUrl: item["artworkUrl"] as? String,

@@ -1,7 +1,8 @@
 import Foundation
 
 struct Tracklist: Identifiable, Equatable, Hashable {
-    let id: String
+    let id: UUID
+    let mediaId: String
     let mediaSourceId: String
     let title: String
     let subtitle: String?
@@ -24,7 +25,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     }
 
     init(
-        id: String,
+        mediaId: String,
         mediaSourceId: String,
         title: String,
         subtitle: String? = nil,
@@ -38,7 +39,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         artistDetail: ArtistDetail? = nil,
         storedTracklist: StoredTracklist? = nil
     ) {
-        self.id = id
+        self.id = UUID()
+        self.mediaId = mediaId
         self.mediaSourceId = mediaSourceId
         self.title = title
         self.subtitle = subtitle
@@ -55,7 +57,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
 
     init(storedTracklist: StoredTracklist) {
         let mediaSourceId = storedTracklist.mediaSourceId
-        self.id = storedTracklist.id
+        self.id = UUID()
+        self.mediaId = storedTracklist.id
         self.mediaSourceId = mediaSourceId
         self.title = storedTracklist.name
         self.subtitle = storedTracklist.subtitle
@@ -71,7 +74,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     }
 
     static func == (lhs: Tracklist, rhs: Tracklist) -> Bool {
-        lhs.id == rhs.id
+        lhs.mediaId == rhs.mediaId
             && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
@@ -82,7 +85,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     }
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(self.id)
+        hasher.combine(self.mediaId)
     }
 
     var isPersisted: Bool {

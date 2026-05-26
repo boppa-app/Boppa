@@ -49,7 +49,7 @@ final class WebViewPlaybackEngine: NSObject {
             contractScript: Self.contractScript(),
             customUserAgent: config.customUserAgent,
             allowsInlineMediaPlayback: true,
-            isHidden: false
+            isHidden: true
         )
         super.init()
         self.webView.configuration.userContentController.add(self, name: Self.messageHandlerName)

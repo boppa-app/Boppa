@@ -54,7 +54,12 @@ class TracklistViewModel {
     }
 
     func load(modelContext: ModelContext) {
-        if let stored = self.tracklist.storedTracklist {
+        let stored = self.tracklist.storedTracklist
+            ?? TracklistService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId, modelContext: modelContext)
+
+        if let stored {
+            self.tracklist = Tracklist(storedTracklist: stored)
+            self.isPersisted = true
             self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
         }
 

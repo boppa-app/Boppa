@@ -171,8 +171,8 @@ struct LibraryView: View {
         case .likes:
             TracklistView(
                 tracklist: Tracklist(
-                    id: "likes",
-                    mediaSourceId: "",
+                    mediaId: "likes",
+                    mediaSourceId: "boppa.app",
                     title: "Likes",
                     tracklistType: .likes
                 )

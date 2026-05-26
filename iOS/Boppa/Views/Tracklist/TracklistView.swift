@@ -158,7 +158,7 @@ struct TracklistView: View {
         .navigationDestination(item: self.$pendingTracklist) { tracklist in
             TracklistView(
                 tracklist: Tracklist(
-                    id: tracklist.id,
+                    mediaId: tracklist.mediaId,
                     mediaSourceId: tracklist.mediaSourceId,
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
@@ -166,7 +166,7 @@ struct TracklistView: View {
                     metadata: tracklist.metadata,
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
                 )
             )
         }

@@ -1,7 +1,8 @@
 import Foundation
 
 struct Artist: Identifiable, Equatable, Hashable {
-    let id: String
+    let id: UUID
+    let mediaId: String
     let mediaSourceId: String
     let name: String
     let artworkUrl: String?
@@ -9,14 +10,15 @@ struct Artist: Identifiable, Equatable, Hashable {
     let metadata: [String: Any]
 
     init(
-        id: String,
+        mediaId: String,
         mediaSourceId: String,
         name: String,
         artworkUrl: String? = nil,
         url: String? = nil,
         metadata: [String: Any] = [:]
     ) {
-        self.id = id
+        self.id = UUID()
+        self.mediaId = mediaId
         self.mediaSourceId = mediaSourceId
         self.name = name
         self.artworkUrl = artworkUrl
@@ -25,7 +27,7 @@ struct Artist: Identifiable, Equatable, Hashable {
     }
 
     static func == (lhs: Artist, rhs: Artist) -> Bool {
-        lhs.id == rhs.id
+        lhs.mediaId == rhs.mediaId
             && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.name == rhs.name
             && lhs.artworkUrl == rhs.artworkUrl
@@ -33,6 +35,6 @@ struct Artist: Identifiable, Equatable, Hashable {
     }
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(self.id)
+        hasher.combine(self.mediaId)
     }
 }

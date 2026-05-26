@@ -34,7 +34,7 @@ final class StoredTrack {
                   let name = data["name"] as? String
             else { return nil }
             return Artist(
-                id: id,
+                mediaId: id,
                 mediaSourceId: self.mediaSourceId,
                 name: name,
                 artworkUrl: data["artworkUrl"] as? String,
@@ -52,7 +52,7 @@ final class StoredTrack {
                   let title = data["title"] as? String
             else { return nil }
             return Tracklist(
-                id: id,
+                mediaId: id,
                 mediaSourceId: self.mediaSourceId,
                 title: title,
                 subtitle: data["subtitle"] as? String,
@@ -91,7 +91,7 @@ final class StoredTrack {
 
     func toTrack() -> Track {
         Track(
-            id: self.id,
+            mediaId: self.id,
             mediaSourceId: self.mediaSourceId,
             title: self.title,
             subtitle: self.subtitle,
@@ -106,7 +106,7 @@ final class StoredTrack {
 
     static func from(_ track: Track, sortOrder: Int) -> StoredTrack {
         StoredTrack(
-            id: track.id,
+            id: track.mediaId,
             mediaSourceId: track.mediaSourceId,
             title: track.title,
             subtitle: track.subtitle,
@@ -147,7 +147,7 @@ final class StoredTrack {
     private static func encodeArtists(_ artists: [Artist]) -> Data {
         guard !artists.isEmpty else { return Data() }
         let raw: [[String: Any]] = artists.map { artist in
-            var data: [String: Any] = ["id": artist.id, "name": artist.name]
+            var data: [String: Any] = ["id": artist.mediaId, "name": artist.name]
             if let artworkUrl = artist.artworkUrl { data["artworkUrl"] = artworkUrl }
             if !artist.metadata.isEmpty { data["metadata"] = artist.metadata }
             return data
@@ -158,7 +158,7 @@ final class StoredTrack {
     private static func encodeAlbums(_ albums: [Tracklist]) -> Data {
         guard !albums.isEmpty else { return Data() }
         let raw: [[String: Any]] = albums.map { album in
-            var data: [String: Any] = ["id": album.id, "title": album.title]
+            var data: [String: Any] = ["id": album.mediaId, "title": album.title]
             if let subtitle = album.subtitle { data["subtitle"] = subtitle }
             if let artworkUrl = album.artworkUrl { data["artworkUrl"] = artworkUrl }
             if !album.metadata.isEmpty { data["metadata"] = album.metadata }

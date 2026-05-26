@@ -447,7 +447,7 @@ class TracklistService {
         tracklist: Tracklist,
         modelContext: ModelContext
     ) -> StoredTracklist {
-        if let existing = self.findStoredTracklist(id: tracklist.id, modelContext: modelContext) {
+        if let existing = self.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: modelContext) {
             existing.name = tracklist.title
             existing.subtitle = tracklist.subtitle
             existing.artworkUrl = tracklist.artworkUrl
@@ -464,7 +464,7 @@ class TracklistService {
         let currentTail = (try? modelContext.fetch(descriptor))?.first
 
         let stored = StoredTracklist(
-            id: tracklist.id,
+            id: tracklist.mediaId,
             name: tracklist.title,
             subtitle: tracklist.subtitle,
             mediaSourceId: tracklist.mediaSourceId,
@@ -492,9 +492,16 @@ class TracklistService {
         logger.info("Deleted stored tracklist '\(storedTracklist.name)'")
     }
 
-    func findStoredTracklist(id: String, modelContext: ModelContext) -> StoredTracklist? {
+    func findStoredTracklist(mediaId: String, mediaSourceId: String, modelContext: ModelContext) -> StoredTracklist? {
         let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.id == id }
+            predicate: #Predicate { $0.id == mediaId && $0.mediaSourceId == mediaSourceId }
+        )
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    func findStoredTracklistByStoredId(_ storedId: String, modelContext: ModelContext) -> StoredTracklist? {
+        let descriptor = FetchDescriptor<StoredTracklist>(
+            predicate: #Predicate { $0.id == storedId }
         )
         return try? modelContext.fetch(descriptor).first
     }

@@ -5,7 +5,7 @@ struct TracklistListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
     @State private var scrollHandler = SearchBarScrollHandler()
-    @State private var selectedTracklistId: String?
+    @State private var selectedTracklistId: UUID?
     @State private var showActionSheet = false
     @State private var tracklistToDelete: Tracklist?
     @FocusState private var isSearchFieldFocused: Bool

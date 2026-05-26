@@ -49,7 +49,7 @@ struct ArtistDetailView: View {
         .navigationDestination(item: self.$pendingTracklist) { tracklist in
             TracklistView(
                 tracklist: Tracklist(
-                    id: tracklist.id,
+                    mediaId: tracklist.mediaId,
                     mediaSourceId: self.mediaSource.id,
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
@@ -57,7 +57,7 @@ struct ArtistDetailView: View {
                     metadata: tracklist.metadata,
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id, modelContext: self.modelContext)
                 )
             )
         }
@@ -123,7 +123,7 @@ struct ArtistDetailView: View {
                         .background(
                             NavigationLink(destination: TracklistView(
                                 tracklist: Tracklist(
-                                    id: tracklist.id,
+                                    mediaId: tracklist.mediaId,
                                     mediaSourceId: self.mediaSource.id,
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
@@ -131,7 +131,7 @@ struct ArtistDetailView: View {
                                     metadata: tracklist.metadata,
                                     tracklistType: .album,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id, modelContext: self.modelContext)
                                 )
                             )) { EmptyView() }
                                 .opacity(0)
@@ -211,7 +211,7 @@ struct ArtistDetailView: View {
                         .background(
                             NavigationLink(destination: TracklistView(
                                 tracklist: Tracklist(
-                                    id: tracklist.id,
+                                    mediaId: tracklist.mediaId,
                                     mediaSourceId: self.mediaSource.id,
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
@@ -219,7 +219,7 @@ struct ArtistDetailView: View {
                                     metadata: tracklist.metadata,
                                     tracklistType: .playlist,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id, modelContext: self.modelContext)
                                 )
                             )) { EmptyView() }
                                 .opacity(0)
@@ -261,7 +261,7 @@ struct ArtistDetailView: View {
 
     private func songsSectionHeader(_ detail: ArtistDetail) -> some View {
         let tracklist = Tracklist(
-            id: "\(self.artist.id)-songs",
+            mediaId: "\(self.artist.mediaId)-songs",
             mediaSourceId: self.mediaSource.id,
             title: "Songs",
             artworkUrl: self.artist.artworkUrl,
@@ -280,7 +280,7 @@ struct ArtistDetailView: View {
 
     private func videosSectionHeader(_ detail: ArtistDetail) -> some View {
         let tracklist = Tracklist(
-            id: "\(self.artist.id)-videos",
+            mediaId: "\(self.artist.mediaId)-videos",
             mediaSourceId: self.mediaSource.id,
             title: "Videos",
             artworkUrl: self.artist.artworkUrl,

@@ -35,7 +35,7 @@ final class StoredTracklist {
                   let name = data["name"] as? String
             else { return nil }
             return Artist(
-                id: id,
+                mediaId: id,
                 mediaSourceId: self.mediaSourceId,
                 name: name,
                 artworkUrl: data["artworkUrl"] as? String,
@@ -51,7 +51,7 @@ final class StoredTracklist {
               let name = data["name"] as? String
         else { return nil }
         return Artist(
-            id: id,
+            mediaId: id,
             mediaSourceId: self.mediaSourceId,
             name: name,
             artworkUrl: data["artworkUrl"] as? String,
@@ -88,7 +88,7 @@ final class StoredTracklist {
     static func encodeArtists(_ artists: [Artist]) -> Data {
         guard !artists.isEmpty else { return Data() }
         let raw: [[String: Any]] = artists.map { artist in
-            var data: [String: Any] = ["id": artist.id, "name": artist.name]
+            var data: [String: Any] = ["id": artist.mediaId, "name": artist.name]
             if let artworkUrl = artist.artworkUrl { data["artworkUrl"] = artworkUrl }
             if !artist.metadata.isEmpty { data["metadata"] = artist.metadata }
             return data
@@ -98,7 +98,7 @@ final class StoredTracklist {
 
     static func encodeArtist(_ artist: Artist?) -> Data {
         guard let artist else { return Data() }
-        var data: [String: Any] = ["id": artist.id, "name": artist.name]
+        var data: [String: Any] = ["id": artist.mediaId, "name": artist.name]
         if let artworkUrl = artist.artworkUrl { data["artworkUrl"] = artworkUrl }
         if !artist.metadata.isEmpty { data["metadata"] = artist.metadata }
         return (try? JSONSerialization.data(withJSONObject: data)) ?? Data()

@@ -210,7 +210,7 @@ struct SearchView: View {
                                 .background(
                                     NavigationLink(destination: TracklistView(
                                         tracklist: Tracklist(
-                                            id: tracklist.id,
+                                            mediaId: tracklist.mediaId,
                                             mediaSourceId: mediaSource.id,
                                             title: tracklist.title,
                                             subtitle: tracklist.subtitle,
@@ -218,7 +218,7 @@ struct SearchView: View {
                                             metadata: tracklist.metadata,
                                             tracklistType: .album,
                                             artists: tracklist.artists,
-                                            storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                            storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
                                         )
                                     )) { EmptyView() }
                                         .opacity(0)
@@ -265,7 +265,7 @@ struct SearchView: View {
                                 .background(
                                     NavigationLink(destination: TracklistView(
                                         tracklist: Tracklist(
-                                            id: tracklist.id,
+                                            mediaId: tracklist.mediaId,
                                             mediaSourceId: mediaSource.id,
                                             title: tracklist.title,
                                             subtitle: tracklist.subtitle,
@@ -273,7 +273,7 @@ struct SearchView: View {
                                             metadata: tracklist.metadata,
                                             tracklistType: .playlist,
                                             artists: tracklist.artists,
-                                            storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                                            storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
                                         )
                                     )) { EmptyView() }
                                         .opacity(0)
@@ -328,7 +328,7 @@ struct SearchView: View {
             if let mediaSource = self.viewModel.selectedMediaSource {
                 TracklistView(
                     tracklist: Tracklist(
-                        id: tracklist.id,
+                        mediaId: tracklist.mediaId,
                         mediaSourceId: mediaSource.id,
                         title: tracklist.title,
                         subtitle: tracklist.subtitle,
@@ -336,7 +336,7 @@ struct SearchView: View {
                         metadata: tracklist.metadata,
                         tracklistType: tracklist.tracklistType,
                         artists: tracklist.artists,
-                        storedTracklist: TracklistService.shared.findStoredTracklist(id: tracklist.id, modelContext: self.modelContext)
+                        storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
                     )
                 )
             }
