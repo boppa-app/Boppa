@@ -17,7 +17,7 @@ struct TracklistView: View {
     }
 
     private var isSaved: Bool {
-        self.viewModel.tracklist.isPersisted
+        self.viewModel.isPersisted
     }
 
     private var canSave: Bool {
@@ -87,14 +87,14 @@ struct TracklistView: View {
                 self.isSearchFieldFocused = false
             }
 
-            if self.isSaved {
+            if self.canSave {
                 StoredSearchToolbar(
                     searchText: Binding(
                         get: { self.viewModel.searchHandler.searchText },
                         set: { self.viewModel.updateSearch($0) }
                     ),
                     showSearchBar: Binding(
-                        get: { self.scrollHandler.showSearchBar },
+                        get: { self.isSaved && self.scrollHandler.showSearchBar },
                         set: { self.scrollHandler.showSearchBar = $0 }
                     ),
                     placeholder: "Find in library",

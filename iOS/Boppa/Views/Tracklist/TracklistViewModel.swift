@@ -15,6 +15,7 @@ private let logger = Logger(
 @Observable
 class TracklistViewModel {
     var tracklist: Tracklist
+    var isPersisted: Bool
     var tracks: [Track] = []
     var isLoading = false
     var isRefreshing = false
@@ -33,6 +34,7 @@ class TracklistViewModel {
 
     init(tracklist: Tracklist) {
         self.tracklist = tracklist
+        self.isPersisted = tracklist.isPersisted
     }
 
     var displayTracks: [Track] {
@@ -48,7 +50,7 @@ class TracklistViewModel {
     }
 
     var canRefresh: Bool {
-        self.tracklist.isPersisted
+        self.isPersisted
     }
 
     func load(modelContext: ModelContext) {
@@ -62,7 +64,7 @@ class TracklistViewModel {
     }
 
     func refresh(modelContext: ModelContext) {
-        guard self.tracklist.isPersisted else { return }
+        guard self.isPersisted else { return }
         self.isRefreshing = true
 
         Task {
@@ -174,6 +176,7 @@ class TracklistViewModel {
                 )
 
                 self.tracklist = Tracklist(storedTracklist: stored)
+                self.isPersisted = true
                 self.isSaving = false
 
                 logger.info("Saved tracklist '\(self.tracklist.title)' to library")
@@ -188,6 +191,7 @@ class TracklistViewModel {
     func deleteFromLibrary(modelContext: ModelContext) {
         guard let stored = self.tracklist.storedTracklist else { return }
         TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
+        self.isPersisted = false
         logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
     }
 
