@@ -141,6 +141,8 @@ class TracklistListViewModel {
         artistDetail: ArtistDetail,
         mediaSource: MediaSource
     ) {
+        guard !self.didLoad else { return }
+        self.didLoad = true
         switch type {
         case .albums:
             self.fetchAlbums(artist: artist, artistDetail: artistDetail, mediaSource: mediaSource)
