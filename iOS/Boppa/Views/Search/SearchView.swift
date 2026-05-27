@@ -1,10 +1,8 @@
-import SwiftData
 import SwiftUI
 
 // TODO: Swiping up in search view should refresh results
 
 struct SearchView: View {
-    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
     @State private var trackForActions: Track?
@@ -31,8 +29,7 @@ struct SearchView: View {
                     onSearch: {
                         self.cacheManager.saveQuery(
                             self.viewModel.searchQuery,
-                            category: self.viewModel.selectedCategory,
-                            modelContext: self.modelContext
+                            category: self.viewModel.selectedCategory
                         )
                     }
                 )
@@ -45,28 +42,28 @@ struct SearchView: View {
                 }
             }
             .onAppear {
-                self.viewModel.loadSources(modelContext: self.modelContext)
-                self.cacheManager.load(modelContext: self.modelContext)
+                self.viewModel.loadSources()
+                self.cacheManager.load()
                 self.isAtNavigationRoot = true
             }
             .onDisappear {
                 self.isAtNavigationRoot = false
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
                 let removedIds = notification.userInfo?["ids"] as? [String] ?? []
                 if let selected = self.viewModel.selectedMediaSource, removedIds.contains(selected.id) {
                     self.viewModel.clearSearch()
                 }
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
         }
         .id(self.navigationResetId)
@@ -80,8 +77,7 @@ struct SearchView: View {
                     self.viewModel.search()
                     self.cacheManager.saveQuery(
                         self.viewModel.searchQuery,
-                        category: category,
-                        modelContext: self.modelContext
+                        category: category
                     )
                     self.isSearchFieldFocused = false
                 } label: {
@@ -141,16 +137,15 @@ struct SearchView: View {
                         self.isSearchFieldFocused = false
                         self.cacheManager.saveQuery(
                             cached.query,
-                            category: category,
-                            modelContext: self.modelContext
+                            category: category
                         )
                     }
                 },
                 onRemove: { cached in
-                    self.cacheManager.removeQuery(cached, modelContext: self.modelContext)
+                    self.cacheManager.removeQuery(cached)
                 },
                 onClearAll: {
-                    self.cacheManager.clearAll(modelContext: self.modelContext)
+                    self.cacheManager.clearAll()
                 }
             )
             Spacer()
@@ -228,7 +223,7 @@ struct SearchView: View {
                                             metadata: tracklist.metadata,
                                             tracklistType: .album,
                                             artists: tracklist.artists,
-                                            storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
+                                            storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                                         )
                                     )) { EmptyView() }
                                         .opacity(0)
@@ -283,7 +278,7 @@ struct SearchView: View {
                                             metadata: tracklist.metadata,
                                             tracklistType: .playlist,
                                             artists: tracklist.artists,
-                                            storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
+                                            storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                                         )
                                     )) { EmptyView() }
                                         .opacity(0)
@@ -346,7 +341,7 @@ struct SearchView: View {
                         metadata: tracklist.metadata,
                         tracklistType: tracklist.tracklistType,
                         artists: tracklist.artists,
-                        storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
+                        storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                     )
                 )
             }
@@ -360,6 +355,5 @@ struct SearchView: View {
 
 #Preview {
     SearchView(isAtNavigationRoot: .constant(true))
-        .modelContainer(for: MediaSource.self, inMemory: true)
         .preferredColorScheme(.dark)
 }

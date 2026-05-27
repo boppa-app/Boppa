@@ -1,9 +1,8 @@
-import SwiftData
 import SwiftUI
 
 enum MediaSourcePickerMode {
-    case single(selectedID: PersistentIdentifier?, onSelect: (MediaSource) -> Void)
-    case multi(selectedMediaSourceIds: Binding<Set<PersistentIdentifier>>)
+    case single(selectedID: String?, onSelect: (MediaSource) -> Void)
+    case multi(selectedMediaSourceIds: Binding<Set<String>>)
 }
 
 struct MediaSourcePickerSheet: View {
@@ -25,7 +24,7 @@ struct MediaSourcePickerSheet: View {
                 let pad = MediaSourceGridLayout.sidePadding(for: geometry.size.width)
 
                 ScrollView {
-                    MediaSourceGridView(mediaSources: self.mediaSources.sorted(by: { $0.order < $1.order })) { mediaSources in
+                    MediaSourceGridView(mediaSources: self.mediaSources.sorted(by: { $0.sortOrder < $1.sortOrder })) { mediaSources in
                         self.mediaSourceButton(mediaSources)
                     }
                     .padding(.top, -pad + 16)
@@ -44,9 +43,9 @@ struct MediaSourcePickerSheet: View {
     private func isSelected(_ mediaSource: MediaSource) -> Bool {
         switch self.mediaSourcePickerMode {
         case let .single(selectedID, _):
-            return mediaSource.persistentModelID == selectedID
+            return mediaSource.id == selectedID
         case let .multi(selectedMediaSourceIds):
-            return selectedMediaSourceIds.wrappedValue.contains(mediaSource.persistentModelID)
+            return selectedMediaSourceIds.wrappedValue.contains(mediaSource.id)
         }
     }
 
@@ -56,10 +55,10 @@ struct MediaSourcePickerSheet: View {
             case let .single(_, onSelect):
                 onSelect(mediaSource)
             case let .multi(selectedMediaSourceIds):
-                if selectedMediaSourceIds.wrappedValue.contains(mediaSource.persistentModelID) {
-                    selectedMediaSourceIds.wrappedValue.remove(mediaSource.persistentModelID)
+                if selectedMediaSourceIds.wrappedValue.contains(mediaSource.id) {
+                    selectedMediaSourceIds.wrappedValue.remove(mediaSource.id)
                 } else {
-                    selectedMediaSourceIds.wrappedValue.insert(mediaSource.persistentModelID)
+                    selectedMediaSourceIds.wrappedValue.insert(mediaSource.id)
                 }
             }
         } label: {

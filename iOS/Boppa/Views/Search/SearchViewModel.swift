@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 
 @MainActor
 @Observable
@@ -17,6 +18,9 @@ class SearchViewModel {
     var selectedCategory: SearchCategory = .songs
     var availableCategories: [SearchCategory] = []
 
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
+
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
         category: "SearchViewModel"
@@ -32,15 +36,14 @@ class SearchViewModel {
 
     private static let selectedMediaSourceKey = "search.selectedMediaSourceId"
 
-    func loadSources(modelContext: ModelContext) {
-        var descriptor = FetchDescriptor<MediaSource>(
-            predicate: #Predicate { $0.isEnabled }
-        )
-        descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
-        self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+    func loadSources() {
+        let sources = (try? database.read { db in
+            try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
+        }) ?? []
+        self.mediaSources = sources
 
         if let current = self.selectedMediaSource,
-           let match = self.mediaSources.first(where: { $0.persistentModelID == current.persistentModelID })
+           let match = self.mediaSources.first(where: { $0.id == current.id })
         {
             self.selectedMediaSource = match
         } else if let savedId = UserDefaults.standard.string(forKey: Self.selectedMediaSourceKey),

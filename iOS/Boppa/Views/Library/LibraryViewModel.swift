@@ -1,16 +1,20 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 
 @MainActor
 @Observable
 class LibraryViewModel {
     var mediaSources: [MediaSource] = []
-    var visibleMediaSourceIds: Set<PersistentIdentifier> = []
+    var visibleMediaSourceIds: Set<String> = []
     var showFilterSheet = false
     var isPinnedExpanded = false
     private var allPinnedTracklists: [StoredTracklist] = []
     private var hasSetInitialPinnedState = false
+
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
 
     var pinnedTracklists: [StoredTracklist] {
         let visibleIds = self.visibleMediaSourceStringIds
@@ -44,15 +48,14 @@ class LibraryViewModel {
         }
     }
 
-    func loadSources(modelContext: ModelContext) {
-        var descriptor = FetchDescriptor<MediaSource>(
-            predicate: #Predicate { $0.isEnabled }
-        )
-        descriptor.sortBy = [SortDescriptor(\MediaSource.order)]
+    func loadSources() {
+        let newSources = (try? database.read { db in
+            try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
+        }) ?? []
 
-        let oldIds = Set(self.mediaSources.map(\.persistentModelID))
-        self.mediaSources = (try? modelContext.fetch(descriptor)) ?? []
-        let newIds = Set(self.mediaSources.map(\.persistentModelID))
+        let oldIds = Set(self.mediaSources.map(\.id))
+        self.mediaSources = newSources
+        let newIds = Set(newSources.map(\.id))
 
         let added = newIds.subtracting(oldIds)
         let removed = oldIds.subtracting(newIds)
@@ -64,14 +67,13 @@ class LibraryViewModel {
             self.visibleMediaSourceIds = newIds
         }
 
-        self.loadPinnedTracklists(modelContext: modelContext)
+        self.loadPinnedTracklists()
     }
 
-    func loadPinnedTracklists(modelContext: ModelContext) {
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.isPinned }
-        )
-        self.allPinnedTracklists = (try? modelContext.fetch(descriptor)) ?? []
+    func loadPinnedTracklists() {
+        self.allPinnedTracklists = (try? database.read { db in
+            try StoredTracklist.where(\.isPinned).fetchAll(db)
+        }) ?? []
         if !self.hasSetInitialPinnedState {
             self.hasSetInitialPinnedState = true
             self.isPinnedExpanded = !self.pinnedTracklists.isEmpty
@@ -79,7 +81,7 @@ class LibraryViewModel {
     }
 
     var filteredSources: [MediaSource] {
-        self.mediaSources.filter { self.visibleMediaSourceIds.contains($0.persistentModelID) }
+        self.mediaSources.filter { self.visibleMediaSourceIds.contains($0.id) }
     }
 
     var visibleMediaSourceStringIds: Set<String> {

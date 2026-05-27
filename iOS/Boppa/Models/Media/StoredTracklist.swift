@@ -1,24 +1,24 @@
 import Foundation
-import SwiftData
+import SQLiteData
 
-@Model
-final class StoredTracklist {
-    var id: String
+@Table("tracklists")
+nonisolated struct StoredTracklist: Identifiable {
+    let id: Int
+    var mediaId: String
+    var mediaSourceId: String
     var name: String
     var subtitle: String?
-    var mediaSourceId: String
     var artworkUrl: String?
     var tracklistType: String
-    var metadataJSON: Data = Data()
-    var artistsJSON: Data = Data()
-    var fromArtistJSON: Data = Data()
-    var isPinned: Bool = false
-    var prevId: String?
-    var nextId: String?
+    var metadataJSON: Data
+    var artistsJSON: Data
+    var fromArtistJSON: Data
+    var isPinned: Bool
+    var prevId: Int?
+    var nextId: Int?
+}
 
-    @Relationship(deleteRule: .cascade)
-    var tracks: [StoredTrack] = []
-
+extension StoredTracklist {
     var metadata: [String: Any] {
         guard let dict = try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any] else {
             return [:]
@@ -57,32 +57,6 @@ final class StoredTracklist {
             artworkUrl: data["artworkUrl"] as? String,
             metadata: data["metadata"] as? [String: Any] ?? [:]
         )
-    }
-
-    init(
-        id: String,
-        name: String,
-        subtitle: String? = nil,
-        mediaSourceId: String,
-        artworkUrl: String? = nil,
-        tracklistType: String,
-        metadata: [String: Any] = [:],
-        artists: [Artist] = [],
-        fromArtist: Artist? = nil
-    ) {
-        self.id = id
-        self.name = name
-        self.subtitle = subtitle
-        self.mediaSourceId = mediaSourceId
-        self.artworkUrl = artworkUrl
-        self.tracklistType = tracklistType
-        self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
-        self.artistsJSON = StoredTracklist.encodeArtists(artists)
-        self.fromArtistJSON = StoredTracklist.encodeArtist(fromArtist)
-    }
-
-    var trackCount: Int {
-        self.tracks.count
     }
 
     static func encodeArtists(_ artists: [Artist]) -> Data {

@@ -1,9 +1,10 @@
 import Foundation
-import SwiftData
+import SQLiteData
 
-@Model
-final class StoredTrack {
-    var id: String
+@Table("tracks")
+nonisolated struct StoredTrack: Identifiable {
+    let id: Int
+    var mediaId: String
     var mediaSourceId: String
     var title: String
     var subtitle: String?
@@ -11,13 +12,11 @@ final class StoredTrack {
     var artworkUrl: String?
     var url: String?
     var metadataJSON: Data
-    var artistsJSON: Data = Data()
-    var albumsJSON: Data = Data()
-    var sortOrder: Int
+    var artistsJSON: Data
+    var albumsJSON: Data
+}
 
-    @Relationship(inverse: \StoredTracklist.tracks)
-    var tracklist: StoredTracklist?
-
+extension StoredTrack {
     var metadata: [String: Any] {
         guard let dict = try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any] else {
             return [:]
@@ -63,35 +62,9 @@ final class StoredTrack {
         }
     }
 
-    init(
-        id: String,
-        mediaSourceId: String,
-        title: String,
-        subtitle: String? = nil,
-        duration: Int? = nil,
-        artworkUrl: String? = nil,
-        url: String? = nil,
-        metadata: [String: Any] = [:],
-        artists: [Artist] = [],
-        albums: [Tracklist] = [],
-        sortOrder: Int = 0
-    ) {
-        self.id = id
-        self.mediaSourceId = mediaSourceId
-        self.title = title
-        self.subtitle = subtitle
-        self.duration = duration
-        self.artworkUrl = artworkUrl
-        self.url = url
-        self.metadataJSON = (try? JSONSerialization.data(withJSONObject: metadata)) ?? Data()
-        self.artistsJSON = StoredTrack.encodeArtists(artists)
-        self.albumsJSON = StoredTrack.encodeAlbums(albums)
-        self.sortOrder = sortOrder
-    }
-
     func toTrack() -> Track {
         Track(
-            mediaId: self.id,
+            mediaId: self.mediaId,
             mediaSourceId: self.mediaSourceId,
             title: self.title,
             subtitle: self.subtitle,
@@ -104,24 +77,9 @@ final class StoredTrack {
         )
     }
 
-    static func from(_ track: Track, sortOrder: Int) -> StoredTrack {
-        StoredTrack(
-            id: track.mediaId,
-            mediaSourceId: track.mediaSourceId,
-            title: track.title,
-            subtitle: track.subtitle,
-            duration: track.duration,
-            artworkUrl: track.artworkUrl,
-            url: track.url,
-            metadata: track.metadata,
-            artists: track.artists,
-            albums: track.albums,
-            sortOrder: sortOrder
-        )
-    }
-
     func identityMatches(_ track: Track) -> Bool {
-        self.title == track.title
+        self.mediaId == track.mediaId
+            && self.title == track.title
             && self.subtitle == track.subtitle
             && self.url == track.url
             && self.mediaSourceId == track.mediaSourceId
@@ -136,15 +94,7 @@ final class StoredTrack {
             && self.albums == track.albums
     }
 
-    func updateContent(from track: Track) {
-        self.duration = track.duration
-        self.artworkUrl = track.artworkUrl
-        self.metadataJSON = (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
-        self.artistsJSON = StoredTrack.encodeArtists(track.artists)
-        self.albumsJSON = StoredTrack.encodeAlbums(track.albums)
-    }
-
-    private static func encodeArtists(_ artists: [Artist]) -> Data {
+    static func encodeArtists(_ artists: [Artist]) -> Data {
         guard !artists.isEmpty else { return Data() }
         let raw: [[String: Any]] = artists.map { artist in
             var data: [String: Any] = ["id": artist.mediaId, "name": artist.name]
@@ -155,7 +105,7 @@ final class StoredTrack {
         return (try? JSONSerialization.data(withJSONObject: raw)) ?? Data()
     }
 
-    private static func encodeAlbums(_ albums: [Tracklist]) -> Data {
+    static func encodeAlbums(_ albums: [Tracklist]) -> Data {
         guard !albums.isEmpty else { return Data() }
         let raw: [[String: Any]] = albums.map { album in
             var data: [String: Any] = ["id": album.mediaId, "title": album.title]

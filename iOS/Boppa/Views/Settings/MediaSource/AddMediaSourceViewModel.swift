@@ -1,5 +1,6 @@
+import Dependencies
 import Foundation
-import SwiftData
+import SQLiteData
 
 @MainActor
 @Observable
@@ -9,11 +10,14 @@ class AddMediaSourceViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
+
     var isAddDisabled: Bool {
         self.mediaSourceUrl.isEmpty || self.configProviderUrl.isEmpty || self.isLoading
     }
 
-    func addMediaSource(modelContext: ModelContext) async -> Bool {
+    func addMediaSource() async -> Bool {
         self.isLoading = true
         self.errorMessage = nil
 
@@ -26,15 +30,20 @@ class AddMediaSourceViewModel {
                 mediaSourceUrl: formattedSourceUrl
             )
 
-            let existingDescriptor = FetchDescriptor<MediaSource>()
-            let existingSources = (try? modelContext.fetch(existingDescriptor)) ?? []
-            let maxOrder = existingSources.map(\.order).max() ?? -1
+            let startOrder: Int = {
+                let existing = try? database.read { db in
+                    try MediaSource.order { $0.sortOrder.desc() }.fetchOne(db)?.sortOrder
+                }
+                return (existing ?? nil ?? -1) + 1
+            }()
 
-            for (index, mediaSource) in mediaSources.enumerated() {
-                mediaSource.order = maxOrder + 1 + index
-                modelContext.insert(mediaSource)
+            try await database.write { db in
+                for (index, var mediaSource) in mediaSources.enumerated() {
+                    mediaSource.sortOrder = startOrder + index
+                    try MediaSource.insert { mediaSource }.execute(db)
+                }
             }
-            try modelContext.save()
+
             let addedNames = mediaSources.map(\.name)
             NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["names": addedNames])
 

@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct TracklistListView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
     @State private var scrollHandler = SearchBarScrollHandler()
@@ -142,7 +141,7 @@ struct TracklistListView: View {
             }
             Button("Remove", role: .destructive) {
                 if let tracklist = self.tracklistToDelete {
-                    self.viewModel.deleteTracklistById(tracklist.id, modelContext: self.modelContext)
+                    self.viewModel.deleteTracklistById(tracklist.id)
                     self.tracklistToDelete = nil
                 }
             }
@@ -156,8 +155,7 @@ struct TracklistListView: View {
                 self.viewModel.loadSortMode(type: self.type)
                 self.viewModel.loadFromLibrary(
                     type: self.type,
-                    visibleMediaSourceIds: self.visibleMediaSourceIds,
-                    modelContext: self.modelContext
+                    visibleMediaSourceIds: self.visibleMediaSourceIds
                 )
             } else if let artist = self.artist,
                       let artistDetail = self.artistDetail,
@@ -218,7 +216,7 @@ struct TracklistListView: View {
                     if self.viewModel.isEditing {
                         HStack(spacing: 0) {
                             Button {
-                                self.viewModel.togglePin(tracklist: tracklist, modelContext: self.modelContext)
+                                self.viewModel.togglePin(tracklist: tracklist)
                             } label: {
                                 Image(systemName: tracklist.storedTracklist?.isPinned == true ? "pin.slash.fill" : "pin.fill")
                                     .font(.system(size: 18))
@@ -267,7 +265,7 @@ struct TracklistListView: View {
                     }
                 }
                 .onMove { source, destination in
-                    self.viewModel.moveTracklist(from: source, to: destination, modelContext: self.modelContext)
+                    self.viewModel.moveTracklist(from: source, to: destination)
                 }
             }
             .listStyle(.plain)

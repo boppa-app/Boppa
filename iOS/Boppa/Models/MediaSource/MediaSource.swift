@@ -1,28 +1,35 @@
 import Foundation
-import SwiftData
+import SQLiteData
 
-@Model
-final class MediaSource {
+@Table("mediaSources")
+nonisolated struct MediaSource: Identifiable, Hashable {
+    @Column(primaryKey: true)
     var id: String
     var name: String
     var url: String
     var configData: Data
-    var order: Int
+    var sortOrder: Int
     var isEnabled: Bool
-    var contextValues: [String: String] = [:]
+    var contextValuesJSON: String
+}
 
+extension MediaSource {
     var config: MediaSourceConfig {
         try! JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
 
-    init(id: String, name: String, url: String, config: MediaSourceConfig, order: Int = 0, isEnabled: Bool = true) {
+    var contextValues: [String: String] {
+        (try? JSONDecoder().decode([String: String].self, from: Data(self.contextValuesJSON.utf8))) ?? [:]
+    }
+
+    init(id: String, name: String, url: String, config: MediaSourceConfig, sortOrder: Int = 0, isEnabled: Bool = true) {
         self.id = id
         self.name = name
         self.url = url
         self.configData = (try? JSONEncoder().encode(config)) ?? Data()
-        self.order = order
+        self.sortOrder = sortOrder
         self.isEnabled = isEnabled
-        self.contextValues = [:]
+        self.contextValuesJSON = "{}"
     }
 
     static func fromConfigData(_ data: Data) throws -> [MediaSource] {

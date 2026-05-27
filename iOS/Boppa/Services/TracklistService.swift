@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
@@ -15,24 +16,23 @@ struct TracklistResponse {
 class TracklistService {
     static let shared = TracklistService()
 
+    @Dependency(\.defaultDatabase) var database
+
     private let paginated = PaginatedScriptExecutor.shared
 
     private init() {}
 
-    func resolveMediaSource(mediaSourceId: String, modelContext: ModelContext) -> MediaSource? {
-        let descriptor = FetchDescriptor<MediaSource>(
-            predicate: #Predicate { $0.id == mediaSourceId }
-        )
-        return try? modelContext.fetch(descriptor).first
+    func resolveMediaSource(mediaSourceId: String) -> MediaSource? {
+        try? database.read { db in
+            try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db)
+        }
     }
 
     func fetchTracklist(
         tracklist: Tracklist,
-        modelContext: ModelContext,
         previousResult: [String: Any]? = nil
     ) async throws -> TracklistResponse {
-        guard let mediaSource = self.resolveMediaSource(mediaSourceId: tracklist.mediaSourceId, modelContext: modelContext)
-        else {
+        guard let mediaSource = resolveMediaSource(mediaSourceId: tracklist.mediaSourceId) else {
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
 
@@ -117,21 +117,17 @@ class TracklistService {
         let songs = (jsResult["songs"] as? [[String: Any]])?.compactMap {
             self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId)
         }
-
         let albums = (jsResult["albums"] as? [[String: Any]])?.compactMap {
             self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album)
         }
-
         let videos = (jsResult["videos"] as? [[String: Any]])?.compactMap {
             self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId)
         }
-
         let playlists = (jsResult["playlists"] as? [[String: Any]])?.compactMap {
             self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist)
         }
 
         let metadata = jsResult["metadata"] as? [String: Any] ?? [:]
-
         let sectionOrder: [ArtistDetailSection] = (jsResult["__keyOrder"] as? [String] ?? [])
             .compactMap { ArtistDetailSection(rawValue: $0) }
 
@@ -157,18 +153,10 @@ class TracklistService {
         var itemParams: [String: Any] = [:]
         itemParams["name"] = artist.name
         itemParams["artworkUrl"] = artist.artworkUrl ?? ""
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
-        for (key, value) in artistDetail.metadata {
-            itemParams[key] = value
-        }
+        for (key, value) in artist.metadata { itemParams[key] = value }
+        for (key, value) in artistDetail.metadata { itemParams[key] = value }
 
-        let context = self.paginated.buildJSContext(
-            params: ["item": itemParams],
-            previousResult: nil
-        )
-
+        let context = self.paginated.buildJSContext(params: ["item": itemParams], previousResult: nil)
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             context: context,
@@ -201,18 +189,10 @@ class TracklistService {
         var itemParams: [String: Any] = [:]
         itemParams["name"] = artist.name
         itemParams["artworkUrl"] = artist.artworkUrl ?? ""
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
-        for (key, value) in artistDetail.metadata {
-            itemParams[key] = value
-        }
+        for (key, value) in artist.metadata { itemParams[key] = value }
+        for (key, value) in artistDetail.metadata { itemParams[key] = value }
 
-        let context = self.paginated.buildJSContext(
-            params: ["item": itemParams],
-            previousResult: nil
-        )
-
+        let context = self.paginated.buildJSContext(params: ["item": itemParams], previousResult: nil)
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             context: context,
@@ -241,7 +221,6 @@ class TracklistService {
             logger.warning("No \(scriptName) script for '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
-
         guard let artist = tracklist.fromArtist else {
             logger.warning("No artist for \(scriptName) on '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
@@ -252,13 +231,9 @@ class TracklistService {
         var itemParams: [String: Any] = [:]
         itemParams["name"] = artist.name
         itemParams["artworkUrl"] = artist.artworkUrl ?? ""
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
+        for (key, value) in artist.metadata { itemParams[key] = value }
         if let artistDetail = tracklist.artistDetail {
-            for (key, value) in artistDetail.metadata {
-                itemParams[key] = value
-            }
+            for (key, value) in artistDetail.metadata { itemParams[key] = value }
         }
 
         let page = try await self.paginated.executePage(
@@ -293,9 +268,7 @@ class TracklistService {
         var itemParams: [String: Any] = [:]
         itemParams["subtitle"] = tracklist.subtitle ?? ""
         itemParams["artworkUrl"] = tracklist.artworkUrl ?? ""
-        for (key, value) in tracklist.metadata {
-            itemParams[key] = value
-        }
+        for (key, value) in tracklist.metadata { itemParams[key] = value }
 
         let page = try await self.paginated.executePage(
             script: script,
@@ -329,9 +302,7 @@ class TracklistService {
         var itemParams: [String: Any] = [:]
         itemParams["user"] = tracklist.subtitle ?? ""
         itemParams["artworkUrl"] = tracklist.artworkUrl ?? ""
-        for (key, value) in tracklist.metadata {
-            itemParams[key] = value
-        }
+        for (key, value) in tracklist.metadata { itemParams[key] = value }
 
         let page = try await self.paginated.executePage(
             script: script,
@@ -348,40 +319,106 @@ class TracklistService {
         return TracklistResponse(tracks: tracks, paginationContext: page.paginationContext)
     }
 
-    func persistTracks(_ tracks: [Track], into tracklist: StoredTracklist, modelContext: ModelContext, pruneStale: Bool) {
-        let existingTracks = tracklist.tracks
+    func persistTracks(_ tracks: [Track], into tracklist: StoredTracklist, db: Database, pruneStale: Bool) throws {
+        let existingJoins = try TracklistTrack
+            .where { $0.tracklistId.eq(tracklist.id) }
+            .order { $0.sortOrder }
+            .fetchAll(db)
+
+        let existingTracks = try existingJoins.map { join -> StoredTrack in
+            guard let track = try StoredTrack.where { $0.id.eq(join.trackId) }.fetchOne(db) else {
+                throw NSError(domain: "TracklistService", code: 10, userInfo: [NSLocalizedDescriptionKey: "Track \(join.trackId) not found"])
+            }
+            return track
+        }
 
         for (index, track) in tracks.enumerated() {
             if let match = existingTracks.first(where: { $0.identityMatches(track) }) {
-                match.sortOrder = index
+                if let join = existingJoins.first(where: { $0.trackId == match.id }), join.sortOrder != index {
+                    try TracklistTrack.update { $0.sortOrder = index }
+                        .where { $0.id.eq(join.id) }
+                        .execute(db)
+                }
                 if !match.contentMatches(track) {
-                    match.updateContent(from: track)
+                    try StoredTrack.update {
+                        $0.title = track.title
+                        $0.subtitle = track.subtitle
+                        $0.duration = track.duration
+                        $0.artworkUrl = track.artworkUrl
+                        $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
+                        $0.artistsJSON = StoredTrack.encodeArtists(track.artists)
+                        $0.albumsJSON = StoredTrack.encodeAlbums(track.albums)
+                    }
+                    .where { $0.id.eq(match.id) }
+                    .execute(db)
                 }
             } else {
-                let stored = StoredTrack.from(track, sortOrder: index)
-                stored.tracklist = tracklist
-                modelContext.insert(stored)
+                let existingTrack = try StoredTrack
+                    .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
+                    .fetchOne(db)
+
+                let trackId: Int
+                if let existing = existingTrack {
+                    trackId = existing.id
+                    if !existing.contentMatches(track) {
+                        try StoredTrack.update {
+                            $0.title = track.title
+                            $0.subtitle = track.subtitle
+                            $0.duration = track.duration
+                            $0.artworkUrl = track.artworkUrl
+                            $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
+                            $0.artistsJSON = StoredTrack.encodeArtists(track.artists)
+                            $0.albumsJSON = StoredTrack.encodeAlbums(track.albums)
+                        }
+                        .where { $0.id.eq(existing.id) }
+                        .execute(db)
+                    }
+                } else {
+                    try StoredTrack.insert {
+                        StoredTrack.Draft(
+                            mediaId: track.mediaId,
+                            mediaSourceId: track.mediaSourceId,
+                            title: track.title,
+                            subtitle: track.subtitle,
+                            duration: track.duration,
+                            artworkUrl: track.artworkUrl,
+                            url: track.url,
+                            metadataJSON: (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data(),
+                            artistsJSON: StoredTrack.encodeArtists(track.artists),
+                            albumsJSON: StoredTrack.encodeAlbums(track.albums)
+                        )
+                    }.execute(db)
+                    trackId = Int(db.lastInsertedRowID)
+                }
+
+                try TracklistTrack.insert {
+                    TracklistTrack.Draft(tracklistId: tracklist.id, trackId: trackId, sortOrder: index)
+                } onConflictDoUpdate: { $0.sortOrder = index }
+                .execute(db)
             }
         }
 
         if pruneStale {
             for existing in existingTracks {
                 if !tracks.contains(where: { existing.identityMatches($0) }) {
-                    modelContext.delete(existing)
+                    try TracklistTrack.where {
+                        $0.tracklistId.eq(tracklist.id).and($0.trackId.eq(existing.id))
+                    }.delete().execute(db)
+
+                    let usageCount = try TracklistTrack.where { $0.trackId.eq(existing.id) }.fetchAll(db).count
+                    if usageCount == 0 {
+                        try StoredTrack.where { $0.id.eq(existing.id) }.delete().execute(db)
+                    }
                 }
             }
         }
-
-        try? modelContext.save()
     }
 
     @MainActor func saveTracklistToLibrary(
         tracklist: Tracklist,
-        modelContext: ModelContext,
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> StoredTracklist {
-        guard let mediaSource = self.resolveMediaSource(mediaSourceId: tracklist.mediaSourceId, modelContext: modelContext)
-        else {
+        guard let mediaSource = resolveMediaSource(mediaSourceId: tracklist.mediaSourceId) else {
             throw NSError(domain: "TracklistService", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
         }
 
@@ -401,12 +438,11 @@ class TracklistService {
             }
         )
 
-        let stored = self.upsertStoredTracklist(
-            tracklist: tracklist,
-            modelContext: modelContext
-        )
-
-        self.persistTracks(tracks, into: stored, modelContext: modelContext, pruneStale: true)
+        let stored = try await database.write { db in
+            let stored = try self.upsertStoredTracklist(tracklist: tracklist, db: db)
+            try self.persistTracks(tracks, into: stored, db: db, pruneStale: true)
+            return stored
+        }
 
         logger.info("Saved tracklist '\(tracklist.title)' with \(tracks.count) track(s) to library")
 
@@ -422,16 +458,12 @@ class TracklistService {
             script = config.data?.getPlaylist?.script
             itemParams["user"] = tracklist.subtitle ?? ""
             itemParams["artworkUrl"] = tracklist.artworkUrl ?? ""
-            for (key, value) in tracklist.metadata {
-                itemParams[key] = value
-            }
+            for (key, value) in tracklist.metadata { itemParams[key] = value }
         case .album:
             script = config.data?.getAlbum?.script
             itemParams["subtitle"] = tracklist.subtitle ?? ""
             itemParams["artworkUrl"] = tracklist.artworkUrl ?? ""
-            for (key, value) in tracklist.metadata {
-                itemParams[key] = value
-            }
+            for (key, value) in tracklist.metadata { itemParams[key] = value }
         default:
             throw NSError(domain: "TracklistService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot save this tracklist type to library"])
         }
@@ -443,66 +475,87 @@ class TracklistService {
         return (script, itemParams)
     }
 
-    @MainActor private func upsertStoredTracklist(
-        tracklist: Tracklist,
-        modelContext: ModelContext
-    ) -> StoredTracklist {
-        if let existing = self.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: modelContext) {
-            existing.name = tracklist.title
-            existing.subtitle = tracklist.subtitle
-            existing.artworkUrl = tracklist.artworkUrl
-            existing.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
-            existing.artistsJSON = StoredTracklist.encodeArtists(tracklist.artists)
-            existing.fromArtistJSON = StoredTracklist.encodeArtist(tracklist.fromArtist)
-            return existing
+    func upsertStoredTracklist(tracklist: Tracklist, db: Database) throws -> StoredTracklist {
+        let existingTracklist = try StoredTracklist
+            .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
+            .fetchOne(db)
+        if let existing = existingTracklist {
+            try StoredTracklist.update {
+                $0.name = tracklist.title
+                $0.subtitle = tracklist.subtitle
+                $0.artworkUrl = tracklist.artworkUrl
+                $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
+                $0.artistsJSON = StoredTracklist.encodeArtists(tracklist.artists)
+                $0.fromArtistJSON = StoredTracklist.encodeArtist(tracklist.fromArtist)
+            }
+            .where { $0.id.eq(existing.id) }
+            .execute(db)
+
+            return try StoredTracklist.where { $0.id.eq(existing.id) }.fetchOne(db) ?? existing
         }
 
         let typeString = tracklist.tracklistType.rawValue
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.tracklistType == typeString && $0.nextId == nil }
-        )
-        let currentTail = (try? modelContext.fetch(descriptor))?.first
+        let currentTail = try StoredTracklist
+            .where { $0.tracklistType.eq(typeString).and($0.nextId.is(nil)) }
+            .fetchOne(db)
 
-        let stored = StoredTracklist(
-            id: tracklist.mediaId,
-            name: tracklist.title,
-            subtitle: tracklist.subtitle,
-            mediaSourceId: tracklist.mediaSourceId,
-            artworkUrl: tracklist.artworkUrl,
-            tracklistType: typeString,
-            metadata: tracklist.metadata,
-            artists: tracklist.artists,
-            fromArtist: tracklist.fromArtist
-        )
-        stored.prevId = currentTail?.id
-        stored.nextId = nil
-        modelContext.insert(stored)
+        try StoredTracklist.insert {
+            StoredTracklist.Draft(
+                mediaId: tracklist.mediaId,
+                mediaSourceId: tracklist.mediaSourceId,
+                name: tracklist.title,
+                subtitle: tracklist.subtitle,
+                artworkUrl: tracklist.artworkUrl,
+                tracklistType: typeString,
+                metadataJSON: (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data(),
+                artistsJSON: StoredTracklist.encodeArtists(tracklist.artists),
+                fromArtistJSON: StoredTracklist.encodeArtist(tracklist.fromArtist),
+                isPinned: false,
+                prevId: currentTail?.id,
+                nextId: nil
+            )
+        }.execute(db)
+
+        let insertedId = Int(db.lastInsertedRowID)
 
         if let tail = currentTail {
-            tail.nextId = stored.id
+            try StoredTracklist.update { $0.nextId = #bind(Optional(insertedId)) }
+                .where { $0.id.eq(tail.id) }
+                .execute(db)
         }
 
-        try? modelContext.save()
-        return stored
+        return try StoredTracklist.where { $0.id.eq(insertedId) }.fetchOne(db)!
     }
 
-    @MainActor func deleteStoredTracklist(_ storedTracklist: StoredTracklist, modelContext: ModelContext) {
-        modelContext.delete(storedTracklist)
-        try? modelContext.save()
+    func deleteStoredTracklist(_ storedTracklist: StoredTracklist) throws {
+        try database.write { db in
+            try StoredTracklist.where { $0.id.eq(storedTracklist.id) }.delete().execute(db)
+        }
         logger.info("Deleted stored tracklist '\(storedTracklist.name)'")
     }
 
-    func findStoredTracklist(mediaId: String, mediaSourceId: String, modelContext: ModelContext) -> StoredTracklist? {
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.id == mediaId && $0.mediaSourceId == mediaSourceId }
-        )
-        return try? modelContext.fetch(descriptor).first
+    func loadTracksForTracklist(_ tracklist: StoredTracklist) -> [StoredTrack] {
+        (try? database.read { db in
+            try TracklistTrack
+                .where { $0.tracklistId.eq(tracklist.id) }
+                .join(StoredTrack.all) { tt, t in tt.trackId.eq(t.id) }
+                .order { tt, _ in tt.sortOrder }
+                .select { _, t in t }
+                .fetchAll(db)
+        }) ?? []
     }
 
-    func findStoredTracklistByStoredId(_ storedId: String, modelContext: ModelContext) -> StoredTracklist? {
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.id == storedId }
-        )
-        return try? modelContext.fetch(descriptor).first
+    func findStoredTracklist(mediaId: String, mediaSourceId: String) -> StoredTracklist? {
+        try? database.read { db in
+            try StoredTracklist
+                .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+                .fetchOne(db)
+        }
+    }
+
+    func findStoredTracklistById(_ id: Int) -> StoredTracklist? {
+        try? database.read { db in
+            try StoredTracklist.where { $0.id.eq(id) }.fetchOne(db)
+        }
     }
 }

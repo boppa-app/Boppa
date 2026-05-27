@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 import SwiftUI
 
 private let logger = Logger(
@@ -21,6 +22,9 @@ class TracklistListViewModel {
     var errorMessage: String?
     var sortMode: SortMode = .defaultOrder
     var isEditing = false
+
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
@@ -93,46 +97,63 @@ class TracklistListViewModel {
         self.isEditing = false
     }
 
-    func deleteTracklistById(_ id: UUID, modelContext: ModelContext) {
+    func deleteTracklistById(_ id: UUID) {
         guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
-            let prevStored = stored.prevId.flatMap { TracklistService.shared.findStoredTracklistByStoredId($0, modelContext: modelContext) }
-            let nextStored = stored.nextId.flatMap { TracklistService.shared.findStoredTracklistByStoredId($0, modelContext: modelContext) }
-            prevStored?.nextId = stored.nextId
-            nextStored?.prevId = stored.prevId
-
-            TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
+            try? database.write { db in
+                if let prevId = stored.prevId {
+                    try StoredTracklist.update { $0.nextId = stored.nextId }
+                        .where { $0.id.eq(prevId) }
+                        .execute(db)
+                }
+                if let nextId = stored.nextId {
+                    try StoredTracklist.update { $0.prevId = stored.prevId }
+                        .where { $0.id.eq(nextId) }
+                        .execute(db)
+                }
+                try StoredTracklist.where { $0.id.eq(stored.id) }.delete().execute(db)
+            }
         }
         self.tracklists.remove(at: index)
-        try? modelContext.save()
     }
 
-    func moveTracklist(from source: IndexSet, to destination: Int, modelContext: ModelContext) {
+    func moveTracklist(from source: IndexSet, to destination: Int) {
         self.tracklists.move(fromOffsets: source, toOffset: destination)
-        self.persistDLLOrder(modelContext: modelContext)
+        self.persistDLLOrder()
     }
 
-    func togglePin(tracklist: Tracklist, modelContext: ModelContext) {
+    func togglePin(tracklist: Tracklist) {
         guard let stored = tracklist.storedTracklist else { return }
-        stored.isPinned.toggle()
-        try? modelContext.save()
-        NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
-
-        if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
-            self.tracklists[index] = Tracklist(storedTracklist: stored)
+        let newIsPinned = !stored.isPinned
+        try? database.write { db in
+            try StoredTracklist.update { $0.isPinned = newIsPinned }
+                .where { $0.id.eq(stored.id) }
+                .execute(db)
         }
-
-        logger.info("\(stored.isPinned ? "Pinned" : "Unpinned") tracklist '\(stored.name)'")
+        if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
+            var updatedStored = stored
+            updatedStored.isPinned = newIsPinned
+            self.tracklists[index] = Tracklist(storedTracklist: updatedStored)
+        }
+        NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
+        logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(stored.name)'")
     }
 
-    private func persistDLLOrder(modelContext: ModelContext) {
-        for (index, tracklist) in self.tracklists.enumerated() {
-            guard let stored = tracklist.storedTracklist else { continue }
-            stored.prevId = index > 0 ? self.tracklists[index - 1].storedTracklist?.id : nil
-            stored.nextId = index < self.tracklists.count - 1 ? self.tracklists[index + 1].storedTracklist?.id : nil
+    private func persistDLLOrder() {
+        try? database.write { db in
+            for (index, tracklist) in self.tracklists.enumerated() {
+                guard let stored = tracklist.storedTracklist else { continue }
+                let prevId = index > 0 ? self.tracklists[index - 1].storedTracklist?.id : nil
+                let nextId = index < self.tracklists.count - 1 ? self.tracklists[index + 1].storedTracklist?.id : nil
+                try StoredTracklist.update {
+                    $0.prevId = prevId
+                    $0.nextId = nextId
+                }
+                .where { $0.id.eq(stored.id) }
+                .execute(db)
+            }
         }
-        try? modelContext.save()
     }
 
     func loadFromArtist(
@@ -151,22 +172,18 @@ class TracklistListViewModel {
         }
     }
 
-    func loadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>, modelContext: ModelContext) {
+    func loadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
         let typeString: String
         switch type {
-        case .albums:
-            typeString = "album"
-        case .playlists:
-            typeString = "playlist"
+        case .albums: typeString = "album"
+        case .playlists: typeString = "playlist"
         }
 
-        let descriptor = FetchDescriptor<StoredTracklist>(
-            predicate: #Predicate { $0.tracklistType == typeString }
-        )
+        let allStored = (try? database.read { db in
+            try StoredTracklist.where { $0.tracklistType.eq(typeString) }.fetchAll(db)
+        }) ?? []
 
-        let allStored = (try? modelContext.fetch(descriptor)) ?? []
         let filtered = allStored.filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-
         let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
         var ordered: [StoredTracklist] = []
 
@@ -184,7 +201,6 @@ class TracklistListViewModel {
         }
 
         self.tracklists = ordered.map { Tracklist(storedTracklist: $0) }
-
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 

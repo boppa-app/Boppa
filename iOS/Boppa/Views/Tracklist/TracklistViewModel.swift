@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 
 extension Notification.Name {
     static let tracklistPinChanged = Notification.Name("tracklistPinChanged")
@@ -25,6 +26,9 @@ class TracklistViewModel {
     var sortMode: SortMode = .defaultOrder
     var hasMorePages = false
     var pageLoadId = 0
+
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
 
     let searchHandler = FuzzySearchHandler<Track>()
 
@@ -53,22 +57,22 @@ class TracklistViewModel {
         self.isPersisted
     }
 
-    func load(modelContext: ModelContext) {
+    func load() {
         let stored = self.tracklist.storedTracklist
-            ?? TracklistService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId, modelContext: modelContext)
+            ?? TracklistService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
         if let stored {
             self.tracklist = Tracklist(storedTracklist: stored)
             self.isPersisted = true
-            self.loadFromCache(storedTracklist: stored, modelContext: modelContext)
+            self.loadFromCache(storedTracklist: stored)
         }
 
         if self.tracks.isEmpty {
-            self.fetchFirstPage(modelContext: modelContext)
+            self.fetchFirstPage()
         }
     }
 
-    func refresh(modelContext: ModelContext) {
+    func refresh() {
         guard self.isPersisted else { return }
         self.isRefreshing = true
 
@@ -76,7 +80,6 @@ class TracklistViewModel {
             do {
                 _ = try await TracklistService.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
-                    modelContext: modelContext,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
                         self.unsortedTracks = allTracksSoFar
@@ -104,9 +107,9 @@ class TracklistViewModel {
         }
     }
 
-    private func loadFromCache(storedTracklist: StoredTracklist, modelContext: ModelContext) {
-        let sortedTracks = storedTracklist.tracks.sorted { $0.sortOrder < $1.sortOrder }
-        self.unsortedTracks = sortedTracks.map { $0.toTrack() }
+    private func loadFromCache(storedTracklist: StoredTracklist) {
+        let storedTracks = TracklistService.shared.loadTracksForTracklist(storedTracklist)
+        self.unsortedTracks = storedTracks.map { $0.toTrack() }
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
     }
@@ -128,7 +131,7 @@ class TracklistViewModel {
         }
     }
 
-    private func fetchFirstPage(modelContext: ModelContext) {
+    private func fetchFirstPage() {
         self.fetchTask?.cancel()
         self.isLoading = true
         self.errorMessage = nil
@@ -137,7 +140,6 @@ class TracklistViewModel {
             do {
                 let response = try await TracklistService.shared.fetchTracklist(
                     tracklist: self.tracklist,
-                    modelContext: modelContext,
                     previousResult: nil
                 )
                 guard !Task.isCancelled else { return }
@@ -163,7 +165,7 @@ class TracklistViewModel {
         }
     }
 
-    func saveToLibrary(modelContext: ModelContext) {
+    func saveToLibrary() {
         guard !self.isSaving else { return }
         self.isSaving = true
 
@@ -171,7 +173,6 @@ class TracklistViewModel {
             do {
                 let stored = try await TracklistService.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
-                    modelContext: modelContext,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
                         self.unsortedTracks = allTracksSoFar
@@ -193,23 +194,27 @@ class TracklistViewModel {
         }
     }
 
-    func deleteFromLibrary(modelContext: ModelContext) {
+    func deleteFromLibrary() {
         guard let stored = self.tracklist.storedTracklist else { return }
-        TracklistService.shared.deleteStoredTracklist(stored, modelContext: modelContext)
+        try? TracklistService.shared.deleteStoredTracklist(stored)
         self.isPersisted = false
         logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
     }
 
-    func togglePin(modelContext: ModelContext) {
+    func togglePin() {
         guard let stored = self.tracklist.storedTracklist else { return }
-        stored.isPinned = !self.isPinned
-        try? modelContext.save()
-        self.isPinned.toggle()
+        let newIsPinned = !self.isPinned
+        try? database.write { db in
+            try StoredTracklist.update { $0.isPinned = newIsPinned }
+                .where { $0.id.eq(stored.id) }
+                .execute(db)
+        }
+        self.isPinned = newIsPinned
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
-        logger.info("\(self.isPinned ? "Pinned" : "Unpinned") tracklist '\(self.tracklist.title)'")
+        logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(self.tracklist.title)'")
     }
 
-    func loadNextPage(modelContext: ModelContext) {
+    func loadNextPage() {
         guard let paginationContext = self.paginationContext,
               !self.isLoading
         else {
@@ -222,7 +227,6 @@ class TracklistViewModel {
             do {
                 let response = try await TracklistService.shared.fetchTracklist(
                     tracklist: self.tracklist,
-                    modelContext: modelContext,
                     previousResult: paginationContext
                 )
 

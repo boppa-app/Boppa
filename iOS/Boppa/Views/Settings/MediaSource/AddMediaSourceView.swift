@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct AddMediaSourceView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel = AddMediaSourceViewModel()
@@ -98,7 +97,7 @@ struct AddMediaSourceView: View {
 
     private func addMediaSource() {
         Task {
-            let success = await viewModel.addMediaSource(modelContext: self.modelContext)
+            let success = await viewModel.addMediaSource()
             if success {
                 self.dismiss()
             }

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3A8D65D22F99BB380078E6B0 /* Ifrit in Frameworks */ = {isa = PBXBuildFile; productRef = F1E2CA112F996DBC000CA0FD /* Ifrit */; };
+		3A941D122FC6658D0061370B /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 3A941D112FC6658D0061370B /* SQLiteData */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A941D122FC6658D0061370B /* SQLiteData in Frameworks */,
 				3A8D65D22F99BB380078E6B0 /* Ifrit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -90,12 +92,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3A941D102FC6658D0061370B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		F1D734132F4284C300035B3B = {
 			isa = PBXGroup;
 			children = (
 				F1D7341E2F4284C300035B3B /* Boppa */,
 				F1D7342E2F4284C600035B3B /* BoppaTests */,
 				F1D734382F4284C600035B3B /* BoppaUITests */,
+				3A941D102FC6658D0061370B /* Frameworks */,
 				F1D7341D2F4284C300035B3B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -133,6 +143,7 @@
 			name = Boppa;
 			packageProductDependencies = (
 				F1E2CA112F996DBC000CA0FD /* Ifrit */,
+				3A941D112FC6658D0061370B /* SQLiteData */,
 			);
 			productName = Boppa;
 			productReference = F1D7341C2F4284C300035B3B /* Boppa.app */;
@@ -218,6 +229,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F1E2CA102F996DBC000CA0FD /* XCRemoteSwiftPackageReference "Ifrit" */,
+				3A941D0F2FC665700061370B /* XCRemoteSwiftPackageReference "sqlite-data" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F1D7341D2F4284C300035B3B /* Products */;
@@ -640,6 +652,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3A941D0F2FC665700061370B /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.2;
+			};
+		};
 		F1E2CA102F996DBC000CA0FD /* XCRemoteSwiftPackageReference "Ifrit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ukushu/Ifrit.git";
@@ -651,6 +671,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3A941D112FC6658D0061370B /* SQLiteData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3A941D0F2FC665700061370B /* XCRemoteSwiftPackageReference "sqlite-data" */;
+			productName = SQLiteData;
+		};
 		F1E2CA112F996DBC000CA0FD /* Ifrit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F1E2CA102F996DBC000CA0FD /* XCRemoteSwiftPackageReference "Ifrit" */;

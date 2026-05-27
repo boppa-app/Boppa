@@ -1,4 +1,4 @@
-import SwiftData
+import SQLiteData
 import SwiftUI
 import UIKit
 
@@ -6,20 +6,17 @@ import UIKit
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
-    let modelContainer: ModelContainer = {
-        let schema = Schema([MediaSource.self, StoredTracklist.self, StoredTrack.self, CachedSearchQuery.self])
-        let configuration = ModelConfiguration(schema: schema)
-        do {
-            return try ModelContainer(for: schema, configurations: [configuration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        do {
+            try prepareDependencies { dependencies in
+                dependencies.defaultDatabase = try .appDatabase()
+            }
+        } catch {
+            fatalError("Could not set up database: \(error)")
+        }
         return true
     }
 
@@ -44,15 +41,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-
         Task {
             // await AdBlockService.shared.loadContentRuleList()
             await ArtworkServer.shared.waitUntilReady()
-            MediaSourceContextProvider.shared.startMonitoring(modelContainer: appDelegate.modelContainer)
+            MediaSourceContextProvider.shared.startMonitoring()
 
             let rootView = ContentView()
-                .modelContainer(appDelegate.modelContainer)
                 .preferredColorScheme(.dark)
 
             let hostingController = UIHostingController(rootView: rootView)
@@ -62,7 +56,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.makeKeyAndVisible()
             self.window = window
 
-            WebViewPlaybackEngineRegistry.shared.start(modelContainer: appDelegate.modelContainer)
+            WebViewPlaybackEngineRegistry.shared.start()
         }
     }
 }

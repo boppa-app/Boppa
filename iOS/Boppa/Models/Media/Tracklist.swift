@@ -58,7 +58,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     init(storedTracklist: StoredTracklist) {
         let mediaSourceId = storedTracklist.mediaSourceId
         self.id = UUID()
-        self.mediaId = storedTracklist.id
+        self.mediaId = storedTracklist.mediaId
         self.mediaSourceId = mediaSourceId
         self.title = storedTracklist.name
         self.subtitle = storedTracklist.subtitle

@@ -1,8 +1,6 @@
-import SwiftData
 import SwiftUI
 
 struct LibraryView: View {
-    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = LibraryViewModel()
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
@@ -14,26 +12,26 @@ struct LibraryView: View {
                 self.sectionList
             }
             .onAppear {
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
                 self.isAtNavigationRoot = true
             }
             .onDisappear {
                 self.isAtNavigationRoot = false
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
-                self.viewModel.loadSources(modelContext: self.modelContext)
+                self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .tracklistPinChanged)) { _ in
-                self.viewModel.loadPinnedTracklists(modelContext: self.modelContext)
+                self.viewModel.loadPinnedTracklists()
             }
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
                 MediaSourcePickerSheet(
@@ -197,6 +195,5 @@ struct LibraryView: View {
 
 #Preview {
     LibraryView(isAtNavigationRoot: .constant(true))
-        .modelContainer(for: [MediaSource.self, StoredTracklist.self, StoredTrack.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

@@ -1,11 +1,14 @@
+import Dependencies
 import Foundation
-import SwiftData
+import SQLiteData
 
 @MainActor
 @Observable
 class MediaSourceDetailViewModel {
-    let mediaSource: MediaSource
-    private let modelContext: ModelContext
+    var mediaSource: MediaSource
+
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
 
     var showingLogin = false
     var isLoggedIn = false
@@ -15,7 +18,11 @@ class MediaSourceDetailViewModel {
         get { self.mediaSource.isEnabled }
         set {
             self.mediaSource.isEnabled = newValue
-            try? self.modelContext.save()
+            try? database.write { db in
+                try MediaSource.update { $0.isEnabled = newValue }
+                    .where { $0.id.eq(self.mediaSource.id) }
+                    .execute(db)
+            }
             let name: Notification.Name = newValue ? .mediaSourceEnabled : .mediaSourceDisabled
             NotificationCenter.default.post(name: name, object: nil, userInfo: ["id": self.mediaSource.id])
         }
@@ -26,9 +33,8 @@ class MediaSourceDetailViewModel {
         return URL(string: urlString)
     }
 
-    init(mediaSource: MediaSource, modelContext: ModelContext) {
+    init(mediaSource: MediaSource) {
         self.mediaSource = mediaSource
-        self.modelContext = modelContext
         NotificationCenter.default.addObserver(
             forName: .mediaSourceLoginCompleted,
             object: nil,

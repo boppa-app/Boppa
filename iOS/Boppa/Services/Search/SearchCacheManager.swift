@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
@@ -12,55 +13,66 @@ private let logger = Logger(
 class SearchCacheManager {
     var cachedQueries: [CachedSearchQuery] = []
 
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
+
     private static let maxCachedQueries = 25
 
-    func load(modelContext: ModelContext) {
-        var descriptor = FetchDescriptor<CachedSearchQuery>(
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
-        descriptor.fetchLimit = Self.maxCachedQueries
-        self.cachedQueries = (try? modelContext.fetch(descriptor)) ?? []
+    func load() {
+        self.cachedQueries = (try? database.read { db in
+            try CachedSearchQuery
+                .order { $0.timestamp.desc() }
+                .limit(Self.maxCachedQueries)
+                .fetchAll(db)
+        }) ?? []
     }
 
-    func saveQuery(_ query: String, category: SearchCategory, modelContext: ModelContext) {
+    func saveQuery(_ query: String, category: SearchCategory) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        let existing = self.cachedQueries.filter {
-            $0.query == trimmed && $0.categoryRaw == category.rawValue
-        }
-        for entry in existing {
-            modelContext.delete(entry)
-        }
+        try? database.write { db in
+            try CachedSearchQuery
+                .where { $0.query.eq(trimmed).and($0.categoryRaw.eq(category.rawValue)) }
+                .delete()
+                .execute(db)
 
-        let newEntry = CachedSearchQuery(query: trimmed, category: category)
-        modelContext.insert(newEntry)
+            try CachedSearchQuery.insert {
+                CachedSearchQuery.Draft(
+                    query: trimmed,
+                    categoryRaw: category.rawValue,
+                    timestamp: Date().timeIntervalSince1970
+                )
+            }.execute(db)
 
-        self.load(modelContext: modelContext)
-        if self.cachedQueries.count > Self.maxCachedQueries {
-            let overflow = self.cachedQueries[Self.maxCachedQueries...]
-            for entry in overflow {
-                modelContext.delete(entry)
+            let allSorted = try CachedSearchQuery
+                .order { $0.timestamp.desc() }
+                .fetchAll(db)
+
+            if allSorted.count > Self.maxCachedQueries {
+                let overflowIds = allSorted[Self.maxCachedQueries...].map(\.id)
+                try CachedSearchQuery
+                    .where { $0.id.in(overflowIds) }
+                    .delete()
+                    .execute(db)
             }
         }
 
-        try? modelContext.save()
-        self.load(modelContext: modelContext)
-
+        self.load()
         logger.info("Cached search query: \"\(trimmed)\" [\(category.rawValue)]")
     }
 
-    func removeQuery(_ query: CachedSearchQuery, modelContext: ModelContext) {
-        modelContext.delete(query)
-        try? modelContext.save()
-        self.load(modelContext: modelContext)
+    func removeQuery(_ query: CachedSearchQuery) {
+        try? database.write { db in
+            try CachedSearchQuery.where { $0.id.eq(query.id) }.delete().execute(db)
+        }
+        self.load()
     }
 
-    func clearAll(modelContext: ModelContext) {
-        for query in self.cachedQueries {
-            modelContext.delete(query)
+    func clearAll() {
+        try? database.write { db in
+            try CachedSearchQuery.delete().execute(db)
         }
-        try? modelContext.save()
         self.cachedQueries = []
     }
 }

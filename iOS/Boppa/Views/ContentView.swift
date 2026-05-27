@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 // TODO: Disable hiding bars when browser is tapped, fix size of mini url toolbar

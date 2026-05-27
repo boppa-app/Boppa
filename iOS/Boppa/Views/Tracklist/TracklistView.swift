@@ -1,8 +1,6 @@
-import SwiftData
 import SwiftUI
 
 struct TracklistView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: TracklistViewModel
     @State private var showActionSheet = false
@@ -71,7 +69,7 @@ struct TracklistView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     if !self.viewModel.isSaving {
-                                        self.viewModel.saveToLibrary(modelContext: self.modelContext)
+                                        self.viewModel.saveToLibrary()
                                     }
                                 }
                             }
@@ -115,27 +113,27 @@ struct TracklistView: View {
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onAppear {
-            self.viewModel.load(modelContext: self.modelContext)
+            self.viewModel.load()
         }
         .sheet(isPresented: self.$showActionSheet) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
-                mediaSource: TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId, modelContext: self.modelContext),
+                mediaSource: TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId),
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
                 sortMode: self.viewModel.sortMode,
                 onPin: {
-                    self.viewModel.togglePin(modelContext: self.modelContext)
+                    self.viewModel.togglePin()
                 },
                 onRefresh: {
-                    self.viewModel.refresh(modelContext: self.modelContext)
+                    self.viewModel.refresh()
                 },
                 onSortSelected: { mode in
                     self.viewModel.setSortMode(mode)
                 },
                 onArtistSelected: { artist in self.pendingArtist = artist },
                 onDelete: {
-                    self.viewModel.deleteFromLibrary(modelContext: self.modelContext)
+                    self.viewModel.deleteFromLibrary()
                     self.dismiss()
                 }
             )
@@ -144,7 +142,7 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId, modelContext: self.modelContext) {
+            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId) {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
@@ -157,7 +155,7 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId, modelContext: self.modelContext) {
+            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId) {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
@@ -172,7 +170,7 @@ struct TracklistView: View {
                     metadata: tracklist.metadata,
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, modelContext: self.modelContext)
+                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )
             )
         }
@@ -236,7 +234,7 @@ struct TracklistView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
                         .onAppear {
-                            self.viewModel.loadNextPage(modelContext: self.modelContext)
+                            self.viewModel.loadNextPage()
                         }
                 }
             }

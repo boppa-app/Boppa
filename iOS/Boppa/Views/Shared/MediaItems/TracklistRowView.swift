@@ -1,8 +1,9 @@
-import SwiftData
+import Dependencies
+import SQLiteData
 import SwiftUI
 
 struct TracklistRow: View {
-    @Environment(\.modelContext) private var modelContext
+    @Dependency(\.defaultDatabase) var database
 
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
@@ -28,10 +29,9 @@ struct TracklistRow: View {
     private var resolvedMediaSource: MediaSource? {
         guard self.showMediaSourceIcon else { return nil }
         let mediaSourceId = self.tracklist.mediaSourceId
-        let descriptor = FetchDescriptor<MediaSource>(
-            predicate: #Predicate { $0.id == mediaSourceId }
-        )
-        return try? self.modelContext.fetch(descriptor).first
+        return try? database.read { db in
+            try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db)
+        }
     }
 
     var body: some View {

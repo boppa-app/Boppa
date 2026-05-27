@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 import WebKit
 
 extension Notification.Name {
@@ -23,13 +24,15 @@ final class MediaSourceContextProvider: NSObject {
     private static let refreshTimeoutSeconds: TimeInterval = 15
     private static let messageHandlerName = "contextCapture"
 
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
+
     private var refreshTimers: [String: Timer] = [:]
     private var isProcessing = false
     private var pendingWork: [RefreshWorkItem] = []
     private var activeWebView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
     private var currentMediaSourceId: String?
-    private var modelContext: ModelContext?
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
     private var mediaSourceLoginObserver: NSObjectProtocol?
@@ -40,12 +43,10 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    func startMonitoring(modelContainer: ModelContainer) {
+    func startMonitoring() {
         logger.info("MediaSourceContextProvider starting monitoring...")
 
-        let context = ModelContext(modelContainer)
-        self.modelContext = context
-        self.refreshFromModelContext()
+        self.refreshFromDatabase()
 
         self.mediaSourceAddedObserver = NotificationCenter.default.addObserver(
             forName: .mediaSourceAdded,
@@ -54,7 +55,7 @@ final class MediaSourceContextProvider: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceAdded notification, refreshing...")
-                MediaSourceContextProvider.shared.refreshFromModelContext()
+                MediaSourceContextProvider.shared.refreshFromDatabase()
             }
         }
 
@@ -65,7 +66,7 @@ final class MediaSourceContextProvider: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceRemoved notification, refreshing...")
-                MediaSourceContextProvider.shared.refreshFromModelContext()
+                MediaSourceContextProvider.shared.refreshFromDatabase()
             }
         }
 
@@ -76,7 +77,7 @@ final class MediaSourceContextProvider: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceEnabled notification, refreshing...")
-                MediaSourceContextProvider.shared.refreshFromModelContext()
+                MediaSourceContextProvider.shared.refreshFromDatabase()
             }
         }
 
@@ -87,7 +88,7 @@ final class MediaSourceContextProvider: NSObject {
         ) { _ in
             MainActor.assumeIsolated {
                 logger.info("Received mediaSourceDisabled notification, refreshing...")
-                MediaSourceContextProvider.shared.refreshFromModelContext()
+                MediaSourceContextProvider.shared.refreshFromDatabase()
             }
         }
 
@@ -115,25 +116,19 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    private func refreshFromModelContext() {
-        guard let modelContext else {
-            logger.warning("refreshFromModelContext called but no modelContext set")
-            return
-        }
-        let descriptor = FetchDescriptor<MediaSource>()
-        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
-        logger.info("Fetched \(mediaSources.count) media mediaSource(s) from ModelContext")
+    private func refreshFromDatabase() {
+        let mediaSources = (try? database.read { db in
+            try MediaSource.fetchAll(db)
+        }) ?? []
+        logger.info("Fetched \(mediaSources.count) media source(s) from database")
         self.startMonitoring(mediaSources: mediaSources)
     }
 
     @MainActor
     private func refreshSource(id mediaSourceId: String) {
-        guard let modelContext else {
-            logger.warning("refreshSource called but no modelContext set")
-            return
-        }
-        let descriptor = FetchDescriptor<MediaSource>()
-        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+        let mediaSources = (try? database.read { db in
+            try MediaSource.fetchAll(db)
+        }) ?? []
         guard let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId }) else {
             logger.warning("refreshSource: no mediaSource found with id '\(mediaSourceId)'")
             return
@@ -305,29 +300,28 @@ final class MediaSourceContextProvider: NSObject {
             logger.warning("Received contextValues but no current mediaSource id")
             return
         }
-        guard let modelContext else {
-            logger.warning("Received contextValues but no modelContext")
-            return
-        }
 
-        let descriptor = FetchDescriptor<MediaSource>()
-        guard let mediaSources = try? modelContext.fetch(descriptor),
-              let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId })
-        else {
-            logger.warning("Could not find MediaSource '\(mediaSourceId)' to store context values")
-            return
-        }
-
-        for (key, value) in values {
-            if let stringValue = value as? String {
-                mediaSource.contextValues[key] = stringValue
-            } else {
-                mediaSource.contextValues[key] = String(describing: value)
+        Task {
+            try? await database.write { db in
+                guard let mediaSource = try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db) else {
+                    logger.warning("Could not find MediaSource '\(mediaSourceId)' to store context values")
+                    return
+                }
+                var contextValues = mediaSource.contextValues
+                for (key, value) in values {
+                    if let stringValue = value as? String {
+                        contextValues[key] = stringValue
+                    } else {
+                        contextValues[key] = String(describing: value)
+                    }
+                }
+                let json = (try? JSONEncoder().encode(contextValues)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+                try MediaSource.update { $0.contextValuesJSON = json }
+                    .where { $0.id.eq(mediaSourceId) }
+                    .execute(db)
+                logger.info("Stored \(values.count) context value(s) for '\(mediaSourceId)'")
             }
         }
-
-        try? modelContext.save()
-        logger.info("Stored \(values.count) context value(s) for '\(mediaSourceId)'")
     }
 }
 

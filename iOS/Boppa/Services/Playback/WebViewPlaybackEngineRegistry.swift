@@ -1,6 +1,7 @@
+import Dependencies
 import Foundation
 import os
-import SwiftData
+import SQLiteData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
@@ -16,12 +17,12 @@ final class WebViewPlaybackEngineRegistry {
     private var mediaSourceRemovedObserver: NSObjectProtocol?
     private var mediaSourceEnabledObserver: NSObjectProtocol?
     private var mediaSourceDisabledObserver: NSObjectProtocol?
-    private var modelContext: ModelContext?
+
+    @Dependency(\.defaultDatabase) var database
 
     private init() {}
 
-    func start(modelContainer: ModelContainer) {
-        self.modelContext = ModelContext(modelContainer)
+    func start() {
         self.createEnginesForExistingSources()
         self.observeNotifications()
         logger.info("WebViewPlaybackEngineRegistry started")
@@ -36,9 +37,9 @@ final class WebViewPlaybackEngineRegistry {
     }
 
     private func createEnginesForExistingSources() {
-        guard let modelContext else { return }
-        let descriptor = FetchDescriptor<MediaSource>()
-        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+        let mediaSources = (try? database.read { db in
+            try MediaSource.fetchAll(db)
+        }) ?? []
 
         for mediaSource in mediaSources {
             self.createEngine(for: mediaSource)
@@ -96,9 +97,9 @@ final class WebViewPlaybackEngineRegistry {
     }
 
     private func handleMediaSourceAdded() {
-        guard let modelContext else { return }
-        let descriptor = FetchDescriptor<MediaSource>()
-        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+        let mediaSources = (try? database.read { db in
+            try MediaSource.fetchAll(db)
+        }) ?? []
 
         for mediaSource in mediaSources where self.engines[mediaSource.id] == nil {
             self.createEngine(for: mediaSource)
@@ -115,11 +116,11 @@ final class WebViewPlaybackEngineRegistry {
 
     private func handleMediaSourceEnabled(id: String) {
         guard self.engines[id] == nil else { return }
-        guard let modelContext else { return }
-        let descriptor = FetchDescriptor<MediaSource>()
-        let mediaSources = (try? modelContext.fetch(descriptor)) ?? []
+        let mediaSources = (try? database.read { db in
+            try MediaSource.fetchAll(db)
+        }) ?? []
         guard let mediaSource = mediaSources.first(where: { $0.id == id }) else {
-            logger.warning("Enabled source '\(id)' not found in model context")
+            logger.warning("Enabled source '\(id)' not found in database")
             return
         }
         self.createEngine(for: mediaSource)

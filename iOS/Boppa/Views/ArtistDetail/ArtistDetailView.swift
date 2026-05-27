@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ArtistDetailView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = ArtistDetailViewModel()
     @State private var trackForActions: Track?
@@ -57,7 +56,7 @@ struct ArtistDetailView: View {
                     metadata: tracklist.metadata,
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id, modelContext: self.modelContext)
+                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
                 )
             )
         }
@@ -131,7 +130,7 @@ struct ArtistDetailView: View {
                                     metadata: tracklist.metadata,
                                     tracklistType: .album,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id, modelContext: self.modelContext)
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
                                 )
                             )) { EmptyView() }
                                 .opacity(0)
@@ -219,7 +218,7 @@ struct ArtistDetailView: View {
                                     metadata: tracklist.metadata,
                                     tracklistType: .playlist,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id, modelContext: self.modelContext)
+                                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
                                 )
                             )) { EmptyView() }
                                 .opacity(0)

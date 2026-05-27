@@ -1,12 +1,10 @@
-import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
     @Binding var selectedTab: Int
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \MediaSource.order) private var mediaSources: [MediaSource]
+    @State private var viewModel = SettingsViewModel()
     @State private var showingAddSheet = false
     @State private var isClearingData = false
     @State private var showDataCleared = false
@@ -61,10 +59,23 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .onAppear {
+                self.viewModel.loadSources()
                 self.isAtNavigationRoot = true
             }
             .onDisappear {
                 self.isAtNavigationRoot = false
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
+                self.viewModel.loadSources()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { _ in
+                self.viewModel.loadSources()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
+                self.viewModel.loadSources()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
+                self.viewModel.loadSources()
             }
             .onChange(of: self.selectedMediaSource) { _, newValue in
                 self.isAtNavigationRoot = (newValue == nil)
@@ -115,9 +126,9 @@ struct SettingsView: View {
 
     private var mediaSourcesGrid: some View {
         MediaSourceGridView(
-            mediaSources: Array(self.mediaSources),
+            mediaSources: self.viewModel.mediaSources,
             isEditing: self.isEditing,
-            onReorder: self.moveMediaSource,
+            onReorder: self.viewModel.moveMediaSource,
             onAdd: { self.showingAddSheet = true },
             onDragStateChanged: { isDragging in
                 self.isDraggingSource = isDragging
@@ -131,7 +142,7 @@ struct SettingsView: View {
                 MediaSourceIcon(
                     mediaSource: mediaSource,
                     onDelete: self.isEditing ? {
-                        if let index = self.mediaSources.firstIndex(where: { $0.persistentModelID == mediaSource.persistentModelID }) {
+                        if let index = self.viewModel.mediaSources.firstIndex(where: { $0.id == mediaSource.id }) {
                             self.confirmDeleteMediaSource(at: index)
                         }
                     } : nil,
@@ -148,7 +159,7 @@ struct SettingsView: View {
                 .onChange(of: geometry.size.width) { _, newWidth in
                     self.recomputeGridHeight(for: newWidth)
                 }
-                .onChange(of: self.mediaSources.count) {
+                .onChange(of: self.viewModel.mediaSources.count) {
                     self.recomputeGridHeight(for: geometry.size.width)
                 }
                 .onChange(of: self.isEditing) {
@@ -158,18 +169,8 @@ struct SettingsView: View {
         )
         .frame(height: self.computedGridHeight)
         .navigationDestination(item: self.$selectedMediaSource) { mediaSource in
-            MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource, modelContext: self.modelContext))
+            MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource))
         }
-    }
-
-    private func moveMediaSource(from sourceIndex: Int, to destinationIndex: Int) {
-        var reordered = Array(self.mediaSources)
-        let item = reordered.remove(at: sourceIndex)
-        reordered.insert(item, at: destinationIndex)
-        for (index, mediaSource) in reordered.enumerated() {
-            mediaSource.order = index
-        }
-        try? self.modelContext.save()
     }
 
     private func confirmDeleteMediaSource(at index: Int) {
@@ -178,19 +179,14 @@ struct SettingsView: View {
     }
 
     private func deleteMediaSource(at index: Int) {
-        let mediaSource = self.mediaSources[index]
-        let deletedIds = [mediaSource.id]
-        withAnimation(.easeInOut(duration: 0.55)) {
-            self.modelContext.delete(mediaSource)
-            try? self.modelContext.save()
-        }
-        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["ids": deletedIds])
+        let deletedId = self.viewModel.deleteMediaSource(at: index)
+        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["ids": [deletedId]])
     }
 
     private func recomputeGridHeight(for width: CGFloat) {
         self.computedGridHeight = MediaSourceGridLayout.gridHeight(
             for: width,
-            mediaSourceCount: self.mediaSources.count,
+            mediaSourceCount: self.viewModel.mediaSources.count,
             isEditing: self.isEditing
         )
     }
@@ -198,5 +194,4 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView(selectedTab: .constant(3), isAtNavigationRoot: .constant(true))
-        .modelContainer(for: MediaSource.self, inMemory: true)
 }

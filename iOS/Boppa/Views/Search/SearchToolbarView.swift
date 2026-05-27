@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 struct SearchToolbarView: View {
@@ -83,7 +82,7 @@ struct SearchToolbarView: View {
             MediaSourcePickerSheet(
                 mediaSources: self.viewModel.mediaSources,
                 mediaSourcePickerMode: .single(
-                    selectedID: self.viewModel.selectedMediaSource?.persistentModelID,
+                    selectedID: self.viewModel.selectedMediaSource?.id,
                     onSelect: { mediaSource in
                         self.viewModel.selectMediaSource(mediaSource)
                     }

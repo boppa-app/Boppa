@@ -16,7 +16,7 @@ struct SearchCacheView: View {
                 ScrollFadeView {
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(self.cachedQueries, id: \.persistentModelID) { cached in
+                            ForEach(self.cachedQueries, id: \.id) { cached in
                                 Button {
                                     self.onSelect(cached)
                                 } label: {

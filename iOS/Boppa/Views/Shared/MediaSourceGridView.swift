@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 enum MediaSourceGridLayout {
@@ -48,7 +47,7 @@ struct MediaSourceGridView<Content: View>: View {
     @ViewBuilder let content: (MediaSource) -> Content
 
     @State private(set) var padding: CGFloat = 0
-    @State private var draggingID: PersistentIdentifier?
+    @State private var draggingID: String?
     @State private var dragPosition: CGPoint = .zero
     @State private var isReturningToSlot = false
     @State private var holdTimer: DispatchWorkItem?
@@ -100,7 +99,7 @@ struct MediaSourceGridView<Content: View>: View {
         geometrySize: CGSize
     ) -> some View {
         let gridPos = Layout.positionForIndex(index, cols: cols)
-        let isDragging = self.draggingID == mediaSource.persistentModelID
+        let isDragging = self.draggingID == mediaSource.id
         let anyDragging = self.draggingID != nil
 
         return self.content(mediaSource)
@@ -172,7 +171,7 @@ struct MediaSourceGridView<Content: View>: View {
         if self.draggingID == nil, self.holdTimer == nil, !self.isReturningToSlot {
             let timer = DispatchWorkItem {
                 withAnimation(.easeInOut(duration: 0.15)) {
-                    self.draggingID = mediaSource.persistentModelID
+                    self.draggingID = mediaSource.id
                     self.dragPosition = Layout.positionForIndex(index, cols: cols)
                 }
                 self.onDragStateChanged?(true)
@@ -225,7 +224,7 @@ struct MediaSourceGridView<Content: View>: View {
 
     private func currentDragIndex() -> Int? {
         guard let id = self.draggingID else { return nil }
-        return self.mediaSources.firstIndex(where: { $0.persistentModelID == id })
+        return self.mediaSources.firstIndex(where: { $0.id == id })
     }
 
     private func indexForPosition(_ point: CGPoint, cols: Int, totalCount: Int) -> Int? {
