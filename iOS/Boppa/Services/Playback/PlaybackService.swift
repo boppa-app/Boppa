@@ -93,7 +93,7 @@ final class PlaybackService {
             if let previousEngine {
                 logger.info("Engine switch detected — deactivating previous engine")
                 previousEngine.deactivateNowPlayingInfo()
-                previousEngine.pause()
+                previousEngine.pause(shouldPauseKeepAlive: !isSwitchingEngines)
             }
             self.activeEngine = engine
         }
