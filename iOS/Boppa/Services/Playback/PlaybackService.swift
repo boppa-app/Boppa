@@ -30,7 +30,6 @@ final class PlaybackService {
 
     private var mediaSourceRemovedObserver: NSObjectProtocol?
     private var mediaSourceDisabledObserver: NSObjectProtocol?
-    private var activePlayTask: Task<Void, Never>?
     private var userPaused: Bool = false
 
     private init() {
@@ -53,50 +52,41 @@ final class PlaybackService {
             self.queueManager.setQueue(queue, startingAt: track)
         }
 
-        self.activePlayTask?.cancel()
-        self.activePlayTask = Task {
-            guard let engine = self.registry.engine(for: mediaSourceId) else {
-                logger.error("No playback engine for media source '\(mediaSourceId)'")
-                self.isLoading = false
-                return
-            }
-
-            // Silence old engine's event handler immediately, before any await, so
-            // interruption-induced pause/play events from it doesn't pollute our state.
-            let previousEngine = self.activeEngine !== engine ? self.activeEngine : nil
-            previousEngine?.onEvent = nil
-
-            engine.onEvent = { [weak self] event in
-                self?.handleEngineEvent(event)
-            }
-
-            let isSwitchingEngines = previousEngine != nil
-
-            engine.setNowPlayingInfo(track: track)
-            // Modify the previous engine's MediaSession metadata so that subsequent loads on it
-            // trigger MediaSession metadata mutation and avoid blank artwork in NowPlayingInfo
-            if isSwitchingEngines { previousEngine?.setNowPlayingInfo(track: track) }
-            engine.activateNowPlayingInfo()
-
-            let loaded = await engine.load(track: track)
-
-            guard !Task.isCancelled else { return }
-
-            if loaded {
-                logger.info("Loaded '\(track.title)' via WebViewPlaybackEngine")
-            } else {
-                logger.error("Failed to load '\(track.title)'")
-                self.isLoading = false
-                return
-            }
-
-            if let previousEngine {
-                logger.info("Engine switch detected — deactivating previous engine")
-                previousEngine.deactivateNowPlayingInfo()
-                previousEngine.pause(shouldPauseKeepAlive: !isSwitchingEngines)
-            }
-            self.activeEngine = engine
+        guard let engine = self.registry.engine(for: mediaSourceId) else {
+            logger.error("No playback engine for media source '\(mediaSourceId)'")
+            self.isLoading = false
+            return
         }
+
+        // Silence old engine's event handler immediately, before any await, so
+        // interruption-induced pause/play events from it doesn't pollute our state.
+        let previousEngine = self.activeEngine !== engine ? self.activeEngine : nil
+        previousEngine?.onEvent = nil
+
+        engine.onEvent = { [weak self] event in
+            self?.handleEngineEvent(event)
+        }
+
+        let isSwitchingEngines = previousEngine != nil
+
+        engine.setNowPlayingInfo(track: track)
+        // Modify the previous engine's MediaSession metadata so that subsequent loads on it
+        // trigger MediaSession metadata mutation and avoid blank artwork in NowPlayingInfo
+        if isSwitchingEngines { previousEngine?.setNowPlayingInfo(track: track) }
+        engine.activateNowPlayingInfo()
+
+        if let previousEngine {
+            previousEngine.pause(shouldPauseKeepAlive: false)
+        }
+        engine.pause(shouldPauseKeepAlive: false)
+        engine.load(track: track)
+
+        if let previousEngine {
+            logger.info("Engine switch detected — deactivating previous engine")
+            previousEngine.deactivateNowPlayingInfo()
+            previousEngine.pause(shouldPauseKeepAlive: !isSwitchingEngines)
+        }
+        self.activeEngine = engine
     }
 
     func play() {
@@ -136,8 +126,6 @@ final class PlaybackService {
     }
 
     func stop() {
-        self.activePlayTask?.cancel()
-        self.activePlayTask = nil
         self.activeEngine?.stop()
         self.activeEngine = nil
         self.currentTrack = nil

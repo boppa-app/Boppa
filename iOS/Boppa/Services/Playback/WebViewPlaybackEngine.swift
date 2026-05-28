@@ -80,13 +80,13 @@ final class WebViewPlaybackEngine: NSObject {
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
-    func load(track: Track) async -> Bool {
+    func load(track: Track) {
         guard let escapedJSON = self.serializeTrackData(track: track) else {
             logger.error("Failed to serialize track data")
-            return false
+            return
         }
 
-        let loadTrackScript = """
+        let script = """
         (function() {
             try {
                 var trackData = JSON.parse('\(escapedJSON)');
@@ -101,19 +101,9 @@ final class WebViewPlaybackEngine: NSObject {
         })();
         """
 
-        let loaded = await withCheckedContinuation { continuation in
-            self.webView.evaluateJavaScript(loadTrackScript) { _, error in
-                if let error {
-                    logger.error("Load track error: \(error.localizedDescription)")
-                    continuation.resume(returning: false)
-                } else {
-                    logger.info("Sent boppaLoad: \(track.title)")
-                    continuation.resume(returning: true)
-                }
-            }
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error { logger.error("Load track error: \(error.localizedDescription)") }
         }
-        self.play();
-        return loaded;
     }
 
     func setNowPlayingInfo(track: Track) {
@@ -133,6 +123,7 @@ final class WebViewPlaybackEngine: NSObject {
         (function() {
             var audio = document.getElementById('boppa-keepalive-audio');
             if (!audio) return;
+            audio.play();
             audio.muted = false;
         })();
         """
@@ -255,12 +246,6 @@ final class WebViewPlaybackEngine: NSObject {
             if let error {
                 logger.error("Set media session details error: \(error.localizedDescription)")
             }
-        }
-    }
-
-    private func waitForNavigation() async {
-        await withCheckedContinuation { continuation in
-            self.navigationContinuation = continuation
         }
     }
 
