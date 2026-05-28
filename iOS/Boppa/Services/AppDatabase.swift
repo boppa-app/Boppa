@@ -29,6 +29,21 @@ extension DatabaseWriter where Self == DatabasePool {
                 """
             ).execute(db)
 
+            // TODO: Delete items from artists DB if no longer referenced anywhere
+            try #sql(
+                """
+                CREATE TABLE "artists" (
+                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                  "mediaId" TEXT NOT NULL,
+                  "mediaSourceId" TEXT NOT NULL,
+                  "name" TEXT NOT NULL,
+                  "artworkUrl" TEXT,
+                  "metadataJSON" BLOB NOT NULL DEFAULT X'',
+                  UNIQUE ("mediaId", "mediaSourceId")
+                ) STRICT
+                """
+            ).execute(db)
+
             try #sql(
                 """
                 CREATE TABLE "tracklists" (
@@ -40,12 +55,12 @@ extension DatabaseWriter where Self == DatabasePool {
                   "artworkUrl" TEXT,
                   "tracklistType" TEXT NOT NULL,
                   "metadataJSON" BLOB NOT NULL DEFAULT X'',
-                  "artistsJSON" BLOB NOT NULL DEFAULT X'',
-                  "fromArtistJSON" BLOB NOT NULL DEFAULT X'',
+                  "fromArtistId" INTEGER,
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "prevId" INTEGER,
                   "nextId" INTEGER,
-                  UNIQUE ("mediaId", "mediaSourceId")
+                  UNIQUE ("mediaId", "mediaSourceId"),
+                  FOREIGN KEY ("fromArtistId") REFERENCES "artists"("id")
                 ) STRICT
                 """
             ).execute(db)
@@ -62,8 +77,6 @@ extension DatabaseWriter where Self == DatabasePool {
                   "artworkUrl" TEXT,
                   "url" TEXT,
                   "metadataJSON" BLOB NOT NULL DEFAULT X'',
-                  "artistsJSON" BLOB NOT NULL DEFAULT X'',
-                  "albumsJSON" BLOB NOT NULL DEFAULT X'',
                   UNIQUE ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
@@ -79,6 +92,48 @@ extension DatabaseWriter where Self == DatabasePool {
                   UNIQUE ("tracklistId", "trackId"),
                   FOREIGN KEY ("tracklistId") REFERENCES "tracklists"("id") ON DELETE CASCADE,
                   FOREIGN KEY ("trackId") REFERENCES "tracks"("id")
+                ) STRICT
+                """
+            ).execute(db)
+
+            try #sql(
+                """
+                CREATE TABLE "trackArtists" (
+                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                  "trackId" INTEGER NOT NULL,
+                  "artistId" INTEGER NOT NULL,
+                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  UNIQUE ("trackId", "artistId"),
+                  FOREIGN KEY ("trackId") REFERENCES "tracks"("id") ON DELETE CASCADE,
+                  FOREIGN KEY ("artistId") REFERENCES "artists"("id")
+                ) STRICT
+                """
+            ).execute(db)
+
+            try #sql(
+                """
+                CREATE TABLE "trackAlbums" (
+                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                  "trackId" INTEGER NOT NULL,
+                  "tracklistId" INTEGER NOT NULL,
+                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  UNIQUE ("trackId", "tracklistId"),
+                  FOREIGN KEY ("trackId") REFERENCES "tracks"("id") ON DELETE CASCADE,
+                  FOREIGN KEY ("tracklistId") REFERENCES "tracklists"("id") ON DELETE CASCADE
+                ) STRICT
+                """
+            ).execute(db)
+
+            try #sql(
+                """
+                CREATE TABLE "tracklistArtists" (
+                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                  "tracklistId" INTEGER NOT NULL,
+                  "artistId" INTEGER NOT NULL,
+                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  UNIQUE ("tracklistId", "artistId"),
+                  FOREIGN KEY ("tracklistId") REFERENCES "tracklists"("id") ON DELETE CASCADE,
+                  FOREIGN KEY ("artistId") REFERENCES "artists"("id")
                 ) STRICT
                 """
             ).execute(db)

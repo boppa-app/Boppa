@@ -62,7 +62,7 @@ class TracklistViewModel {
             ?? TracklistService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
         if let stored {
-            self.tracklist = Tracklist(storedTracklist: stored)
+            self.tracklist = TracklistService.shared.tracklistWithRelations(from: stored)
             self.isPersisted = true
             self.loadFromCache(storedTracklist: stored)
         }
@@ -108,8 +108,7 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist) {
-        let storedTracks = TracklistService.shared.loadTracksForTracklist(storedTracklist)
-        self.unsortedTracks = storedTracks.map { $0.toTrack() }
+        self.unsortedTracks = TracklistService.shared.loadTracksForTracklist(storedTracklist)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
     }
@@ -181,7 +180,7 @@ class TracklistViewModel {
                     }
                 )
 
-                self.tracklist = Tracklist(storedTracklist: stored)
+                self.tracklist = TracklistService.shared.tracklistWithRelations(from: stored)
                 self.isPersisted = true
                 self.isSaving = false
 

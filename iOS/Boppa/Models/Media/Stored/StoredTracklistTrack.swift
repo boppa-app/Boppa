@@ -2,7 +2,7 @@ import Foundation
 import SQLiteData
 
 @Table("tracklistTracks")
-nonisolated struct TracklistTrack: Identifiable {
+nonisolated struct StoredTracklistTrack: Identifiable {
     let id: Int
     var tracklistId: Int
     var trackId: Int

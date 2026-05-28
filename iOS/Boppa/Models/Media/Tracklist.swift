@@ -55,11 +55,10 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.storedTracklist = storedTracklist
     }
 
-    init(storedTracklist: StoredTracklist) {
-        let mediaSourceId = storedTracklist.mediaSourceId
+    init(storedTracklist: StoredTracklist, artists: [Artist] = [], fromArtist: Artist? = nil) {
         self.id = UUID()
         self.mediaId = storedTracklist.mediaId
-        self.mediaSourceId = mediaSourceId
+        self.mediaSourceId = storedTracklist.mediaSourceId
         self.title = storedTracklist.title
         self.subtitle = storedTracklist.subtitle
         self.trackCount = nil
@@ -67,8 +66,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.url = nil
         self.metadata = storedTracklist.metadata
         self.tracklistType = TracklistType(rawValue: storedTracklist.tracklistType) ?? .playlist
-        self.artists = storedTracklist.artists
-        self.fromArtist = storedTracklist.fromArtist
+        self.artists = artists
+        self.fromArtist = fromArtist
         self.artistDetail = nil
         self.storedTracklist = storedTracklist
     }

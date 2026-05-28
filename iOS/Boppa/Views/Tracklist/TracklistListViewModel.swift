@@ -134,7 +134,11 @@ class TracklistListViewModel {
         if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
             var updatedStored = stored
             updatedStored.isPinned = newIsPinned
-            self.tracklists[index] = Tracklist(storedTracklist: updatedStored)
+            self.tracklists[index] = Tracklist(
+                storedTracklist: updatedStored,
+                artists: tracklist.artists,
+                fromArtist: tracklist.fromArtist
+            )
         }
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
         logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(stored.title)'")
@@ -179,28 +183,32 @@ class TracklistListViewModel {
         case .playlists: typeString = "playlist"
         }
 
-        let allStored = (try? database.read { db in
-            try StoredTracklist.where { $0.tracklistType.eq(typeString) }.fetchAll(db)
+        let result: [Tracklist] = (try? database.read { db in
+            let allStored = try StoredTracklist
+                .where { $0.tracklistType.eq(typeString) }
+                .fetchAll(db)
+
+            let filtered = allStored.filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
+            let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
+            var ordered: [StoredTracklist] = []
+
+            if let head = filtered.first(where: { $0.prevId == nil }) {
+                var current: StoredTracklist? = head
+                while let node = current {
+                    ordered.append(node)
+                    current = node.nextId.flatMap { lookup[$0] }
+                }
+            }
+
+            let orderedIds = Set(ordered.map { $0.id })
+            for item in filtered where !orderedIds.contains(item.id) {
+                ordered.append(item)
+            }
+
+            return try ordered.map { try TracklistService.shared.tracklist(from: $0, db: db) }
         }) ?? []
 
-        let filtered = allStored.filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-        let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
-        var ordered: [StoredTracklist] = []
-
-        if let head = filtered.first(where: { $0.prevId == nil }) {
-            var current: StoredTracklist? = head
-            while let node = current {
-                ordered.append(node)
-                current = node.nextId.flatMap { lookup[$0] }
-            }
-        }
-
-        let orderedIds = Set(ordered.map { $0.id })
-        for item in filtered where !orderedIds.contains(item.id) {
-            ordered.append(item)
-        }
-
-        self.tracklists = ordered.map { Tracklist(storedTracklist: $0) }
+        self.tracklists = result
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 
