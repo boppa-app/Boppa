@@ -205,7 +205,7 @@ class TracklistListViewModel {
                 ordered.append(item)
             }
 
-            return try ordered.map { try TracklistService.shared.tracklist(from: $0, db: db) }
+            return try ordered.map { try TracklistStorageService.shared.tracklist(from: $0, db: db) }
         }) ?? []
 
         self.tracklists = result
@@ -223,7 +223,7 @@ class TracklistListViewModel {
 
         self.fetchTask = Task {
             do {
-                let result = try await TracklistService.shared.fetchAlbumsForArtist(
+                let result = try await TracklistFetchService.shared.fetchAlbumsForArtist(
                     artist: artist,
                     artistDetail: artistDetail,
                     mediaSource: mediaSource
@@ -256,7 +256,7 @@ class TracklistListViewModel {
 
         self.fetchTask = Task {
             do {
-                let result = try await TracklistService.shared.fetchPlaylistsForArtist(
+                let result = try await TracklistFetchService.shared.fetchPlaylistsForArtist(
                     artist: artist,
                     artistDetail: artistDetail,
                     mediaSource: mediaSource

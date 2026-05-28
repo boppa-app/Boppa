@@ -59,10 +59,10 @@ class TracklistViewModel {
 
     func load() {
         let stored = self.tracklist.storedTracklist
-            ?? TracklistService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
+            ?? TracklistStorageService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
         if let stored {
-            self.tracklist = TracklistService.shared.tracklistWithRelations(from: stored)
+            self.tracklist = TracklistStorageService.shared.tracklistWithRelations(from: stored)
             self.isPersisted = true
             self.loadFromCache(storedTracklist: stored)
         }
@@ -78,7 +78,7 @@ class TracklistViewModel {
 
         Task {
             do {
-                _ = try await TracklistService.shared.saveTracklistToLibrary(
+                _ = try await TracklistStorageService.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
@@ -108,7 +108,7 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist) {
-        self.unsortedTracks = TracklistService.shared.loadTracksForTracklist(storedTracklist)
+        self.unsortedTracks = TracklistStorageService.shared.loadTracksForTracklist(storedTracklist)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
     }
@@ -137,7 +137,7 @@ class TracklistViewModel {
 
         self.fetchTask = Task {
             do {
-                let response = try await TracklistService.shared.fetchTracklist(
+                let response = try await TracklistFetchService.shared.fetchTracklist(
                     tracklist: self.tracklist,
                     previousResult: nil
                 )
@@ -170,7 +170,7 @@ class TracklistViewModel {
 
         Task {
             do {
-                let stored = try await TracklistService.shared.saveTracklistToLibrary(
+                let stored = try await TracklistStorageService.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
@@ -180,7 +180,7 @@ class TracklistViewModel {
                     }
                 )
 
-                self.tracklist = TracklistService.shared.tracklistWithRelations(from: stored)
+                self.tracklist = TracklistStorageService.shared.tracklistWithRelations(from: stored)
                 self.isPersisted = true
                 self.isSaving = false
 
@@ -195,7 +195,7 @@ class TracklistViewModel {
 
     func deleteFromLibrary() {
         guard let stored = self.tracklist.storedTracklist else { return }
-        try? TracklistService.shared.deleteStoredTracklist(stored)
+        try? TracklistStorageService.shared.deleteStoredTracklist(stored)
         self.isPersisted = false
         logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
     }
@@ -224,7 +224,7 @@ class TracklistViewModel {
 
         Task {
             do {
-                let response = try await TracklistService.shared.fetchTracklist(
+                let response = try await TracklistFetchService.shared.fetchTracklist(
                     tracklist: self.tracklist,
                     previousResult: paginationContext
                 )

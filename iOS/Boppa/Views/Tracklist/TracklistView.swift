@@ -118,7 +118,7 @@ struct TracklistView: View {
         .sheet(isPresented: self.$showActionSheet) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
-                mediaSource: TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId),
+                mediaSource: TracklistStorageService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId),
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
                 sortMode: self.viewModel.sortMode,
@@ -142,7 +142,7 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId) {
+            if let mediaSource = TracklistStorageService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId) {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
@@ -155,7 +155,7 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = TracklistService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId) {
+            if let mediaSource = TracklistStorageService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId) {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
@@ -170,7 +170,7 @@ struct TracklistView: View {
                     metadata: tracklist.metadata,
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )
             )
         }

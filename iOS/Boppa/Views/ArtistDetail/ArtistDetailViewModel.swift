@@ -33,7 +33,7 @@ class ArtistDetailViewModel {
 
         self.fetchTask = Task {
             do {
-                let result = try await TracklistService.shared.fetchArtist(
+                let result = try await TracklistFetchService.shared.fetchArtist(
                     artist: artist,
                     mediaSource: mediaSource
                 )
