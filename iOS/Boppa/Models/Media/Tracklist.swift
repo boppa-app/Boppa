@@ -60,7 +60,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.id = UUID()
         self.mediaId = storedTracklist.mediaId
         self.mediaSourceId = mediaSourceId
-        self.title = storedTracklist.name
+        self.title = storedTracklist.title
         self.subtitle = storedTracklist.subtitle
         self.trackCount = nil
         self.artworkUrl = storedTracklist.artworkUrl

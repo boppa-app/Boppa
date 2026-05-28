@@ -35,7 +35,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                   "mediaId" TEXT NOT NULL,
                   "mediaSourceId" TEXT NOT NULL,
-                  "name" TEXT NOT NULL,
+                  "title" TEXT NOT NULL,
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
                   "tracklistType" TEXT NOT NULL,

@@ -6,7 +6,7 @@ nonisolated struct StoredTracklist: Identifiable {
     let id: Int
     var mediaId: String
     var mediaSourceId: String
-    var name: String
+    var title: String
     var subtitle: String?
     var artworkUrl: String?
     var tracklistType: String
@@ -19,6 +19,10 @@ nonisolated struct StoredTracklist: Identifiable {
 }
 
 extension StoredTracklist {
+    func toTracklist() -> Tracklist {
+        Tracklist(storedTracklist: self)
+    }
+
     var metadata: [String: Any] {
         guard let dict = try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any] else {
             return [:]

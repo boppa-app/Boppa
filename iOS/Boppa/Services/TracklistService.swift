@@ -481,7 +481,7 @@ class TracklistService {
             .fetchOne(db)
         if let existing = existingTracklist {
             try StoredTracklist.update {
-                $0.name = tracklist.title
+                $0.title = tracklist.title
                 $0.subtitle = tracklist.subtitle
                 $0.artworkUrl = tracklist.artworkUrl
                 $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
@@ -503,7 +503,7 @@ class TracklistService {
             StoredTracklist.Draft(
                 mediaId: tracklist.mediaId,
                 mediaSourceId: tracklist.mediaSourceId,
-                name: tracklist.title,
+                title: tracklist.title,
                 subtitle: tracklist.subtitle,
                 artworkUrl: tracklist.artworkUrl,
                 tracklistType: typeString,
@@ -531,7 +531,7 @@ class TracklistService {
         try database.write { db in
             try StoredTracklist.where { $0.id.eq(storedTracklist.id) }.delete().execute(db)
         }
-        logger.info("Deleted stored tracklist '\(storedTracklist.name)'")
+        logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
     }
 
     func loadTracksForTracklist(_ tracklist: StoredTracklist) -> [StoredTrack] {

@@ -137,7 +137,7 @@ class TracklistListViewModel {
             self.tracklists[index] = Tracklist(storedTracklist: updatedStored)
         }
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
-        logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(stored.name)'")
+        logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(stored.title)'")
     }
 
     private func persistDLLOrder() {
