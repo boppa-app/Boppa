@@ -3,11 +3,9 @@ import SwiftUI
 struct TracklistListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
-    @State private var scrollHandler = SearchBarScrollHandler()
     @State private var selectedTracklistId: UUID?
     @State private var showActionSheet = false
     @State private var tracklistToDelete: Tracklist?
-    @FocusState private var isSearchFieldFocused: Bool
 
     let artist: Artist?
     let artistDetail: ArtistDetail?
@@ -56,18 +54,12 @@ struct TracklistListView: View {
                             self.dismiss()
                         }
                     },
-                    onTitleTap: {
-                        guard self.isLibraryMode && !self.viewModel.isEditing else { return }
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            self.scrollHandler.showSearchBar.toggle()
-                        }
-                    },
                     trailing: {
                         if self.isLibraryMode {
                             if self.viewModel.isEditing {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.purp)
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
@@ -76,12 +68,11 @@ struct TracklistListView: View {
                             } else {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.purp)
                                     .rotationEffect(.degrees(90))
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        self.isSearchFieldFocused = false
                                         self.showActionSheet = true
                                     }
                             }
@@ -90,29 +81,6 @@ struct TracklistListView: View {
                 )
 
                 self.content
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                self.isSearchFieldFocused = false
-            }
-
-            if self.isLibraryMode && !self.viewModel.isEditing {
-                StoredSearchToolbar(
-                    searchText: Binding(
-                        get: { self.viewModel.searchHandler.searchText },
-                        set: { self.viewModel.updateSearch($0) }
-                    ),
-                    showSearchBar: Binding(
-                        get: { self.scrollHandler.showSearchBar },
-                        set: { self.scrollHandler.showSearchBar = $0 }
-                    ),
-                    placeholder: "Find in library",
-                    isSearchFieldFocused: self.$isSearchFieldFocused,
-                    isSearching: self.viewModel.searchHandler.isFuzzySearching,
-                    fadeOpacity: self.scrollHandler.searchBarTopFade,
-                    fadeHeight: self.scrollHandler.fadeHeight
-                )
-                .padding(.top, 38)
             }
         }
         .navigationBarHidden(true)
@@ -199,19 +167,8 @@ struct TracklistListView: View {
     }
 
     private var tracklistList: some View {
-        ScrollViewReader { proxy in
         ScrollFadeView {
             List {
-                if self.isLibraryMode && !self.viewModel.isEditing {
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(height: self.scrollHandler.searchBarHeight)
-                        .id("listTop")
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                }
-
                 ForEach(self.viewModel.displayTracklists) { tracklist in
                     if self.viewModel.isEditing {
                         HStack(spacing: 0) {
@@ -246,7 +203,6 @@ struct TracklistListView: View {
                         TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode, showChevron: self.canNavigateToTracklist)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                self.isSearchFieldFocused = false
                                 if self.canNavigateToTracklist {
                                     self.selectedTracklistId = tracklist.id
                                 }
@@ -270,22 +226,7 @@ struct TracklistListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .environment(\.defaultMinListRowHeight, self.scrollHandler.searchBarHeight)
             .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
-            .modifier(ScrollDirectionTracker(
-                isEnabled: self.isLibraryMode && !self.viewModel.isEditing,
-                onScrollChange: { oldInfo, newInfo in
-                    self.scrollHandler.handleScrollChange(
-                        oldInfo: oldInfo,
-                        newInfo: newInfo,
-                        isSearchFieldFocused: self.isSearchFieldFocused
-                    )
-                }
-            ))
-        }
-        .onChange(of: self.viewModel.searchHandler.searchText) { _, _ in
-            proxy.scrollTo("listTop", anchor: .top)
-        }
         }
     }
 

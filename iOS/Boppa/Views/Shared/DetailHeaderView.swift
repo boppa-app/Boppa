@@ -61,7 +61,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                         Button(action: self.onBack) {
                             Image(systemName: "chevron.left")
                                 .font(.body.weight(.semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.purp)
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
@@ -74,22 +74,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                 }
             }
             .frame(height: 44)
-            .background(
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: Color.purp.opacity(0.1), location: 0.5),
-                        .init(color: Color.purp.opacity(0.2), location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-
-            Rectangle()
-                .fill(Color.purp)
-                // .shadow(color: Color.purp.opacity(0.6), radius: 8, x: 0, y: 0)
-                .frame(height: 2)
+            .background(Color.black)
         }
     }
 }

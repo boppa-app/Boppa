@@ -7,9 +7,6 @@ struct TracklistView: View {
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
-    @State private var scrollHandler = SearchBarScrollHandler()
-    @FocusState private var isSearchFieldFocused: Bool
-
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
     }
@@ -34,23 +31,16 @@ struct TracklistView: View {
                     title: self.viewModel.tracklist.title,
                     highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
                     onBack: { self.dismiss() },
-                    onTitleTap: {
-                        guard self.isSaved else { return }
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            self.scrollHandler.showSearchBar.toggle()
-                        }
-                    },
                     trailing: {
                         HStack(spacing: 0) {
                             if self.isSaved {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.purp)
                                     .rotationEffect(.degrees(90))
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        self.isSearchFieldFocused = false
                                         self.showActionSheet = true
                                     }
                             } else if self.canSave {
@@ -58,11 +48,11 @@ struct TracklistView: View {
                                     if self.viewModel.isSaving {
                                         ProgressView()
                                             .scaleEffect(0.7)
-                                            .tint(.white)
+                                            .tint(.purp)
                                     } else {
                                         Image(systemName: "bookmark")
                                             .font(.system(size: 18))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(.purp)
                                     }
                                 }
                                 .frame(width: 44, height: 44)
@@ -85,29 +75,6 @@ struct TracklistView: View {
                 )
 
                 self.content
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                self.isSearchFieldFocused = false
-            }
-
-            if self.canSave {
-                StoredSearchToolbar(
-                    searchText: Binding(
-                        get: { self.viewModel.searchHandler.searchText },
-                        set: { self.viewModel.updateSearch($0) }
-                    ),
-                    showSearchBar: Binding(
-                        get: { self.isSaved && self.scrollHandler.showSearchBar },
-                        set: { self.scrollHandler.showSearchBar = $0 }
-                    ),
-                    placeholder: "Find in library",
-                    isSearchFieldFocused: self.$isSearchFieldFocused,
-                    isSearching: self.viewModel.searchHandler.isFuzzySearching,
-                    fadeOpacity: self.scrollHandler.searchBarTopFade,
-                    fadeHeight: self.scrollHandler.fadeHeight
-                )
-                .padding(.top, 38)
             }
         }
         .navigationBarHidden(true)
@@ -193,18 +160,8 @@ struct TracklistView: View {
     }
 
     private var trackList: some View {
-        ScrollViewReader { proxy in
-            ScrollFadeView {
+        ScrollFadeView {
                 List {
-                    if self.isSaved {
-                        Color.black
-                            .frame(height: self.scrollHandler.searchBarHeight)
-                            .id("listTop")
-                            .listRowBackground(Color.black)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparator(.hidden)
-                    }
-
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { _, track in
                     TrackRow(
                         track: track,
@@ -212,11 +169,9 @@ struct TracklistView: View {
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {
-                            self.isSearchFieldFocused = false
                             self.playTrack(track)
                         },
                         onEllipsisTap: {
-                            self.isSearchFieldFocused = false
                             self.trackForActions = track
                         }
                     )
@@ -239,22 +194,7 @@ struct TracklistView: View {
                 }
             }
             .listStyle(.plain)
-            .environment(\.defaultMinListRowHeight, self.scrollHandler.searchBarHeight)
             .scrollContentBackground(.hidden)
-            .modifier(ScrollDirectionTracker(
-                isEnabled: self.isSaved,
-                onScrollChange: { oldInfo, newInfo in
-                    self.scrollHandler.handleScrollChange(
-                        oldInfo: oldInfo,
-                        newInfo: newInfo,
-                        isSearchFieldFocused: self.isSearchFieldFocused
-                    )
-                }
-            ))
-        }
-        .onChange(of: self.viewModel.searchHandler.searchText) { _, _ in
-            proxy.scrollTo("listTop", anchor: .top)
-        }
         }
     }
 
