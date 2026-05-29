@@ -71,10 +71,7 @@ class SearchViewModel {
 
     func selectCategory(_ category: SearchCategory) {
         self.selectedCategory = category
-
-        if self.isQueryActive {
-            self.search()
-        }
+        self.search()
     }
 
     func search() {
