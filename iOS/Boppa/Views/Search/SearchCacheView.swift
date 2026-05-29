@@ -21,11 +21,6 @@ struct SearchCacheView: View {
                                     self.onSelect(cached)
                                 } label: {
                                     HStack(spacing: 12) {
-                                        Image(systemName: cached.category?.icon ?? "magnifyingglass")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(Color(.systemGray))
-                                            .frame(width: 20)
-
                                         Text(cached.query)
                                             .font(.system(size: 14))
                                             .foregroundColor(.white)

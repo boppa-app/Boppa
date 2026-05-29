@@ -143,7 +143,6 @@ extension DatabaseWriter where Self == DatabasePool {
                 CREATE TABLE "cachedSearchQueries" (
                   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                   "query" TEXT NOT NULL,
-                  "categoryRaw" TEXT NOT NULL,
                   "timestamp" REAL NOT NULL
                 ) STRICT
                 """

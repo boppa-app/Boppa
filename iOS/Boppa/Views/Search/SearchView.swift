@@ -27,10 +27,7 @@ struct SearchView: View {
                     viewModel: self.viewModel,
                     isSearchFieldFocused: self.$isSearchFieldFocused,
                     onSearch: {
-                        self.cacheManager.saveQuery(
-                            self.viewModel.searchQuery,
-                            category: self.viewModel.selectedCategory
-                        )
+                        self.cacheManager.saveQuery(self.viewModel.searchQuery)
                     }
                 )
                 if self.showCategorySuggestions {
@@ -75,10 +72,7 @@ struct SearchView: View {
                 Button {
                     self.viewModel.selectCategory(category)
                     self.viewModel.search()
-                    self.cacheManager.saveQuery(
-                        self.viewModel.searchQuery,
-                        category: category
-                    )
+                    self.cacheManager.saveQuery(self.viewModel.searchQuery)
                     self.isSearchFieldFocused = false
                 } label: {
                     HStack(spacing: 12) {
@@ -130,16 +124,10 @@ struct SearchView: View {
             SearchCacheView(
                 cachedQueries: self.cacheManager.cachedQueries,
                 onSelect: { cached in
-                    if let category = cached.category {
-                        self.viewModel.searchQuery = cached.query
-                        self.viewModel.selectCategory(category)
-                        self.viewModel.search()
-                        self.isSearchFieldFocused = false
-                        self.cacheManager.saveQuery(
-                            cached.query,
-                            category: category
-                        )
-                    }
+                    self.viewModel.searchQuery = cached.query
+                    self.viewModel.search()
+                    self.isSearchFieldFocused = false
+                    self.cacheManager.saveQuery(cached.query)
                 },
                 onRemove: { cached in
                     self.cacheManager.removeQuery(cached)

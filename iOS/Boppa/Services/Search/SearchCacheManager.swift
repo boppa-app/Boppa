@@ -27,20 +27,19 @@ class SearchCacheManager {
         }) ?? []
     }
 
-    func saveQuery(_ query: String, category: SearchCategory) {
+    func saveQuery(_ query: String) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         try? database.write { db in
             try CachedSearchQuery
-                .where { $0.query.eq(trimmed).and($0.categoryRaw.eq(category.rawValue)) }
+                .where { $0.query.eq(trimmed) }
                 .delete()
                 .execute(db)
 
             try CachedSearchQuery.insert {
                 CachedSearchQuery.Draft(
                     query: trimmed,
-                    categoryRaw: category.rawValue,
                     timestamp: Date().timeIntervalSince1970
                 )
             }.execute(db)
@@ -59,7 +58,7 @@ class SearchCacheManager {
         }
 
         self.load()
-        logger.info("Cached search query: \"\(trimmed)\" [\(category.rawValue)]")
+        logger.info("Cached search query: \"\(trimmed)\"")
     }
 
     func removeQuery(_ query: CachedSearchQuery) {
