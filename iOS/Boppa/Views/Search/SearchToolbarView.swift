@@ -88,7 +88,6 @@ struct SearchToolbarView: View {
 
             if self.viewModel.isQueryActive && !self.viewModel.availableCategories.isEmpty {
                 self.categoryBubbles
-                    .padding(.bottom, 8)
             }
         }
     }
