@@ -112,13 +112,13 @@ struct SearchToolbarView: View {
                                 Text(category.rawValue.prefix(1).uppercased() + category.rawValue.dropFirst())
                                     .font(.system(size: 15, weight: .medium))
                             }
-                            .foregroundColor(isSelected ? .purp : Color(.systemGray))
+                            .foregroundColor(isSelected && !self.isSearchFieldFocused.wrappedValue ? .purp : Color(.systemGray))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
                                 Capsule().fill(Color(.systemGray6).opacity(0.6))
-                                    .overlay(Capsule().fill(Color.purp.opacity(isSelected ? 0.1 : 0)))
-                                    .overlay(Capsule().strokeBorder(isSelected ? Color.purp.opacity(0.5) : Color(.systemGray3), lineWidth: 2))
+                                    .overlay(Capsule().fill(Color.purp.opacity(isSelected && !self.isSearchFieldFocused.wrappedValue ? 0.1 : 0)))
+                                    .overlay(Capsule().strokeBorder(isSelected && !self.isSearchFieldFocused.wrappedValue ? Color.purp.opacity(0.5) : Color(.systemGray3), lineWidth: 2))
                             )
                         }
                         .buttonStyle(.plain)
