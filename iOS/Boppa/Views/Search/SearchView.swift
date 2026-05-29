@@ -47,6 +47,7 @@ struct SearchView: View {
                     self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
                     self.cacheManager.updateFilter("")
                 } else {
+                    self.scrollHandler.showSearchBar = true
                     self.cacheManager.updateFilter(self.viewModel.searchQuery)
                 }
             }
