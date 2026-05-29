@@ -1,4 +1,5 @@
 import Foundation
+import Ifrit
 import SQLiteData
 
 // TODO: rename this one and all other SQLite table structs to prefix with "Stored"
@@ -8,6 +9,11 @@ nonisolated struct CachedSearchQuery: Identifiable {
     let id: Int
     var query: String
     var timestamp: Double
+}
+
+extension CachedSearchQuery: FuzzySearchable {
+    var fuzzyTitle: String { self.query }
+    var fuzzySubtitle: String? { nil }
 }
 
 extension CachedSearchQuery {

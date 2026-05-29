@@ -45,6 +45,14 @@ struct SearchView: View {
             .onChange(of: self.isSearchFieldFocused) { _, focused in
                 if !focused {
                     self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
+                    self.cacheManager.updateFilter("")
+                } else {
+                    self.cacheManager.updateFilter(self.viewModel.searchQuery)
+                }
+            }
+            .onChange(of: self.viewModel.searchQuery) { _, query in
+                if self.isSearchFieldFocused {
+                    self.cacheManager.updateFilter(query)
                 }
             }
             .onChange(of: self.viewModel.lastSearchedQuery) { _, _ in
@@ -110,12 +118,9 @@ struct SearchView: View {
                 Color.clear.frame(height: CategoryBubblesBar.barHeight)
             }
             SearchCacheView(
-                cachedQueries: self.cacheManager.cachedQueries,
+                cachedQueries: self.cacheManager.displayedQueries,
                 onSelect: { cached in
                     self.viewModel.searchQuery = cached.query
-                    self.viewModel.search()
-                    self.isSearchFieldFocused = false
-                    self.cacheManager.saveQuery(cached.query)
                 },
                 onRemove: { cached in
                     self.cacheManager.removeQuery(cached)

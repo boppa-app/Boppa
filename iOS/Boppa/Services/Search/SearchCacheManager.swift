@@ -1,5 +1,6 @@
 import Dependencies
 import Foundation
+import Ifrit
 import os
 import SQLiteData
 
@@ -12,9 +13,16 @@ private let logger = Logger(
 @Observable
 class SearchCacheManager {
     var cachedQueries: [CachedSearchQuery] = []
+    var displayedQueries: [CachedSearchQuery] = []
 
     @ObservationIgnored
     @Dependency(\.defaultDatabase) var database
+
+    @ObservationIgnored
+    private let fuse = Fuse(threshold: 0.4, tokenize: true)
+
+    @ObservationIgnored
+    private var fuzzySearchTask: Task<Void, Never>?
 
     private static let maxCachedQueries = 25
 
@@ -25,6 +33,27 @@ class SearchCacheManager {
                 .limit(Self.maxCachedQueries)
                 .fetchAll(db)
         }) ?? []
+        self.displayedQueries = self.cachedQueries
+    }
+
+    func updateFilter(_ text: String) {
+        self.fuzzySearchTask?.cancel()
+
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
+            self.displayedQueries = self.cachedQueries
+            return
+        }
+
+        let snapshot = self.cachedQueries
+        let fuseInstance = self.fuse
+
+        self.fuzzySearchTask = Task {
+            let fuseProps: [[FuseProp]] = snapshot.map { [FuseProp($0.query, weight: 1.0)] }
+            let results = await fuseInstance.search(trimmed, in: fuseProps)
+            guard !Task.isCancelled else { return }
+            self.displayedQueries = results.map { snapshot[$0.index] }
+        }
     }
 
     func saveQuery(_ query: String) {
@@ -73,5 +102,6 @@ class SearchCacheManager {
             try CachedSearchQuery.delete().execute(db)
         }
         self.cachedQueries = []
+        self.displayedQueries = []
     }
 }
