@@ -12,12 +12,8 @@ struct SearchView: View {
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
 
-    private var showCategorySuggestions: Bool {
-        self.isSearchFieldFocused && self.viewModel.isQueryActive
-    }
-
     private var showRecentSearches: Bool {
-        self.isSearchFieldFocused && !self.viewModel.isQueryActive
+        self.isSearchFieldFocused
     }
 
     var body: some View {
@@ -30,12 +26,15 @@ struct SearchView: View {
                         self.cacheManager.saveQuery(self.viewModel.searchQuery)
                     }
                 )
-                if self.showCategorySuggestions {
-                    self.categorySuggestions
-                } else if self.showRecentSearches {
+                if self.showRecentSearches {
                     self.recentSearchesView
                 } else {
                     self.contentArea
+                }
+            }
+            .onChange(of: self.isSearchFieldFocused) { _, focused in
+                if !focused {
+                    self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
                 }
             }
             .onAppear {
@@ -64,46 +63,6 @@ struct SearchView: View {
             }
         }
         .id(self.navigationResetId)
-    }
-
-    private var categorySuggestions: some View {
-        List {
-            ForEach(self.viewModel.availableCategories, id: \.self) { category in
-                Button {
-                    self.viewModel.selectCategory(category)
-                    self.viewModel.search()
-                    self.cacheManager.saveQuery(self.viewModel.searchQuery)
-                    self.isSearchFieldFocused = false
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: category.icon)
-                            .font(.system(size: 16))
-                            .foregroundColor(.purp)
-                            .frame(width: 24)
-                        Text("Search \(category.rawValue)")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        Spacer()
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16))
-                            .foregroundColor(Color(.systemGray3))
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.black)
-                .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
-                .listRowSeparator(.hidden)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollDismissesKeyboard(.immediately)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
     }
 
     private var contentArea: some View {

@@ -17,6 +17,7 @@ class SearchViewModel {
     var showMediaSourcePicker = false
     var selectedCategory: SearchCategory = .songs
     var availableCategories: [SearchCategory] = []
+    var lastSearchedQuery: String = ""
 
     @ObservationIgnored
     @Dependency(\.defaultDatabase) var database
@@ -88,6 +89,7 @@ class SearchViewModel {
             self.errorMessage = nil
             return
         }
+        self.lastSearchedQuery = trimmed
 
         guard let mediaSource = self.selectedMediaSource else {
             self.errorMessage = "No media source selected"
@@ -173,6 +175,7 @@ class SearchViewModel {
         self.hasMorePages = false
         self.paginationContext = nil
         self.selectedCategory = .songs
+        self.lastSearchedQuery = ""
     }
 
     private func updateAvailableCategories() {
