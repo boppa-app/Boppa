@@ -121,6 +121,9 @@ struct SearchView: View {
                 cachedQueries: self.cacheManager.displayedQueries,
                 onSelect: { cached in
                     self.viewModel.searchQuery = cached.query
+                    self.viewModel.search()
+                    self.isSearchFieldFocused = false
+                    self.cacheManager.saveQuery(cached.query)
                 },
                 onRemove: { cached in
                     self.cacheManager.removeQuery(cached)

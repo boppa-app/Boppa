@@ -87,6 +87,7 @@ class SearchViewModel {
         guard !trimmed.isEmpty else {
             self.results = .songs([])
             self.errorMessage = nil
+            self.lastSearchedQuery = ""
             return
         }
         self.lastSearchedQuery = trimmed
