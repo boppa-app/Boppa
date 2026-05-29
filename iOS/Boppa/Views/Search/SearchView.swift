@@ -294,6 +294,7 @@ struct SearchView: View {
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
+                        .id(self.viewModel.results.count)
                         .onAppear {
                             self.viewModel.loadNextPage()
                         }
