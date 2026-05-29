@@ -119,7 +119,7 @@ struct SearchToolbarView: View {
                             .background(
                                 Capsule().fill(Color(.systemGray6).opacity(0.6))
                                     .overlay(Capsule().fill(Color.purp.opacity(isSelected ? 0.1 : 0)))
-                                    .overlay(Capsule().strokeBorder(isSelected ? Color.purp.opacity(0.5) : Color(.systemGray3), lineWidth: 1.5))
+                                    .overlay(Capsule().strokeBorder(isSelected ? Color.purp.opacity(0.5) : Color(.systemGray3), lineWidth: 2))
                             )
                         }
                         .buttonStyle(.plain)
