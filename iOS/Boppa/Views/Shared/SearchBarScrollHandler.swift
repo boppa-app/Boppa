@@ -39,7 +39,6 @@ class SearchBarScrollHandler {
     var showSearchBar = true
     var searchBarTopFade: CGFloat = 0
 
-    let searchBarHeight: CGFloat = 46
     let fadeHeight: CGFloat = 40
 
     private var accumulatedScrollDown: CGFloat = 0
@@ -66,7 +65,7 @@ class SearchBarScrollHandler {
             // Hide when accumulated scroll down exceeds threshold
             if self.accumulatedScrollDown > scrollDownThreshold {
                 if self.showSearchBar {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(.easeInOut(duration: 1.0)) {
                         self.showSearchBar = false
                     }
                     self.accumulatedScrollDown = 0
@@ -79,7 +78,7 @@ class SearchBarScrollHandler {
 
             // Accumulate if velocity is high enough OR if the spacer is about to become visible (contentOffset < searchBarHeight).
             // This ensures the search bar always appears before the black spacer is exposed, even during very slow scrolls.
-            let spacerAboutToShow = newInfo.contentOffset < self.searchBarHeight
+            let spacerAboutToShow = newInfo.contentOffset < CategoryBubblesBar.barHeight
             if velocity > velocityThreshold || spacerAboutToShow {
                 self.accumulatedScrollUp += abs(delta)
 
@@ -90,7 +89,7 @@ class SearchBarScrollHandler {
                     let maxFPS = CGFloat(UIScreen.main.maximumFramesPerSecond)
                     let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : 0
                     let secondsUntilTop = framesUntilTop / maxFPS
-                    let duration = min(2 * secondsUntilTop, 0.3)
+                    let duration = min(2 * secondsUntilTop, 1.0)
 
                     withAnimation(.easeInOut(duration: duration)) {
                         self.showSearchBar = true

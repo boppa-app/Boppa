@@ -5,12 +5,17 @@ import SwiftUI
 struct SearchView: View {
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
+    @State private var scrollHandler = SearchBarScrollHandler()
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
     @FocusState private var isSearchFieldFocused: Bool
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
+
+    private var showBubbles: Bool {
+        (self.isSearchFieldFocused || self.viewModel.isQueryActive) && !self.viewModel.availableCategories.isEmpty
+    }
 
     private var showRecentSearches: Bool {
         self.isSearchFieldFocused
@@ -26,16 +31,24 @@ struct SearchView: View {
                         self.cacheManager.saveQuery(self.viewModel.searchQuery)
                     }
                 )
-                if self.showRecentSearches {
-                    self.recentSearchesView
-                } else {
-                    self.contentArea
+                ZStack(alignment: .top) {
+                    if self.showRecentSearches {
+                        self.recentSearchesView
+                    } else {
+                        self.contentArea
+                    }
+                    if self.showBubbles {
+                        self.categoryBubblesBar
+                    }
                 }
             }
             .onChange(of: self.isSearchFieldFocused) { _, focused in
                 if !focused {
                     self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
                 }
+            }
+            .onChange(of: self.viewModel.lastSearchedQuery) { _, _ in
+                self.scrollHandler.showSearchBar = true
             }
             .onAppear {
                 self.viewModel.loadSources()
@@ -65,6 +78,19 @@ struct SearchView: View {
         .id(self.navigationResetId)
     }
 
+    private var categoryBubblesBar: some View {
+        CategoryBubblesBar(
+            categories: self.viewModel.availableCategories,
+            selectedCategory: self.viewModel.selectedCategory,
+            scrollHandler: self.scrollHandler,
+            isFocused: self.isSearchFieldFocused,
+            onSelect: { category in
+                self.viewModel.selectCategory(category)
+                self.isSearchFieldFocused = false
+            }
+        )
+    }
+
     private var contentArea: some View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
@@ -80,6 +106,9 @@ struct SearchView: View {
 
     private var recentSearchesView: some View {
         VStack(spacing: 0) {
+            if self.showBubbles {
+                Color.clear.frame(height: CategoryBubblesBar.barHeight)
+            }
             SearchCacheView(
                 cachedQueries: self.cacheManager.cachedQueries,
                 onSelect: { cached in
@@ -138,6 +167,14 @@ struct SearchView: View {
     private var resultsList: some View {
         ScrollFadeView {
             List {
+                if self.showBubbles {
+                    Color.black
+                        .frame(height: CategoryBubblesBar.barHeight)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                }
+
                 switch self.viewModel.results {
                 case let .songs(tracks), let .videos(tracks):
                     ForEach(Array(tracks.enumerated()), id: \.element.id) { _, track in
@@ -255,8 +292,19 @@ struct SearchView: View {
                 }
             }
             .listStyle(.plain)
+            .padding(.top, -10)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
+            .modifier(ScrollDirectionTracker(
+                isEnabled: self.showBubbles,
+                onScrollChange: { oldInfo, newInfo in
+                    self.scrollHandler.handleScrollChange(
+                        oldInfo: oldInfo,
+                        newInfo: newInfo,
+                        isSearchFieldFocused: self.isSearchFieldFocused
+                    )
+                }
+            ))
         }
         .sheet(item: self.$trackForActions) { track in
             if let mediaSource = self.viewModel.selectedMediaSource {
