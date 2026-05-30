@@ -1,7 +1,7 @@
 import Dependencies
 import Foundation
-import SQLiteData
 import os
+import SQLiteData
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "TracklistStorageService")
 
@@ -17,13 +17,13 @@ class TracklistStorageService {
     // MARK: - Reads
 
     func resolveMediaSource(mediaSourceId: String) -> MediaSource? {
-        try? database.read { db in
+        try? self.database.read { db in
             try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db)
         }
     }
 
     func findStoredTracklist(mediaId: String, mediaSourceId: String) -> StoredTracklist? {
-        try? database.read { db in
+        try? self.database.read { db in
             try StoredTracklist
                 .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
                 .fetchOne(db)
@@ -31,13 +31,13 @@ class TracklistStorageService {
     }
 
     func findStoredTracklistById(_ id: Int) -> StoredTracklist? {
-        try? database.read { db in
+        try? self.database.read { db in
             try StoredTracklist.where { $0.id.eq(id) }.fetchOne(db)
         }
     }
 
     func loadTracksForTracklist(_ tracklist: StoredTracklist) -> [Track] {
-        (try? database.read { db in
+        (try? self.database.read { db in
             let storedTracks = try StoredTracklistTrack
                 .where { $0.tracklistId.eq(tracklist.id) }
                 .join(StoredTrack.all) { tt, t in tt.trackId.eq(t.id) }
@@ -61,7 +61,7 @@ class TracklistStorageService {
     }
 
     func tracklistWithRelations(from stored: StoredTracklist) -> Tracklist {
-        (try? database.read { db in try self.tracklist(from: stored, db: db) })
+        (try? self.database.read { db in try self.tracklist(from: stored, db: db) })
             ?? Tracklist(storedTracklist: stored)
     }
 
@@ -99,7 +99,7 @@ class TracklistStorageService {
     }
 
     func deleteStoredTracklist(_ storedTracklist: StoredTracklist) throws {
-        try database.write { db in
+        try self.database.write { db in
             try StoredTracklist.where { $0.id.eq(storedTracklist.id) }.delete().execute(db)
         }
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
@@ -140,7 +140,7 @@ class TracklistStorageService {
     // MARK: - Private: tracklist persistence
 
     private func upsertStoredTracklist(tracklist: Tracklist, db: Database) throws -> StoredTracklist {
-        let fromArtistId = try tracklist.fromArtist.map { try upsertArtist($0, db: db) }
+        let fromArtistId = try tracklist.fromArtist.map { try self.upsertArtist($0, db: db) }
 
         let existing = try StoredTracklist
             .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
@@ -155,7 +155,7 @@ class TracklistStorageService {
             }
             .where { $0.id.eq(existing.id) }
             .execute(db)
-            try replaceTracklistArtists(tracklistId: existing.id, artists: tracklist.artists, db: db)
+            try self.replaceTracklistArtists(tracklistId: existing.id, artists: tracklist.artists, db: db)
             return try StoredTracklist.where { $0.id.eq(existing.id) }.fetchOne(db) ?? existing
         }
 
@@ -181,7 +181,7 @@ class TracklistStorageService {
         }.execute(db)
 
         let insertedId = Int(db.lastInsertedRowID)
-        try replaceTracklistArtists(tracklistId: insertedId, artists: tracklist.artists, db: db)
+        try self.replaceTracklistArtists(tracklistId: insertedId, artists: tracklist.artists, db: db)
 
         if let tail {
             try StoredTracklist.update { $0.nextId = #bind(Optional(insertedId)) }
@@ -215,16 +215,16 @@ class TracklistStorageService {
                 let existingArtists = try loadArtistsForTrack(match.id, db: db)
                 let existingAlbums = try loadAlbumsForTrack(match.id, db: db)
                 if !match.contentMatches(track, artists: existingArtists, albums: existingAlbums) {
-                    try updateTrackScalars(track, id: match.id, db: db)
-                    try replaceTrackArtists(trackId: match.id, artists: track.artists, db: db)
-                    try replaceTrackAlbums(trackId: match.id, albums: track.albums, db: db)
+                    try self.updateTrackScalars(track, id: match.id, db: db)
+                    try self.replaceTrackArtists(trackId: match.id, artists: track.artists, db: db)
+                    try self.replaceTrackAlbums(trackId: match.id, albums: track.albums, db: db)
                 }
             } else {
                 let trackId = try upsertTrack(track, db: db)
                 try StoredTracklistTrack.insert {
                     StoredTracklistTrack.Draft(tracklistId: tracklist.id, trackId: trackId, sortOrder: index)
                 } onConflictDoUpdate: { $0.sortOrder = index }
-                .execute(db)
+                    .execute(db)
             }
         }
 
@@ -245,7 +245,9 @@ class TracklistStorageService {
     private func buildFetchParams(tracklist: Tracklist, config: MediaSourceConfig) throws -> (script: String, params: [String: Any]) {
         let script: String?
         var itemParams: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? ""]
-        for (key, value) in tracklist.metadata { itemParams[key] = value }
+        for (key, value) in tracklist.metadata {
+            itemParams[key] = value
+        }
 
         switch tracklist.tracklistType {
         case .playlist:
@@ -272,9 +274,9 @@ class TracklistStorageService {
             let existingArtists = try loadArtistsForTrack(existing.id, db: db)
             let existingAlbums = try loadAlbumsForTrack(existing.id, db: db)
             if !existing.contentMatches(track, artists: existingArtists, albums: existingAlbums) {
-                try updateTrackScalars(track, id: existing.id, db: db)
-                try replaceTrackArtists(trackId: existing.id, artists: track.artists, db: db)
-                try replaceTrackAlbums(trackId: existing.id, albums: track.albums, db: db)
+                try self.updateTrackScalars(track, id: existing.id, db: db)
+                try self.replaceTrackArtists(trackId: existing.id, artists: track.artists, db: db)
+                try self.replaceTrackAlbums(trackId: existing.id, albums: track.albums, db: db)
             }
             return existing.id
         } else {
@@ -291,8 +293,8 @@ class TracklistStorageService {
                 )
             }.execute(db)
             let trackId = Int(db.lastInsertedRowID)
-            try replaceTrackArtists(trackId: trackId, artists: track.artists, db: db)
-            try replaceTrackAlbums(trackId: trackId, albums: track.albums, db: db)
+            try self.replaceTrackArtists(trackId: trackId, artists: track.artists, db: db)
+            try self.replaceTrackAlbums(trackId: trackId, albums: track.albums, db: db)
             return trackId
         }
     }
@@ -346,7 +348,7 @@ class TracklistStorageService {
             .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
             .fetchOne(db)
         if let existing {
-            let mergedMetadata = deepMerge(existing.metadata, artist.metadata)
+            let mergedMetadata = self.deepMerge(existing.metadata, artist.metadata)
             try StoredArtist.update {
                 if !artist.name.isEmpty { $0.name = artist.name }
                 if artist.artworkUrl != nil { $0.artworkUrl = artist.artworkUrl }
@@ -374,7 +376,7 @@ class TracklistStorageService {
             .where { $0.mediaId.eq(album.mediaId).and($0.mediaSourceId.eq(album.mediaSourceId)) }
             .fetchOne(db)
         if let existing {
-            let mergedMetadata = deepMerge(existing.metadata, album.metadata)
+            let mergedMetadata = self.deepMerge(existing.metadata, album.metadata)
             try StoredTracklist.update {
                 if !album.title.isEmpty { $0.title = album.title }
                 if album.subtitle != nil { $0.subtitle = album.subtitle }
@@ -410,7 +412,7 @@ class TracklistStorageService {
             if let existingDict = result[key] as? [String: Any],
                let newDict = newValue as? [String: Any]
             {
-                result[key] = deepMerge(existingDict, newDict)
+                result[key] = self.deepMerge(existingDict, newDict)
             } else {
                 result[key] = newValue
             }

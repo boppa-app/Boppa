@@ -29,7 +29,7 @@ struct TracklistRow: View {
     private var resolvedMediaSource: MediaSource? {
         guard self.showMediaSourceIcon else { return nil }
         let mediaSourceId = self.tracklist.mediaSourceId
-        return try? database.read { db in
+        return try? self.database.read { db in
             try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db)
         }
     }

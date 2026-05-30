@@ -117,7 +117,7 @@ final class MediaSourceContextProvider: NSObject {
 
     @MainActor
     private func refreshFromDatabase() {
-        let mediaSources = (try? database.read { db in
+        let mediaSources = (try? self.database.read { db in
             try MediaSource.fetchAll(db)
         }) ?? []
         logger.info("Fetched \(mediaSources.count) media source(s) from database")
@@ -126,7 +126,7 @@ final class MediaSourceContextProvider: NSObject {
 
     @MainActor
     private func refreshSource(id mediaSourceId: String) {
-        let mediaSources = (try? database.read { db in
+        let mediaSources = (try? self.database.read { db in
             try MediaSource.fetchAll(db)
         }) ?? []
         guard let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId }) else {
@@ -302,7 +302,7 @@ final class MediaSourceContextProvider: NSObject {
         }
 
         Task {
-            try? await database.write { db in
+            try? await self.database.write { db in
                 guard let mediaSource = try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db) else {
                     logger.warning("Could not find MediaSource '\(mediaSourceId)' to store context values")
                     return

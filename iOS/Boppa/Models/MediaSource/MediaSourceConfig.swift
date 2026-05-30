@@ -2,7 +2,7 @@ import Foundation
 import WebKit
 
 // TODO: Add version, updateUrl (URL to check for config updates), and downloadUrl (URL to download config) fields
-struct MediaSourceConfig: Codable, Sendable {
+struct MediaSourceConfig: Codable {
     let id: String
     let name: String
     let url: String
@@ -50,24 +50,24 @@ struct MediaSourceConfig: Codable, Sendable {
     }
 }
 
-struct LoginConfig: Codable, Sendable {
+struct LoginConfig: Codable {
     let url: String
     let required: Bool?
     let cookies: [String]?
 }
 
-struct Parse: Codable, Sendable {
+struct Parse: Codable {
     let url: String
     let intervalSeconds: Int
     let userScripts: [Script]
 }
 
-struct Script: Codable, Sendable {
+struct Script: Codable {
     let content: ScriptContent
     let injectionTime: ScriptInjectionTime
 }
 
-enum ScriptInjectionTime: String, Codable, Sendable {
+enum ScriptInjectionTime: String, Codable {
     case atDocumentStart
     case atDocumentEnd
 
@@ -79,7 +79,7 @@ enum ScriptInjectionTime: String, Codable, Sendable {
     }
 }
 
-struct ScriptContent: Codable, Sendable {
+struct ScriptContent: Codable {
     let script: String
 
     nonisolated init(from decoder: Decoder) throws {
@@ -97,7 +97,7 @@ struct ScriptContent: Codable, Sendable {
     }
 }
 
-struct MediaSourceData: Codable, Sendable {
+struct MediaSourceData: Codable {
     let searchSongs: ScriptContent?
     let searchVideos: ScriptContent?
     let searchArtists: ScriptContent?

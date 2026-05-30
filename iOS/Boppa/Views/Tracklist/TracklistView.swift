@@ -161,7 +161,7 @@ struct TracklistView: View {
 
     private var trackList: some View {
         ScrollFadeView {
-                List {
+            List {
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { _, track in
                     TrackRow(
                         track: track,

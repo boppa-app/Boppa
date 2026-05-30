@@ -1,5 +1,5 @@
 import Foundation
 
-struct PlaybackConfig: Codable, Sendable {
+struct PlaybackConfig: Codable {
     let userScripts: [Script]
 }

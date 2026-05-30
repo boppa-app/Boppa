@@ -11,7 +11,7 @@ class SettingsViewModel {
     @Dependency(\.defaultDatabase) var database
 
     func loadSources() {
-        self.mediaSources = (try? database.read { db in
+        self.mediaSources = (try? self.database.read { db in
             try MediaSource.order { $0.sortOrder }.fetchAll(db)
         }) ?? []
     }
@@ -20,7 +20,7 @@ class SettingsViewModel {
         var reordered = self.mediaSources
         let item = reordered.remove(at: sourceIndex)
         reordered.insert(item, at: destinationIndex)
-        try? database.write { db in
+        try? self.database.write { db in
             for (index, mediaSource) in reordered.enumerated() {
                 try MediaSource.update { $0.sortOrder = index }
                     .where { $0.id.eq(mediaSource.id) }
@@ -33,7 +33,7 @@ class SettingsViewModel {
     func deleteMediaSource(at index: Int) -> String {
         let mediaSource = self.mediaSources[index]
         let deletedId = mediaSource.id
-        try? database.write { db in
+        try? self.database.write { db in
             try MediaSource.where { $0.id.eq(mediaSource.id) }.delete().execute(db)
         }
         self.mediaSources.remove(at: index)

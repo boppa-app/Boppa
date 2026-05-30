@@ -37,7 +37,7 @@ final class WebViewPlaybackEngineRegistry {
     }
 
     private func createEnginesForExistingSources() {
-        let mediaSources = (try? database.read { db in
+        let mediaSources = (try? self.database.read { db in
             try MediaSource.fetchAll(db)
         }) ?? []
 
@@ -97,7 +97,7 @@ final class WebViewPlaybackEngineRegistry {
     }
 
     private func handleMediaSourceAdded() {
-        let mediaSources = (try? database.read { db in
+        let mediaSources = (try? self.database.read { db in
             try MediaSource.fetchAll(db)
         }) ?? []
 
@@ -116,7 +116,7 @@ final class WebViewPlaybackEngineRegistry {
 
     private func handleMediaSourceEnabled(id: String) {
         guard self.engines[id] == nil else { return }
-        let mediaSources = (try? database.read { db in
+        let mediaSources = (try? self.database.read { db in
             try MediaSource.fetchAll(db)
         }) ?? []
         guard let mediaSource = mediaSources.first(where: { $0.id == id }) else {

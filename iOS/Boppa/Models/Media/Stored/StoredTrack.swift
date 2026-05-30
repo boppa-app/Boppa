@@ -16,37 +16,37 @@ nonisolated struct StoredTrack: Identifiable {
 
 extension StoredTrack {
     var metadata: [String: Any] {
-        (try? JSONSerialization.jsonObject(with: metadataJSON) as? [String: Any]) ?? [:]
+        (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]
     }
 
     func toTrack(artists: [Artist] = [], albums: [Tracklist] = []) -> Track {
         Track(
-            mediaId: mediaId,
-            mediaSourceId: mediaSourceId,
-            title: title,
-            subtitle: subtitle,
-            duration: duration,
-            artworkUrl: artworkUrl,
-            url: url,
+            mediaId: self.mediaId,
+            mediaSourceId: self.mediaSourceId,
+            title: self.title,
+            subtitle: self.subtitle,
+            duration: self.duration,
+            artworkUrl: self.artworkUrl,
+            url: self.url,
             artists: artists,
             albums: albums,
-            metadata: metadata
+            metadata: self.metadata
         )
     }
 
     func identityMatches(_ track: Track) -> Bool {
-        mediaId == track.mediaId
-            && title == track.title
-            && subtitle == track.subtitle
-            && url == track.url
-            && mediaSourceId == track.mediaSourceId
+        self.mediaId == track.mediaId
+            && self.title == track.title
+            && self.subtitle == track.subtitle
+            && self.url == track.url
+            && self.mediaSourceId == track.mediaSourceId
     }
 
     func contentMatches(_ track: Track, artists: [Artist] = [], albums: [Tracklist] = []) -> Bool {
-        identityMatches(track)
-            && duration == track.duration
-            && artworkUrl == track.artworkUrl
-            && NSDictionary(dictionary: metadata).isEqual(to: track.metadata)
+        self.identityMatches(track)
+            && self.duration == track.duration
+            && self.artworkUrl == track.artworkUrl
+            && NSDictionary(dictionary: self.metadata).isEqual(to: track.metadata)
             && artists == track.artists
             && albums == track.albums
     }

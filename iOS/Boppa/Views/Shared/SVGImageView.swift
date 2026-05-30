@@ -33,8 +33,6 @@ struct SVGImageView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: self.size, height: self.size)
-        } else {
-            EmptyView()
         }
     }
 }

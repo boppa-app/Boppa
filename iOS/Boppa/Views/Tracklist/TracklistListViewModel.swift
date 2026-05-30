@@ -101,7 +101,7 @@ class TracklistListViewModel {
         guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
-            try? database.write { db in
+            try? self.database.write { db in
                 if let prevId = stored.prevId {
                     try StoredTracklist.update { $0.nextId = stored.nextId }
                         .where { $0.id.eq(prevId) }
@@ -126,7 +126,7 @@ class TracklistListViewModel {
     func togglePin(tracklist: Tracklist) {
         guard let stored = tracklist.storedTracklist else { return }
         let newIsPinned = !stored.isPinned
-        try? database.write { db in
+        try? self.database.write { db in
             try StoredTracklist.update { $0.isPinned = newIsPinned }
                 .where { $0.id.eq(stored.id) }
                 .execute(db)
@@ -145,7 +145,7 @@ class TracklistListViewModel {
     }
 
     private func persistDLLOrder() {
-        try? database.write { db in
+        try? self.database.write { db in
             for (index, tracklist) in self.tracklists.enumerated() {
                 guard let stored = tracklist.storedTracklist else { continue }
                 let prevId = index > 0 ? self.tracklists[index - 1].storedTracklist?.id : nil
@@ -183,7 +183,7 @@ class TracklistListViewModel {
         case .playlists: typeString = "playlist"
         }
 
-        let result: [Tracklist] = (try? database.read { db in
+        let result: [Tracklist] = (try? self.database.read { db in
             let allStored = try StoredTracklist
                 .where { $0.tracklistType.eq(typeString) }
                 .fetchAll(db)

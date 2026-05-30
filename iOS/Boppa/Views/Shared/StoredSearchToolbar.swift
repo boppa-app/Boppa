@@ -15,7 +15,9 @@ struct StoredSearchToolbar: View {
         self.isSearchFieldFocused.wrappedValue
     }
 
-    private var toolbarHeight: CGFloat { 52 + self.fadeHeight }
+    private var toolbarHeight: CGFloat {
+        52 + self.fadeHeight
+    }
 
     var body: some View {
         VStack(spacing: 0) {

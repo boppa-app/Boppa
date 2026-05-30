@@ -49,7 +49,7 @@ class LibraryViewModel {
     }
 
     func loadSources() {
-        let newSources = (try? database.read { db in
+        let newSources = (try? self.database.read { db in
             try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
         }) ?? []
 
@@ -71,7 +71,7 @@ class LibraryViewModel {
     }
 
     func loadPinnedTracklists() {
-        self.allPinnedTracklists = (try? database.read { db in
+        self.allPinnedTracklists = (try? self.database.read { db in
             try StoredTracklist.where(\.isPinned).fetchAll(db)
         }) ?? []
         if !self.hasSetInitialPinnedState {

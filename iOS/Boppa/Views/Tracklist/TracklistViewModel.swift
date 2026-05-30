@@ -203,7 +203,7 @@ class TracklistViewModel {
     func togglePin() {
         guard let stored = self.tracklist.storedTracklist else { return }
         let newIsPinned = !self.isPinned
-        try? database.write { db in
+        try? self.database.write { db in
             try StoredTracklist.update { $0.isPinned = newIsPinned }
                 .where { $0.id.eq(stored.id) }
                 .execute(db)

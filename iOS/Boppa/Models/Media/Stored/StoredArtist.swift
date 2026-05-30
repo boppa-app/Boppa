@@ -13,16 +13,16 @@ nonisolated struct StoredArtist: Identifiable {
 
 extension StoredArtist {
     var metadata: [String: Any] {
-        (try? JSONSerialization.jsonObject(with: metadataJSON) as? [String: Any]) ?? [:]
+        (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]
     }
 
     func toArtist() -> Artist {
         Artist(
-            mediaId: mediaId,
-            mediaSourceId: mediaSourceId,
-            name: name,
-            artworkUrl: artworkUrl,
-            metadata: metadata
+            mediaId: self.mediaId,
+            mediaSourceId: self.mediaSourceId,
+            name: self.name,
+            artworkUrl: self.artworkUrl,
+            metadata: self.metadata
         )
     }
 }

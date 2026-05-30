@@ -12,8 +12,13 @@ nonisolated struct CachedSearchQuery: Identifiable {
 }
 
 extension CachedSearchQuery: FuzzySearchable {
-    var fuzzyTitle: String { self.query }
-    var fuzzySubtitle: String? { nil }
+    var fuzzyTitle: String {
+        self.query
+    }
+
+    var fuzzySubtitle: String? {
+        nil
+    }
 }
 
 extension CachedSearchQuery {

@@ -18,7 +18,7 @@ class MediaSourceDetailViewModel {
         get { self.mediaSource.isEnabled }
         set {
             self.mediaSource.isEnabled = newValue
-            try? database.write { db in
+            try? self.database.write { db in
                 try MediaSource.update { $0.isEnabled = newValue }
                     .where { $0.id.eq(self.mediaSource.id) }
                     .execute(db)

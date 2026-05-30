@@ -27,7 +27,7 @@ class SearchCacheManager {
     private static let maxCachedQueries = 25
 
     func load() {
-        self.cachedQueries = (try? database.read { db in
+        self.cachedQueries = (try? self.database.read { db in
             try CachedSearchQuery
                 .order { $0.timestamp.desc() }
                 .limit(Self.maxCachedQueries)
@@ -60,7 +60,7 @@ class SearchCacheManager {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        try? database.write { db in
+        try? self.database.write { db in
             try CachedSearchQuery
                 .where { $0.query.eq(trimmed) }
                 .delete()
@@ -91,14 +91,14 @@ class SearchCacheManager {
     }
 
     func removeQuery(_ query: CachedSearchQuery) {
-        try? database.write { db in
+        try? self.database.write { db in
             try CachedSearchQuery.where { $0.id.eq(query.id) }.delete().execute(db)
         }
         self.load()
     }
 
     func clearAll() {
-        try? database.write { db in
+        try? self.database.write { db in
             try CachedSearchQuery.delete().execute(db)
         }
         self.cachedQueries = []

@@ -19,6 +19,6 @@ nonisolated struct StoredTracklist: Identifiable {
 
 extension StoredTracklist {
     var metadata: [String: Any] {
-        (try? JSONSerialization.jsonObject(with: metadataJSON) as? [String: Any]) ?? [:]
+        (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]
     }
 }

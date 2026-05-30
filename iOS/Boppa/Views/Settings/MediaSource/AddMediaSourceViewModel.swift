@@ -31,7 +31,7 @@ class AddMediaSourceViewModel {
             )
 
             let startOrder: Int = {
-                let existing = try? database.read { db in
+                let existing = try? self.database.read { db in
                     try MediaSource.order { $0.sortOrder.desc() }.fetchOne(db)?.sortOrder
                 }
                 return (existing ?? nil ?? -1) + 1

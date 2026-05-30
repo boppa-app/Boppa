@@ -38,7 +38,7 @@ class SearchViewModel {
     private static let selectedMediaSourceKey = "search.selectedMediaSourceId"
 
     func loadSources() {
-        let sources = (try? database.read { db in
+        let sources = (try? self.database.read { db in
             try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
         }) ?? []
         self.mediaSources = sources
