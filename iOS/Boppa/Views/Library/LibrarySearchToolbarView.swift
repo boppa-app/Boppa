@@ -53,13 +53,13 @@ struct LibrarySearchToolbarView: View {
             .cornerRadius(10)
 
             if self.isSearchFieldFocused.wrappedValue {
-                Button("Cancel") {
+                Button("Done") {
                     self.isSearchFieldFocused.wrappedValue = false
                 }
                 .foregroundColor(Color.purp)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
-                .accessibilityLabel("Cancel Search")
-                .accessibilityHint("Dismiss search and return to library")
+                .accessibilityLabel("Done")
+                .accessibilityHint("Dismiss the keyboard")
             }
         }
         .animation(.easeInOut(duration: 0.2), value: self.isSearchFieldFocused.wrappedValue)
