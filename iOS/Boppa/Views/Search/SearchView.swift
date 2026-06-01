@@ -136,10 +136,6 @@ struct SearchView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
     }
 
     private var emptyStateView: some View {
@@ -149,10 +145,6 @@ struct SearchView: View {
                 .foregroundColor(Color(.systemGray5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
     }
 
     private func errorView(message: String) -> some View {
@@ -167,10 +159,6 @@ struct SearchView: View {
                 .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.isSearchFieldFocused = false
-        }
     }
 
     private var resultsList: some View {

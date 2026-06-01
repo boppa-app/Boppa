@@ -19,7 +19,7 @@ struct SearchToolbarView: View {
                     }
                 }
                 .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color.white : Color(.systemGray))
-                .frame(width: 20, height: 20)
+                .frame(width: 20, height: 24)
 
                 TextField(
                     "",
@@ -49,14 +49,26 @@ struct SearchToolbarView: View {
                     }
                 }
 
-                self.mediaSourcePickerButton
-                    .opacity(self.isSearchFieldFocused.wrappedValue ? 1.0 : 0.5)
+                if !self.isSearchFieldFocused.wrappedValue {
+                    self.mediaSourcePickerButton
+                        .opacity(0.5)
+                        .transition(.opacity)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(Color(.systemGray6))
             .cornerRadius(10)
+
+            if self.isSearchFieldFocused.wrappedValue {
+                Button("Cancel") {
+                    self.isSearchFieldFocused.wrappedValue = false
+                }
+                .foregroundColor(Color.purp)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.2), value: self.isSearchFieldFocused.wrappedValue)
         .padding(.horizontal, 16)
     }
 

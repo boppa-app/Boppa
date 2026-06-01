@@ -48,7 +48,16 @@ struct LibrarySearchToolbarView: View {
             .padding(.vertical, 10)
             .background(Color(.systemGray6))
             .cornerRadius(10)
+
+            if self.isSearchFieldFocused.wrappedValue {
+                Button("Cancel") {
+                    self.isSearchFieldFocused.wrappedValue = false
+                }
+                .foregroundColor(Color.purp)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.2), value: self.isSearchFieldFocused.wrappedValue)
         .padding(.horizontal, 16)
     }
 }
