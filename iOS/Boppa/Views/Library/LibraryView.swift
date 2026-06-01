@@ -155,6 +155,8 @@ struct LibraryView: View {
                         .font(.system(size: 20))
                         .foregroundColor(.purp)
                 }
+                .accessibilityLabel("Filter")
+                .accessibilityHint("Filter library by media source")
                 Spacer()
                 Button {
                     self.viewModel.loadAllContent()
@@ -167,6 +169,8 @@ struct LibraryView: View {
                         .font(.system(size: 20))
                         .foregroundColor(.purp)
                 }
+                .accessibilityLabel("Search Library")
+                .accessibilityHint("Search your library")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -357,6 +361,8 @@ struct LibraryView: View {
             .background(Color.black)
             .contentShape(Rectangle())
         }
+        .accessibilityLabel(self.viewModel.isPinnedExpanded ? "Pinned, expanded" : "Pinned, collapsed")
+        .accessibilityHint(self.viewModel.isPinnedExpanded ? "Collapse pinned section" : "Expand pinned section")
     }
 
     private func sectionButton(_ section: LibraryViewModel.LibrarySection) -> some View {
@@ -389,6 +395,9 @@ struct LibraryView: View {
         .listRowBackground(Color.black)
         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         .listRowSeparator(.hidden)
+        .accessibilityLabel(section.displayName)
+        .accessibilityHint("Open \(section.displayName)")
+        .accessibilityAddTraits(.isButton)
     }
 
     @ViewBuilder

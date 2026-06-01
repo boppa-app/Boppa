@@ -63,6 +63,8 @@ struct TrackRow: View {
                         .onTapGesture {
                             self.onEllipsisTap?()
                         }
+                        .accessibilityLabel("Loading")
+                        .accessibilityAddTraits(.isButton)
                 } else if self.isSelected {
                     ZStack {
                         Image(systemName: "waveform")
@@ -79,6 +81,9 @@ struct TrackRow: View {
                     .onTapGesture {
                         self.onEllipsisTap?()
                     }
+                    .accessibilityLabel(self.isPlaying ? "Now Playing" : "Paused")
+                    .accessibilityHint("More options for \(self.track.title)")
+                    .accessibilityAddTraits(.isButton)
                 } else {
                     Image(systemName: "ellipsis")
                         .foregroundColor(Color(.systemGray))
@@ -87,6 +92,9 @@ struct TrackRow: View {
                         .onTapGesture {
                             self.onEllipsisTap?()
                         }
+                        .accessibilityLabel("More Options")
+                        .accessibilityHint("More options for \(self.track.title)")
+                        .accessibilityAddTraits(.isButton)
                 }
             }
         }
@@ -97,5 +105,9 @@ struct TrackRow: View {
         .onTapGesture {
             self.onTap?()
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel([self.track.title, self.track.subtitle].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityHint("Play \(self.track.title)")
+        .accessibilityAddTraits(.isButton)
     }
 }

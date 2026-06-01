@@ -65,5 +65,7 @@ struct MediaSourcePickerSheet: View {
             MediaSourceIcon(mediaSource: mediaSource, isSelected: self.isSelected(mediaSource))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(mediaSource.name)
+        .accessibilityHint(self.isSelected(mediaSource) ? "Selected, tap to deselect" : "Tap to select")
     }
 }

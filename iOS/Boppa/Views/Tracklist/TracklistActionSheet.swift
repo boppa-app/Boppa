@@ -95,6 +95,8 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+        .accessibilityLabel(self.isPinned ? "Unpin" : "Pin")
+        .accessibilityHint(self.isPinned ? "Remove from pinned" : "Add to pinned")
     }
 
     private var refreshRow: some View {
@@ -127,6 +129,8 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+        .accessibilityLabel(self.isRefreshing ? "Refreshing" : "Refresh")
+        .accessibilityHint("Reload tracks from source")
     }
 
     private var sortRow: some View {
@@ -158,6 +162,8 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+        .accessibilityLabel(self.sortMode == .defaultOrder ? "Sort Tracks" : "Sort Tracks: \(self.sortMode.label)")
+        .accessibilityHint("Choose how tracks are sorted")
     }
 
     @ViewBuilder
@@ -194,6 +200,8 @@ struct TracklistActionSheet: View {
                 .listRowBackground(Color(.systemGray6))
                 .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                 .listRowSeparator(.hidden)
+                .accessibilityLabel("Go to \(artist.name)")
+                .accessibilityHint("View artist page for \(artist.name)")
             }
         }
     }
@@ -213,6 +221,8 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+        .accessibilityLabel("Remove from Library")
+        .accessibilityHint("Remove \(self.tracklist.title) from your library")
     }
 
     private func rowLabel<Trailing: View>(
@@ -257,6 +267,8 @@ struct TracklistActionSheet: View {
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityHint("Return to options")
                     Spacer()
                 }
                 .padding(.horizontal, 4)
@@ -293,6 +305,8 @@ struct TracklistActionSheet: View {
                     .listRowBackground(Color(.systemGray6))
                     .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                     .listRowSeparator(.hidden)
+                    .accessibilityLabel(mode.label)
+                    .accessibilityHint(self.sortMode == mode ? "Currently selected" : "Sort by \(mode.label)")
                 }
             }
             .listStyle(.plain)

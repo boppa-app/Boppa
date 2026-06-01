@@ -65,6 +65,8 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Back")
+                        .accessibilityHint("Go back to the previous screen")
 
                         Spacer()
 

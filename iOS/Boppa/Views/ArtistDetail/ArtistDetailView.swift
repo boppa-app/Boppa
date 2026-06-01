@@ -325,6 +325,9 @@ struct ArtistDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .accessibilityLabel(title)
+        .accessibilityHint("View all \(title.lowercased())")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var emptyState: some View {

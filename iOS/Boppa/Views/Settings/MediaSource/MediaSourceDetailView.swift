@@ -26,6 +26,10 @@ struct MediaSourceDetailView: View {
                     HStack {
                         SolidToggle(isOn: self.$viewModel.isSourceEnabled)
                             .fixedSize()
+                            .accessibilityLabel("Enable Media Source")
+                            .accessibilityValue(self.viewModel.isSourceEnabled ? "On" : "Off")
+                            .accessibilityHint("Toggle to enable or disable this media source")
+                            .accessibilityAddTraits(.isButton)
                         Spacer()
                     }
                 }
@@ -63,6 +67,8 @@ struct MediaSourceDetailView: View {
                                         .foregroundColor(Color.purp)
                                 }
                             }
+                            .accessibilityLabel("Login")
+                            .accessibilityHint("Log in to this media source")
                         }
                     }
                 }

@@ -13,6 +13,8 @@ struct BrowserToolbarView: View {
             }
             .foregroundColor(self.viewModel.canGoBack ? Color.purp : Color(.systemGray))
             .disabled(!self.viewModel.canGoBack)
+            .accessibilityLabel("Back")
+            .accessibilityHint("Go to previous page")
 
             Button(action: { self.viewModel.goForward() }) {
                 Image(systemName: "arrow.forward")
@@ -20,6 +22,8 @@ struct BrowserToolbarView: View {
             }
             .foregroundColor(self.viewModel.canGoForward ? Color.purp : Color(.systemGray))
             .disabled(!self.viewModel.canGoForward)
+            .accessibilityLabel("Forward")
+            .accessibilityHint("Go to next page")
 
             HStack(spacing: 8) {
                 TextField(
@@ -46,6 +50,8 @@ struct BrowserToolbarView: View {
                 .onAppear {
                     self.urlText = self.viewModel.currentURL?.absoluteString ?? ""
                 }
+                .accessibilityLabel("Address Bar")
+                .accessibilityHint("Enter a URL or search query")
 
                 if self.isURLFieldFocused && !self.urlText.isEmpty {
                     Button {
@@ -55,11 +61,14 @@ struct BrowserToolbarView: View {
                             .font(.system(size: 16))
                             .foregroundColor(Color(.systemGray))
                     }
+                    .accessibilityLabel("Clear Address")
+                    .accessibilityHint("Clear the current URL")
                 }
 
                 if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
+                        .accessibilityLabel("Loading")
                 }
             }
             .padding(.horizontal, 12)
@@ -79,6 +88,8 @@ struct BrowserToolbarView: View {
             }
             .foregroundColor(self.viewModel.currentURL != nil ? Color.purp : Color(.systemGray))
             .disabled(self.viewModel.currentURL == nil)
+            .accessibilityLabel(self.viewModel.isLoading ? "Stop" : "Reload")
+            .accessibilityHint(self.viewModel.isLoading ? "Stop loading the page" : "Reload the current page")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

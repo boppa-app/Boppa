@@ -142,6 +142,8 @@ struct MediaSourceGridView<Content: View>: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Add Media Source")
+        .accessibilityHint("Add a new media source")
     }
 
     private func reorderDragGesture(

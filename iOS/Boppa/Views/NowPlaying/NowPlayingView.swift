@@ -60,12 +60,14 @@ struct NowPlayingView: View {
                 uniqueId: self.viewModel.currentTrack?.id.uuidString
             )
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(self.viewModel.trackTitle)
 
             Text(self.viewModel.trackSubtitle)
                 .font(.body)
                 .foregroundColor(Color(.systemGray))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(self.viewModel.trackSubtitle)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -90,11 +92,13 @@ struct NowPlayingView: View {
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
+                    .accessibilityLabel("Current time: \(self.viewModel.formattedCurrentTime)")
                 Spacer()
                 Text(self.viewModel.formattedDuration)
                     .font(.caption)
                     .foregroundColor(Color(.systemGray))
                     .monospacedDigit()
+                    .accessibilityLabel("Duration: \(self.viewModel.formattedDuration)")
             }
         }
     }
@@ -107,6 +111,8 @@ struct NowPlayingView: View {
                     .foregroundColor(Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
+            .accessibilityLabel("Shuffle")
+            .accessibilityHint("Shuffle mode not yet available")
 
             Spacer()
 
@@ -120,12 +126,15 @@ struct NowPlayingView: View {
                         .frame(width: 48, height: 48)
                 }
                 .disabled(!self.viewModel.canGoBack)
+                .accessibilityLabel("Previous")
+                .accessibilityHint("Play previous track")
 
                 if self.viewModel.isLoading {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(2.5)
                         .frame(width: 48, height: 48)
+                        .accessibilityLabel("Loading")
                 } else {
                     Button {
                         self.viewModel.togglePlayPause()
@@ -135,6 +144,8 @@ struct NowPlayingView: View {
                             .foregroundColor(.white)
                             .frame(width: 48, height: 48)
                     }
+                    .accessibilityLabel(self.viewModel.isPlaying ? "Pause" : "Play")
+                    .accessibilityHint(self.viewModel.isPlaying ? "Pause playback" : "Resume playback")
                 }
 
                 Button {
@@ -146,6 +157,8 @@ struct NowPlayingView: View {
                         .frame(width: 48, height: 48)
                 }
                 .disabled(!self.viewModel.canSkipForward)
+                .accessibilityLabel("Next")
+                .accessibilityHint("Play next track")
             }
 
             Spacer()
@@ -158,6 +171,14 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.isRepeatActive ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
+            .accessibilityLabel({
+                switch self.viewModel.repeatMode {
+                case .off: return "Repeat Off"
+                case .all: return "Repeat All"
+                case .one: return "Repeat One"
+                }
+            }())
+            .accessibilityHint("Cycle repeat mode")
         }
     }
 
@@ -173,6 +194,8 @@ struct NowPlayingView: View {
                     .frame(width: 36, height: 36)
             }
             .disabled(!self.viewModel.hasTrackUrl)
+            .accessibilityLabel("Open in Browser")
+            .accessibilityHint("Open the current track page in the browser")
 
             Spacer()
 
@@ -184,6 +207,8 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.showQueue ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
+            .accessibilityLabel(self.viewModel.showQueue ? "Hide Queue" : "Show Queue")
+            .accessibilityHint("Toggle the playback queue")
         }
     }
 }

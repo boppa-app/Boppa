@@ -64,6 +64,8 @@ struct TracklistListActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+        .accessibilityLabel(self.sortMode == .defaultOrder ? self.sortLabel : "\(self.sortLabel): \(self.sortMode.label)")
+        .accessibilityHint("Choose sort order")
     }
 
     private var editRow: some View {
@@ -87,6 +89,8 @@ struct TracklistListActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
+        .accessibilityLabel("Edit")
+        .accessibilityHint("Enter edit mode to pin or remove items")
     }
 
     private var sortPickerPage: some View {
@@ -110,6 +114,8 @@ struct TracklistListActionSheet: View {
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityHint("Return to options")
                     Spacer()
                 }
                 .padding(.horizontal, 4)
@@ -146,6 +152,8 @@ struct TracklistListActionSheet: View {
                     .listRowBackground(Color(.systemGray6))
                     .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                     .listRowSeparator(.hidden)
+                    .accessibilityLabel(mode.label)
+                    .accessibilityHint(self.sortMode == mode ? "Currently selected" : "Sort by \(mode.label)")
                 }
             }
             .listStyle(.plain)

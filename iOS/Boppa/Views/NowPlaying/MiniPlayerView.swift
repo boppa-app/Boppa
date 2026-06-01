@@ -36,6 +36,12 @@ struct MiniPlayerView: View {
         .onTapGesture {
             self.showNowPlaying = true
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(self.playbackService.currentTrack.map {
+            [$0.title, $0.subtitle].compactMap { $0 }.joined(separator: ", ")
+        } ?? "Now Playing")
+        .accessibilityHint("Open Now Playing")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var progressBar: some View {
@@ -88,6 +94,7 @@ struct MiniPlayerView: View {
                 ProgressView()
                     .tint(.white)
                     .frame(width: 32, height: 32)
+                    .accessibilityLabel("Loading")
             } else {
                 Button {
                     self.playbackService.togglePlayPause()
@@ -97,6 +104,8 @@ struct MiniPlayerView: View {
                         .foregroundColor(.white)
                         .frame(width: 32, height: 32)
                 }
+                .accessibilityLabel(self.playbackService.isPlaying ? "Pause" : "Play")
+                .accessibilityHint(self.playbackService.isPlaying ? "Pause playback" : "Resume playback")
             }
         }
     }

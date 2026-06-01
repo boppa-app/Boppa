@@ -60,6 +60,8 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
                             }
                             .buttonStyle(.plain)
                             .id(category)
+                            .accessibilityLabel(category.displayName)
+                            .accessibilityHint(self.selectedCategory == category ? "Currently selected" : "Filter by \(category.displayName)")
                         }
                     }
                 }

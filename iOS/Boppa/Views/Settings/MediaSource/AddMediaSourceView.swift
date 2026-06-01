@@ -17,6 +17,8 @@ struct AddMediaSourceView: View {
                         .autocorrectionDisabled()
                         .disabled(self.viewModel.isLoading)
                         .tint(Color.purp)
+                        .accessibilityLabel("Media Source URL")
+                        .accessibilityHint("Enter the URL of the media source")
                 }
                 Section("Config Provider URL") {
                     TextField(self.viewModel.configProviderUrl, text: self.$viewModel.configProviderUrl)
@@ -35,6 +37,8 @@ struct AddMediaSourceView: View {
                             }
                         }
                         .tint(Color.purp)
+                        .accessibilityLabel("Config Provider URL")
+                        .accessibilityHint(self.isConfigProviderEditable ? "Enter a custom config provider URL" : "Tap to edit the config provider URL")
                 }
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -74,6 +78,8 @@ struct AddMediaSourceView: View {
                 Image(systemName: "xmark").font(.title3).foregroundColor(Color.red)
             }
             .disabled(self.viewModel.isLoading)
+            .accessibilityLabel("Cancel")
+            .accessibilityHint("Dismiss without adding a media source")
         }
         .sharedBackgroundVisibilityIfAvailable(.hidden)
     }
@@ -84,12 +90,15 @@ struct AddMediaSourceView: View {
             if self.viewModel.isLoading {
                 ProgressView()
                     .tint(.purp)
+                    .accessibilityLabel("Adding media source")
             } else {
                 Button(action: { self.addMediaSource() }) {
                     Image(systemName: "checkmark").font(.title3)
                         .foregroundColor(self.viewModel.isAddDisabled ? Color(.systemGray) : Color.purp)
                 }
                 .disabled(self.viewModel.isAddDisabled)
+                .accessibilityLabel("Add Media Source")
+                .accessibilityHint("Confirm and add the media source")
             }
         }
         .sharedBackgroundVisibilityIfAvailable(.hidden)

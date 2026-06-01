@@ -65,6 +65,9 @@ struct TracklistListView: View {
                                     .onTapGesture {
                                         self.viewModel.exitEditMode()
                                     }
+                                    .accessibilityLabel("Done Editing")
+                                    .accessibilityHint("Exit edit mode")
+                                    .accessibilityAddTraits(.isButton)
                             } else {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 16))
@@ -75,6 +78,9 @@ struct TracklistListView: View {
                                     .onTapGesture {
                                         self.showActionSheet = true
                                     }
+                                    .accessibilityLabel("More Options")
+                                    .accessibilityHint("Sort or edit this list")
+                                    .accessibilityAddTraits(.isButton)
                             }
                         }
                     }
@@ -182,6 +188,8 @@ struct TracklistListView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(tracklist.storedTracklist?.isPinned == true ? "Unpin \(tracklist.title)" : "Pin \(tracklist.title)")
+                            .accessibilityHint(tracklist.storedTracklist?.isPinned == true ? "Remove from pinned" : "Add to pinned")
 
                             Button {
                                 self.tracklistToDelete = tracklist
@@ -193,6 +201,8 @@ struct TracklistListView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Remove \(tracklist.title) from Library")
+                            .accessibilityHint("Remove this tracklist from your library")
 
                             TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
                         }

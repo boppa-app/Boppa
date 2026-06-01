@@ -36,6 +36,8 @@ struct TrackActionsSheet: View {
                 .listRowBackground(Color(.systemGray6))
                 .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                 .listRowSeparator(.hidden)
+                .accessibilityLabel("Play Next")
+                .accessibilityHint("Play \(self.track.title) after the current track")
 
                 ForEach(self.track.artists) { artist in
                     if self.mediaSource.config.data?.getArtist != nil {
@@ -52,6 +54,8 @@ struct TrackActionsSheet: View {
                         .listRowBackground(Color(.systemGray6))
                         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                         .listRowSeparator(.hidden)
+                        .accessibilityLabel("Go to \(artist.name)")
+                        .accessibilityHint("View artist page for \(artist.name)")
                     }
                 }
 
@@ -70,6 +74,8 @@ struct TrackActionsSheet: View {
                         .listRowBackground(Color(.systemGray6))
                         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                         .listRowSeparator(.hidden)
+                        .accessibilityLabel("Go to \(album.title)")
+                        .accessibilityHint("View album page for \(album.title)")
                     }
                 }
             }

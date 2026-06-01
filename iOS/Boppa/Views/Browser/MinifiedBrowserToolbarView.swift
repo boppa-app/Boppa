@@ -21,6 +21,7 @@ struct MinifiedBrowserToolbarView: View {
                     ProgressView()
                         .scaleEffect(0.5)
                         .frame(width: 10, height: 10)
+                        .accessibilityLabel("Loading")
                 }
             }
             .frame(maxWidth: .infinity)
@@ -28,6 +29,9 @@ struct MinifiedBrowserToolbarView: View {
             .padding(.vertical, 6)
             .background(Color(.systemGray6))
             .cornerRadius(8)
+            .accessibilityLabel(self.host)
+            .accessibilityHint("Tap to show browser controls")
+            .accessibilityAddTraits(.isButton)
 
             Button {
                 self.onClose?()
@@ -36,6 +40,8 @@ struct MinifiedBrowserToolbarView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color.red)
             }
+            .accessibilityLabel("Close Page")
+            .accessibilityHint("Close the current web page")
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 10)

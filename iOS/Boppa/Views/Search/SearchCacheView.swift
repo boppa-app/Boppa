@@ -36,12 +36,16 @@ struct SearchCacheView: View {
                                                 .foregroundColor(Color(.systemGray))
                                         }
                                         .buttonStyle(.plain)
+                                        .accessibilityLabel("Remove")
+                                        .accessibilityHint("Remove \"\(cached.query)\" from recent searches")
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(cached.query)
+                                .accessibilityHint("Search for \"\(cached.query)\"")
                             }
                         }
                     }
@@ -70,6 +74,8 @@ struct SearchCacheView: View {
                         .foregroundColor(Color(.systemGray))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Clear All Recent Searches")
+                .accessibilityHint("Remove all recent searches")
             }
         }
         .padding(.horizontal, 16)

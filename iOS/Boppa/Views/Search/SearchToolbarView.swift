@@ -38,6 +38,7 @@ struct SearchToolbarView: View {
                     self.onSearch?()
                     self.isSearchFieldFocused.wrappedValue = false
                 }
+                .accessibilityLabel("Search for music")
 
                 if self.isSearchFieldFocused.wrappedValue && self.viewModel.isQueryActive {
                     Button {
@@ -47,6 +48,8 @@ struct SearchToolbarView: View {
                             .font(.system(size: 16))
                             .foregroundColor(Color(.systemGray))
                     }
+                    .accessibilityLabel("Clear Search")
+                    .accessibilityHint("Clear the current search query")
                 }
 
                 if !self.isSearchFieldFocused.wrappedValue {
@@ -66,6 +69,8 @@ struct SearchToolbarView: View {
                 }
                 .foregroundColor(Color.purp)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
+                .accessibilityLabel("Cancel")
+                .accessibilityHint("Dismiss search")
             }
         }
         .animation(.easeInOut(duration: 0.2), value: self.isSearchFieldFocused.wrappedValue)
@@ -89,6 +94,8 @@ struct SearchToolbarView: View {
                     .frame(width: 24, height: 24)
             }
         }
+        .accessibilityLabel(self.viewModel.selectedMediaSource.map { "Selected source: \($0.name)" } ?? "Select Media Source")
+        .accessibilityHint("Choose which media source to search")
         .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {
             MediaSourcePickerSheet(
                 mediaSources: self.viewModel.mediaSources,

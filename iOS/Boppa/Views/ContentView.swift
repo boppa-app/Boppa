@@ -96,11 +96,11 @@ struct ContentTabView: View {
     var hideSeparator: Bool = false
     var onSameTabTapped: ((Int) -> Void)? = nil
 
-    let tabs: [(icon: String, num: Int)] = [
-        ("safari", 0),
-        ("magnifyingglass", 1),
-        ("bookmark", 2),
-        ("gear", 3),
+    let tabs: [(icon: String, name: String, num: Int)] = [
+        ("safari", "Browser", 0),
+        ("magnifyingglass", "Search", 1),
+        ("bookmark", "Library", 2),
+        ("gear", "Settings", 3),
     ]
 
     var body: some View {
@@ -136,6 +136,8 @@ struct ContentTabView: View {
                             .foregroundColor(self.selectedTab == tab.num ? .purp : Color(.systemGray))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .accessibilityLabel(tab.name)
+                    .accessibilityHint(self.selectedTab == tab.num ? "Currently selected" : "Switch to \(tab.name)")
                 }
             }
             .frame(height: 60)

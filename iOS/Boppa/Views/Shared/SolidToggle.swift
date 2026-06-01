@@ -26,5 +26,7 @@ struct SolidToggle: View {
                 self.isOn.toggle()
             }
         }
+        .accessibilityValue(self.isOn ? "On" : "Off")
+        .accessibilityAddTraits(.isButton)
     }
 }

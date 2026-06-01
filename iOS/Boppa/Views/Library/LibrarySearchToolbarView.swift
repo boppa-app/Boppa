@@ -32,6 +32,7 @@ struct LibrarySearchToolbarView: View {
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
                 .focused(self.isSearchFieldFocused)
+                .accessibilityLabel("Library Search")
 
                 if !self.searchQuery.isEmpty {
                     Button {
@@ -42,6 +43,8 @@ struct LibrarySearchToolbarView: View {
                             .font(.system(size: 16))
                             .foregroundColor(Color(.systemGray))
                     }
+                    .accessibilityLabel("Clear Search")
+                    .accessibilityHint("Clear search text")
                 }
             }
             .padding(.horizontal, 12)
@@ -55,6 +58,8 @@ struct LibrarySearchToolbarView: View {
                 }
                 .foregroundColor(Color.purp)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
+                .accessibilityLabel("Cancel Search")
+                .accessibilityHint("Dismiss search and return to library")
             }
         }
         .animation(.easeInOut(duration: 0.2), value: self.isSearchFieldFocused.wrappedValue)

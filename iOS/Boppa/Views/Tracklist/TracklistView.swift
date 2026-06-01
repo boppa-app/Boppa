@@ -43,12 +43,16 @@ struct TracklistView: View {
                                     .onTapGesture {
                                         self.showActionSheet = true
                                     }
+                                    .accessibilityLabel("More Options")
+                                    .accessibilityHint("View options for this tracklist")
+                                    .accessibilityAddTraits(.isButton)
                             } else if self.canSave {
                                 Group {
                                     if self.viewModel.isSaving {
                                         ProgressView()
                                             .scaleEffect(0.7)
                                             .tint(.purp)
+                                            .accessibilityLabel("Saving to Library")
                                     } else {
                                         Image(systemName: "bookmark")
                                             .font(.system(size: 18))
@@ -62,6 +66,9 @@ struct TracklistView: View {
                                         self.viewModel.saveToLibrary()
                                     }
                                 }
+                                .accessibilityLabel("Save to Library")
+                                .accessibilityHint("Save this tracklist to your library")
+                                .accessibilityAddTraits(.isButton)
                             }
                         }
                     },

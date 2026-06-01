@@ -22,6 +22,9 @@ struct SeekSlider: UIViewRepresentable {
         slider.setThumbImage(thumb, for: .normal)
         slider.setThumbImage(thumb, for: .highlighted)
 
+        slider.accessibilityLabel = "Seek"
+        slider.accessibilityHint = "Drag to seek within the track"
+
         slider.addTarget(
             context.coordinator,
             action: #selector(Coordinator.valueChanged(_:)),

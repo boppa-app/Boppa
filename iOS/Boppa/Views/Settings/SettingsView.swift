@@ -37,6 +37,8 @@ struct SettingsView: View {
                                 .foregroundColor(Color.purp)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(self.isEditing ? "Done Editing" : "Edit Media Sources")
+                        .accessibilityHint(self.isEditing ? "Exit editing mode" : "Manage and reorder media sources")
                     }
                 }
 
@@ -51,10 +53,13 @@ struct SettingsView: View {
                                 Spacer()
                                 ProgressView()
                                     .tint(Color.purp)
+                                    .accessibilityLabel("Clearing data")
                             }
                         }
                     }
                     .disabled(self.isClearingData)
+                    .accessibilityLabel("Clear All Web Data")
+                    .accessibilityHint("Delete all cookies, cache, local storage, and session data")
                 }
             }
             .navigationTitle("Settings")
@@ -150,6 +155,8 @@ struct SettingsView: View {
                 )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(mediaSource.name)
+            .accessibilityHint(self.isEditing ? "Drag to reorder" : "View \(mediaSource.name) settings")
         }
         .background(
             GeometryReader { geometry in

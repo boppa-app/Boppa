@@ -34,6 +34,8 @@ struct SortPickerSheet: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(mode.label)
+                    .accessibilityHint(self.currentMode == mode ? "Currently selected" : "Sort by \(mode.label)")
                     .listRowBackground(Color(.systemGray6))
                     .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                     .listRowSeparator(.hidden)
