@@ -14,6 +14,16 @@ nonisolated struct StoredTrack: Identifiable {
     var metadataJSON: Data
 }
 
+extension StoredTrack: FuzzySearchable {
+    var fuzzyTitle: String {
+        self.title
+    }
+
+    var fuzzySubtitle: String? {
+        self.subtitle
+    }
+}
+
 extension StoredTrack {
     var metadata: [String: Any] {
         (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]

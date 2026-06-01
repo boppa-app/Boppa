@@ -22,3 +22,13 @@ extension StoredTracklist {
         (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]
     }
 }
+
+extension StoredTracklist: FuzzySearchable {
+    var fuzzyTitle: String {
+        self.title
+    }
+
+    var fuzzySubtitle: String? {
+        self.subtitle
+    }
+}

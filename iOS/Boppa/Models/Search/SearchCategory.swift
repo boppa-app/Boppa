@@ -1,6 +1,6 @@
 import Foundation
 
-enum SearchCategory: String, CaseIterable {
+enum SearchCategory: String, CaseIterable, Hashable {
     case songs
     case videos
     case artists
@@ -50,5 +50,11 @@ enum SearchCategory: String, CaseIterable {
         case .albums: return data.searchAlbums?.script
         case .playlists: return data.searchPlaylists?.script
         }
+    }
+}
+
+extension SearchCategory: CategoryBarItem {
+    var displayName: String {
+        rawValue.prefix(1).uppercased() + rawValue.dropFirst()
     }
 }

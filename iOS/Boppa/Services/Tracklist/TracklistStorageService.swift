@@ -105,6 +105,14 @@ class TracklistStorageService {
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
     }
 
+    func loadTrackWithRelations(_ stored: StoredTrack) -> Track {
+        (try? self.database.read { db in
+            let artists = try self.loadArtistsForTrack(stored.id, db: db)
+            let albums = try self.loadAlbumsForTrack(stored.id, db: db)
+            return stored.toTrack(artists: artists, albums: albums)
+        }) ?? stored.toTrack()
+    }
+
     // MARK: - Private: reads
 
     private func loadArtistsForTrack(_ trackId: Int, db: Database) throws -> [Artist] {

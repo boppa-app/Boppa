@@ -78,7 +78,7 @@ class SearchBarScrollHandler {
 
             // Accumulate if velocity is high enough OR if the spacer is about to become visible (contentOffset < searchBarHeight).
             // This ensures the search bar always appears before the black spacer is exposed, even during very slow scrolls.
-            let spacerAboutToShow = newInfo.contentOffset < CategoryBubblesBar.barHeight
+            let spacerAboutToShow = newInfo.contentOffset < categoryBubblesBarHeight
             if velocity > velocityThreshold || spacerAboutToShow {
                 self.accumulatedScrollUp += abs(delta)
 

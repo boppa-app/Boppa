@@ -2,14 +2,57 @@ import SwiftUI
 
 struct LibraryView: View {
     @State private var viewModel = LibraryViewModel()
+    @State private var isSearchVisible = false
+    @FocusState private var isSearchFieldFocused: Bool
+    @State private var scrollHandler = SearchBarScrollHandler()
+    @State private var trackFuzzyHandler = FuzzySearchHandler<StoredTrack>()
+    @State private var tracklistFuzzyHandler = FuzzySearchHandler<StoredTracklist>()
+    @State private var trackForActions: Track?
+    @State private var pendingArtist: Artist?
+    @State private var pendingTracklist: Tracklist?
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
+
+    private var isSearchQueryEmpty: Bool {
+        self.viewModel.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 self.toolbar
-                self.sectionList
+                ZStack(alignment: .top) {
+                    if self.isSearchVisible {
+                        self.searchResultsContent
+                    } else {
+                        self.sectionList
+                    }
+                    if self.isSearchVisible && !self.viewModel.availableLibraryCategories.isEmpty {
+                        self.categoryBubblesBar
+                    }
+                }
+            }
+            .onChange(of: self.isSearchFieldFocused) { _, focused in
+                if focused {
+                    self.scrollHandler.showSearchBar = true
+                } else if self.isSearchQueryEmpty {
+                    self.viewModel.searchQuery = ""
+                    withAnimation(.easeInOut(duration: 0.25)) { self.isSearchVisible = false }
+                }
+            }
+            .onChange(of: self.viewModel.searchQuery) { _, query in
+                self.trackFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracks)
+                self.tracklistFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracklists)
+            }
+            .onChange(of: self.viewModel.selectedLibraryCategory) { _, category in
+                self.trackFuzzyHandler.updateSearch("", items: [])
+                self.tracklistFuzzyHandler.updateSearch("", items: [])
+                let query = self.viewModel.searchQuery
+                if category == .songs || category == .videos {
+                    self.trackFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracks)
+                } else {
+                    self.tracklistFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracklists)
+                }
             }
             .onAppear {
                 self.viewModel.loadSources()
@@ -42,27 +85,106 @@ struct LibraryView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(.systemGray6))
             }
+            .sheet(item: self.$trackForActions) { track in
+                if let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == track.mediaSourceId }) {
+                    TrackActionsSheet(
+                        track: track,
+                        mediaSource: mediaSource,
+                        onArtistSelected: { artist in self.pendingArtist = artist },
+                        onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
+                    )
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(Color(.systemGray6))
+                }
+            }
+            .navigationDestination(item: self.$pendingArtist) { artist in
+                if let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == artist.mediaSourceId }) {
+                    ArtistDetailView(artist: artist, mediaSource: mediaSource)
+                }
+            }
+            .navigationDestination(item: self.$pendingTracklist) { tracklist in
+                TracklistView(
+                    tracklist: Tracklist(
+                        mediaId: tracklist.mediaId,
+                        mediaSourceId: tracklist.mediaSourceId,
+                        title: tracklist.title,
+                        subtitle: tracklist.subtitle,
+                        artworkUrl: tracklist.artworkUrl,
+                        metadata: tracklist.metadata,
+                        tracklistType: tracklist.tracklistType,
+                        artists: tracklist.artists,
+                        storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    )
+                )
+            }
         }
         .id(self.navigationResetId)
     }
 
+    @ViewBuilder
     private var toolbar: some View {
-        HStack {
-            Text("Library")
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-            Button {
-                self.viewModel.showFilterSheet = true
-            } label: {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .font(.system(size: 20))
-                    .foregroundColor(.purp)
+        if self.isSearchVisible {
+            LibrarySearchToolbarView(
+                searchQuery: self.$viewModel.searchQuery,
+                isSearchFieldFocused: self.$isSearchFieldFocused,
+                isFuzzySearching: self.trackFuzzyHandler.isFuzzySearching || self.tracklistFuzzyHandler.isFuzzySearching,
+                selectedCategory: self.viewModel.selectedLibraryCategory,
+                onClear: {
+                    if !self.isSearchFieldFocused {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            self.isSearchVisible = false
+                        }
+                    }
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .trailing).combined(with: .opacity)
+            ))
+        } else {
+            HStack {
+                Text("Library")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                Button {
+                    self.viewModel.showFilterSheet = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 20))
+                        .foregroundColor(.purp)
+                }
+                Spacer()
+                Button {
+                    self.viewModel.loadAllContent()
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        self.isSearchVisible = true
+                    }
+                    self.isSearchFieldFocused = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 20))
+                        .foregroundColor(.purp)
+                }
             }
-            Spacer()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .transition(.opacity)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+    }
+
+    private var categoryBubblesBar: some View {
+        CategoryBubblesBar(
+            categories: self.viewModel.availableLibraryCategories,
+            selectedCategory: self.viewModel.selectedLibraryCategory,
+            scrollHandler: self.scrollHandler,
+            isFocused: self.isSearchFieldFocused,
+            highlightSelectedWhenFocused: true,
+            onSelect: { category in
+                self.viewModel.selectedLibraryCategory = category
+            }
+        )
     }
 
     private var sectionList: some View {
@@ -108,8 +230,105 @@ struct LibraryView: View {
                 }
             }
             .listStyle(.plain)
+            // .padding(.top, -10)
             .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.immediately)
         }
+    }
+
+    private var searchResultsContent: some View {
+        let isEmpty: Bool = {
+            if self.viewModel.selectedLibraryCategory == .songs || self.viewModel.selectedLibraryCategory == .videos {
+                return self.trackFuzzyHandler.filteredItems?.isEmpty == true && !self.trackFuzzyHandler.isFuzzySearching
+            } else {
+                return self.tracklistFuzzyHandler.filteredItems?.isEmpty == true && !self.tracklistFuzzyHandler.isFuzzySearching
+            }
+        }()
+
+        return ZStack(alignment: .top) {
+            ScrollFadeView {
+                List {
+                    Color.black
+                        .frame(height: categoryBubblesBarHeight)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+
+                    self.searchResultRows
+                }
+                .listStyle(.plain)
+                .padding(.top, -10)
+                .scrollContentBackground(.hidden)
+                .scrollDismissesKeyboard(.immediately)
+                .modifier(ScrollDirectionTracker(
+                    isEnabled: true,
+                    onScrollChange: { oldInfo, newInfo in
+                        self.scrollHandler.handleScrollChange(
+                            oldInfo: oldInfo,
+                            newInfo: newInfo,
+                            isSearchFieldFocused: self.isSearchFieldFocused
+                        )
+                    }
+                ))
+            }
+
+            if isEmpty {
+                self.emptySearchState
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var searchResultRows: some View {
+        if self.viewModel.selectedLibraryCategory == .songs || self.viewModel.selectedLibraryCategory == .videos {
+            if let tracks = self.trackFuzzyHandler.filteredItems, !tracks.isEmpty {
+                ForEach(tracks, id: \.id) { stored in
+                    TrackRow(
+                        track: stored.toTrack(),
+                        isSelected: PlaybackService.shared.currentTrack?.url == stored.url && stored.url != nil,
+                        isLoading: PlaybackService.shared.isLoading,
+                        isPlaying: PlaybackService.shared.isPlaying,
+                        onTap: {
+                            let queue = tracks.map { $0.toTrack() }
+                            PlaybackService.shared.playTrack(stored.toTrack(), queue: queue)
+                        },
+                        onEllipsisTap: {
+                            self.isSearchFieldFocused = false
+                            self.trackForActions = TracklistStorageService.shared.loadTrackWithRelations(stored)
+                        }
+                    )
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+                }
+            }
+        } else {
+            if let tracklists = self.tracklistFuzzyHandler.filteredItems, !tracklists.isEmpty {
+                ForEach(tracklists, id: \.id) { stored in
+                    TracklistRow(
+                        tracklist: Tracklist(storedTracklist: stored),
+                        showMediaSourceIcon: true,
+                        showChevron: true
+                    )
+                    .background(
+                        NavigationLink(destination: TracklistView(tracklist: Tracklist(storedTracklist: stored))) { EmptyView() }
+                            .opacity(0)
+                    )
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+                }
+            }
+        }
+    }
+
+    private var emptySearchState: some View {
+        Image(systemName: "zzz")
+            .font(.system(size: 40))
+            .foregroundColor(Color(.systemGray5))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black)
+            .ignoresSafeArea()
     }
 
     private var pinnedHeader: some View {

@@ -116,7 +116,7 @@ struct SearchView: View {
     private var recentSearchesView: some View {
         VStack(spacing: 0) {
             if self.showBubbles {
-                Color.clear.frame(height: CategoryBubblesBar.barHeight)
+                Color.clear.frame(height: categoryBubblesBarHeight)
             }
             SearchCacheView(
                 cachedQueries: self.cacheManager.displayedQueries,
@@ -178,7 +178,7 @@ struct SearchView: View {
             List {
                 if self.showBubbles {
                     Color.black
-                        .frame(height: CategoryBubblesBar.barHeight)
+                        .frame(height: categoryBubblesBarHeight)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)

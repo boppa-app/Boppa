@@ -1,5 +1,10 @@
 import SwiftUI
 
+protocol CategoryBarItem: Hashable {
+    var icon: String { get }
+    var displayName: String { get }
+}
+
 struct HorizontalFadeModifier: ViewModifier {
     @Binding var leftFade: CGFloat
     @Binding var rightFade: CGFloat
@@ -22,14 +27,15 @@ struct HorizontalFadeModifier: ViewModifier {
     }
 }
 
-struct CategoryBubblesBar: View {
-    let categories: [SearchCategory]
-    let selectedCategory: SearchCategory
+let categoryBubblesBarHeight: CGFloat = 40
+
+struct CategoryBubblesBar<Category: CategoryBarItem>: View {
+    let categories: [Category]
+    let selectedCategory: Category
     let scrollHandler: SearchBarScrollHandler
     var isFocused: Bool = false
-    let onSelect: (SearchCategory) -> Void
-
-    static let barHeight: CGFloat = 40
+    var highlightSelectedWhenFocused: Bool = false
+    let onSelect: (Category) -> Void
 
     @State private var leftFade: CGFloat = 0
     @State private var rightFade: CGFloat = 0
@@ -82,12 +88,12 @@ struct CategoryBubblesBar: View {
         .allowsHitTesting(self.scrollHandler.showSearchBar)
     }
 
-    private func bubbleLabel(for category: SearchCategory) -> some View {
-        let isSelected = self.selectedCategory == category && !self.isFocused
+    private func bubbleLabel(for category: Category) -> some View {
+        let isSelected = self.selectedCategory == category && (!self.isFocused || self.highlightSelectedWhenFocused)
         return HStack(spacing: 5) {
             Image(systemName: category.icon)
                 .font(.system(size: 13))
-            Text(category.rawValue.prefix(1).uppercased() + category.rawValue.dropFirst())
+            Text(category.displayName)
                 .font(.system(size: 15, weight: .medium))
         }
         .foregroundColor(isSelected ? .purp : Color(.systemGray))
