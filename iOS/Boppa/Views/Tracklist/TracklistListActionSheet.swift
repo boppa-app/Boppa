@@ -11,8 +11,8 @@ struct TracklistListActionSheet: View {
 
     private var sortLabel: String {
         switch self.type {
-        case .albums: return "Sort albums"
-        case .playlists: return "Sort playlists"
+        case .albums: return "Sort Albums"
+        case .playlists: return "Sort Playlists"
         }
     }
 
