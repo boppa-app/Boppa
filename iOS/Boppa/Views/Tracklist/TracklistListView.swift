@@ -106,7 +106,7 @@ struct TracklistListView: View {
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGray6))
         }
-        .alert("Remove from library", isPresented: Binding(
+        .alert("Remove From Library", isPresented: Binding(
             get: { self.tracklistToDelete != nil },
             set: { if !$0 { self.tracklistToDelete = nil } }
         )) {

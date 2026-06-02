@@ -37,7 +37,7 @@ struct TracklistActionSheet: View {
             .navigationDestination(isPresented: self.$showSortPage) {
                 self.sortPickerPage
             }
-            .alert("Remove from library", isPresented: self.$showDeleteConfirmation) {
+            .alert("Remove From Library", isPresented: self.$showDeleteConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Remove", role: .destructive) {
                     self.onDelete()
@@ -142,7 +142,7 @@ struct TracklistActionSheet: View {
                     .font(.system(size: 16))
                     .foregroundColor(self.sortMode == .defaultOrder ? .white : .purp)
                     .frame(width: 24)
-                Text("Sort tracks")
+                Text("Sort Tracks")
                     .font(.body)
                     .foregroundColor(.white)
                     .padding([.trailing], -12)
@@ -162,7 +162,7 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
-        .accessibilityLabel(self.sortMode == .defaultOrder ? "Sort tracks" : "Sort tracks: \(self.sortMode.label)")
+        .accessibilityLabel(self.sortMode == .defaultOrder ? "Sort Tracks" : "Sort Tracks: \(self.sortMode.label)")
         .accessibilityHint("Choose how tracks are sorted")
     }
 
@@ -211,7 +211,7 @@ struct TracklistActionSheet: View {
             self.showDeleteConfirmation = true
         } label: {
             self.rowLabel(
-                title: "Remove from library",
+                title: "Remove From Library",
                 icon: "bookmark.slash",
                 iconColor: .red,
                 titleColor: .red
