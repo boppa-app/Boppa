@@ -119,6 +119,7 @@ final class PlaybackService {
     func next(userInitiated: Bool = false) {
         if userInitiated { self.queueManager.clearRepeatOne() }
         guard let nextTrack = self.queueManager.advanceToNext() else { return }
+        self.currentTime = 0
         self.playTrack(nextTrack)
     }
 
@@ -129,6 +130,7 @@ final class PlaybackService {
         } else {
             if userInitiated { self.queueManager.clearRepeatOne() }
             guard let prevTrack = self.queueManager.rewindToPrevious() else { return }
+            self.currentTime = 0
             self.playTrack(prevTrack)
         }
     }
