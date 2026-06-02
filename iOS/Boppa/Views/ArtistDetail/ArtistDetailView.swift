@@ -156,13 +156,14 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(songs.enumerated()), id: \.element.id) { _, track in
+            ForEach(Array(songs.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                    isSelected: TrackQueueManager.shared.currentIndex == index &&
+                        PlaybackService.shared.currentContextId == self.songsContextId,
                     isLoading: PlaybackService.shared.isLoading,
                     isPlaying: PlaybackService.shared.isPlaying,
-                    onTap: { self.playTrack(track, from: songs) },
+                    onTap: { self.playTrack(track, from: songs, at: index, contextId: self.songsContextId) },
                     onEllipsisTap: { self.trackForActions = track }
                 )
                 .listRowBackground(Color.black)
@@ -180,13 +181,14 @@ struct ArtistDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowSeparator(.hidden)
 
-            ForEach(Array(videos.enumerated()), id: \.element.id) { _, track in
+            ForEach(Array(videos.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                    isSelected: TrackQueueManager.shared.currentIndex == index &&
+                        PlaybackService.shared.currentContextId == self.videosContextId,
                     isLoading: PlaybackService.shared.isLoading,
                     isPlaying: PlaybackService.shared.isPlaying,
-                    onTap: { self.playTrack(track, from: videos) },
+                    onTap: { self.playTrack(track, from: videos, at: index, contextId: self.videosContextId) },
                     onEllipsisTap: { self.trackForActions = track }
                 )
                 .listRowBackground(Color.black)
@@ -353,7 +355,15 @@ struct ArtistDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func playTrack(_ track: Track, from tracks: [Track]) {
-        PlaybackService.shared.playTrack(track, queue: tracks)
+    private var songsContextId: String {
+        "artist:\(self.artist.mediaSourceId):\(self.artist.mediaId):songs"
+    }
+
+    private var videosContextId: String {
+        "artist:\(self.artist.mediaSourceId):\(self.artist.mediaId):videos"
+    }
+
+    private func playTrack(_ track: Track, from tracks: [Track], at index: Int, contextId: String) {
+        PlaybackService.shared.playTrack(track, queue: tracks, startingAt: index, contextId: contextId)
     }
 }

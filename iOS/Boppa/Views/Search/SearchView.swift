@@ -174,13 +174,15 @@ struct SearchView: View {
 
                 switch self.viewModel.results {
                 case let .songs(tracks), let .videos(tracks):
-                    ForEach(Array(tracks.enumerated()), id: \.element.id) { _, track in
+                    ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
                         TrackRow(
                             track: track,
-                            isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                            isSelected: PlaybackService.shared.currentTrack?.url == track.url &&
+                                track.url != nil &&
+                                PlaybackService.shared.currentContextId == self.viewModel.searchContextId,
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying,
-                            onTap: { self.playTrack(track, from: tracks) },
+                            onTap: { self.playTrack(track, from: tracks, at: index) },
                             onEllipsisTap: { self.trackForActions = track }
                         )
                         .listRowBackground(Color.black)
@@ -341,8 +343,8 @@ struct SearchView: View {
         }
     }
 
-    private func playTrack(_ track: Track, from tracks: [Track]) {
-        PlaybackService.shared.playTrack(track, queue: tracks)
+    private func playTrack(_ track: Track, from tracks: [Track], at index: Int) {
+        PlaybackService.shared.playTrack(track, queue: tracks, startingAt: index, contextId: self.viewModel.searchContextId)
     }
 }
 

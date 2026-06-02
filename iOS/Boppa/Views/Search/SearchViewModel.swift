@@ -8,6 +8,7 @@ import SQLiteData
 class SearchViewModel {
     var searchQuery = ""
     var results: SearchResult = .songs([])
+    var searchContextId: String = UUID().uuidString
     var isSearching = false
     var isLoadingNextPage = false
     var hasMorePages = false
@@ -79,6 +80,7 @@ class SearchViewModel {
         self.nextPageTask?.cancel()
         self.paginationContext = nil
         self.hasMorePages = false
+        self.searchContextId = UUID().uuidString
 
         let trimmed = self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {

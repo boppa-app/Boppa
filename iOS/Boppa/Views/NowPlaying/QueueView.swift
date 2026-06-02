@@ -18,7 +18,7 @@ struct QueueView: View {
         ScrollFadeView {
             List {
                 ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, track in
-                    let isCurrent = track == self.queueManager.currentTrack
+                    let isCurrent = index == self.queueManager.currentIndex
                     TrackRow(
                         track: track,
                         isSelected: isCurrent,
@@ -27,7 +27,7 @@ struct QueueView: View {
                         style: .compact,
                         onTap: {
                             if repeatMode != .one {
-                                self.playbackService.playTrack(track, queue: self.queueManager.queue)
+                                self.playbackService.playTrack(track, queue: self.queueManager.queue, startingAt: index)
                             }
                         }
                     )

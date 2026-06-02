@@ -286,15 +286,17 @@ struct LibraryView: View {
     private var searchResultRows: some View {
         if self.viewModel.selectedLibraryCategory == .songs || self.viewModel.selectedLibraryCategory == .videos {
             if let tracks = self.trackFuzzyHandler.filteredItems, !tracks.isEmpty {
-                ForEach(tracks, id: \.id) { stored in
+                ForEach(Array(tracks.enumerated()), id: \.element.id) { index, stored in
                     TrackRow(
                         track: stored.toTrack(),
-                        isSelected: PlaybackService.shared.currentTrack?.url == stored.url && stored.url != nil,
+                        isSelected: PlaybackService.shared.currentTrack?.url == stored.url &&
+                            stored.url != nil &&
+                            PlaybackService.shared.currentContextId == "library",
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {
                             let queue = tracks.map { $0.toTrack() }
-                            PlaybackService.shared.playTrack(stored.toTrack(), queue: queue)
+                            PlaybackService.shared.playTrack(stored.toTrack(), queue: queue, startingAt: index, contextId: "library")
                         },
                         onEllipsisTap: {
                             self.isSearchFieldFocused = false

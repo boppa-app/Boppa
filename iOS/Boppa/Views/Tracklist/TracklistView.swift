@@ -169,14 +169,15 @@ struct TracklistView: View {
     private var trackList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { _, track in
+                ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
                     TrackRow(
                         track: track,
-                        isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                        isSelected: TrackQueueManager.shared.currentIndex == index &&
+                            PlaybackService.shared.currentContextId == self.contextId,
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {
-                            self.playTrack(track)
+                            self.playTrack(track, at: index)
                         },
                         onEllipsisTap: {
                             self.trackForActions = track
@@ -242,7 +243,11 @@ struct TracklistView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func playTrack(_ track: Track) {
-        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks)
+    private var contextId: String {
+        "tracklist:\(self.viewModel.tracklist.mediaSourceId):\(self.viewModel.tracklist.mediaId)"
+    }
+
+    private func playTrack(_ track: Track, at index: Int) {
+        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, startingAt: index, contextId: self.contextId)
     }
 }

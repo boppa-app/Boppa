@@ -15,6 +15,7 @@ final class PlaybackService {
     static let shared = PlaybackService()
 
     private(set) var currentTrack: Track?
+    private(set) var currentContextId: String?
     private(set) var isPlaying: Bool = false
     private(set) var isLoading: Bool = false
     private(set) var currentTime: Double = 0
@@ -38,7 +39,11 @@ final class PlaybackService {
         logger.info("PlaybackService initialized")
     }
 
-    func playTrack(_ track: Track, queue: [Track] = []) {
+    func playTrack(_ track: Track, queue: [Track] = [], startingAt index: Int? = nil, contextId: String? = nil) {
+        if let contextId {
+            self.currentContextId = contextId
+        }
+
         let mediaSourceId = track.mediaSourceId
         logger.info("playTrack: using mediaSource '\(mediaSourceId)'")
 
@@ -49,7 +54,11 @@ final class PlaybackService {
         self.duration = Double(track.duration ?? 0) / 1000.0
 
         if !queue.isEmpty {
-            self.queueManager.setQueue(queue, startingAt: track)
+            if let index {
+                self.queueManager.setQueue(queue, startingAt: index)
+            } else {
+                self.queueManager.setQueue(queue, startingAt: track)
+            }
         }
 
         guard let engine = self.registry.engine(for: mediaSourceId) else {
@@ -129,6 +138,7 @@ final class PlaybackService {
         self.activeEngine?.stop()
         self.activeEngine = nil
         self.currentTrack = nil
+        self.currentContextId = nil
         self.isPlaying = false
         self.isLoading = false
         self.currentTime = 0

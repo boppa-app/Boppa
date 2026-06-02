@@ -40,10 +40,14 @@ final class TrackQueueManager {
 
     private init() {}
 
-    func setQueue(_ tracks: [Track], startingAt track: Track) {
+    func setQueue(_ tracks: [Track], startingAt index: Int) {
         self.queue = tracks
-        self.currentIndex = tracks.firstIndex(of: track) ?? 0
+        self.currentIndex = index
         self.updateArtworkPreloads()
+    }
+
+    func setQueue(_ tracks: [Track], startingAt track: Track) {
+        self.setQueue(tracks, startingAt: tracks.firstIndex(of: track) ?? 0)
     }
 
     func advanceToNext() -> Track? {
