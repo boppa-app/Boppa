@@ -13,7 +13,8 @@ private let logger = Logger(
 final class ArtworkServer: @unchecked Sendable {
     static let shared = ArtworkServer()
 
-    private static let maxCacheBytes: Int = 50 * 1024 * 1024 // 50 MB
+    private static let maxCacheBytes: Int = 10 * 1024 * 1024 // 10 MB
+    private static let maxActiveConnections: Int = 128
 
     private var listener: NWListener?
     private(set) var port: UInt16 = 0
@@ -26,6 +27,20 @@ final class ArtworkServer: @unchecked Sendable {
 
     private var isReady = false
     private var readyContinuations: [CheckedContinuation<Void, Never>] = []
+
+    /// Tracks number of active connections to prevent resource exhaustion
+    private let connectionLock = NSLock()
+    private var activeConnectionCount: Int = 0
+
+    /// Dedicated URLSession for artwork downloads with no caching (we manage our own cache)
+    private let downloadSession: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
 
     var baseURL: String {
         "http://127.0.0.1:\(self.port)"
@@ -67,9 +82,16 @@ final class ArtworkServer: @unchecked Sendable {
                         logger.info("ArtworkServer listening on port \(port)")
                     }
                 case let .failed(error):
-                    logger.error("ArtworkServer failed: \(error.localizedDescription)")
+                    logger.error("ArtworkServer listener failed: \(error.localizedDescription)")
                     self.listener?.cancel()
-                    self.start()
+                    self.queue.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                        self?.start()
+                    }
+                case .cancelled:
+                    logger.warning("ArtworkServer listener cancelled unexpectedly, restarting...")
+                    self.queue.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                        self?.start()
+                    }
                 default:
                     break
                 }
@@ -173,6 +195,26 @@ final class ArtworkServer: @unchecked Sendable {
         return entry
     }
 
+    // MARK: - Connection Tracking
+
+    private func incrementConnections() {
+        self.connectionLock.lock()
+        self.activeConnectionCount += 1
+        self.connectionLock.unlock()
+    }
+
+    private func decrementConnections() {
+        self.connectionLock.lock()
+        self.activeConnectionCount = max(0, self.activeConnectionCount - 1)
+        self.connectionLock.unlock()
+    }
+
+    private func getActiveConnectionCount() -> Int {
+        self.connectionLock.lock()
+        defer { self.connectionLock.unlock() }
+        return self.activeConnectionCount
+    }
+
     // MARK: - Networking
 
     private func downloadArtwork(from urlString: String) async -> CacheEntry? {
@@ -182,7 +224,7 @@ final class ArtworkServer: @unchecked Sendable {
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await self.downloadSession.data(from: url)
 
             let contentType: String
             if let httpResponse = response as? HTTPURLResponse,
@@ -199,7 +241,7 @@ final class ArtworkServer: @unchecked Sendable {
 
             return CacheEntry(data: data, contentType: contentType)
         } catch {
-            logger.error("Failed to download artwork: \(error.localizedDescription)")
+            logger.error("Failed to download artwork from \(urlString.prefix(80)): \(error.localizedDescription)")
             return nil
         }
     }
@@ -207,9 +249,29 @@ final class ArtworkServer: @unchecked Sendable {
     // MARK: - HTTP Server
 
     private func handleConnection(_ connection: NWConnection) {
+        let count = self.getActiveConnectionCount()
+
+        // Enforce connection limit to prevent resource exhaustion
+        if count >= Self.maxActiveConnections {
+            logger.warning("Connection limit reached (\(count)/\(Self.maxActiveConnections)), rejecting")
+            connection.cancel()
+            return
+        }
+
+        self.incrementConnections()
         connection.start(queue: self.queue)
 
+        // Set a timeout to cancel stale connections that never send data
+        let timeoutItem = DispatchWorkItem { [weak self] in
+            logger.debug("Connection timed out waiting for request data, cancelling")
+            connection.cancel()
+            self?.decrementConnections()
+        }
+        self.queue.asyncAfter(deadline: .now() + 10, execute: timeoutItem)
+
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, _, error in
+            timeoutItem.cancel()
+
             guard let self else {
                 connection.cancel()
                 return
@@ -218,23 +280,24 @@ final class ArtworkServer: @unchecked Sendable {
             if let error {
                 logger.debug("Connection receive error: \(error.localizedDescription)")
                 connection.cancel()
+                self.decrementConnections()
                 return
             }
 
             guard let data, let request = String(data: data, encoding: .utf8) else {
-                self.sendResponse(connection: connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Bad Request".utf8))
+                self.sendResponse(connection: connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Bad Request".utf8), cacheSuccess: false)
                 return
             }
 
             // Parse the request line to extract the URL query parameter
             guard let remoteURL = self.parseArtworkURL(from: request) else {
-                self.sendResponse(connection: connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Missing url parameter".utf8))
+                self.sendResponse(connection: connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Missing url parameter".utf8), cacheSuccess: false)
                 return
             }
 
             // Check cache first
             if let cached = self.getCachedEntry(for: remoteURL) {
-                self.sendResponse(connection: connection, status: "200 OK", contentType: cached.contentType, body: cached.data)
+                self.sendResponse(connection: connection, status: "200 OK", contentType: cached.contentType, body: cached.data, cacheSuccess: true)
                 return
             }
 
@@ -242,9 +305,9 @@ final class ArtworkServer: @unchecked Sendable {
             Task {
                 if let entry = await self.downloadArtwork(from: remoteURL) {
                     self.storeInCache(url: remoteURL, entry: entry)
-                    self.sendResponse(connection: connection, status: "200 OK", contentType: entry.contentType, body: entry.data)
+                    self.sendResponse(connection: connection, status: "200 OK", contentType: entry.contentType, body: entry.data, cacheSuccess: true)
                 } else {
-                    self.sendResponse(connection: connection, status: "502 Bad Gateway", contentType: "text/plain", body: Data("Failed to fetch artwork".utf8))
+                    self.sendResponse(connection: connection, status: "502 Bad Gateway", contentType: "text/plain", body: Data("Failed to fetch artwork".utf8), cacheSuccess: false)
                 }
             }
         }
@@ -263,14 +326,22 @@ final class ArtworkServer: @unchecked Sendable {
         return queryPart.removingPercentEncoding ?? queryPart
     }
 
-    private func sendResponse(connection: NWConnection, status: String, contentType: String, body: Data) {
-        let header = "HTTP/1.1 \(status)\r\nContent-Type: \(contentType)\r\nContent-Length: \(body.count)\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
+    private func sendResponse(connection: NWConnection, status: String, contentType: String, body: Data, cacheSuccess: Bool) {
+        // For successful image responses, allow URLSession/AsyncImage to cache them long-term
+        // so they don't re-request from our server. For errors, prevent caching so retries work.
+        let cacheControl = cacheSuccess ? "public, max-age=86400" : "no-store, no-cache"
+
+        let header = "HTTP/1.1 \(status)\r\nContent-Type: \(contentType)\r\nContent-Length: \(body.count)\r\nCache-Control: \(cacheControl)\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
 
         var responseData = Data(header.utf8)
         responseData.append(body)
 
-        connection.send(content: responseData, completion: .contentProcessed { _ in
+        connection.send(content: responseData, completion: .contentProcessed { [weak self] error in
+            if let error {
+                logger.debug("Send error: \(error.localizedDescription)")
+            }
             connection.cancel()
+            self?.decrementConnections()
         })
     }
 }
