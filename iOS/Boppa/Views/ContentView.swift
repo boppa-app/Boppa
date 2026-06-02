@@ -81,6 +81,7 @@ struct ContentView: View {
         .sheet(isPresented: self.$showNowPlaying) {
             NowPlayingView(viewModel: self.nowPlayingViewModel)
                 .presentationDragIndicator(.visible)
+                .presentationBackground(Color.black)
         }
         .onAppear {
             self.nowPlayingViewModel.onOpenInBrowser = { url in
