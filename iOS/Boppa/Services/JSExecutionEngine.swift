@@ -72,6 +72,7 @@ final class JSExecutionEngine: NSObject {
 
             self.installFetch(in: jsContext)
             self.installTimers(in: jsContext)
+            self.installConsole(in: jsContext)
             self.installContext(in: jsContext, context: context)
             self.installHelpers(in: jsContext)
 
@@ -113,6 +114,37 @@ final class JSExecutionEngine: NSObject {
         } else {
             jsContext.evaluateScript("var context = {};")
         }
+    }
+
+    private func installConsole(in jsContext: JSContext) {
+        let logBlock: @convention(block) (String) -> Void = { message in
+            logger.debug("[JS] \(message)")
+        }
+        let warnBlock: @convention(block) (String) -> Void = { message in
+            logger.warning("[JS] \(message)")
+        }
+        let errorBlock: @convention(block) (String) -> Void = { message in
+            logger.error("[JS] \(message)")
+        }
+
+        jsContext.setObject(logBlock, forKeyedSubscript: "__consoleLog" as NSString)
+        jsContext.setObject(warnBlock, forKeyedSubscript: "__consoleWarn" as NSString)
+        jsContext.setObject(errorBlock, forKeyedSubscript: "__consoleError" as NSString)
+
+        jsContext.evaluateScript("""
+        var console = {
+            _fmt: function(args) {
+                return Array.from(args).map(function(a) {
+                    return (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a);
+                }).join(' ');
+            },
+            log:   function() { __consoleLog(console._fmt(arguments)); },
+            info:  function() { __consoleLog(console._fmt(arguments)); },
+            debug: function() { __consoleLog(console._fmt(arguments)); },
+            warn:  function() { __consoleWarn(console._fmt(arguments)); },
+            error: function() { __consoleError(console._fmt(arguments)); },
+        };
+        """)
     }
 
     private func installHelpers(in jsContext: JSContext) {
