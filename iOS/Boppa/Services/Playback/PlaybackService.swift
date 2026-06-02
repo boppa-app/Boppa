@@ -33,6 +33,8 @@ final class PlaybackService {
     private var mediaSourceDisabledObserver: NSObjectProtocol?
     private var userPaused: Bool = false
 
+    private static let previousTrackSeekThreshold: Double = 3
+
     private init() {
         self.observeMediaSourceRemoved()
         self.observeMediaSourceDisabled()
@@ -114,16 +116,18 @@ final class PlaybackService {
         }
     }
 
-    func next() {
+    func next(userInitiated: Bool = false) {
+        if userInitiated { self.queueManager.clearRepeatOne() }
         guard let nextTrack = self.queueManager.advanceToNext() else { return }
         self.playTrack(nextTrack)
     }
 
-    func previous() {
+    func previous(userInitiated: Bool = false) {
         guard !self.queueManager.queue.isEmpty else { return }
-        if self.currentTime > 3 {
+        if self.currentTime > Self.previousTrackSeekThreshold {
             self.seek(to: 0)
         } else {
+            if userInitiated { self.queueManager.clearRepeatOne() }
             guard let prevTrack = self.queueManager.rewindToPrevious() else { return }
             self.playTrack(prevTrack)
         }

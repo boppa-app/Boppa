@@ -180,6 +180,12 @@ final class TrackQueueManager {
         self.currentIndex = current.flatMap { track in self.queue.firstIndex(of: track) } ?? 0
     }
 
+    func clearRepeatOne() {
+        if self.repeatMode == .one {
+            self.repeatMode = .off
+        }
+    }
+
     func cycleRepeatMode() {
         switch self.repeatMode {
         case .off:

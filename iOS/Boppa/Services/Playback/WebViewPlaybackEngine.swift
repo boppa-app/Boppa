@@ -273,7 +273,7 @@ final class WebViewPlaybackEngine: NSObject {
             .replacingOccurrences(of: "\r", with: "\\r")
     }
 
-    // TODO: Evaluate if this is necessary, see why play to resume via widget is quiet 
+    // TODO: Evaluate if this is necessary, see why play to resume via widget is quiet
     // sometimes (after inactivity) and requires sequential play/pause/play taps
     func play() {
         let script = """
@@ -416,13 +416,13 @@ final class WebViewPlaybackEngine: NSObject {
         case "previoustrackCommand":
             logger.info("Received previoustrackCommand from webview")
             Task { @MainActor in
-                PlaybackService.shared.previous()
+                PlaybackService.shared.previous(userInitiated: true)
             }
             return
         case "nexttrackCommand":
             logger.info("Received nexttrackCommand from webview")
             Task { @MainActor in
-                PlaybackService.shared.next()
+                PlaybackService.shared.next(userInitiated: true)
             }
             return
         case "seekCommand":

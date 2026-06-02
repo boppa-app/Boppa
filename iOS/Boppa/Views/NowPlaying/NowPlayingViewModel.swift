@@ -113,11 +113,11 @@ final class NowPlayingViewModel {
     }
 
     func previous() {
-        self.playbackService.previous()
+        self.playbackService.previous(userInitiated: true)
     }
 
     func next() {
-        self.playbackService.next()
+        self.playbackService.next(userInitiated: true)
     }
 
     func seek(to time: Double) {
