@@ -15,6 +15,8 @@ struct TrackRow: View {
     var style: TrackRowStyle = .regular
     var onTap: (() -> Void)?
     var onEllipsisTap: (() -> Void)?
+    var onDeleteTap: (() -> Void)?
+    var isDeleteDisabled: Bool = false
 
     private var artworkSize: CGFloat {
         self.style == .compact ? 36 : 48
@@ -54,7 +56,15 @@ struct TrackRow: View {
                 }
             }
             Spacer()
-            if self.style == .regular {
+            if let onDeleteTap = self.onDeleteTap {
+                Image(systemName: "xmark")
+                    .foregroundColor(self.isDeleteDisabled ? Color(.systemGray) : .purp)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .onTapGesture { if !self.isDeleteDisabled { onDeleteTap() } }
+                    .accessibilityLabel("Remove from queue")
+                    .accessibilityAddTraits(.isButton)
+            } else if self.style == .regular {
                 if self.isSelected && self.isLoading {
                     ProgressView()
                         .tint(.purp)

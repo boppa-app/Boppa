@@ -9,34 +9,37 @@ struct QueueView: View {
         TrackQueueManager.shared
     }
 
-    // TODO: Add icon (text.badge.plus) for when track was manually added to queue
     var body: some View {
-        let displayQueue = self.queueManager.displayQueue
+        let displayNodes = self.queueManager.displayQueueNodes
         let repeatMode = self.queueManager.repeatMode
-        let lastIndex = displayQueue.count - 1
+        let lastIndex = displayNodes.count - 1
 
         ScrollFadeView {
             List {
-                ForEach(Array(displayQueue.enumerated()), id: \.element.id) { index, track in
+                ForEach(Array(displayNodes.enumerated()), id: \.element.id) { index, node in
                     let isCurrent = index == self.queueManager.currentIndex
                     TrackRow(
-                        track: track,
+                        track: node.track,
                         isSelected: isCurrent,
                         isLoading: self.playbackService.isLoading,
                         isPlaying: self.playbackService.isPlaying && isCurrent,
                         style: .compact,
                         onTap: {
                             if repeatMode != .one {
-                                self.playbackService.playTrack(track, queue: self.queueManager.queue, startingAt: index)
+                                self.playbackService.playTrack(node.track, queue: self.queueManager.queue, startingAt: index)
                             }
-                        }
+                        },
+                        onDeleteTap: node.userAdded ? {
+                            self.queueManager.removeFromQueue(node)
+                        } : nil,
+                        isDeleteDisabled: node.isSelected
                     )
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparatorTint(index == lastIndex ? .clear : Color(.systemGray6))
                 }
                 .onMove { source, destination in
-                    var reordered = self.queueManager.displayQueue
+                    var reordered = self.queueManager.displayQueueNodes
                     reordered.move(fromOffsets: source, toOffset: destination)
                     withAnimation(nil) {
                         self.queueManager.applyReorderedDisplayQueue(reordered)

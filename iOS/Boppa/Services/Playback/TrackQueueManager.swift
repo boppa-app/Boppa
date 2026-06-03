@@ -2,14 +2,17 @@ import Foundation
 import os
 
 @Observable
-final class QueueNode {
+final class QueueNode: Identifiable {
+    let id = UUID()
     let track: Track
+    let userAdded: Bool
     var isSelected: Bool = false
     var next: QueueNode?
     weak var prev: QueueNode?
 
-    init(track: Track) {
+    init(track: Track, userAdded: Bool = false) {
         self.track = track
+        self.userAdded = userAdded
     }
 }
 
@@ -26,6 +29,18 @@ final class TrackQueueManager {
     /// Maps original display-list index → node. Built at setQueue time; stable through reorders.
     /// Views use nodeByDisplayIndex[rowIndex]?.isSelected to determine highlight state.
     private(set) var nodeByDisplayIndex: [Int: QueueNode] = [:]
+
+    /// Flat array of nodes in current queue order; kept in sync with DLL for @Observable reactivity.
+    private(set) var nodes: [QueueNode] = []
+
+    var displayQueueNodes: [QueueNode] {
+        switch self.repeatMode {
+        case .one:
+            return self.currentNode.map { [$0] } ?? []
+        case .all, .off:
+            return self.nodes
+        }
+    }
 
     private var head: QueueNode?
     private var tail: QueueNode?
@@ -128,14 +143,14 @@ final class TrackQueueManager {
     // MARK: - Queue Mutation
 
     func addToQueue(_ track: Track) {
-        let node = QueueNode(track: track)
+        let node = QueueNode(track: track, userAdded: true)
         self.append(node)
         self.syncStoredProperties()
         self.updateArtworkPreloads()
     }
 
     func playNext(_ track: Track) {
-        let node = QueueNode(track: track)
+        let node = QueueNode(track: track, userAdded: true)
         if let current = self.currentNode {
             self.insert(node, after: current)
         } else {
@@ -150,6 +165,13 @@ final class TrackQueueManager {
         if let node = self.node(at: index) {
             self.unlink(node)
         }
+        self.syncStoredProperties()
+        self.updateArtworkPreloads()
+    }
+
+    func removeFromQueue(_ node: QueueNode) {
+        guard node !== self.currentNode else { return }
+        self.unlink(node)
         self.syncStoredProperties()
         self.updateArtworkPreloads()
     }
@@ -173,6 +195,7 @@ final class TrackQueueManager {
         self.tail = nil
         self.nodeByDisplayIndex = [:]
         self.queue = []
+        self.nodes = []
         self.currentIndex = 0
         self.preloadedArtworkUrls = []
     }
@@ -193,18 +216,9 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
-    func applyReorderedDisplayQueue(_ reorderedDisplay: [Track]) {
+    func applyReorderedDisplayQueue(_ reorderedNodes: [QueueNode]) {
         guard self.repeatMode != .one else { return }
-
-        var remaining = self.allNodes()
-        var ordered: [QueueNode] = []
-        for track in reorderedDisplay {
-            if let idx = remaining.firstIndex(where: { $0.track == track }) {
-                ordered.append(remaining.remove(at: idx))
-            }
-        }
-
-        self.relink(ordered)
+        self.relink(reorderedNodes)
         self.syncStoredProperties()
     }
 
@@ -285,17 +299,20 @@ final class TrackQueueManager {
 
     /// Rebuilds queue:[Track] and currentIndex from the DLL for @Observable reactivity.
     private func syncStoredProperties() {
-        var result: [Track] = []
+        var trackResult: [Track] = []
+        var nodeResult: [QueueNode] = []
         var idx = 0
         var foundIndex = 0
         var node = self.head
         while let n = node {
-            result.append(n.track)
+            trackResult.append(n.track)
+            nodeResult.append(n)
             if n === self.currentNode { foundIndex = idx }
             idx += 1
             node = n.next
         }
-        self.queue = result
+        self.queue = trackResult
+        self.nodes = nodeResult
         self.currentIndex = foundIndex
     }
 
