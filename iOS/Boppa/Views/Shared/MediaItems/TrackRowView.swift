@@ -45,13 +45,13 @@ struct TrackRow: View {
                 Text(self.track.title)
                     .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
-                    .foregroundColor(self.isSelected ? .purp : .white)
+                    .foregroundColor(.white)
                     .lineLimit(1)
                 if let subtitle = self.track.subtitle {
                     Text(subtitle)
                         .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
-                        .foregroundColor(self.isSelected ? .purp.opacity(0.5) : Color(.systemGray))
+                        .foregroundColor(Color(.systemGray))
                         .lineLimit(1)
                 }
             }
