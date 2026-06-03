@@ -291,12 +291,13 @@ struct LibraryView: View {
                         track: stored.toTrack(),
                         isSelected: PlaybackService.shared.currentTrack?.url == stored.url &&
                             stored.url != nil &&
-                            PlaybackService.shared.currentContextId == "library",
+                            TrackQueueManager.shared.contextId == "library",
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {
                             let queue = tracks.map { $0.toTrack() }
-                            PlaybackService.shared.playTrack(stored.toTrack(), queue: queue, startingAt: index, contextId: "library")
+                            TrackQueueManager.shared.setQueue(queue, startingAt: index, contextId: "library")
+                            PlaybackService.shared.playTrack(stored.toTrack())
                         },
                         onEllipsisTap: {
                             self.isSearchFieldFocused = false

@@ -179,7 +179,7 @@ struct SearchView: View {
                             track: track,
                             isSelected: PlaybackService.shared.currentTrack?.url == track.url &&
                                 track.url != nil &&
-                                PlaybackService.shared.currentContextId == self.viewModel.searchContextId,
+                                TrackQueueManager.shared.contextId == self.viewModel.searchContextId,
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying,
                             onTap: { self.playTrack(track, from: tracks, at: index) },
@@ -344,7 +344,8 @@ struct SearchView: View {
     }
 
     private func playTrack(_ track: Track, from tracks: [Track], at index: Int) {
-        PlaybackService.shared.playTrack(track, queue: tracks, startingAt: index, contextId: self.viewModel.searchContextId)
+        TrackQueueManager.shared.setQueue(tracks, startingAt: index, contextId: self.viewModel.searchContextId)
+        PlaybackService.shared.playTrack(track)
     }
 }
 

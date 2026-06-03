@@ -173,7 +173,7 @@ struct TracklistView: View {
                     TrackRow(
                         track: track,
                         isSelected: TrackQueueManager.shared.nodeByDisplayIndex[index]?.isSelected == true &&
-                            PlaybackService.shared.currentContextId == self.contextId,
+                            TrackQueueManager.shared.contextId == self.contextId,
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {
@@ -248,6 +248,7 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track, at index: Int) {
-        PlaybackService.shared.playTrack(track, queue: self.viewModel.displayTracks, startingAt: index, contextId: self.contextId)
+        TrackQueueManager.shared.setQueue(self.viewModel.displayTracks, startingAt: index, contextId: self.contextId)
+        PlaybackService.shared.playTrack(track)
     }
 }

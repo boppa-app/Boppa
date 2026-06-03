@@ -30,6 +30,8 @@ final class TrackQueueManager {
     /// Views use nodeByDisplayIndex[rowIndex]?.isSelected to determine highlight state.
     private(set) var nodeByDisplayIndex: [Int: QueueNode] = [:]
 
+    private(set) var contextId: String?
+
     /// Flat array of nodes in current queue order; kept in sync with DLL for @Observable reactivity.
     private(set) var nodes: [QueueNode] = []
 
@@ -79,7 +81,8 @@ final class TrackQueueManager {
 
     // MARK: - Queue Setup
 
-    func setQueue(_ tracks: [Track], startingAt index: Int) {
+    func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
+        self.contextId = contextId
         self.head = nil
         self.tail = nil
         self.currentNode = nil
@@ -101,8 +104,14 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
-    func setQueue(_ tracks: [Track], startingAt track: Track) {
-        self.setQueue(tracks, startingAt: tracks.firstIndex(of: track) ?? 0)
+    func setQueue(_ tracks: [Track], startingAt track: Track, contextId: String) {
+        self.setQueue(tracks, startingAt: tracks.firstIndex(of: track) ?? 0, contextId: contextId)
+    }
+
+    func jump(to node: QueueNode) {
+        self.currentNode = node
+        self.syncStoredProperties()
+        self.updateArtworkPreloads()
     }
 
     // MARK: - Playback navigation
@@ -194,6 +203,7 @@ final class TrackQueueManager {
         self.currentNode = nil
         self.head = nil
         self.tail = nil
+        self.contextId = nil
         self.nodeByDisplayIndex = [:]
         self.queue = []
         self.nodes = []

@@ -25,8 +25,9 @@ struct QueueView: View {
                         isPlaying: self.playbackService.isPlaying && isCurrent,
                         style: .compact,
                         onTap: {
-                            if repeatMode != .one, let queueIndex = self.queueManager.nodes.firstIndex(where: { $0 === node }) {
-                                self.playbackService.playTrack(node.track, queue: self.queueManager.queue, startingAt: queueIndex)
+                            if repeatMode != .one {
+                                self.queueManager.jump(to: node)
+                                self.playbackService.playTrack(node.track)
                             }
                         },
                         onDeleteTap: node.userAdded ? {
