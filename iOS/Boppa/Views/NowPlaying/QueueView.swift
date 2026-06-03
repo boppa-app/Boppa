@@ -52,6 +52,7 @@ struct QueueView: View {
             .scrollIndicators(.hidden)
             .scrollContentBackground(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.default)
         }
         .background(Color.black)
         .cornerRadius(12)
