@@ -89,7 +89,7 @@ final class NowPlayingViewModel {
 
     var repeatIconName: String {
         switch self.repeatMode {
-        case .off, .all:
+        case .all:
             return "repeat"
         case .one:
             return "repeat.1"
@@ -97,7 +97,7 @@ final class NowPlayingViewModel {
     }
 
     var isRepeatActive: Bool {
-        self.repeatMode != .off
+        self.repeatMode == .one
     }
 
     var canGoBack: Bool {

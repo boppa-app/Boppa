@@ -24,7 +24,7 @@ final class TrackQueueManager {
     // Stored for @Observable reactivity; kept in sync with the DLL via syncStoredProperties()
     private(set) var queue: [Track] = []
     private(set) var currentIndex: Int = 0
-    private(set) var repeatMode: RepeatMode = .off
+    private(set) var repeatMode: RepeatMode = .all
 
     /// Maps original display-list index → node. Built at setQueue time; stable through reorders.
     /// Views use nodeByDisplayIndex[rowIndex]?.isSelected to determine highlight state.
@@ -37,7 +37,7 @@ final class TrackQueueManager {
         switch self.repeatMode {
         case .one:
             return self.currentNode.map { [$0] } ?? []
-        case .all, .off:
+        case .all:
             return self.nodes
         }
     }
@@ -59,7 +59,7 @@ final class TrackQueueManager {
         switch self.repeatMode {
         case .one:
             return self.currentNode.map { [$0.track] } ?? []
-        case .all, .off:
+        case .all:
             return self.queue
         }
     }
@@ -225,14 +225,13 @@ final class TrackQueueManager {
     // MARK: - Repeat
 
     func clearRepeatOne() {
-        if self.repeatMode == .one { self.repeatMode = .off }
+        if self.repeatMode == .one { self.repeatMode = .all }
     }
 
     func cycleRepeatMode() {
         switch self.repeatMode {
-        case .off: self.repeatMode = .all
         case .all: self.repeatMode = .one
-        case .one: self.repeatMode = .off
+        case .one: self.repeatMode = .all
         }
     }
 
