@@ -38,7 +38,8 @@ final class TrackQueueManager {
         case .one:
             return self.currentNode.map { [$0] } ?? []
         case .all:
-            return self.nodes
+            guard !self.nodes.isEmpty else { return [] }
+            return (0 ..< self.nodes.count).map { self.nodes[(self.currentIndex + $0) % self.nodes.count] }
         }
     }
 
