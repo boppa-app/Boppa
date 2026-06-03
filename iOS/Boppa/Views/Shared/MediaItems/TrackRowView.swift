@@ -51,7 +51,7 @@ struct TrackRow: View {
                     Text(subtitle)
                         .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
-                        .foregroundColor(self.isSelected ? .purp.opacity(0.5) : Color(.systemGray))
+                        .foregroundColor(Color(.systemGray))
                         .lineLimit(1)
                 }
             }
