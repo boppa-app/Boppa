@@ -2,9 +2,11 @@ import Observation
 import SwiftUI
 import UIKit
 
-/// UIKit UITableView is used instead of SwiftUI List because List exhibits a black row
-/// rendering bug when a drag-reorder and track advance happen in quick succession.
-/// UITableView gives full control over cell reuse and avoids the flicker entirely.
+/// UIKit UITableView is used instead of SwiftUI List for two reasons:
+/// 1. List exhibits a black row rendering bug when a drag-reorder and track advance happen in quick succession.
+/// 2. performBatchUpdates gives full control over row animations — on "previous", the incoming
+///    track slides in horizontally rather than flying up from the bottom of the list as SwiftUI
+///    would animate a rotation of the underlying array.
 struct QueueView: View {
     @State private var topFade: CGFloat = 0
     @State private var bottomFade: CGFloat = 1
