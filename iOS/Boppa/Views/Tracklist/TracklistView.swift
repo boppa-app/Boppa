@@ -172,8 +172,7 @@ struct TracklistView: View {
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
                     TrackRow(
                         track: track,
-                        isSelected: TrackQueueManager.shared.nodeByDisplayIndex[index]?.isSelected == true &&
-                            TrackQueueManager.shared.contextId == self.contextId,
+                        isSelected: TrackQueueManager.shared.isTrackSelected(track, contextId: self.contextId),
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {

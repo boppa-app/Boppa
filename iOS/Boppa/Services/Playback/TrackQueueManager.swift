@@ -1,14 +1,10 @@
 import Foundation
-import os
 
 @Observable
-final class QueueNode: Identifiable {
+final class QueueEntry: Identifiable {
     let id = UUID()
     let track: Track
     let userAdded: Bool
-    var isSelected: Bool = false
-    var next: QueueNode?
-    weak var prev: QueueNode?
 
     init(track: Track, userAdded: Bool = false) {
         self.track = track
@@ -21,50 +17,25 @@ final class QueueNode: Identifiable {
 final class TrackQueueManager {
     static let shared = TrackQueueManager()
 
-    // Stored for @Observable reactivity; kept in sync with the DLL via syncStoredProperties()
-    private(set) var queue: [Track] = []
+    private(set) var entries: [QueueEntry] = []
     private(set) var currentIndex: Int = 0
+
     private(set) var repeatMode: RepeatMode = .all
-
-    /// Maps original display-list index → node. Built at setQueue time; stable through reorders.
-    /// Views use nodeByDisplayIndex[rowIndex]?.isSelected to determine highlight state.
-    private(set) var nodeByDisplayIndex: [Int: QueueNode] = [:]
-
     private(set) var contextId: String?
 
-    /// Flat array of nodes in current queue order; kept in sync with DLL for @Observable reactivity.
-    private(set) var nodes: [QueueNode] = []
+    private(set) var trackIdToEntry: [UUID: QueueEntry] = [:]
 
-    var displayQueueNodes: [QueueNode] {
-        switch self.repeatMode {
-        case .one:
-            return self.currentNode.map { [$0] } ?? []
-        case .all:
-            guard !self.nodes.isEmpty else { return [] }
-            return (0 ..< self.nodes.count).map { self.nodes[(self.currentIndex + $0) % self.nodes.count] }
-        }
-    }
-
-    private var head: QueueNode?
-    private var tail: QueueNode?
-    private(set) var currentNode: QueueNode? {
-        didSet {
-            oldValue?.isSelected = false
-            self.currentNode?.isSelected = true
-        }
+    var currentEntry: QueueEntry? {
+        guard !self.entries.isEmpty, self.currentIndex >= 0, self.currentIndex < self.entries.count else { return nil }
+        return self.entries[self.currentIndex]
     }
 
     var currentTrack: Track? {
-        self.currentNode?.track
+        self.currentEntry?.track
     }
 
-    var displayQueue: [Track] {
-        switch self.repeatMode {
-        case .one:
-            return self.currentNode.map { [$0.track] } ?? []
-        case .all:
-            return self.queue
-        }
+    var queue: [Track] {
+        self.entries.map(\.track)
     }
 
     private static let artworkPreloadWindow = 50
@@ -72,168 +43,105 @@ final class TrackQueueManager {
     private let registry = WebViewPlaybackEngineRegistry.shared
     private var preloadedArtworkUrls: Set<String> = []
 
-    private let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
-        category: "TrackQueueManager"
-    )
-
     private init() {}
-
-    // MARK: - Queue Setup
 
     func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
         self.contextId = contextId
-        self.head = nil
-        self.tail = nil
-        self.currentNode = nil
-        self.nodeByDisplayIndex = [:]
-
-        var prev: QueueNode?
-        for (i, track) in tracks.enumerated() {
-            let node = QueueNode(track: track)
-            node.prev = prev
-            prev?.next = node
-            if self.head == nil { self.head = node }
-            self.tail = node
-            self.nodeByDisplayIndex[i] = node
-            prev = node
-        }
-
-        self.currentNode = self.nodeByDisplayIndex[index]
-        self.syncStoredProperties()
+        self.entries = tracks.map { QueueEntry(track: $0) }
+        self.rebuildTrackIdMap()
+        self.currentIndex = min(max(index, 0), max(self.entries.count - 1, 0))
         self.updateArtworkPreloads()
     }
 
-    func setQueue(_ tracks: [Track], startingAt track: Track, contextId: String) {
-        self.setQueue(tracks, startingAt: tracks.firstIndex(of: track) ?? 0, contextId: contextId)
-    }
-
-    func jump(to node: QueueNode) {
-        self.currentNode = node
-        self.syncStoredProperties()
+    func jump(to entry: QueueEntry) {
+        guard let index = self.entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        self.currentIndex = index
         self.updateArtworkPreloads()
     }
-
-    // MARK: - Playback navigation
 
     func advanceToNext() -> Track? {
-        guard self.head != nil else { return nil }
+        guard !self.entries.isEmpty else { return nil }
 
         if self.repeatMode == .one { return self.currentTrack }
 
-        if let next = self.currentNode?.next {
-            self.currentNode = next
+        if self.currentIndex + 1 < self.entries.count {
+            self.currentIndex += 1
         } else if self.repeatMode == .all {
-            self.currentNode = self.head
+            self.currentIndex = 0
         } else {
             return nil
         }
 
-        self.syncStoredProperties()
         self.updateArtworkPreloads()
         return self.currentTrack
     }
 
     func rewindToPrevious() -> Track? {
-        guard self.head != nil else { return nil }
+        guard !self.entries.isEmpty else { return nil }
 
-        if let prev = self.currentNode?.prev {
-            self.currentNode = prev
+        if self.currentIndex - 1 >= 0 {
+            self.currentIndex -= 1
         } else if self.repeatMode == .all {
-            self.currentNode = self.tail
+            self.currentIndex = self.entries.count - 1
         } else {
             return nil
         }
 
-        self.syncStoredProperties()
         self.updateArtworkPreloads()
         return self.currentTrack
     }
 
     // MARK: - Queue Mutation
 
-    func addToQueue(_ track: Track) {
-        let node = QueueNode(track: track, userAdded: true)
-        self.append(node)
-        self.syncStoredProperties()
-        self.updateArtworkPreloads()
-    }
-
     func playNext(_ track: Track) {
-        let node = QueueNode(track: track, userAdded: true)
-        if let current = self.currentNode {
-            self.insert(node, after: current)
-        } else {
-            self.append(node)
-        }
-        self.syncStoredProperties()
+        let entry = QueueEntry(track: track, userAdded: true)
+        let insertIndex = self.entries.isEmpty ? 0 : self.currentIndex + 1
+        self.entries.insert(entry, at: insertIndex)
+        self.trackIdToEntry[track.id] = entry
         self.updateArtworkPreloads()
     }
 
-    func removeFromQueue(at index: Int) {
-        guard index >= 0, index < self.queue.count, index != self.currentIndex else { return }
-        if let node = self.node(at: index) {
-            self.unlink(node)
+    func removeFromQueue(_ entry: QueueEntry) {
+        guard let index = self.entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        guard index != self.currentIndex else { return }
+        self.entries.remove(at: index)
+        self.trackIdToEntry.removeValue(forKey: entry.track.id)
+        if index < self.currentIndex {
+            self.currentIndex -= 1
         }
-        self.syncStoredProperties()
-        self.updateArtworkPreloads()
-    }
-
-    func removeFromQueue(_ node: QueueNode) {
-        guard node !== self.currentNode else { return }
-        self.unlink(node)
-        self.syncStoredProperties()
         self.updateArtworkPreloads()
     }
 
     func removeTracks(forMediaSource mediaSourceId: String) {
-        var node = self.head
-        while let n = node {
-            let next = n.next
-            if n.track.mediaSourceId == mediaSourceId {
-                if n === self.currentNode { self.currentNode = next ?? self.head }
-                self.unlink(n)
-            }
-            node = next
+        let currentId = self.currentEntry?.id
+        let removed = self.entries.filter { $0.track.mediaSourceId == mediaSourceId }
+        for entry in removed {
+            self.trackIdToEntry.removeValue(forKey: entry.track.id)
         }
-        self.syncStoredProperties()
+        self.entries.removeAll { $0.track.mediaSourceId == mediaSourceId }
+
+        if let currentId, let newIndex = self.entries.firstIndex(where: { $0.id == currentId }) {
+            self.currentIndex = newIndex
+        } else {
+            self.currentIndex = min(self.currentIndex, max(self.entries.count - 1, 0))
+        }
     }
 
     func clearQueue() {
-        self.currentNode = nil
-        self.head = nil
-        self.tail = nil
-        self.contextId = nil
-        self.nodeByDisplayIndex = [:]
-        self.queue = []
-        self.nodes = []
+        self.entries = []
         self.currentIndex = 0
+        self.contextId = nil
+        self.trackIdToEntry = [:]
         self.preloadedArtworkUrls = []
     }
 
-    func moveQueueItem(fromOffsets source: IndexSet, toOffset destination: Int) {
-        var nodes = self.allNodes()
-        let moving = source.map { nodes[$0] }
-
-        for index in source.sorted().reversed() {
-            nodes.remove(at: index)
+    func applyReorder(_ reorderedEntries: [QueueEntry]) {
+        let currentId = self.currentEntry?.id
+        self.entries = reorderedEntries
+        if let currentId {
+            self.currentIndex = self.entries.firstIndex(where: { $0.id == currentId }) ?? 0
         }
-
-        let adjustment = source.filter { $0 < destination }.count
-        nodes.insert(contentsOf: moving, at: destination - adjustment)
-
-        self.relink(nodes)
-        self.syncStoredProperties()
-        self.updateArtworkPreloads()
     }
-
-    func applyReorderedDisplayQueue(_ reorderedNodes: [QueueNode]) {
-        guard self.repeatMode != .one else { return }
-        self.relink(reorderedNodes)
-        self.syncStoredProperties()
-    }
-
-    // MARK: - Repeat
 
     func clearRepeatOne() {
         if self.repeatMode == .one { self.repeatMode = .all }
@@ -246,98 +154,29 @@ final class TrackQueueManager {
         }
     }
 
-    // MARK: - DLL Helpers
+    func isTrackSelected(_ track: Track, contextId: String) -> Bool {
+        guard self.contextId == contextId else { return false }
+        guard let entry = self.trackIdToEntry[track.id] else { return false }
+        return entry.id == self.currentEntry?.id
+    }
 
-    private func append(_ node: QueueNode) {
-        node.prev = self.tail
-        node.next = nil
-        self.tail?.next = node
-        self.tail = node
-        if self.head == nil {
-            self.head = node
-            self.currentNode = node
+    private func rebuildTrackIdMap() {
+        self.trackIdToEntry = [:]
+        for entry in self.entries {
+            self.trackIdToEntry[entry.track.id] = entry
         }
     }
-
-    private func insert(_ node: QueueNode, after anchor: QueueNode) {
-        let next = anchor.next
-        node.prev = anchor
-        node.next = next
-        anchor.next = node
-        next?.prev = node
-        if anchor === self.tail { self.tail = node }
-    }
-
-    private func unlink(_ node: QueueNode) {
-        node.prev?.next = node.next
-        node.next?.prev = node.prev
-        if node === self.head { self.head = node.next }
-        if node === self.tail { self.tail = node.prev }
-        node.next = nil
-        node.prev = nil
-    }
-
-    private func node(at index: Int) -> QueueNode? {
-        var i = 0
-        var node = self.head
-        while let n = node {
-            if i == index { return n }
-            i += 1
-            node = n.next
-        }
-        return nil
-    }
-
-    private func allNodes() -> [QueueNode] {
-        var result: [QueueNode] = []
-        var node = self.head
-        while let n = node {
-            result.append(n)
-            node = n.next
-        }
-        return result
-    }
-
-    private func relink(_ nodes: [QueueNode]) {
-        self.head = nodes.first
-        self.tail = nodes.last
-        for (i, n) in nodes.enumerated() {
-            n.prev = i > 0 ? nodes[i - 1] : nil
-            n.next = i < nodes.count - 1 ? nodes[i + 1] : nil
-        }
-    }
-
-    /// Rebuilds queue:[Track] and currentIndex from the DLL for @Observable reactivity.
-    private func syncStoredProperties() {
-        var trackResult: [Track] = []
-        var nodeResult: [QueueNode] = []
-        var idx = 0
-        var foundIndex = 0
-        var node = self.head
-        while let n = node {
-            trackResult.append(n.track)
-            nodeResult.append(n)
-            if n === self.currentNode { foundIndex = idx }
-            idx += 1
-            node = n.next
-        }
-        self.queue = trackResult
-        self.nodes = nodeResult
-        self.currentIndex = foundIndex
-    }
-
-    // MARK: - Artwork Preloading
 
     private func updateArtworkPreloads() {
-        guard !self.queue.isEmpty else { return }
+        guard !self.entries.isEmpty else { return }
 
         let window = Self.artworkPreloadWindow
         let startIndex = max(0, self.currentIndex - window)
-        let endIndex = min(self.queue.count - 1, self.currentIndex + window)
+        let endIndex = min(self.entries.count - 1, self.currentIndex + window)
 
         var desiredUrls: Set<String> = []
         for i in startIndex ... endIndex {
-            if let remoteUrl = self.queue[i].artworkUrl,
+            if let remoteUrl = self.entries[i].track.artworkUrl,
                let localUrl = ArtworkServer.localURL(for: remoteUrl)
             {
                 desiredUrls.insert(localUrl)

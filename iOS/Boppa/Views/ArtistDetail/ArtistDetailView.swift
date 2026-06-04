@@ -159,8 +159,7 @@ struct ArtistDetailView: View {
             ForEach(Array(songs.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    isSelected: TrackQueueManager.shared.nodeByDisplayIndex[index]?.isSelected == true &&
-                        TrackQueueManager.shared.contextId == self.songsContextId,
+                    isSelected: TrackQueueManager.shared.isTrackSelected(track, contextId: self.songsContextId),
                     isLoading: PlaybackService.shared.isLoading,
                     isPlaying: PlaybackService.shared.isPlaying,
                     onTap: { self.playTrack(track, from: songs, at: index, contextId: self.songsContextId) },
@@ -184,8 +183,7 @@ struct ArtistDetailView: View {
             ForEach(Array(videos.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    isSelected: TrackQueueManager.shared.nodeByDisplayIndex[index]?.isSelected == true &&
-                        TrackQueueManager.shared.contextId == self.videosContextId,
+                    isSelected: TrackQueueManager.shared.isTrackSelected(track, contextId: self.videosContextId),
                     isLoading: PlaybackService.shared.isLoading,
                     isPlaying: PlaybackService.shared.isPlaying,
                     onTap: { self.playTrack(track, from: videos, at: index, contextId: self.videosContextId) },

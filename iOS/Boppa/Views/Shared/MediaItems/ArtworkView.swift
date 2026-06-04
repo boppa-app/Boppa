@@ -90,6 +90,11 @@ private struct CachedAsyncImage<Placeholder: View, Content: View>: View {
         }
         .onAppear {
             if case .success = self.phase { return }
+            // Check memory cache first for instant display
+            if let cached = ArtworkImageLoader.shared.cachedImage(for: self.url) {
+                self.phase = .success(Image(uiImage: cached))
+                return
+            }
             self.loadImage()
         }
         .onChange(of: self.url) {
@@ -101,6 +106,12 @@ private struct CachedAsyncImage<Placeholder: View, Content: View>: View {
 
     private func loadImage() {
         self.loadTask = Task {
+            // Double-check cache (might have been loaded by another instance)
+            if let cached = ArtworkImageLoader.shared.cachedImage(for: self.url) {
+                self.phase = .success(Image(uiImage: cached))
+                return
+            }
+
             do {
                 let (data, response) = try await ArtworkImageLoader.shared.session.data(from: self.url)
 
@@ -119,6 +130,8 @@ private struct CachedAsyncImage<Placeholder: View, Content: View>: View {
                     return
                 }
 
+                // Cache the loaded image
+                ArtworkImageLoader.shared.cacheImage(uiImage, for: self.url)
                 self.phase = .success(Image(uiImage: uiImage))
             } catch {
                 if Task.isCancelled { return }
@@ -147,11 +160,13 @@ private struct CachedAsyncImage<Placeholder: View, Content: View>: View {
 // MARK: - Shared Image Loader
 
 /// Shared URLSession for loading artwork from the local ArtworkServer.
-/// Configured to NOT cache responses so that failed requests are always retried.
+/// Configured to NOT cache HTTP responses so that failed requests are always retried,
+/// but successfully loaded images are cached in memory to avoid flashing on cell reuse.
 private final class ArtworkImageLoader {
     static let shared = ArtworkImageLoader()
 
     let session: URLSession
+    private let cache = NSCache<NSURL, UIImage>()
 
     private init() {
         let config = URLSessionConfiguration.ephemeral
@@ -161,5 +176,16 @@ private final class ArtworkImageLoader {
         config.timeoutIntervalForResource = 30
         config.httpMaximumConnectionsPerHost = 50
         self.session = URLSession(configuration: config)
+        self.cache.countLimit = 500
+        self.cache.totalCostLimit = 50 * 1024 * 1024 // 50 MB
+    }
+
+    func cachedImage(for url: URL) -> UIImage? {
+        self.cache.object(forKey: url as NSURL)
+    }
+
+    func cacheImage(_ image: UIImage, for url: URL) {
+        let cost = image.cgImage.map { $0.bytesPerRow * $0.height } ?? 0
+        self.cache.setObject(image, forKey: url as NSURL, cost: cost)
     }
 }

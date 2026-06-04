@@ -110,13 +110,6 @@ final class ArtworkServer: @unchecked Sendable {
 
     /// Waits until the server is ready and listening.
     func waitUntilReady() async {
-        self.cacheLock.lock()
-        if self.isReady {
-            self.cacheLock.unlock()
-            return
-        }
-        self.cacheLock.unlock()
-
         await withCheckedContinuation { continuation in
             self.cacheLock.lock()
             if self.isReady {
