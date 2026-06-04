@@ -242,7 +242,14 @@ final class QueueTableViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-        self.queueManager.repeatMode != .one
+        self.queueManager.repeatMode != .one && indexPath.row != 0
+    }
+
+    override func tableView(_ tableView: UITableView, targetIndexPathForMoveFromRowAt sourceIndexPath: IndexPath, toProposedIndexPath proposedDestinationIndexPath: IndexPath) -> IndexPath {
+        if proposedDestinationIndexPath.row == 0 {
+            return IndexPath(row: 1, section: 0)
+        }
+        return proposedDestinationIndexPath
     }
 
     override func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
