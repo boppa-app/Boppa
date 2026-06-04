@@ -66,6 +66,7 @@ final class QueueTableViewController: UITableViewController {
 
     private var displayedEntries: [QueueEntry] = []
     private var observationTask: Task<Void, Never>?
+    private var directTapPending = false
 
     var onScroll: ((CGFloat, CGFloat, CGFloat) -> Void)?
 
@@ -184,7 +185,9 @@ final class QueueTableViewController: UITableViewController {
         let newIdsSet = Set(newEntries.map(\.id))
 
         let oldPositionOfNewTop = newEntries.first.flatMap { oldIndexById[$0.id] }
-        let snapTopToHead = (oldPositionOfNewTop ?? 0) > 1
+        let wasDirect = self.directTapPending
+        self.directTapPending = false
+        let snapTopToHead = !wasDirect && (oldPositionOfNewTop ?? 0) > 1
 
         let deletes = oldEntries.enumerated()
             .filter { !newIdsSet.contains($1.id) }
@@ -267,6 +270,7 @@ final class QueueTableViewController: UITableViewController {
             onTap: { [weak self] in
                 guard let self else { return }
                 if repeatMode != .one {
+                    self.directTapPending = true
                     self.queueManager.jump(to: entry)
                     self.playbackService.playTrack(entry.track)
                 }
