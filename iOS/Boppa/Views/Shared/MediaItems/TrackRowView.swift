@@ -56,12 +56,12 @@ struct TrackRow: View {
                 }
             }
             Spacer()
-            if let onDeleteTap = self.onDeleteTap {
+            if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
                 Image(systemName: "xmark")
-                    .foregroundColor(self.isDeleteDisabled ? Color(.systemGray) : .purp)
+                    .foregroundColor(.purp)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
-                    .onTapGesture { if !self.isDeleteDisabled { onDeleteTap() } }
+                    .onTapGesture { onDeleteTap() }
                     .accessibilityLabel("Remove from queue")
                     .accessibilityAddTraits(.isButton)
             } else if self.style == .regular {
