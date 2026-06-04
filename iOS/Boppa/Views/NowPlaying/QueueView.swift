@@ -64,6 +64,7 @@ final class QueueTableViewController: UITableViewController {
 
     private var displayedEntries: [QueueEntry] = []
     private var observationTask: Task<Void, Never>?
+    private var directTapPending = false
 
     var onScroll: ((CGFloat, CGFloat, CGFloat) -> Void)?
 
@@ -92,11 +93,11 @@ final class QueueTableViewController: UITableViewController {
 
     private func startObserving() {
         self.observationTask = Task { [weak self] in
-            var lastEntryIds: [UUID] = []
-            var lastCurrentIndex: Int = -1
-            var lastRepeatMode: RepeatMode = .all
-            var lastIsPlaying = false
-            var lastIsLoading = false
+            var lastEntryIds = TrackQueueManager.shared.entries.map(\.id)
+            var lastCurrentIndex = TrackQueueManager.shared.currentIndex
+            var lastRepeatMode = TrackQueueManager.shared.repeatMode
+            var lastIsPlaying = PlaybackService.shared.isPlaying
+            var lastIsLoading = PlaybackService.shared.isLoading
 
             while !Task.isCancelled {
                 guard let self else { return }
@@ -167,10 +168,67 @@ final class QueueTableViewController: UITableViewController {
     }
 
     private func handleCurrentIndexChange() {
-        self.displayedEntries = self.computeDisplayEntries()
-        self.tableView.reloadData()
-        if !self.displayedEntries.isEmpty {
-            self.tableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: false)
+        let oldEntries = self.displayedEntries
+        let newEntries = self.computeDisplayEntries()
+        self.displayedEntries = newEntries
+
+        guard !oldEntries.isEmpty, !newEntries.isEmpty else {
+            self.tableView.reloadData()
+            return
+        }
+
+        let oldIndexById = Dictionary(uniqueKeysWithValues: oldEntries.enumerated().map { ($1.id, $0) })
+        let newIndexById = Dictionary(uniqueKeysWithValues: newEntries.enumerated().map { ($1.id, $0) })
+        let oldIdsSet = Set(oldEntries.map(\.id))
+        let newIdsSet = Set(newEntries.map(\.id))
+        
+        let oldPositionOfNewTop = newEntries.first.flatMap { oldIndexById[$0.id] }
+        let wasDirect = self.directTapPending
+        self.directTapPending = false
+        let slideTopHorizontally = !wasDirect && (oldPositionOfNewTop ?? 0) > 1
+
+        let deletes = oldEntries.enumerated()
+            .filter { !newIdsSet.contains($1.id) }
+            .map { IndexPath(row: $0.offset, section: 0) }
+        let inserts = newEntries.enumerated()
+            .filter { !oldIdsSet.contains($1.id) }
+            .map { IndexPath(row: $0.offset, section: 0) }
+
+        var regularMoves: [(IndexPath, IndexPath)] = []
+        var horizontalSlideFrom: IndexPath?
+
+        for (oldIdx, entry) in oldEntries.enumerated() {
+            guard let newIdx = newIndexById[entry.id], newIdx != oldIdx else { continue }
+            if slideTopHorizontally, newIdx == 0 {
+                horizontalSlideFrom = IndexPath(row: oldIdx, section: 0)
+            } else {
+                regularMoves.append((IndexPath(row: oldIdx, section: 0), IndexPath(row: newIdx, section: 0)))
+            }
+        }
+
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.1)
+        self.tableView.performBatchUpdates({
+            if !deletes.isEmpty { self.tableView.deleteRows(at: deletes, with: .fade) }
+            if !inserts.isEmpty { self.tableView.insertRows(at: inserts, with: .fade) }
+            for (from, to) in regularMoves {
+                self.tableView.moveRow(at: from, to: to)
+            }
+            if let from = horizontalSlideFrom {
+                self.tableView.deleteRows(at: [from], with: .none)
+                self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .none)
+            }
+        }, completion: nil)
+        self.refreshVisibleCells()
+        CATransaction.commit()
+
+        if horizontalSlideFrom != nil,
+           let cell = self.tableView.cellForRow(at: IndexPath(row: 0, section: 0))
+        {
+            cell.transform = CGAffineTransform(translationX: -self.tableView.bounds.width, y: 0)
+            UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
+                cell.transform = .identity
+            }
         }
     }
 
@@ -219,6 +277,7 @@ final class QueueTableViewController: UITableViewController {
             onTap: { [weak self] in
                 guard let self else { return }
                 if repeatMode != .one {
+                    self.directTapPending = true
                     self.queueManager.jump(to: entry)
                     self.playbackService.playTrack(entry.track)
                 }
