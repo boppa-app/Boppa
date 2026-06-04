@@ -66,7 +66,6 @@ final class QueueTableViewController: UITableViewController {
 
     private var displayedEntries: [QueueEntry] = []
     private var observationTask: Task<Void, Never>?
-    private var directTapPending = false
 
     var onScroll: ((CGFloat, CGFloat, CGFloat) -> Void)?
 
@@ -183,11 +182,9 @@ final class QueueTableViewController: UITableViewController {
         let newIndexById = Dictionary(uniqueKeysWithValues: newEntries.enumerated().map { ($1.id, $0) })
         let oldIdsSet = Set(oldEntries.map(\.id))
         let newIdsSet = Set(newEntries.map(\.id))
-        
+
         let oldPositionOfNewTop = newEntries.first.flatMap { oldIndexById[$0.id] }
-        let wasDirect = self.directTapPending
-        self.directTapPending = false
-        let slideTopHorizontally = !wasDirect && (oldPositionOfNewTop ?? 0) > 1
+        let snapTopToHead = (oldPositionOfNewTop ?? 0) > 1
 
         let deletes = oldEntries.enumerated()
             .filter { !newIdsSet.contains($1.id) }
@@ -197,12 +194,12 @@ final class QueueTableViewController: UITableViewController {
             .map { IndexPath(row: $0.offset, section: 0) }
 
         var regularMoves: [(IndexPath, IndexPath)] = []
-        var horizontalSlideFrom: IndexPath?
+        var snapFrom: IndexPath?
 
         for (oldIdx, entry) in oldEntries.enumerated() {
             guard let newIdx = newIndexById[entry.id], newIdx != oldIdx else { continue }
-            if slideTopHorizontally, newIdx == 0 {
-                horizontalSlideFrom = IndexPath(row: oldIdx, section: 0)
+            if snapTopToHead, newIdx == 0 {
+                snapFrom = IndexPath(row: oldIdx, section: 0)
             } else {
                 regularMoves.append((IndexPath(row: oldIdx, section: 0), IndexPath(row: newIdx, section: 0)))
             }
@@ -216,22 +213,13 @@ final class QueueTableViewController: UITableViewController {
             for (from, to) in regularMoves {
                 self.tableView.moveRow(at: from, to: to)
             }
-            if let from = horizontalSlideFrom {
+            if let from = snapFrom {
                 self.tableView.deleteRows(at: [from], with: .none)
                 self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .none)
             }
         }, completion: nil)
         self.refreshVisibleCells()
         CATransaction.commit()
-
-        if horizontalSlideFrom != nil,
-           let cell = self.tableView.cellForRow(at: IndexPath(row: 0, section: 0))
-        {
-            cell.transform = CGAffineTransform(translationX: -self.tableView.bounds.width, y: 0)
-            UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
-                cell.transform = .identity
-            }
-        }
     }
 
     private func refreshVisibleCells() {
@@ -279,7 +267,6 @@ final class QueueTableViewController: UITableViewController {
             onTap: { [weak self] in
                 guard let self else { return }
                 if repeatMode != .one {
-                    self.directTapPending = true
                     self.queueManager.jump(to: entry)
                     self.playbackService.playTrack(entry.track)
                 }
