@@ -110,7 +110,7 @@ final class WebViewPlaybackEngine: NSObject {
         self.setMediaSessionDetails(
             title: track.title,
             artist: track.subtitle ?? "",
-            artworkUrl: ArtworkServer.localURL(for: track.artworkUrl) ?? "",
+            artworkUrl: track.artworkUrl ?? "",
             duration: track.duration.map { Double($0) / 1000.0 },
             playbackRate: 0.0,
             position: 0,

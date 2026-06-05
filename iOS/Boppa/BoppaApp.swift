@@ -10,6 +10,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        URLCache.shared = URLCache(
+            memoryCapacity: 20 * 1024 * 1024,
+            diskCapacity: 0
+        )
+
         do {
             try prepareDependencies { dependencies in
                 dependencies.defaultDatabase = try .appDatabase()
@@ -43,7 +48,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         Task {
             // await AdBlockService.shared.loadContentRuleList()
-            await ArtworkServer.shared.waitUntilReady()
             MediaSourceContextProvider.shared.startMonitoring()
 
             let rootView = ContentView()

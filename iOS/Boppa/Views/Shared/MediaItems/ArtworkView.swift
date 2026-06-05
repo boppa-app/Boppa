@@ -15,17 +15,25 @@ struct ArtworkView: View {
     }
 
     private var resolvedURL: URL? {
-        guard let localURLString = ArtworkServer.localURL(for: self.url) else { return nil }
-        return URL(string: localURLString)
+        guard let urlString = self.url, !urlString.isEmpty else { return nil }
+        return URL(string: urlString)
     }
 
     var body: some View {
         Group {
             if let url = self.resolvedURL {
-                CachedAsyncImage(url: url, size: self.size) {
-                    self.placeholderImage
-                } content: { image in
-                    self.squareArtwork(image: image)
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case let .success(image):
+                        self.squareArtwork(image: image)
+                    case .failure:
+                        self.placeholderImage
+                    case .empty:
+                        ProgressView()
+                            .scaleEffect(0.6)
+                    @unknown default:
+                        self.placeholderImage
+                    }
                 }
             } else {
                 self.placeholderImage
@@ -59,133 +67,5 @@ struct ArtworkView: View {
             .font(.title3)
             .foregroundColor(Color(.systemGray3))
             .frame(width: self.size, height: self.size)
-    }
-}
-
-// MARK: - CachedAsyncImage
-
-/// A custom async image loader that does NOT cache failures, unlike SwiftUI's AsyncImage.
-/// This ensures that if the ArtworkServer is temporarily unavailable, images will be
-/// retried on next appearance rather than permanently showing as failed.
-private struct CachedAsyncImage<Placeholder: View, Content: View>: View {
-    let url: URL
-    let size: CGFloat
-    @ViewBuilder let placeholder: () -> Placeholder
-    @ViewBuilder let content: (Image) -> Content
-
-    @State private var phase: AsyncImagePhase = .empty
-    @State private var loadTask: Task<Void, Never>?
-
-    var body: some View {
-        Group {
-            switch self.phase {
-            case let .success(image):
-                self.content(image)
-            case .failure:
-                self.placeholder()
-            case .empty:
-                ProgressView()
-                    .scaleEffect(0.6)
-            }
-        }
-        .onAppear {
-            if case .success = self.phase { return }
-            // Check memory cache first for instant display
-            if let cached = ArtworkImageLoader.shared.cachedImage(for: self.url) {
-                self.phase = .success(Image(uiImage: cached))
-                return
-            }
-            self.loadImage()
-        }
-        .onChange(of: self.url) {
-            self.phase = .empty
-            self.loadTask?.cancel()
-            self.loadImage()
-        }
-    }
-
-    private func loadImage() {
-        self.loadTask = Task {
-            // Double-check cache (might have been loaded by another instance)
-            if let cached = ArtworkImageLoader.shared.cachedImage(for: self.url) {
-                self.phase = .success(Image(uiImage: cached))
-                return
-            }
-
-            do {
-                let (data, response) = try await ArtworkImageLoader.shared.session.data(from: self.url)
-
-                if Task.isCancelled { return }
-
-                // Check for HTTP errors
-                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                    self.phase = .failure(URLError(.badServerResponse))
-                    // Schedule a retry after a delay for server errors
-                    self.scheduleRetry()
-                    return
-                }
-
-                guard let uiImage = UIImage(data: data) else {
-                    self.phase = .failure(URLError(.cannotDecodeContentData))
-                    return
-                }
-
-                // Cache the loaded image
-                ArtworkImageLoader.shared.cacheImage(uiImage, for: self.url)
-                self.phase = .success(Image(uiImage: uiImage))
-            } catch {
-                if Task.isCancelled { return }
-                self.phase = .failure(error)
-                // Schedule a retry for network errors (server might be temporarily overwhelmed)
-                self.scheduleRetry()
-            }
-        }
-    }
-
-    private func scheduleRetry() {
-        self.loadTask = Task {
-            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            if Task.isCancelled { return }
-            self.loadImage()
-        }
-    }
-
-    private enum AsyncImagePhase {
-        case empty
-        case success(Image)
-        case failure(Error)
-    }
-}
-
-// MARK: - Shared Image Loader
-
-/// Shared URLSession for loading artwork from the local ArtworkServer.
-/// Configured to NOT cache HTTP responses so that failed requests are always retried,
-/// but successfully loaded images are cached in memory to avoid flashing on cell reuse.
-private final class ArtworkImageLoader {
-    static let shared = ArtworkImageLoader()
-
-    let session: URLSession
-    private let cache = NSCache<NSURL, UIImage>()
-
-    private init() {
-        let config = URLSessionConfiguration.ephemeral
-        config.urlCache = nil
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.timeoutIntervalForRequest = 10
-        config.timeoutIntervalForResource = 30
-        config.httpMaximumConnectionsPerHost = 50
-        self.session = URLSession(configuration: config)
-        self.cache.countLimit = 500
-        self.cache.totalCostLimit = 50 * 1024 * 1024 // 50 MB
-    }
-
-    func cachedImage(for url: URL) -> UIImage? {
-        self.cache.object(forKey: url as NSURL)
-    }
-
-    func cacheImage(_ image: UIImage, for url: URL) {
-        let cost = image.cgImage.map { $0.bytesPerRow * $0.height } ?? 0
-        self.cache.setObject(image, forKey: url as NSURL, cost: cost)
     }
 }

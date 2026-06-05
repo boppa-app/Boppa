@@ -176,10 +176,8 @@ final class TrackQueueManager {
 
         var desiredUrls: Set<String> = []
         for i in startIndex ... endIndex {
-            if let remoteUrl = self.entries[i].track.artworkUrl,
-               let localUrl = ArtworkServer.localURL(for: remoteUrl)
-            {
-                desiredUrls.insert(localUrl)
+            if let url = self.entries[i].track.artworkUrl, !url.isEmpty {
+                desiredUrls.insert(url)
             }
         }
 
