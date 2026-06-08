@@ -42,7 +42,11 @@ class TracklistViewModel {
     }
 
     var displayTracks: [Track] {
-        let items = self.searchHandler.displayItems(from: self.tracks)
+        var base = self.tracks
+        if self.tracklist.tracklistType == .likes {
+            base = base.filter { PlaylistManager.shared.isInPlaylist($0, playlistId: "likes") }
+        }
+        let items = self.searchHandler.displayItems(from: base)
         if self.searchHandler.filteredItems != nil {
             return items
         }
