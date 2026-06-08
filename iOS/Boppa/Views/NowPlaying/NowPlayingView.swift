@@ -51,25 +51,37 @@ struct NowPlayingView: View {
     }
 
     private var trackInfoSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            MarqueeText(
-                self.viewModel.trackTitle,
-                font: .title3,
-                fontWeight: .semibold,
-                foregroundColor: .white,
-                uniqueId: self.viewModel.currentTrack?.id.uuidString
-            )
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityLabel(self.viewModel.trackTitle)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                MarqueeText(
+                    self.viewModel.trackTitle,
+                    font: .title3,
+                    fontWeight: .semibold,
+                    foregroundColor: .white,
+                    uniqueId: self.viewModel.currentTrack?.id.uuidString
+                )
+                .accessibilityLabel(self.viewModel.trackTitle)
 
-            Text(self.viewModel.trackSubtitle)
-                .font(.body)
-                .foregroundColor(Color(.systemGray))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel(self.viewModel.trackSubtitle)
+                Text(self.viewModel.trackSubtitle)
+                    .font(.body)
+                    .foregroundColor(Color(.systemGray))
+                    .lineLimit(1)
+                    .accessibilityLabel(self.viewModel.trackSubtitle)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                self.viewModel.toggleLike()
+            } label: {
+                Image(systemName: self.viewModel.isCurrentTrackLiked ? "heart.fill" : "heart")
+                    .font(.system(size: 22))
+                    .foregroundColor(self.viewModel.isCurrentTrackLiked ? .purp : Color(.systemGray))
+                    .frame(width: 36, height: 36)
+            }
+            .disabled(self.viewModel.currentTrack == nil)
+            .accessibilityLabel(self.viewModel.isCurrentTrackLiked ? "Unlike" : "Like")
+            .accessibilityHint(self.viewModel.isCurrentTrackLiked ? "Remove from Likes" : "Add to Likes")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var seekBar: some View {

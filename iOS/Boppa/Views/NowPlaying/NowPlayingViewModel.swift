@@ -67,6 +67,11 @@ final class NowPlayingViewModel {
         self.trackUrl != nil
     }
 
+    var isCurrentTrackLiked: Bool {
+        guard let track = self.currentTrack else { return false }
+        return PlaylistManager.shared.isInPlaylist(track, playlistId: "likes")
+    }
+
     var displayCurrentTime: Double {
         self.isSeeking ? self.seekValue : self.currentTime
     }
@@ -146,6 +151,11 @@ final class NowPlayingViewModel {
         withAnimation(.easeInOut(duration: 0.25)) {
             self.showQueue.toggle()
         }
+    }
+
+    func toggleLike() {
+        guard let track = self.currentTrack else { return }
+        PlaylistManager.shared.togglePlaylist(track, playlistId: "likes")
     }
 
     func openInBrowser(dismiss: DismissAction) {
