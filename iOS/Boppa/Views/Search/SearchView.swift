@@ -94,6 +94,7 @@ struct SearchView: View {
             scrollHandler: self.scrollHandler,
             isFocused: self.isSearchFieldFocused,
             onSelect: { category in
+                self.cacheManager.saveQuery(self.viewModel.searchQuery)
                 self.viewModel.selectCategory(category)
                 self.isSearchFieldFocused = false
             }
