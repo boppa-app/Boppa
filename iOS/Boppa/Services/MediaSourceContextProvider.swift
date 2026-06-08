@@ -21,7 +21,7 @@ private let logger = Logger(
 final class MediaSourceContextProvider: NSObject {
     static let shared = MediaSourceContextProvider()
 
-    private static let refreshTimeoutSeconds: TimeInterval = 15
+    private static let refreshTimeoutSeconds: TimeInterval = 60
     private static let messageHandlerName = "contextCapture"
 
     @ObservationIgnored
