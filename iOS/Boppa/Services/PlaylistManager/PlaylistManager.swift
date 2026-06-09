@@ -17,14 +17,26 @@ class PlaylistManager {
     @ObservationIgnored
     @Dependency(\.defaultDatabase) var database
 
-    private(set) var trackPlaylists: [String: Set<String>] = [:]
+    /// Incremented on every add/remove so @Observable views re-evaluate isInPlaylist.
+    private(set) var membershipVersion: Int = 0
 
-    private init() {
-        self.loadTrackMemberships()
-    }
+    private init() {}
 
     func isInPlaylist(_ track: Track, playlistId: String) -> Bool {
-        self.trackPlaylists[Self.key(for: track)]?.contains(playlistId) ?? false
+        _ = self.membershipVersion
+        return (try? self.database.read { db in
+            let tracklistRow = try StoredTracklist
+                .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
+                .fetchOne(db)
+            guard let tracklist = tracklistRow else { return false }
+            let storedRow = try StoredTrack
+                .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
+                .fetchOne(db)
+            guard let stored = storedRow else { return false }
+            return try StoredTracklistTrack
+                .where { $0.tracklistId.eq(tracklist.id).and($0.trackId.eq(stored.id)) }
+                .fetchOne(db) != nil
+        }) ?? false
     }
 
     func addToPlaylist(_ track: Track, playlistId: String) {
@@ -42,7 +54,7 @@ class PlaylistManager {
                 } onConflictDoUpdate: { $0.sortOrder = count }
                     .execute(db)
             }
-            self.trackPlaylists[Self.key(for: track), default: []].insert(playlistId)
+            self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
             logger.error("Failed to add track '\(track.title)' to playlist '\(playlistId)': \(error)")
@@ -66,11 +78,7 @@ class PlaylistManager {
                     .delete()
                     .execute(db)
             }
-            let trackKey = Self.key(for: track)
-            self.trackPlaylists[trackKey]?.remove(playlistId)
-            if self.trackPlaylists[trackKey]?.isEmpty == true {
-                self.trackPlaylists.removeValue(forKey: trackKey)
-            }
+            self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
             logger.error("Failed to remove track '\(track.title)' from playlist '\(playlistId)': \(error)")
@@ -85,28 +93,7 @@ class PlaylistManager {
         }
     }
 
-    private func loadTrackMemberships() {
-        let memberships = (try? self.database.read { db -> [String: Set<String>] in
-            let playlists = try StoredTracklist
-                .where { $0.mediaSourceId.eq("boppa.app") }
-                .fetchAll(db)
-
-            var result: [String: Set<String>] = [:]
-            for playlist in playlists {
-                let joins = try StoredTracklistTrack
-                    .where { $0.tracklistId.eq(playlist.id) }
-                    .fetchAll(db)
-                for join in joins {
-                    if let track = try StoredTrack.where { $0.id.eq(join.trackId) }.fetchOne(db) {
-                        let trackKey = "\(track.mediaId):::\(track.mediaSourceId)"
-                        result[trackKey, default: []].insert(playlist.mediaId)
-                    }
-                }
-            }
-            return result
-        }) ?? [:]
-        self.trackPlaylists = memberships
-    }
+    // MARK: - Private
 
     private func findOrCreatePlaylist(playlistId: String, db: Database) throws -> StoredTracklist {
         let existing = try StoredTracklist
@@ -154,9 +141,5 @@ class PlaylistManager {
             )
         }.execute(db)
         return Int(db.lastInsertedRowID)
-    }
-
-    private static func key(for track: Track) -> String {
-        "\(track.mediaId):::\(track.mediaSourceId)"
     }
 }
