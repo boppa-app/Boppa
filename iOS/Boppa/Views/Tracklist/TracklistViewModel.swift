@@ -12,6 +12,13 @@ private let logger = Logger(
     category: "TracklistViewModel"
 )
 
+private class ObserverBox {
+    var observer: NSObjectProtocol?
+    deinit {
+        if let observer { NotificationCenter.default.removeObserver(observer) }
+    }
+}
+
 @MainActor
 @Observable
 class TracklistViewModel {
@@ -36,6 +43,9 @@ class TracklistViewModel {
     private var unsortedTracks: [Track] = []
     private var paginationContext: [String: Any]?
 
+    @ObservationIgnored
+    private let observerBox = ObserverBox()
+
     init(tracklist: Tracklist) {
         self.tracklist = tracklist
         self.isPersisted = tracklist.isPersisted
@@ -43,8 +53,8 @@ class TracklistViewModel {
 
     var displayTracks: [Track] {
         var base = self.tracks
-        if self.tracklist.tracklistType == .likes {
-            base = base.filter { PlaylistManager.shared.isInPlaylist($0, playlistId: "likes") }
+        if self.tracklist.mediaSourceId == "boppa.app" {
+            base = base.filter { PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId) }
         }
         let items = self.searchHandler.displayItems(from: base)
         if self.searchHandler.filteredItems != nil {
@@ -73,6 +83,22 @@ class TracklistViewModel {
 
         if self.tracks.isEmpty {
             self.fetchFirstPage()
+        }
+
+        if self.tracklist.mediaSourceId == "boppa.app", self.observerBox.observer == nil {
+            self.observerBox.observer = NotificationCenter.default.addObserver(
+                forName: .playlistMembershipChanged,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self else { return }
+                if let stored = TracklistStorageService.shared.findStoredTracklist(
+                    mediaId: self.tracklist.mediaId,
+                    mediaSourceId: self.tracklist.mediaSourceId
+                ) {
+                    self.loadFromCache(storedTracklist: stored)
+                }
+            }
         }
     }
 
