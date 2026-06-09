@@ -205,23 +205,9 @@ struct TracklistView: View {
         }
     }
 
-    // TODO: Check if user is signed in and if not display button to go to settings to sign in to media mediaSource config
-    private var emptyStateIcon: String {
-        switch self.viewModel.tracklist.tracklistType {
-        case .album:
-            if #available(iOS 26.0, *) {
-                return "music.note.square.stack.fill"
-            } else {
-                return "square.stack.fill"
-            }
-        default:
-            return "music.note.list"
-        }
-    }
-
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: self.emptyStateIcon)
+            Image(systemName: "zzz")
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
         }

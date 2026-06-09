@@ -240,22 +240,9 @@ struct TracklistListView: View {
         }
     }
 
-    private var emptyStateIcon: String {
-        switch self.type {
-        case .albums:
-            if #available(iOS 26.0, *) {
-                return "music.note.square.stack.fill"
-            } else {
-                return "square.stack.fill"
-            }
-        case .playlists:
-            return "music.note.list"
-        }
-    }
-
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: self.emptyStateIcon)
+            Image(systemName: "zzz")
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
         }
