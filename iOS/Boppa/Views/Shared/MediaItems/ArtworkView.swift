@@ -2,10 +2,12 @@ import SwiftUI
 
 struct ArtworkView: View {
     let url: String?
-    let placeholder: String
+    var placeholder: String = "music.note"
+    var tracklistType: Tracklist.TracklistType? = nil
     var size: CGFloat = 48
     var isCircular: Bool = false
     var cornerRadius: CGFloat?
+    var placeholderBackground: Color? = nil
 
     private var resolvedCornerRadius: CGFloat {
         if self.isCircular {
@@ -15,8 +17,25 @@ struct ArtworkView: View {
     }
 
     private var resolvedURL: URL? {
+        guard self.tracklistType != .likes else { return nil }
         guard let urlString = self.url, !urlString.isEmpty else { return nil }
         return URL(string: urlString)
+    }
+
+    private var resolvedPlaceholder: String {
+        guard let type = self.tracklistType else { return self.placeholder }
+        switch type {
+        case .likes:
+            return "heart.fill"
+        case .album:
+            if #available(iOS 26.0, *) {
+                return "music.note.square.stack.fill"
+            } else {
+                return "square.stack.fill"
+            }
+        default:
+            return "music.note.list"
+        }
     }
 
     var body: some View {
@@ -40,7 +59,7 @@ struct ArtworkView: View {
             }
         }
         .frame(width: self.size, height: self.size)
-        .background(Color(.systemGray6))
+        .background(self.placeholderBackground ?? Color(.systemGray6))
         .cornerRadius(self.resolvedCornerRadius)
         .clipped()
     }
@@ -63,9 +82,9 @@ struct ArtworkView: View {
     }
 
     private var placeholderImage: some View {
-        Image(systemName: self.placeholder)
+        Image(systemName: self.resolvedPlaceholder)
             .font(.title3)
-            .foregroundColor(Color(.systemGray3))
+            .foregroundColor(.white)
             .frame(width: self.size, height: self.size)
     }
 }

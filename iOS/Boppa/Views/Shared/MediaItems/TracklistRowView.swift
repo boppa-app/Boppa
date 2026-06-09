@@ -9,23 +9,6 @@ struct TracklistRow: View {
     var showMediaSourceIcon: Bool = false
     var showChevron: Bool = false
 
-    private var albumPlaceholder: String {
-        if #available(iOS 26.0, *) {
-            return "music.note.square.stack.fill"
-        } else {
-            return "square.stack.fill"
-        }
-    }
-
-    private var placeholder: String {
-        switch self.tracklist.tracklistType {
-        case .album:
-            return self.albumPlaceholder
-        default:
-            return "music.note.list"
-        }
-    }
-
     private var resolvedMediaSource: MediaSource? {
         guard self.showMediaSourceIcon else { return nil }
         let mediaSourceId = self.tracklist.mediaSourceId
@@ -36,7 +19,7 @@ struct TracklistRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.tracklist.artworkUrl, placeholder: self.placeholder, size: 72)
+            ArtworkView(url: self.tracklist.artworkUrl, tracklistType: self.tracklist.tracklistType, size: 72)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(self.tracklist.title)

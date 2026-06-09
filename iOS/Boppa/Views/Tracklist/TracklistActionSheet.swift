@@ -66,18 +66,12 @@ struct TracklistActionSheet: View {
     private var header: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                if self.tracklist.tracklistType == .likes {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.purp)
-                            .frame(width: 56, height: 56)
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 26))
-                            .foregroundColor(Color.white)
-                    }
-                } else {
-                    ArtworkView(url: self.tracklist.artworkUrl, placeholder: "music.note.list", size: 56)
-                }
+                ArtworkView(
+                    url: self.tracklist.artworkUrl,
+                    tracklistType: self.tracklist.tracklistType,
+                    size: 56,
+                    placeholderBackground: .purp
+                )
                 VStack(alignment: .leading, spacing: 4) {
                     MarqueeText(
                         self.tracklist.title,
