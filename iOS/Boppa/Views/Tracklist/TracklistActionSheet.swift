@@ -16,6 +16,20 @@ struct TracklistActionSheet: View {
     @State private var showSortPage = false
     @State private var showDeleteConfirmation = false
 
+    private var isLocalPlaylist: Bool {
+        self.tracklist.mediaSourceId == "boppa.app"
+    }
+
+    private var deleteAlertTitle: String {
+        self.isLocalPlaylist ? "Delete from Library" : "Remove From Library"
+    }
+
+    private var deleteAlertMessage: String {
+        self.isLocalPlaylist
+            ? "Are you sure you want to delete \"\(self.tracklist.title)\"?"
+            : "Are you sure you want to remove \"\(self.tracklist.title)\" from your library?"
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -37,14 +51,14 @@ struct TracklistActionSheet: View {
             .navigationDestination(isPresented: self.$showSortPage) {
                 self.sortPickerPage
             }
-            .alert("Remove From Library", isPresented: self.$showDeleteConfirmation) {
+            .alert(self.deleteAlertTitle, isPresented: self.$showDeleteConfirmation) {
                 Button("Cancel", role: .cancel) {}
-                Button("Remove", role: .destructive) {
+                Button(self.isLocalPlaylist ? "Delete" : "Remove", role: .destructive) {
                     self.onDelete()
                     self.dismiss()
                 }
             } message: {
-                Text("Are you sure you want to remove \"\(self.tracklist.title)\" from your library?")
+                Text(self.deleteAlertMessage)
             }
         }
     }
@@ -52,7 +66,18 @@ struct TracklistActionSheet: View {
     private var header: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                ArtworkView(url: self.tracklist.artworkUrl, placeholder: "music.note.list", size: 56)
+                if self.tracklist.tracklistType == .likes {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.purp)
+                            .frame(width: 56, height: 56)
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 26))
+                            .foregroundColor(Color.white)
+                    }
+                } else {
+                    ArtworkView(url: self.tracklist.artworkUrl, placeholder: "music.note.list", size: 56)
+                }
                 VStack(alignment: .leading, spacing: 4) {
                     MarqueeText(
                         self.tracklist.title,
@@ -99,38 +124,41 @@ struct TracklistActionSheet: View {
         .accessibilityHint(self.isPinned ? "Remove from pinned" : "Add to pinned")
     }
 
+    @ViewBuilder
     private var refreshRow: some View {
-        Button {
-            self.onRefresh()
-            self.dismiss()
-        } label: {
-            HStack(spacing: 12) {
-                Group {
-                    if self.isRefreshing {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                            .tint(.white)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 16))
-                            .foregroundColor(.purp)
+        if self.isLocalPlaylist { EmptyView() } else {
+            Button {
+                self.onRefresh()
+                self.dismiss()
+            } label: {
+                HStack(spacing: 12) {
+                    Group {
+                        if self.isRefreshing {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
+                        }
                     }
+                    .frame(width: 24)
+                    Text("Refresh")
+                        .font(.body)
+                        .foregroundColor(self.isRefreshing ? Color(.systemGray) : .white)
+                    Spacer()
                 }
-                .frame(width: 24)
-                Text("Refresh")
-                    .font(.body)
-                    .foregroundColor(self.isRefreshing ? Color(.systemGray) : .white)
-                Spacer()
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .disabled(self.isRefreshing)
+            .listRowBackground(Color(.systemGray6))
+            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+            .listRowSeparator(.hidden)
+            .accessibilityLabel(self.isRefreshing ? "Refreshing" : "Refresh")
+            .accessibilityHint("Reload tracks from source")
         }
-        .buttonStyle(.plain)
-        .disabled(self.isRefreshing)
-        .listRowBackground(Color(.systemGray6))
-        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-        .listRowSeparator(.hidden)
-        .accessibilityLabel(self.isRefreshing ? "Refreshing" : "Refresh")
-        .accessibilityHint("Reload tracks from source")
     }
 
     private var sortRow: some View {
@@ -206,23 +234,28 @@ struct TracklistActionSheet: View {
         }
     }
 
+    @ViewBuilder
     private var deleteRow: some View {
-        Button {
-            self.showDeleteConfirmation = true
-        } label: {
-            self.rowLabel(
-                title: "Remove From Library",
-                icon: "bookmark.slash",
-                iconColor: .red,
-                titleColor: .red
-            )
+        if self.tracklist.tracklistType == .likes {
+            EmptyView()
+        } else {
+            Button {
+                self.showDeleteConfirmation = true
+            } label: {
+                self.rowLabel(
+                    title: self.isLocalPlaylist ? "Delete from Library" : "Remove From Library",
+                    icon: self.isLocalPlaylist ? "trash" : "bookmark.slash",
+                    iconColor: .red,
+                    titleColor: .red
+                )
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(Color(.systemGray6))
+            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+            .listRowSeparator(.hidden)
+            .accessibilityLabel(self.isLocalPlaylist ? "Delete from Library" : "Remove from Library")
+            .accessibilityHint("\(self.isLocalPlaylist ? "Delete" : "Remove") \(self.tracklist.title) from your library")
         }
-        .buttonStyle(.plain)
-        .listRowBackground(Color(.systemGray6))
-        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-        .listRowSeparator(.hidden)
-        .accessibilityLabel("Remove from Library")
-        .accessibilityHint("Remove \(self.tracklist.title) from your library")
     }
 
     private func rowLabel<Trailing: View>(
