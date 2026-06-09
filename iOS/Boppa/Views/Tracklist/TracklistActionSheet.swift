@@ -99,23 +99,26 @@ struct TracklistActionSheet: View {
         }
     }
 
+    @ViewBuilder
     private var pinRow: some View {
-        Button {
-            self.onPin()
-            self.dismiss()
-        } label: {
-            self.rowLabel(
-                title: self.isPinned ? "Unpin" : "Pin",
-                icon: self.isPinned ? "pin.slash.fill" : "pin.fill",
-                iconColor: self.isPinned ? .purp : .white
-            )
+        if self.tracklist.tracklistType == .likes { EmptyView() } else {
+            Button {
+                self.onPin()
+                self.dismiss()
+            } label: {
+                self.rowLabel(
+                    title: self.isPinned ? "Unpin" : "Pin",
+                    icon: self.isPinned ? "pin.slash.fill" : "pin.fill",
+                    iconColor: self.isPinned ? .purp : .white
+                )
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(Color(.systemGray6))
+            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+            .listRowSeparator(.hidden)
+            .accessibilityLabel(self.isPinned ? "Unpin" : "Pin")
+            .accessibilityHint(self.isPinned ? "Remove from pinned" : "Add to pinned")
         }
-        .buttonStyle(.plain)
-        .listRowBackground(Color(.systemGray6))
-        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-        .listRowSeparator(.hidden)
-        .accessibilityLabel(self.isPinned ? "Unpin" : "Pin")
-        .accessibilityHint(self.isPinned ? "Remove from pinned" : "Add to pinned")
     }
 
     @ViewBuilder
