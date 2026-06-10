@@ -5,6 +5,7 @@ import SQLiteData
 
 extension Notification.Name {
     static let tracklistPinChanged = Notification.Name("tracklistPinChanged")
+    static let tracklistLibraryChanged = Notification.Name("tracklistLibraryChanged")
 }
 
 private let logger = Logger(
@@ -213,7 +214,7 @@ class TracklistViewModel {
                 self.tracklist = TracklistStorageService.shared.tracklistWithRelations(from: stored)
                 self.isPersisted = true
                 self.isSaving = false
-
+                NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
                 logger.info("Saved tracklist '\(self.tracklist.title)' to library")
             } catch {
                 self.isSaving = false
@@ -227,6 +228,7 @@ class TracklistViewModel {
         guard let stored = self.tracklist.storedTracklist else { return }
         try? TracklistStorageService.shared.deleteStoredTracklist(stored)
         self.isPersisted = false
+        NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
         logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
     }
 

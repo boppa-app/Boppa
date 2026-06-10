@@ -14,6 +14,13 @@ enum TracklistListType {
     case playlists
 }
 
+private class ObserverBox {
+    var observer: NSObjectProtocol?
+    deinit {
+        if let observer { NotificationCenter.default.removeObserver(observer) }
+    }
+}
+
 @MainActor
 @Observable
 class TracklistListViewModel {
@@ -30,6 +37,11 @@ class TracklistListViewModel {
 
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
+    private var libraryType: TracklistListType?
+    private var libraryVisibleSourceIds: Set<String> = []
+
+    @ObservationIgnored
+    private let observerBox = ObserverBox()
 
     var displayTracklists: [Tracklist] {
         if self.isEditing {
@@ -125,6 +137,7 @@ class TracklistListViewModel {
             }
         }
         self.tracklists.remove(at: index)
+        NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
     }
 
     func moveTracklist(from source: IndexSet, to destination: Int) {
@@ -188,6 +201,24 @@ class TracklistListViewModel {
     }
 
     func loadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
+        self.libraryType = type
+        self.libraryVisibleSourceIds = visibleMediaSourceIds
+
+        if self.observerBox.observer == nil {
+            self.observerBox.observer = NotificationCenter.default.addObserver(
+                forName: .tracklistLibraryChanged,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self, let type = self.libraryType else { return }
+                self.loadFromLibrary(type: type, visibleMediaSourceIds: self.libraryVisibleSourceIds)
+            }
+        }
+
+        self.reloadFromLibrary(type: type, visibleMediaSourceIds: visibleMediaSourceIds)
+    }
+
+    private func reloadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
         let typeString: String
         switch type {
         case .albums: typeString = "album"
