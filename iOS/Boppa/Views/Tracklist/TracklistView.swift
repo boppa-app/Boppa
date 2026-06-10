@@ -129,7 +129,7 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = TracklistStorageService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId) {
+            if let mediaSource = TracklistStorageService.shared.resolveMediaSource(mediaSourceId: artist.mediaSourceId) {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }

@@ -235,7 +235,7 @@ class TracklistViewModel {
         let newIsPinned = !self.isPinned
         try? self.database.write { db in
             try StoredTracklist.update { $0.isPinned = newIsPinned }
-                .where { $0.id.eq(stored.id) }
+                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
                 .execute(db)
         }
         self.isPinned = newIsPinned

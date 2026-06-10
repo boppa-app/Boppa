@@ -102,17 +102,26 @@ class TracklistListViewModel {
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
             try? self.database.write { db in
-                if let prevId = stored.prevId {
-                    try StoredTracklist.update { $0.nextId = stored.nextId }
-                        .where { $0.id.eq(prevId) }
-                        .execute(db)
+                if let prevMediaId = stored.prevMediaId, let prevMediaSourceId = stored.prevMediaSourceId {
+                    try StoredTracklist.update {
+                        $0.nextMediaId = stored.nextMediaId
+                        $0.nextMediaSourceId = stored.nextMediaSourceId
+                    }
+                    .where { $0.mediaId.eq(prevMediaId).and($0.mediaSourceId.eq(prevMediaSourceId)) }
+                    .execute(db)
                 }
-                if let nextId = stored.nextId {
-                    try StoredTracklist.update { $0.prevId = stored.prevId }
-                        .where { $0.id.eq(nextId) }
-                        .execute(db)
+                if let nextMediaId = stored.nextMediaId, let nextMediaSourceId = stored.nextMediaSourceId {
+                    try StoredTracklist.update {
+                        $0.prevMediaId = stored.prevMediaId
+                        $0.prevMediaSourceId = stored.prevMediaSourceId
+                    }
+                    .where { $0.mediaId.eq(nextMediaId).and($0.mediaSourceId.eq(nextMediaSourceId)) }
+                    .execute(db)
                 }
-                try StoredTracklist.where { $0.id.eq(stored.id) }.delete().execute(db)
+                try StoredTracklist
+                    .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                    .delete()
+                    .execute(db)
             }
         }
         self.tracklists.remove(at: index)
@@ -128,7 +137,7 @@ class TracklistListViewModel {
         let newIsPinned = !stored.isPinned
         try? self.database.write { db in
             try StoredTracklist.update { $0.isPinned = newIsPinned }
-                .where { $0.id.eq(stored.id) }
+                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
                 .execute(db)
         }
         if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
@@ -148,13 +157,15 @@ class TracklistListViewModel {
         try? self.database.write { db in
             for (index, tracklist) in self.tracklists.enumerated() {
                 guard let stored = tracklist.storedTracklist else { continue }
-                let prevId = index > 0 ? self.tracklists[index - 1].storedTracklist?.id : nil
-                let nextId = index < self.tracklists.count - 1 ? self.tracklists[index + 1].storedTracklist?.id : nil
+                let prev = index > 0 ? self.tracklists[index - 1].storedTracklist : nil
+                let next = index < self.tracklists.count - 1 ? self.tracklists[index + 1].storedTracklist : nil
                 try StoredTracklist.update {
-                    $0.prevId = prevId
-                    $0.nextId = nextId
+                    $0.prevMediaId = prev?.mediaId
+                    $0.prevMediaSourceId = prev?.mediaSourceId
+                    $0.nextMediaId = next?.mediaId
+                    $0.nextMediaSourceId = next?.mediaSourceId
                 }
-                .where { $0.id.eq(stored.id) }
+                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
                 .execute(db)
             }
         }
@@ -192,11 +203,15 @@ class TracklistListViewModel {
             let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
             var ordered: [StoredTracklist] = []
 
-            if let head = filtered.first(where: { $0.prevId == nil }) {
+            if let head = filtered.first(where: { $0.prevMediaId == nil }) {
                 var current: StoredTracklist? = head
                 while let node = current {
                     ordered.append(node)
-                    current = node.nextId.flatMap { lookup[$0] }
+                    if let nextMediaId = node.nextMediaId, let nextMediaSourceId = node.nextMediaSourceId {
+                        current = lookup["\(nextMediaId)|\(nextMediaSourceId)"]
+                    } else {
+                        current = nil
+                    }
                 }
             }
 

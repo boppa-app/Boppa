@@ -25,16 +25,13 @@ class PlaylistManager {
     func isInPlaylist(_ track: Track, playlistId: String) -> Bool {
         _ = self.membershipVersion
         return (try? self.database.read { db in
-            let tracklistRow = try StoredTracklist
-                .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
-                .fetchOne(db)
-            guard let tracklist = tracklistRow else { return false }
-            let storedRow = try StoredTrack
-                .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
-                .fetchOne(db)
-            guard let stored = storedRow else { return false }
-            return try StoredTracklistTrack
-                .where { $0.tracklistId.eq(tracklist.id).and($0.trackId.eq(stored.id)) }
+            try StoredTracklistTrack
+                .where {
+                    $0.tracklistMediaId.eq(playlistId)
+                        .and($0.tracklistMediaSourceId.eq("boppa.app"))
+                        .and($0.trackMediaId.eq(track.mediaId))
+                        .and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                }
                 .fetchOne(db) != nil
         }) ?? false
     }
@@ -44,15 +41,23 @@ class PlaylistManager {
         do {
             try self.database.write { db in
                 let tracklist = try self.findOrCreatePlaylist(playlistId: playlistId, db: db)
-                let trackId = try self.upsertTrack(track, db: db)
+                try TracklistStorageService.shared.upsertTrack(track, db: db)
                 let count = try StoredTracklistTrack
-                    .where { $0.tracklistId.eq(tracklist.id) }
+                    .where {
+                        $0.tracklistMediaId.eq(tracklist.mediaId)
+                            .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
+                    }
                     .fetchAll(db)
                     .count
                 try StoredTracklistTrack.insert {
-                    StoredTracklistTrack.Draft(tracklistId: tracklist.id, trackId: trackId, sortOrder: count)
-                } onConflictDoUpdate: { $0.sortOrder = count }
-                    .execute(db)
+                    StoredTracklistTrack.Draft(
+                        tracklistMediaId: tracklist.mediaId,
+                        tracklistMediaSourceId: tracklist.mediaSourceId,
+                        trackMediaId: track.mediaId,
+                        trackMediaSourceId: track.mediaSourceId,
+                        sortOrder: count
+                    )
+                }.execute(db)
             }
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
@@ -65,16 +70,13 @@ class PlaylistManager {
         guard self.isInPlaylist(track, playlistId: playlistId) else { return }
         do {
             try self.database.write { db in
-                let tracklistRow = try StoredTracklist
-                    .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
-                    .fetchOne(db)
-                guard let tracklist = tracklistRow else { return }
-                let storedRow = try StoredTrack
-                    .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
-                    .fetchOne(db)
-                guard let stored = storedRow else { return }
                 try StoredTracklistTrack
-                    .where { $0.tracklistId.eq(tracklist.id).and($0.trackId.eq(stored.id)) }
+                    .where {
+                        $0.tracklistMediaId.eq(playlistId)
+                            .and($0.tracklistMediaSourceId.eq("boppa.app"))
+                            .and($0.trackMediaId.eq(track.mediaId))
+                            .and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                    }
                     .delete()
                     .execute(db)
             }
@@ -92,8 +94,6 @@ class PlaylistManager {
             self.addToPlaylist(track, playlistId: playlistId)
         }
     }
-
-    // MARK: - Private
 
     private func findOrCreatePlaylist(playlistId: String, db: Database) throws -> StoredTracklist {
         let existing = try StoredTracklist
@@ -113,33 +113,16 @@ class PlaylistManager {
                 artworkUrl: nil,
                 tracklistType: tracklistType,
                 metadataJSON: Data(),
-                fromArtistId: nil,
+                fromArtistMediaId: nil,
                 isPinned: false,
-                prevId: nil,
-                nextId: nil
+                prevMediaId: nil,
+                prevMediaSourceId: nil,
+                nextMediaId: nil,
+                nextMediaSourceId: nil
             )
         }.execute(db)
-        let id = Int(db.lastInsertedRowID)
-        return try StoredTracklist.where { $0.id.eq(id) }.fetchOne(db)!
-    }
-
-    private func upsertTrack(_ track: Track, db: Database) throws -> Int {
-        let existing = try StoredTrack
-            .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
-            .fetchOne(db)
-        guard existing == nil else { return existing!.id }
-        try StoredTrack.insert {
-            StoredTrack.Draft(
-                mediaId: track.mediaId,
-                mediaSourceId: track.mediaSourceId,
-                title: track.title,
-                subtitle: track.subtitle,
-                duration: track.duration,
-                artworkUrl: track.artworkUrl,
-                url: track.url,
-                metadataJSON: (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
-            )
-        }.execute(db)
-        return Int(db.lastInsertedRowID)
+        return try StoredTracklist
+            .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
+            .fetchOne(db)!
     }
 }

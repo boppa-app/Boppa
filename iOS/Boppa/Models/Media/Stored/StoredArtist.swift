@@ -2,13 +2,18 @@ import Foundation
 import SQLiteData
 
 @Table("artists")
-nonisolated struct StoredArtist: Identifiable {
-    let id: Int
-    var mediaId: String
+nonisolated struct StoredArtist {
+    @Column(primaryKey: true) var mediaId: String
     var mediaSourceId: String
     var name: String
     var artworkUrl: String?
     var metadataJSON: Data
+}
+
+extension StoredArtist: Identifiable {
+    var id: String {
+        "\(self.mediaId)|\(self.mediaSourceId)"
+    }
 }
 
 extension StoredArtist {

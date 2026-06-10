@@ -2,9 +2,8 @@ import Foundation
 import SQLiteData
 
 @Table("tracks")
-nonisolated struct StoredTrack: Identifiable {
-    let id: Int
-    var mediaId: String
+nonisolated struct StoredTrack {
+    @Column(primaryKey: true) var mediaId: String
     var mediaSourceId: String
     var title: String
     var subtitle: String?
@@ -12,6 +11,12 @@ nonisolated struct StoredTrack: Identifiable {
     var artworkUrl: String?
     var url: String?
     var metadataJSON: Data
+}
+
+extension StoredTrack: Identifiable {
+    var id: String {
+        "\(self.mediaId)|\(self.mediaSourceId)"
+    }
 }
 
 extension StoredTrack: FuzzySearchable {

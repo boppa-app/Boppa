@@ -14,7 +14,7 @@ extension DatabaseWriter where Self == DatabasePool {
         configuration.foreignKeysEnabled = true
         let database = try DatabasePool(path: url.path, configuration: configuration)
         var migrator = DatabaseMigrator()
-        migrator.registerMigration("v1") { db in
+        migrator.registerMigration("v2") { db in
             try #sql(
                 """
                 CREATE TABLE "mediaSources" (
@@ -29,17 +29,15 @@ extension DatabaseWriter where Self == DatabasePool {
                 """
             ).execute(db)
 
-            // TODO: Delete items from artists DB if no longer referenced anywhere
             try #sql(
                 """
                 CREATE TABLE "artists" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                   "mediaId" TEXT NOT NULL,
                   "mediaSourceId" TEXT NOT NULL,
                   "name" TEXT NOT NULL,
                   "artworkUrl" TEXT,
-                  "metadataJSON" BLOB NOT NULL DEFAULT X'',
-                  UNIQUE ("mediaId", "mediaSourceId")
+                  "metadataJSON" BLOB NOT NULL DEFAULT '{}',
+                  PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)
@@ -47,20 +45,23 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql(
                 """
                 CREATE TABLE "tracklists" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                   "mediaId" TEXT NOT NULL,
                   "mediaSourceId" TEXT NOT NULL,
                   "title" TEXT NOT NULL,
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
                   "tracklistType" TEXT NOT NULL,
-                  "metadataJSON" BLOB NOT NULL DEFAULT X'',
-                  "fromArtistId" INTEGER,
+                  "metadataJSON" BLOB NOT NULL DEFAULT '{}',
+                  "fromArtistMediaId" TEXT,
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
-                  "prevId" INTEGER,
-                  "nextId" INTEGER,
-                  UNIQUE ("mediaId", "mediaSourceId"),
-                  FOREIGN KEY ("fromArtistId") REFERENCES "artists"("id")
+                  "prevMediaId" TEXT,
+                  "prevMediaSourceId" TEXT,
+                  "nextMediaId" TEXT,
+                  "nextMediaSourceId" TEXT,
+                  PRIMARY KEY ("mediaId", "mediaSourceId"),
+                  FOREIGN KEY ("fromArtistMediaId", "mediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId"),
+                  FOREIGN KEY ("prevMediaId", "prevMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId"),
+                  FOREIGN KEY ("nextMediaId", "nextMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)
@@ -68,7 +69,6 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql(
                 """
                 CREATE TABLE "tracks" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                   "mediaId" TEXT NOT NULL,
                   "mediaSourceId" TEXT NOT NULL,
                   "title" TEXT NOT NULL,
@@ -76,8 +76,8 @@ extension DatabaseWriter where Self == DatabasePool {
                   "duration" INTEGER,
                   "artworkUrl" TEXT,
                   "url" TEXT,
-                  "metadataJSON" BLOB NOT NULL DEFAULT X'',
-                  UNIQUE ("mediaId", "mediaSourceId")
+                  "metadataJSON" BLOB NOT NULL DEFAULT '{}',
+                  PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)
@@ -85,13 +85,14 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql(
                 """
                 CREATE TABLE "tracklistTracks" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-                  "tracklistId" INTEGER NOT NULL,
-                  "trackId" INTEGER NOT NULL,
+                  "tracklistMediaId" TEXT NOT NULL,
+                  "tracklistMediaSourceId" TEXT NOT NULL,
+                  "trackMediaId" TEXT NOT NULL,
+                  "trackMediaSourceId" TEXT NOT NULL,
                   "sortOrder" INTEGER NOT NULL DEFAULT 0,
-                  UNIQUE ("tracklistId", "trackId"),
-                  FOREIGN KEY ("tracklistId") REFERENCES "tracklists"("id") ON DELETE CASCADE,
-                  FOREIGN KEY ("trackId") REFERENCES "tracks"("id")
+                  PRIMARY KEY ("tracklistMediaId", "tracklistMediaSourceId", "trackMediaId", "trackMediaSourceId"),
+                  FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE,
+                  FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)
@@ -99,13 +100,14 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql(
                 """
                 CREATE TABLE "trackArtists" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-                  "trackId" INTEGER NOT NULL,
-                  "artistId" INTEGER NOT NULL,
+                  "trackMediaId" TEXT NOT NULL,
+                  "trackMediaSourceId" TEXT NOT NULL,
+                  "artistMediaId" TEXT NOT NULL,
+                  "artistMediaSourceId" TEXT NOT NULL,
                   "sortOrder" INTEGER NOT NULL DEFAULT 0,
-                  UNIQUE ("trackId", "artistId"),
-                  FOREIGN KEY ("trackId") REFERENCES "tracks"("id") ON DELETE CASCADE,
-                  FOREIGN KEY ("artistId") REFERENCES "artists"("id")
+                  PRIMARY KEY ("trackMediaId", "trackMediaSourceId", "artistMediaId", "artistMediaSourceId"),
+                  FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId") ON DELETE CASCADE,
+                  FOREIGN KEY ("artistMediaId", "artistMediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)
@@ -113,13 +115,14 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql(
                 """
                 CREATE TABLE "trackAlbums" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-                  "trackId" INTEGER NOT NULL,
-                  "tracklistId" INTEGER NOT NULL,
+                  "trackMediaId" TEXT NOT NULL,
+                  "trackMediaSourceId" TEXT NOT NULL,
+                  "tracklistMediaId" TEXT NOT NULL,
+                  "tracklistMediaSourceId" TEXT NOT NULL,
                   "sortOrder" INTEGER NOT NULL DEFAULT 0,
-                  UNIQUE ("trackId", "tracklistId"),
-                  FOREIGN KEY ("trackId") REFERENCES "tracks"("id") ON DELETE CASCADE,
-                  FOREIGN KEY ("tracklistId") REFERENCES "tracklists"("id") ON DELETE CASCADE
+                  PRIMARY KEY ("trackMediaId", "trackMediaSourceId", "tracklistMediaId", "tracklistMediaSourceId"),
+                  FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId") ON DELETE CASCADE,
+                  FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE
                 ) STRICT
                 """
             ).execute(db)
@@ -127,13 +130,14 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql(
                 """
                 CREATE TABLE "tracklistArtists" (
-                  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-                  "tracklistId" INTEGER NOT NULL,
-                  "artistId" INTEGER NOT NULL,
+                  "tracklistMediaId" TEXT NOT NULL,
+                  "tracklistMediaSourceId" TEXT NOT NULL,
+                  "artistMediaId" TEXT NOT NULL,
+                  "artistMediaSourceId" TEXT NOT NULL,
                   "sortOrder" INTEGER NOT NULL DEFAULT 0,
-                  UNIQUE ("tracklistId", "artistId"),
-                  FOREIGN KEY ("tracklistId") REFERENCES "tracklists"("id") ON DELETE CASCADE,
-                  FOREIGN KEY ("artistId") REFERENCES "artists"("id")
+                  PRIMARY KEY ("tracklistMediaId", "tracklistMediaSourceId", "artistMediaId", "artistMediaSourceId"),
+                  FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE,
+                  FOREIGN KEY ("artistMediaId", "artistMediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)

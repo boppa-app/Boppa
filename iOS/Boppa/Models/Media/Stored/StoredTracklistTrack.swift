@@ -2,9 +2,10 @@ import Foundation
 import SQLiteData
 
 @Table("tracklistTracks")
-nonisolated struct StoredTracklistTrack: Identifiable {
-    let id: Int
-    var tracklistId: Int
-    var trackId: Int
+nonisolated struct StoredTracklistTrack {
+    @Column(primaryKey: true) var tracklistMediaId: String
+    var tracklistMediaSourceId: String
+    var trackMediaId: String
+    var trackMediaSourceId: String
     var sortOrder: Int
 }
