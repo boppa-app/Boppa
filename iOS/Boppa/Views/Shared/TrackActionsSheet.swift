@@ -88,7 +88,11 @@ struct TrackActionsSheet: View {
     private var header: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                ArtworkView(url: self.track.artworkUrl, placeholder: "music.note", size: 56)
+                ArtworkView(
+                    url: self.track.artworkUrl,
+                    size: 56,
+                    placeholderBackground: .purp
+                )
                 VStack(alignment: .leading, spacing: 4) {
                     MarqueeText(
                         self.track.title,
