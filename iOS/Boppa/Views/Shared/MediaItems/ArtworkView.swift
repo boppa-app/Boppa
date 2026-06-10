@@ -1,3 +1,4 @@
+import Kingfisher
 import SwiftUI
 
 struct ArtworkView: View {
@@ -41,19 +42,7 @@ struct ArtworkView: View {
     var body: some View {
         Group {
             if let url = self.resolvedURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case let .success(image):
-                        self.squareArtwork(image: image)
-                    case .failure:
-                        self.placeholderImage
-                    case .empty:
-                        ProgressView()
-                            .scaleEffect(0.6)
-                    @unknown default:
-                        self.placeholderImage
-                    }
-                }
+                ArtworkImageContent(url: url, size: self.size, placeholderSystemName: self.resolvedPlaceholder)
             } else {
                 self.placeholderImage
             }
@@ -64,27 +53,57 @@ struct ArtworkView: View {
         .clipped()
     }
 
-    private func squareArtwork(image: Image) -> some View {
-        ZStack {
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: self.size, height: self.size)
-                .clipped()
-                .blur(radius: 20)
-                .opacity(0.6)
-
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: self.size, height: self.size)
-        }
-    }
-
     private var placeholderImage: some View {
         Image(systemName: self.resolvedPlaceholder)
             .font(.title3)
             .foregroundColor(.white)
             .frame(width: self.size, height: self.size)
+    }
+}
+
+private struct ArtworkImageContent: View {
+    let url: URL
+    let size: CGFloat
+    let placeholderSystemName: String
+
+    @State private var loadedImage: UIImage? = nil
+    @State private var failed = false
+
+    var body: some View {
+        Group {
+            if let img = loadedImage {
+                ZStack {
+                    Image(uiImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: self.size, height: self.size)
+                        .clipped()
+                        .blur(radius: 20)
+                        .opacity(0.6)
+
+                    Image(uiImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: self.size, height: self.size)
+                }
+            } else if self.failed {
+                Image(systemName: self.placeholderSystemName)
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .frame(width: self.size, height: self.size)
+            } else {
+                KFImage(self.url)
+                    .placeholder { ProgressView().scaleEffect(0.6) }
+                    .onSuccess { result in self.loadedImage = result.image }
+                    .onFailure { _ in self.failed = true }
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: self.size, height: self.size)
+            }
+        }
+        .onChange(of: self.url) { _ in
+            self.loadedImage = nil
+            self.failed = false
+        }
     }
 }

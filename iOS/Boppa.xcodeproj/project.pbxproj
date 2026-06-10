@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3A4039782FDA0F1800311402 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 3A4039772FDA0F1800311402 /* Yams */; };
+		3A40397B2FDA22E600311402 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 3A40397A2FDA22E600311402 /* Kingfisher */; };
 		3A8D65D22F99BB380078E6B0 /* Ifrit in Frameworks */ = {isa = PBXBuildFile; productRef = F1E2CA112F996DBC000CA0FD /* Ifrit */; };
 		3A941D122FC6658D0061370B /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 3A941D112FC6658D0061370B /* SQLiteData */; };
 /* End PBXBuildFile section */
@@ -71,6 +72,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A40397B2FDA22E600311402 /* Kingfisher in Frameworks */,
 				3A941D122FC6658D0061370B /* SQLiteData in Frameworks */,
 				3A4039782FDA0F1800311402 /* Yams in Frameworks */,
 				3A8D65D22F99BB380078E6B0 /* Ifrit in Frameworks */,
@@ -147,6 +149,7 @@
 				F1E2CA112F996DBC000CA0FD /* Ifrit */,
 				3A941D112FC6658D0061370B /* SQLiteData */,
 				3A4039772FDA0F1800311402 /* Yams */,
+				3A40397A2FDA22E600311402 /* Kingfisher */,
 			);
 			productName = Boppa;
 			productReference = F1D7341C2F4284C300035B3B /* Boppa.app */;
@@ -234,6 +237,7 @@
 				F1E2CA102F996DBC000CA0FD /* XCRemoteSwiftPackageReference "Ifrit" */,
 				3A941D0F2FC665700061370B /* XCRemoteSwiftPackageReference "sqlite-data" */,
 				3A4039762FDA09AE00311402 /* XCRemoteSwiftPackageReference "Yams" */,
+				3A4039792FDA22D200311402 /* XCRemoteSwiftPackageReference "kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F1D7341D2F4284C300035B3B /* Products */;
@@ -664,6 +668,14 @@
 				minimumVersion = 6.2.2;
 			};
 		};
+		3A4039792FDA22D200311402 /* XCRemoteSwiftPackageReference "kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.9.0;
+			};
+		};
 		3A941D0F2FC665700061370B /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
@@ -687,6 +699,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3A4039762FDA09AE00311402 /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
+		};
+		3A40397A2FDA22E600311402 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3A4039792FDA22D200311402 /* XCRemoteSwiftPackageReference "kingfisher" */;
+			productName = Kingfisher;
 		};
 		3A941D112FC6658D0061370B /* SQLiteData */ = {
 			isa = XCSwiftPackageProductDependency;

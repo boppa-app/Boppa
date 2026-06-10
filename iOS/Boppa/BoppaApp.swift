@@ -1,3 +1,4 @@
+import Kingfisher
 import SQLiteData
 import SwiftUI
 import UIKit
@@ -14,6 +15,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             memoryCapacity: 20 * 1024 * 1024,
             diskCapacity: 0
         )
+
+        ImageCache.default.diskStorage.config.sizeLimit = 50 * 1024 * 1024
 
         do {
             try prepareDependencies { dependencies in
