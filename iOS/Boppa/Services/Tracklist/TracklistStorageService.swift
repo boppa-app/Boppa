@@ -313,10 +313,10 @@ class TracklistStorageService {
 
         switch tracklist.tracklistType {
         case .playlist:
-            script = config.data?.getPlaylist?.script
+            script = config.data?.getPlaylist
             itemParams["user"] = tracklist.subtitle ?? ""
         case .album:
-            script = config.data?.getAlbum?.script
+            script = config.data?.getAlbum
             itemParams["subtitle"] = tracklist.subtitle ?? ""
         default:
             throw NSError(domain: "TracklistStorageService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot save this tracklist type to library"])

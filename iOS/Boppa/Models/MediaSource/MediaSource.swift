@@ -1,5 +1,6 @@
 import Foundation
 import SQLiteData
+import Yams
 
 @Table("mediaSources")
 nonisolated struct MediaSource: Identifiable, Hashable {
@@ -15,7 +16,7 @@ nonisolated struct MediaSource: Identifiable, Hashable {
 
 extension MediaSource {
     var config: MediaSourceConfig {
-        try! JSONDecoder().decode(MediaSourceConfig.self, from: self.configData)
+        try! YAMLDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
 
     var contextValues: [String: String] {
@@ -26,7 +27,7 @@ extension MediaSource {
         self.id = id
         self.name = name
         self.url = url
-        self.configData = (try? JSONEncoder().encode(config)) ?? Data()
+        self.configData = (try? YAMLEncoder().encode(config)).flatMap { Data($0.utf8) } ?? Data()
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
         self.contextValuesJSON = "{}"
@@ -35,7 +36,7 @@ extension MediaSource {
     static func fromConfigData(_ data: Data) throws -> [MediaSource] {
         let configs: [MediaSourceConfig]
         do {
-            configs = try JSONDecoder().decode([MediaSourceConfig].self, from: data)
+            configs = try YAMLDecoder().decode([MediaSourceConfig].self, from: data)
         } catch let decodingError as DecodingError {
             throw MediaSourceImportError.malformedConfig(detail: describeDecodingError(decodingError))
         } catch {

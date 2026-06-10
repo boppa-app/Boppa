@@ -42,7 +42,7 @@ final class WebViewFactory {
 
         for script in scripts {
             userContentController.addUserScript(WKUserScript(
-                source: script.content.script,
+                source: script.content,
                 injectionTime: script.injectionTime.wkUserScriptInjectionTime,
                 forMainFrameOnly: false
             ))

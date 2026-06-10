@@ -63,7 +63,7 @@ struct Parse: Codable {
 }
 
 struct Script: Codable {
-    let content: ScriptContent
+    let content: String
     let injectionTime: ScriptInjectionTime
 }
 
@@ -79,35 +79,17 @@ enum ScriptInjectionTime: String, Codable {
     }
 }
 
-struct ScriptContent: Codable {
-    let script: String
-
-    nonisolated init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let lines = try? container.decode([String].self) {
-            self.script = lines.joined(separator: "\n")
-        } else {
-            self.script = try container.decode(String.self)
-        }
-    }
-
-    nonisolated func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(self.script)
-    }
-}
-
 struct MediaSourceData: Codable {
-    let searchSongs: ScriptContent?
-    let searchVideos: ScriptContent?
-    let searchArtists: ScriptContent?
-    let searchAlbums: ScriptContent?
-    let searchPlaylists: ScriptContent?
-    let getAlbum: ScriptContent?
-    let getArtist: ScriptContent?
-    let getPlaylist: ScriptContent?
-    let getAlbumsForArtist: ScriptContent?
-    let getSongsForArtist: ScriptContent?
-    let getVideosForArtist: ScriptContent?
-    let getPlaylistsForArtist: ScriptContent?
+    let searchSongs: String?
+    let searchVideos: String?
+    let searchArtists: String?
+    let searchAlbums: String?
+    let searchPlaylists: String?
+    let getAlbum: String?
+    let getArtist: String?
+    let getPlaylist: String?
+    let getAlbumsForArtist: String?
+    let getSongsForArtist: String?
+    let getVideosForArtist: String?
+    let getPlaylistsForArtist: String?
 }

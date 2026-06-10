@@ -44,11 +44,11 @@ enum SearchCategory: String, CaseIterable, Hashable {
 
     func script(from data: MediaSourceData) -> String? {
         switch self {
-        case .songs: return data.searchSongs?.script
-        case .videos: return data.searchVideos?.script
-        case .artists: return data.searchArtists?.script
-        case .albums: return data.searchAlbums?.script
-        case .playlists: return data.searchPlaylists?.script
+        case .songs: return data.searchSongs
+        case .videos: return data.searchVideos
+        case .artists: return data.searchArtists
+        case .albums: return data.searchAlbums
+        case .playlists: return data.searchPlaylists
         }
     }
 }

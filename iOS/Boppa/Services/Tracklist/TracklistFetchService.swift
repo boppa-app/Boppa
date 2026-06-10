@@ -29,9 +29,9 @@ class TracklistFetchService {
         case .playlist:
             return try await self.fetchPlaylistPage(tracklist: tracklist, config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
         case .artistSongs:
-            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getSongsForArtist?.script, scriptName: "getSongsForArtist", config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
+            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getSongsForArtist, scriptName: "getSongsForArtist", config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
         case .artistVideos:
-            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getVideosForArtist?.script, scriptName: "getVideosForArtist", config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
+            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getVideosForArtist, scriptName: "getVideosForArtist", config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
         case .likes:
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
@@ -40,7 +40,7 @@ class TracklistFetchService {
     func fetchArtist(artist: Artist, mediaSource: MediaSource) async throws -> ArtistDetail {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
-        guard let script = config.data?.getArtist?.script else {
+        guard let script = config.data?.getArtist else {
             logger.warning("No getArtist script for '\(mediaSourceId)'")
             return ArtistDetail()
         }
@@ -75,7 +75,7 @@ class TracklistFetchService {
     func fetchAlbumsForArtist(artist: Artist, artistDetail: ArtistDetail, mediaSource: MediaSource) async throws -> [Tracklist] {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
-        guard let script = config.data?.getAlbumsForArtist?.script else {
+        guard let script = config.data?.getAlbumsForArtist else {
             logger.warning("No getAlbumsForArtist script for '\(mediaSourceId)'")
             return []
         }
@@ -101,7 +101,7 @@ class TracklistFetchService {
     func fetchPlaylistsForArtist(artist: Artist, artistDetail: ArtistDetail, mediaSource: MediaSource) async throws -> [Tracklist] {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
-        guard let script = config.data?.getPlaylistsForArtist?.script else {
+        guard let script = config.data?.getPlaylistsForArtist else {
             logger.warning("No getPlaylistsForArtist script for '\(mediaSourceId)'")
             return []
         }
@@ -162,7 +162,7 @@ class TracklistFetchService {
         tracklist: Tracklist, config: MediaSourceConfig,
         mediaSourceId: String, mediaSourceContext: [String: String], previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
-        guard let script = config.data?.getAlbum?.script else {
+        guard let script = config.data?.getAlbum else {
             logger.warning("No getAlbum script for '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
@@ -181,7 +181,7 @@ class TracklistFetchService {
         tracklist: Tracklist, config: MediaSourceConfig,
         mediaSourceId: String, mediaSourceContext: [String: String], previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
-        guard let script = config.data?.getPlaylist?.script else {
+        guard let script = config.data?.getPlaylist else {
             logger.warning("No getPlaylist script for '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
