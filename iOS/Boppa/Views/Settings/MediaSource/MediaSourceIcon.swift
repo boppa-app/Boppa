@@ -3,8 +3,6 @@ import SwiftUI
 struct MediaSourceIcon: View {
     let mediaSource: MediaSource
     var isSelected: Bool?
-    var onDelete: (() -> Void)?
-    var showDeleteButton: Bool = true
 
     private var isHighlighted: Bool {
         self.isSelected ?? self.mediaSource.isEnabled
@@ -34,20 +32,6 @@ struct MediaSourceIcon: View {
         .opacity(self.isHighlighted ? 1.0 : 0.35)
         .accessibilityLabel(self.mediaSource.name)
         .accessibilityHint(self.mediaSource.isEnabled ? "Enabled" : "Disabled")
-        .overlay(alignment: .topLeading) {
-            if let onDelete = self.onDelete, self.showDeleteButton {
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(.white, Color.purp)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Remove \(self.mediaSource.name)")
-                .accessibilityHint("Remove this media source")
-            }
-        }
     }
 }
 

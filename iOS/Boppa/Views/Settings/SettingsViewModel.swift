@@ -1,6 +1,7 @@
 import Dependencies
 import Foundation
 import SQLiteData
+import SwiftUI
 
 @MainActor
 @Observable
@@ -16,10 +17,9 @@ class SettingsViewModel {
         }) ?? []
     }
 
-    func moveMediaSource(from sourceIndex: Int, to destinationIndex: Int) {
+    func moveMediaSources(from source: IndexSet, to destination: Int) {
         var reordered = self.mediaSources
-        let item = reordered.remove(at: sourceIndex)
-        reordered.insert(item, at: destinationIndex)
+        reordered.move(fromOffsets: source, toOffset: destination)
         try? self.database.write { db in
             for (index, mediaSource) in reordered.enumerated() {
                 try MediaSource.update { $0.sortOrder = index }
@@ -30,13 +30,16 @@ class SettingsViewModel {
         self.mediaSources = reordered
     }
 
-    func deleteMediaSource(at index: Int) -> String {
-        let mediaSource = self.mediaSources[index]
-        let deletedId = mediaSource.id
-        try? self.database.write { db in
-            try MediaSource.where { $0.id.eq(mediaSource.id) }.delete().execute(db)
+    func deleteMediaSources(at offsets: IndexSet) -> [String] {
+        var deletedIds: [String] = []
+        for index in offsets.sorted().reversed() {
+            let mediaSource = self.mediaSources[index]
+            deletedIds.append(mediaSource.id)
+            try? self.database.write { db in
+                try MediaSource.where { $0.id.eq(mediaSource.id) }.delete().execute(db)
+            }
+            self.mediaSources.remove(at: index)
         }
-        self.mediaSources.remove(at: index)
-        return deletedId
+        return deletedIds
     }
 }

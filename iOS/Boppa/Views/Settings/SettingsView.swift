@@ -5,67 +5,27 @@ struct SettingsView: View {
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
     @State private var viewModel = SettingsViewModel()
+    @State private var navigationPath = NavigationPath()
     @State private var showingAddSheet = false
     @State private var isClearingData = false
     @State private var showDataCleared = false
     @State private var showClearConfirmation = false
     @State private var isEditing = false
-    @State private var selectedMediaSource: MediaSource?
-    @State private var computedGridHeight: CGFloat = 100
-    @State private var showDeleteConfirmation = false
-    @State private var pendingDeleteIndex: Int?
-    @State private var isDraggingSource = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: self.$navigationPath) {
             List {
-                Section {
-                    self.mediaSourcesGrid
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowBackground(Color(.systemGray6))
-                } header: {
-                    HStack {
-                        Text("Media Sources")
-                        Spacer()
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                self.isEditing.toggle()
-                            }
-                        } label: {
-                            Text(self.isEditing ? "Done" : "Edit")
-                                .font(.body)
-                                .foregroundColor(Color.purp)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(self.isEditing ? "Done Editing" : "Edit Media Sources")
-                        .accessibilityHint(self.isEditing ? "Exit editing mode" : "Manage and reorder media sources")
-                    }
-                }
-
-                Section("Web Data") {
-                    Button {
-                        self.showClearConfirmation = true
-                    } label: {
-                        HStack {
-                            Label("Clear All Web Data", systemImage: "trash")
-                                .foregroundColor(.red)
-                            if self.isClearingData {
-                                Spacer()
-                                ProgressView()
-                                    .tint(Color.purp)
-                                    .accessibilityLabel("Clearing data")
-                            }
-                        }
-                    }
-                    .disabled(self.isClearingData)
-                    .accessibilityLabel("Clear All Web Data")
-                    .accessibilityHint("Delete all cookies, cache, local storage, and session data")
-                }
+                self.mediaSourcesSection
+                self.webDataSection
             }
+            .environment(\.editMode, self.isEditing ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
+            .navigationDestination(for: MediaSource.self) { mediaSource in
+                MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource))
+            }
             .onAppear {
                 self.viewModel.loadSources()
-                self.isAtNavigationRoot = true
+                self.isAtNavigationRoot = self.navigationPath.isEmpty
             }
             .onDisappear {
                 self.isAtNavigationRoot = false
@@ -82,11 +42,11 @@ struct SettingsView: View {
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
                 self.viewModel.loadSources()
             }
-            .onChange(of: self.selectedMediaSource) { _, newValue in
-                self.isAtNavigationRoot = (newValue == nil)
+            .onChange(of: self.navigationPath.count) { _, newCount in
+                self.isAtNavigationRoot = (newCount == 0)
             }
             .onChange(of: self.navigationResetId) { _, _ in
-                self.selectedMediaSource = nil
+                self.navigationPath = NavigationPath()
             }
             .onChange(of: self.selectedTab) { _, newTab in
                 if newTab != 3 {
@@ -108,19 +68,6 @@ struct SettingsView: View {
             } message: {
                 Text("This will delete all cookies, cache, local storage, and session data. You will be logged out of all media sources.")
             }
-            .alert("Remove Media Source?", isPresented: self.$showDeleteConfirmation) {
-                Button("Cancel", role: .cancel) {
-                    self.pendingDeleteIndex = nil
-                }
-                Button("Remove", role: .destructive) {
-                    if let index = self.pendingDeleteIndex {
-                        self.deleteMediaSource(at: index)
-                    }
-                    self.pendingDeleteIndex = nil
-                }
-            } message: {
-                Text("This media source will be removed. This action cannot be undone.")
-            }
             .alert("Web Data Cleared", isPresented: self.$showDataCleared) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -129,73 +76,106 @@ struct SettingsView: View {
         }
     }
 
-    private var mediaSourcesGrid: some View {
-        MediaSourceGridView(
-            mediaSources: self.viewModel.mediaSources,
-            isEditing: self.isEditing,
-            onReorder: self.viewModel.moveMediaSource,
-            onAdd: { self.showingAddSheet = true },
-            onDragStateChanged: { isDragging in
-                self.isDraggingSource = isDragging
+    /// TODO: [Low Priority]: Remove .listRowSeparator(.hidden) - Works in iOS 17, lag when re-ordering in iOS 26
+    private var mediaSourcesSection: some View {
+        Section {
+            ForEach(self.viewModel.mediaSources) { mediaSource in
+                if self.isEditing {
+                    self.mediaSourceRow(mediaSource)
+                        .id(mediaSource.id)
+                        .listRowSeparator(.hidden)
+                } else {
+                    NavigationLink(value: mediaSource) {
+                        self.mediaSourceRow(mediaSource)
+                    }
+                    .id(mediaSource.id)
+                    .listRowSeparator(.hidden)
+                }
             }
-        ) { mediaSource in
+            .onMove(perform: self.viewModel.moveMediaSources)
+            .onDelete(perform: self.deleteMediaSources)
+
+            if self.isEditing {
+                Button {
+                    self.showingAddSheet = true
+                } label: {
+                    Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
+                }
+            }
+        } header: {
+            HStack {
+                Text("Media Sources")
+                    .font(.body)
+                Spacer()
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.isEditing.toggle()
+                    }
+                } label: {
+                    Text(self.isEditing ? "Done" : "Edit")
+                        .font(.body)
+                        .foregroundColor(Color.purp)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(self.isEditing ? "Done Editing" : "Edit Media Sources")
+                .accessibilityHint(self.isEditing ? "Exit editing mode" : "Manage and reorder media sources")
+            }
+        }
+    }
+
+    private var webDataSection: some View {
+        Section {
             Button {
-                if !self.isEditing {
-                    self.selectedMediaSource = mediaSource
-                }
+                self.showClearConfirmation = true
             } label: {
-                MediaSourceIcon(
-                    mediaSource: mediaSource,
-                    onDelete: self.isEditing ? {
-                        if let index = self.viewModel.mediaSources.firstIndex(where: { $0.id == mediaSource.id }) {
-                            self.confirmDeleteMediaSource(at: index)
-                        }
-                    } : nil,
-                    showDeleteButton: !self.isDraggingSource
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(mediaSource.name)
-            .accessibilityHint(self.isEditing ? "Drag to reorder" : "View \(mediaSource.name) settings")
-        }
-        .background(
-            GeometryReader { geometry in
-                Color.clear.onAppear {
-                    self.recomputeGridHeight(for: geometry.size.width)
-                }
-                .onChange(of: geometry.size.width) { _, newWidth in
-                    self.recomputeGridHeight(for: newWidth)
-                }
-                .onChange(of: self.viewModel.mediaSources.count) {
-                    self.recomputeGridHeight(for: geometry.size.width)
-                }
-                .onChange(of: self.isEditing) {
-                    self.recomputeGridHeight(for: geometry.size.width)
+                HStack {
+                    Label("Clear All Web Data", systemImage: "trash")
+                        .foregroundColor(.red)
+                    if self.isClearingData {
+                        Spacer()
+                        ProgressView()
+                            .tint(Color.purp)
+                            .accessibilityLabel("Clearing data")
+                    }
                 }
             }
-        )
-        .frame(height: self.computedGridHeight)
-        .navigationDestination(item: self.$selectedMediaSource) { mediaSource in
-            MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource))
+            .disabled(self.isClearingData)
+            .accessibilityLabel("Clear All Web Data")
+            .accessibilityHint("Delete all cookies, cache, local storage, and session data")
+        } header: {
+            Text("Web Data")
+                .font(.body)
         }
     }
 
-    private func confirmDeleteMediaSource(at index: Int) {
-        self.pendingDeleteIndex = index
-        self.showDeleteConfirmation = true
+    private func mediaSourceRow(_ mediaSource: MediaSource) -> some View {
+        HStack(spacing: 12) {
+            if let iconSvg = mediaSource.config.iconSvg {
+                SVGImageView(svgString: iconSvg, size: 24)
+                    .frame(width: 32, height: 32)
+                    .opacity(mediaSource.isEnabled ? 1.0 : 0.5)
+            } else {
+                Image(systemName: "music.note")
+                    .font(.title3)
+                    .foregroundColor(mediaSource.isEnabled ? Color.purp : Color(.systemGray2))
+                    .frame(width: 32, height: 32)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(mediaSource.name)
+                    .font(.body)
+                    .foregroundColor(mediaSource.isEnabled ? .primary : Color(.systemGray2))
+                Text(mediaSource.url)
+                    .font(.caption)
+                    .foregroundColor(mediaSource.isEnabled ? .secondary : Color(.systemGray3))
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
-    private func deleteMediaSource(at index: Int) {
-        let deletedId = self.viewModel.deleteMediaSource(at: index)
-        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["ids": [deletedId]])
-    }
-
-    private func recomputeGridHeight(for width: CGFloat) {
-        self.computedGridHeight = MediaSourceGridLayout.gridHeight(
-            for: width,
-            mediaSourceCount: self.viewModel.mediaSources.count,
-            isEditing: self.isEditing
-        )
+    private func deleteMediaSources(at offsets: IndexSet) {
+        let deletedIds = self.viewModel.deleteMediaSources(at: offsets)
+        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["ids": deletedIds])
     }
 }
 
