@@ -78,7 +78,6 @@ struct SettingsView: View {
         }
     }
 
-    // TODO: [Low Priority]: Remove .listRowSeparator(.hidden) - Works in iOS 17, lag when re-ordering in iOS 26
     private var mediaSourcesSection: some View {
         Section {
             ForEach(self.viewModel.mediaSources) { mediaSource in
@@ -91,7 +90,6 @@ struct SettingsView: View {
                         self.mediaSourceRow(mediaSource)
                     }
                     .id(mediaSource.id)
-                    .listRowSeparator(.hidden)
                 }
             }
             .onMove(perform: self.viewModel.moveMediaSources)
