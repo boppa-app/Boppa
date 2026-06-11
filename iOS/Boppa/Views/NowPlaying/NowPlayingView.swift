@@ -190,19 +190,6 @@ struct NowPlayingView: View {
 
     private var queueToggleButton: some View {
         HStack {
-            Button {
-                self.viewModel.openInBrowser(dismiss: self.dismiss)
-            } label: {
-                Image(systemName: "safari")
-                    .font(.system(size: 20))
-                    // TODO: dont use gray for no URL because its confusing, potentially cross out browser with X or dont show icon (?)
-                    .foregroundColor(self.viewModel.hasTrackUrl ? Color.purp : Color(.systemGray))
-                    .frame(width: 36, height: 36)
-            }
-            .disabled(!self.viewModel.hasTrackUrl)
-            .accessibilityLabel("Open in Browser")
-            .accessibilityHint("Open the current track page in the browser")
-
             Spacer()
 
             Button {

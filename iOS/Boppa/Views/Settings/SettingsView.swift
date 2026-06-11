@@ -49,7 +49,7 @@ struct SettingsView: View {
                 self.navigationPath = NavigationPath()
             }
             .onChange(of: self.selectedTab) { _, newTab in
-                if newTab != 3 {
+                if newTab != 2 {
                     self.isEditing = false
                 }
             }
@@ -76,7 +76,7 @@ struct SettingsView: View {
         }
     }
 
-    /// TODO: [Low Priority]: Remove .listRowSeparator(.hidden) - Works in iOS 17, lag when re-ordering in iOS 26
+    // TODO: [Low Priority]: Remove .listRowSeparator(.hidden) - Works in iOS 17, lag when re-ordering in iOS 26
     private var mediaSourcesSection: some View {
         Section {
             ForEach(self.viewModel.mediaSources) { mediaSource in
@@ -180,5 +180,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(selectedTab: .constant(3), isAtNavigationRoot: .constant(true))
+    SettingsView(selectedTab: .constant(2), isAtNavigationRoot: .constant(true))
 }

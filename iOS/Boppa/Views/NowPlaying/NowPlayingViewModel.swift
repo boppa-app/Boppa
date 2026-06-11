@@ -4,8 +4,6 @@ import SwiftUI
 @Observable
 @MainActor
 final class NowPlayingViewModel {
-    var onOpenInBrowser: ((String) -> Void)?
-
     var isSeeking = false
     var seekValue: Double = 0
     var showQueue = false
@@ -57,14 +55,6 @@ final class NowPlayingViewModel {
 
     var trackSubtitle: String {
         self.currentTrack?.subtitle ?? ""
-    }
-
-    var trackUrl: String? {
-        self.currentTrack?.url
-    }
-
-    var hasTrackUrl: Bool {
-        self.trackUrl != nil
     }
 
     var isCurrentTrackLiked: Bool {
@@ -156,11 +146,5 @@ final class NowPlayingViewModel {
     func toggleLike() {
         guard let track = self.currentTrack else { return }
         PlaylistManager.shared.togglePlaylist(track, playlistId: "likes")
-    }
-
-    func openInBrowser(dismiss: DismissAction) {
-        guard let url = self.trackUrl else { return }
-        dismiss()
-        self.onOpenInBrowser?(url)
     }
 }
