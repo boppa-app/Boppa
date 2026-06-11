@@ -91,7 +91,7 @@ class SearchViewModel {
         }
         self.lastSearchedQuery = trimmed
 
-        guard let mediaSource = self.selectedMediaSource else {
+        guard let selectedId = self.selectedMediaSource?.id else {
             self.errorMessage = "No media source selected"
             return
         }
@@ -100,6 +100,10 @@ class SearchViewModel {
         self.errorMessage = nil
 
         self.searchTask = Task {
+            let mediaSource = (try? await self.database.read { db in
+                try MediaSource.where { $0.id.eq(selectedId) }.fetchOne(db)
+            }) ?? self.selectedMediaSource!
+
             do {
                 let response = try await SearchService.shared.search(
                     query: trimmed,
@@ -130,7 +134,7 @@ class SearchViewModel {
         guard !self.isLoadingNextPage,
               self.hasMorePages,
               let paginationContext = self.paginationContext,
-              let mediaSource = self.selectedMediaSource
+              let selectedId = self.selectedMediaSource?.id
         else { return }
 
         let trimmed = self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -138,6 +142,10 @@ class SearchViewModel {
         self.isLoadingNextPage = true
 
         self.nextPageTask = Task {
+            let mediaSource = (try? await self.database.read { db in
+                try MediaSource.where { $0.id.eq(selectedId) }.fetchOne(db)
+            }) ?? self.selectedMediaSource!
+
             do {
                 let response = try await SearchService.shared.searchNextPage(
                     paginationContext: paginationContext,

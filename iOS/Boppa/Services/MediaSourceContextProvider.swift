@@ -150,6 +150,8 @@ final class MediaSourceContextProvider: NSObject {
     private func startMonitoring(mediaSources: [MediaSource]) {
         logger.info("startMonitoring called with \(mediaSources.count) mediaSource(s)")
 
+        self.timeoutTask?.cancel()
+        self.timeoutTask = nil
         self.stopAllTimers()
         self.pendingWork.removeAll()
         self.tearDownWebView()
