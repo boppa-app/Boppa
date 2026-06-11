@@ -10,15 +10,23 @@ struct LibraryView: View {
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
+    @State private var path = NavigationPath()
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
+
+    private enum LibraryDestination: Hashable {
+        case tracklist(Tracklist)
+        case playlists(Set<String>)
+        case albums(Set<String>)
+        case artist(Artist, MediaSource)
+    }
 
     private var isSearchQueryEmpty: Bool {
         self.viewModel.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: self.$path) {
             VStack(spacing: 0) {
                 self.toolbar
                 ZStack(alignment: .top) {
@@ -56,10 +64,48 @@ struct LibraryView: View {
             }
             .onAppear {
                 self.viewModel.loadSources()
-                self.isAtNavigationRoot = true
             }
-            .onDisappear {
-                self.isAtNavigationRoot = false
+            .onChange(of: self.path.count, initial: true) { _, count in
+                self.isAtNavigationRoot = count == 0
+            }
+            .onChange(of: self.navigationResetId) { _, _ in
+                self.path = NavigationPath()
+                self.pendingArtist = nil
+                self.pendingTracklist = nil
+            }
+            .onChange(of: self.pendingArtist) { _, artist in
+                guard let artist,
+                      let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == artist.mediaSourceId })
+                else { return }
+                self.path.append(LibraryDestination.artist(artist, mediaSource))
+                self.pendingArtist = nil
+            }
+            .onChange(of: self.pendingTracklist) { _, tracklist in
+                guard let tracklist else { return }
+                self.path.append(LibraryDestination.tracklist(Tracklist(
+                    mediaId: tracklist.mediaId,
+                    mediaSourceId: tracklist.mediaSourceId,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
+                    metadata: tracklist.metadata,
+                    tracklistType: tracklist.tracklistType,
+                    artists: tracklist.artists,
+                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                )))
+                self.pendingTracklist = nil
+            }
+            .navigationDestination(for: LibraryDestination.self) { destination in
+                switch destination {
+                case let .tracklist(tracklist):
+                    TracklistView(tracklist: tracklist)
+                case let .playlists(visibleIds):
+                    TracklistListView(type: .playlists, title: "Playlists", visibleMediaSourceIds: visibleIds)
+                case let .albums(visibleIds):
+                    TracklistListView(type: .albums, title: "Albums", visibleMediaSourceIds: visibleIds)
+                case let .artist(artist, mediaSource):
+                    ArtistDetailView(artist: artist, mediaSource: mediaSource)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
@@ -98,28 +144,7 @@ struct LibraryView: View {
                     .presentationBackground(Color(.systemGray6))
                 }
             }
-            .navigationDestination(item: self.$pendingArtist) { artist in
-                if let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == artist.mediaSourceId }) {
-                    ArtistDetailView(artist: artist, mediaSource: mediaSource)
-                }
-            }
-            .navigationDestination(item: self.$pendingTracklist) { tracklist in
-                TracklistView(
-                    tracklist: Tracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: tracklist.mediaSourceId,
-                        title: tracklist.title,
-                        subtitle: tracklist.subtitle,
-                        artworkUrl: tracklist.artworkUrl,
-                        metadata: tracklist.metadata,
-                        tracklistType: tracklist.tracklistType,
-                        artists: tracklist.artists,
-                        storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
-                    )
-                )
-            }
         }
-        .id(self.navigationResetId)
     }
 
     @ViewBuilder
@@ -213,15 +238,16 @@ struct LibraryView: View {
                             .listRowSeparator(.hidden)
                     } else {
                         ForEach(Array(self.viewModel.pinnedTracklists.enumerated()), id: \.element.id) { _, stored in
-                            TracklistRow(
-                                tracklist: Tracklist(storedTracklist: stored),
-                                showMediaSourceIcon: true,
-                                showChevron: true
-                            )
-                            .background(
-                                NavigationLink(destination: TracklistView(tracklist: Tracklist(storedTracklist: stored))) { EmptyView() }
-                                    .opacity(0)
-                            )
+                            Button {
+                                self.path.append(LibraryDestination.tracklist(Tracklist(storedTracklist: stored)))
+                            } label: {
+                                TracklistRow(
+                                    tracklist: Tracklist(storedTracklist: stored),
+                                    showMediaSourceIcon: true,
+                                    showChevron: true
+                                )
+                            }
+                            .buttonStyle(.plain)
                             .listRowBackground(Color.black)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparator(.hidden)
@@ -312,15 +338,16 @@ struct LibraryView: View {
         } else {
             if let tracklists = self.tracklistFuzzyHandler.filteredItems, !tracklists.isEmpty {
                 ForEach(tracklists, id: \.id) { stored in
-                    TracklistRow(
-                        tracklist: Tracklist(storedTracklist: stored),
-                        showMediaSourceIcon: true,
-                        showChevron: true
-                    )
-                    .background(
-                        NavigationLink(destination: TracklistView(tracklist: Tracklist(storedTracklist: stored))) { EmptyView() }
-                            .opacity(0)
-                    )
+                    Button {
+                        self.path.append(LibraryDestination.tracklist(Tracklist(storedTracklist: stored)))
+                    } label: {
+                        TracklistRow(
+                            tracklist: Tracklist(storedTracklist: stored),
+                            showMediaSourceIcon: true,
+                            showChevron: true
+                        )
+                    }
+                    .buttonStyle(.plain)
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparator(.hidden)
@@ -391,36 +418,27 @@ struct LibraryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.black)
         .contentShape(Rectangle())
-        .background(
-            NavigationLink(destination: self.destinationView(for: section)) { EmptyView() }
-                .opacity(0)
-        )
+        .onTapGesture {
+            switch section {
+            case .likes:
+                self.path.append(LibraryDestination.tracklist(Tracklist(
+                    mediaId: "likes",
+                    mediaSourceId: "boppa.app",
+                    title: "Likes",
+                    tracklistType: .likes
+                )))
+            case .playlists:
+                self.path.append(LibraryDestination.playlists(self.viewModel.visibleMediaSourceStringIds))
+            case .albums:
+                self.path.append(LibraryDestination.albums(self.viewModel.visibleMediaSourceStringIds))
+            }
+        }
         .listRowBackground(Color.black)
         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         .listRowSeparator(.hidden)
         .accessibilityLabel(section.displayName)
         .accessibilityHint("Open \(section.displayName)")
         .accessibilityAddTraits(.isButton)
-    }
-
-    @ViewBuilder
-    private func destinationView(for section: LibraryViewModel.LibrarySection) -> some View {
-        let visibleIds = self.viewModel.visibleMediaSourceStringIds
-        switch section {
-        case .likes:
-            TracklistView(
-                tracklist: Tracklist(
-                    mediaId: "likes",
-                    mediaSourceId: "boppa.app",
-                    title: "Likes",
-                    tracklistType: .likes
-                )
-            )
-        case .playlists:
-            TracklistListView(type: .playlists, title: "Playlists", visibleMediaSourceIds: visibleIds)
-        case .albums:
-            TracklistListView(type: .albums, title: "Albums", visibleMediaSourceIds: visibleIds)
-        }
     }
 }
 

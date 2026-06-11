@@ -9,6 +9,7 @@ struct SearchView: View {
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
+    @State private var path = NavigationPath()
     @FocusState private var isSearchFieldFocused: Bool
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
@@ -22,7 +23,7 @@ struct SearchView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: self.$path) {
             VStack(spacing: 0) {
                 SearchToolbarView(
                     viewModel: self.viewModel,
@@ -62,10 +63,42 @@ struct SearchView: View {
             .onAppear {
                 self.viewModel.loadSources()
                 self.cacheManager.load()
-                self.isAtNavigationRoot = true
             }
-            .onDisappear {
-                self.isAtNavigationRoot = false
+            .onChange(of: self.path.count, initial: true) { _, count in
+                self.isAtNavigationRoot = count == 0
+            }
+            .onChange(of: self.navigationResetId) { _, _ in
+                self.path = NavigationPath()
+                self.pendingArtist = nil
+                self.pendingTracklist = nil
+            }
+            .onChange(of: self.pendingArtist) { _, artist in
+                guard let artist, let mediaSource = self.viewModel.selectedMediaSource else { return }
+                self.path.append(SearchDestination.artist(artist, mediaSource))
+                self.pendingArtist = nil
+            }
+            .onChange(of: self.pendingTracklist) { _, tracklist in
+                guard let tracklist, let mediaSource = self.viewModel.selectedMediaSource else { return }
+                self.path.append(SearchDestination.tracklist(Tracklist(
+                    mediaId: tracklist.mediaId,
+                    mediaSourceId: mediaSource.id,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
+                    metadata: tracklist.metadata,
+                    tracklistType: tracklist.tracklistType,
+                    artists: tracklist.artists,
+                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                )))
+                self.pendingTracklist = nil
+            }
+            .navigationDestination(for: SearchDestination.self) { destination in
+                switch destination {
+                case let .tracklist(tracklist):
+                    TracklistView(tracklist: tracklist)
+                case let .artist(artist, mediaSource):
+                    ArtistDetailView(artist: artist, mediaSource: mediaSource)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
@@ -84,7 +117,11 @@ struct SearchView: View {
                 self.viewModel.loadSources()
             }
         }
-        .id(self.navigationResetId)
+    }
+
+    private enum SearchDestination: Hashable {
+        case tracklist(Tracklist)
+        case artist(Artist, MediaSource)
     }
 
     private var categoryBubblesBar: some View {
@@ -195,26 +232,25 @@ struct SearchView: View {
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getAlbum != nil
                         {
-                            TracklistRow(tracklist: tracklist, showChevron: true)
-                                .background(
-                                    NavigationLink(destination: TracklistView(
-                                        tracklist: Tracklist(
-                                            mediaId: tracklist.mediaId,
-                                            mediaSourceId: mediaSource.id,
-                                            title: tracklist.title,
-                                            subtitle: tracklist.subtitle,
-                                            artworkUrl: tracklist.artworkUrl,
-                                            metadata: tracklist.metadata,
-                                            tracklistType: .album,
-                                            artists: tracklist.artists,
-                                            storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
-                                        )
-                                    )) { EmptyView() }
-                                        .opacity(0)
-                                )
-                                .listRowBackground(Color.black)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparator(.hidden)
+                            Button {
+                                self.path.append(SearchDestination.tracklist(Tracklist(
+                                    mediaId: tracklist.mediaId,
+                                    mediaSourceId: mediaSource.id,
+                                    title: tracklist.title,
+                                    subtitle: tracklist.subtitle,
+                                    artworkUrl: tracklist.artworkUrl,
+                                    metadata: tracklist.metadata,
+                                    tracklistType: .album,
+                                    artists: tracklist.artists,
+                                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                                )))
+                            } label: {
+                                TracklistRow(tracklist: tracklist, showChevron: true)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
                         } else {
                             TracklistRow(tracklist: tracklist)
                                 .listRowBackground(Color.black)
@@ -227,17 +263,15 @@ struct SearchView: View {
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getArtist != nil
                         {
-                            ArtistRow(artist: artist, showChevron: true)
-                                .background(
-                                    NavigationLink(destination: ArtistDetailView(
-                                        artist: artist,
-                                        mediaSource: mediaSource
-                                    )) { EmptyView() }
-                                        .opacity(0)
-                                )
-                                .listRowBackground(Color.black)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparator(.hidden)
+                            Button {
+                                self.path.append(SearchDestination.artist(artist, mediaSource))
+                            } label: {
+                                ArtistRow(artist: artist, showChevron: true)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
                         } else {
                             ArtistRow(artist: artist)
                                 .listRowBackground(Color.black)
@@ -250,26 +284,25 @@ struct SearchView: View {
                         if let mediaSource = self.viewModel.selectedMediaSource,
                            mediaSource.config.data?.getPlaylist != nil
                         {
-                            TracklistRow(tracklist: tracklist, showChevron: true)
-                                .background(
-                                    NavigationLink(destination: TracklistView(
-                                        tracklist: Tracklist(
-                                            mediaId: tracklist.mediaId,
-                                            mediaSourceId: mediaSource.id,
-                                            title: tracklist.title,
-                                            subtitle: tracklist.subtitle,
-                                            artworkUrl: tracklist.artworkUrl,
-                                            metadata: tracklist.metadata,
-                                            tracklistType: .playlist,
-                                            artists: tracklist.artists,
-                                            storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
-                                        )
-                                    )) { EmptyView() }
-                                        .opacity(0)
-                                )
-                                .listRowBackground(Color.black)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                                .listRowSeparator(.hidden)
+                            Button {
+                                self.path.append(SearchDestination.tracklist(Tracklist(
+                                    mediaId: tracklist.mediaId,
+                                    mediaSourceId: mediaSource.id,
+                                    title: tracklist.title,
+                                    subtitle: tracklist.subtitle,
+                                    artworkUrl: tracklist.artworkUrl,
+                                    metadata: tracklist.metadata,
+                                    tracklistType: .playlist,
+                                    artists: tracklist.artists,
+                                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                                )))
+                            } label: {
+                                TracklistRow(tracklist: tracklist, showChevron: true)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color.black)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
                         } else {
                             TracklistRow(tracklist: tracklist)
                                 .listRowBackground(Color.black)
@@ -318,28 +351,6 @@ struct SearchView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(.systemGray6))
-            }
-        }
-        .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = self.viewModel.selectedMediaSource {
-                ArtistDetailView(artist: artist, mediaSource: mediaSource)
-            }
-        }
-        .navigationDestination(item: self.$pendingTracklist) { tracklist in
-            if let mediaSource = self.viewModel.selectedMediaSource {
-                TracklistView(
-                    tracklist: Tracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: mediaSource.id,
-                        title: tracklist.title,
-                        subtitle: tracklist.subtitle,
-                        artworkUrl: tracklist.artworkUrl,
-                        metadata: tracklist.metadata,
-                        tracklistType: tracklist.tracklistType,
-                        artists: tracklist.artists,
-                        storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
-                    )
-                )
             }
         }
     }
