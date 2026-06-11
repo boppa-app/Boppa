@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var showDataCleared = false
     @State private var showClearConfirmation = false
     @State private var isEditing = false
+    @State private var isEditMode = false
 
     var body: some View {
         NavigationStack(path: self.$navigationPath) {
@@ -18,7 +19,7 @@ struct SettingsView: View {
                 self.mediaSourcesSection
                 self.webDataSection
             }
-            .environment(\.editMode, self.isEditing ? .constant(.active) : .constant(.inactive))
+            .environment(\.editMode, self.isEditMode ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
             .navigationDestination(for: MediaSource.self) { mediaSource in
                 MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource))
@@ -51,6 +52,7 @@ struct SettingsView: View {
             .onChange(of: self.selectedTab) { _, newTab in
                 if newTab != 2 {
                     self.isEditing = false
+                    self.isEditMode = false
                 }
             }
             .sheet(isPresented: self.$showingAddSheet) {
@@ -108,8 +110,9 @@ struct SettingsView: View {
                     .font(.body)
                 Spacer()
                 Button {
+                    self.isEditing.toggle()
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        self.isEditing.toggle()
+                        self.isEditMode = self.isEditing
                     }
                 } label: {
                     Text(self.isEditing ? "Done" : "Edit")
