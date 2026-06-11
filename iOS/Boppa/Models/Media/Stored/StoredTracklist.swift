@@ -12,6 +12,7 @@ nonisolated struct StoredTracklist {
     var metadataJSON: Data
     var fromArtistMediaId: String?
     var isPinned: Bool
+    var isSavedToLibrary: Bool
     var prevMediaId: String?
     var prevMediaSourceId: String?
     var nextMediaId: String?

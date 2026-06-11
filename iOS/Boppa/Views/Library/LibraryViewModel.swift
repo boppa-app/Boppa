@@ -134,7 +134,7 @@ class LibraryViewModel {
             try StoredTrack.fetchAll(db)
         }) ?? []
         self.allLibraryTracklists = (try? self.database.read { db in
-            try StoredTracklist.fetchAll(db)
+            try StoredTracklist.where(\.isSavedToLibrary).fetchAll(db)
         }) ?? []
         self.updateAvailableCategories()
     }

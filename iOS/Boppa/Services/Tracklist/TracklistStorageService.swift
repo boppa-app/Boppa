@@ -104,7 +104,9 @@ class TracklistStorageService {
         let stored = try await database.write { db in
             let stored = try self.upsertStoredTracklist(tracklist: tracklist, db: db)
             try self.persistTracks(tracks, into: stored, db: db, pruneStale: true)
-            return stored
+            return try StoredTracklist
+                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                .fetchOne(db) ?? stored
         }
 
         logger.info("Saved tracklist '\(tracklist.title)' with \(tracks.count) track(s) to library")
@@ -198,6 +200,7 @@ class TracklistStorageService {
                 $0.artworkUrl = tracklist.artworkUrl
                 $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
                 $0.fromArtistMediaId = fromArtistMediaId
+                $0.isSavedToLibrary = true
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
             .execute(db)
@@ -223,6 +226,7 @@ class TracklistStorageService {
                 metadataJSON: (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data(),
                 fromArtistMediaId: fromArtistMediaId,
                 isPinned: false,
+                isSavedToLibrary: true,
                 prevMediaId: tail?.mediaId,
                 prevMediaSourceId: tail?.mediaSourceId,
                 nextMediaId: nil,
@@ -522,6 +526,7 @@ class TracklistStorageService {
                     metadataJSON: (try? JSONSerialization.data(withJSONObject: album.metadata)) ?? Data(),
                     fromArtistMediaId: nil,
                     isPinned: false,
+                    isSavedToLibrary: false,
                     prevMediaId: tail?.mediaId,
                     prevMediaSourceId: tail?.mediaSourceId,
                     nextMediaId: nil,

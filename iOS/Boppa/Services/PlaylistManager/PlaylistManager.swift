@@ -116,6 +116,7 @@ class PlaylistManager {
                 metadataJSON: Data(),
                 fromArtistMediaId: nil,
                 isPinned: false,
+                isSavedToLibrary: true,
                 prevMediaId: nil,
                 prevMediaSourceId: nil,
                 nextMediaId: nil,

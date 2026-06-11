@@ -13,6 +13,10 @@ struct Track: Identifiable, Equatable {
     let albums: [Tracklist]
     let metadata: [String: Any]
 
+    var trackKey: String {
+        "\(self.mediaId)|\(self.mediaSourceId)"
+    }
+
     init(
         mediaId: String,
         mediaSourceId: String,

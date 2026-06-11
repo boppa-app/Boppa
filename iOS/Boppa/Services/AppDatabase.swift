@@ -54,6 +54,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "metadataJSON" BLOB NOT NULL DEFAULT '{}',
                   "fromArtistMediaId" TEXT,
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
+                  "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                   "prevMediaId" TEXT,
                   "prevMediaSourceId" TEXT,
                   "nextMediaId" TEXT,

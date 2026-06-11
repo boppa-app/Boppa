@@ -76,9 +76,10 @@ class TracklistViewModel {
         let stored = self.tracklist.storedTracklist
             ?? TracklistStorageService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
-        if let stored {
+        if let stored, stored.isSavedToLibrary {
             self.tracklist = TracklistStorageService.shared.tracklistWithRelations(from: stored)
             self.isPersisted = true
+            self.isPinned = stored.isPinned
             self.loadFromCache(storedTracklist: stored)
         }
 
@@ -198,6 +199,7 @@ class TracklistViewModel {
     func saveToLibrary() {
         guard !self.isSaving else { return }
         self.isSaving = true
+        self.fetchTask?.cancel()
 
         Task {
             do {

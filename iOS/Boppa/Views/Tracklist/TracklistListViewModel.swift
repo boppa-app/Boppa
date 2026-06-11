@@ -227,7 +227,7 @@ class TracklistListViewModel {
 
         let result: [Tracklist] = (try? self.database.read { db in
             let allStored = try StoredTracklist
-                .where { $0.tracklistType.eq(typeString) }
+                .where { $0.tracklistType.eq(typeString).and($0.isSavedToLibrary.eq(true)) }
                 .fetchAll(db)
 
             let filtered = allStored.filter { visibleMediaSourceIds.contains($0.mediaSourceId) }

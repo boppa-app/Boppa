@@ -88,7 +88,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     }
 
     var isPersisted: Bool {
-        self.storedTracklist != nil
+        self.storedTracklist?.isSavedToLibrary == true
     }
 
     var formattedTrackCount: String? {
