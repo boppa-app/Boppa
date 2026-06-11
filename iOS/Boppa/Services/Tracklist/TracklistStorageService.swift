@@ -113,6 +113,22 @@ class TracklistStorageService {
 
     func deleteStoredTracklist(_ storedTracklist: StoredTracklist) throws {
         try self.database.write { db in
+            if let prevId = storedTracklist.prevMediaId, let prevSourceId = storedTracklist.prevMediaSourceId {
+                try StoredTracklist.update {
+                    $0.nextMediaId = #bind(storedTracklist.nextMediaId)
+                    $0.nextMediaSourceId = #bind(storedTracklist.nextMediaSourceId)
+                }
+                .where { $0.mediaId.eq(prevId).and($0.mediaSourceId.eq(prevSourceId)) }
+                .execute(db)
+            }
+            if let nextId = storedTracklist.nextMediaId, let nextSourceId = storedTracklist.nextMediaSourceId {
+                try StoredTracklist.update {
+                    $0.prevMediaId = #bind(storedTracklist.prevMediaId)
+                    $0.prevMediaSourceId = #bind(storedTracklist.prevMediaSourceId)
+                }
+                .where { $0.mediaId.eq(nextId).and($0.mediaSourceId.eq(nextSourceId)) }
+                .execute(db)
+            }
             try StoredTracklist
                 .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
                 .delete()
