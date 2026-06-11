@@ -55,7 +55,8 @@ class PlaylistManager {
                         tracklistMediaSourceId: tracklist.mediaSourceId,
                         trackMediaId: track.mediaId,
                         trackMediaSourceId: track.mediaSourceId,
-                        sortOrder: count
+                        sortOrder: count,
+                        addedAt: Date().timeIntervalSince1970
                     )
                 }.execute(db)
             }

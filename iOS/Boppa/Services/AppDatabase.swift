@@ -90,6 +90,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "trackMediaId" TEXT NOT NULL,
                   "trackMediaSourceId" TEXT NOT NULL,
                   "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  "addedAt" REAL NOT NULL DEFAULT 0,
                   PRIMARY KEY ("tracklistMediaId", "tracklistMediaSourceId", "trackMediaId", "trackMediaSourceId"),
                   FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE,
                   FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId")

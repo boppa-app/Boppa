@@ -31,24 +31,32 @@ class TracklistStorageService {
     }
 
     func loadTracksForTracklist(_ tracklist: StoredTracklist) -> [Track] {
-        (try? self.database.read { db in
-            let storedTracks = try StoredTracklistTrack
-                .where {
-                    $0.tracklistMediaId.eq(tracklist.mediaId)
-                        .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
-                }
-                .join(StoredTrack.all) { tt, t in
-                    tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
-                }
-                .order { tt, _ in tt.sortOrder }
-                .select { _, t in t }
-                .fetchAll(db)
-            return try storedTracks.map { stored in
-                let artists = try self.loadArtistsForTrack(stored, db: db)
-                let albums = try self.loadAlbumsForTrack(stored, db: db)
-                return stored.toTrack(artists: artists, albums: albums)
-            }
+        let isLikes = tracklist.tracklistType == Tracklist.TracklistType.likes.rawValue
+        return (try? self.database.read { db in
+            try self.fetchStoredTracks(for: tracklist, isLikes: isLikes, db: db)
         }) ?? []
+    }
+
+    private func fetchStoredTracks(for tracklist: StoredTracklist, isLikes: Bool, db: Database) throws -> [Track] {
+        let query = StoredTracklistTrack
+            .where {
+                $0.tracklistMediaId.eq(tracklist.mediaId)
+                    .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
+            }
+            .join(StoredTrack.all) { tt, t in
+                tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
+            }
+        let storedTracks: [StoredTrack]
+        if isLikes {
+            storedTracks = try query.order { tt, _ in tt.addedAt.desc() }.select { _, t in t }.fetchAll(db)
+        } else {
+            storedTracks = try query.order { tt, _ in tt.sortOrder }.select { _, t in t }.fetchAll(db)
+        }
+        return try storedTracks.map { stored in
+            let artists = try self.loadArtistsForTrack(stored, db: db)
+            let albums = try self.loadAlbumsForTrack(stored, db: db)
+            return stored.toTrack(artists: artists, albums: albums)
+        }
     }
 
     func tracklist(from stored: StoredTracklist, db: Database) throws -> Tracklist {
@@ -274,7 +282,8 @@ class TracklistStorageService {
                         tracklistMediaSourceId: tracklist.mediaSourceId,
                         trackMediaId: track.mediaId,
                         trackMediaSourceId: track.mediaSourceId,
-                        sortOrder: index
+                        sortOrder: index,
+                        addedAt: Date().timeIntervalSince1970
                     )
                 } onConflictDoUpdate: { $0.sortOrder = index }
                     .execute(db)
