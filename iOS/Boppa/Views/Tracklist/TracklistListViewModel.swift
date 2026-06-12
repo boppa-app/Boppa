@@ -108,7 +108,7 @@ class TracklistListViewModel {
         guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
-            try? TracklistStorageService.shared.deleteStoredTracklist(stored)
+            try? TracklistStorageManager.shared.deleteStoredTracklist(stored)
         }
         self.tracklists.remove(at: index)
         NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
@@ -122,7 +122,7 @@ class TracklistListViewModel {
     func togglePin(tracklist: Tracklist) {
         guard let stored = tracklist.storedTracklist else { return }
         let newIsPinned = !stored.isPinned
-        try? TracklistStorageService.shared.setPin(stored, isPinned: newIsPinned)
+        try? TracklistStorageManager.shared.setPin(stored, isPinned: newIsPinned)
         if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
             var updatedStored = stored
             updatedStored.isPinned = newIsPinned
@@ -137,7 +137,7 @@ class TracklistListViewModel {
     }
 
     private func persistAllSortOrders() {
-        try? TracklistStorageService.shared.updateSortOrders(
+        try? TracklistStorageManager.shared.updateSortOrders(
             for: self.tracklists,
             reversed: self.libraryType == .albums
         )
@@ -179,7 +179,7 @@ class TracklistListViewModel {
 
     private func reloadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
         let typeString = type == .albums ? "album" : "playlist"
-        self.tracklists = TracklistStorageService.shared.loadLibraryTracklists(
+        self.tracklists = TracklistStorageManager.shared.loadLibraryTracklists(
             type: typeString,
             visibleMediaSourceIds: visibleMediaSourceIds,
             reversed: type == .albums

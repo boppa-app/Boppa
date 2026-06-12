@@ -3,10 +3,10 @@ import Foundation
 import os
 import SQLiteData
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "TrackStorageService")
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "TrackStorageManager")
 
-class TrackStorageService {
-    static let shared = TrackStorageService()
+class TrackStorageManager {
+    static let shared = TrackStorageManager()
 
     @Dependency(\.defaultDatabase) var database
 
@@ -128,7 +128,7 @@ class TrackStorageService {
     }
 
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
-        try TracklistStorageService.shared.upsertTrack(track, db: db)
+        try TracklistStorageManager.shared.upsertTrack(track, db: db)
         let maxKey = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)

@@ -88,7 +88,7 @@ struct SearchView: View {
 
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )))
                 self.pendingTracklist = nil
             }
@@ -242,7 +242,7 @@ struct SearchView: View {
 
                                     tracklistType: .album,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)
@@ -294,7 +294,7 @@ struct SearchView: View {
 
                                     tracklistType: .playlist,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)

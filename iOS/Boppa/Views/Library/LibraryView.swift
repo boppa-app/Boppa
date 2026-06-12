@@ -91,7 +91,7 @@ struct LibraryView: View {
 
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )))
                 self.pendingTracklist = nil
             }
@@ -332,7 +332,7 @@ struct LibraryView: View {
                         },
                         onEllipsisTap: {
                             self.isSearchFieldFocused = false
-                            self.trackForActions = TracklistStorageService.shared.loadTrackWithRelations(stored)
+                            self.trackForActions = TracklistStorageManager.shared.loadTrackWithRelations(stored)
                         }
                     )
                     .listRowBackground(Color.black)

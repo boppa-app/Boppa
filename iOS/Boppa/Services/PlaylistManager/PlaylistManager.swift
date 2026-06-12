@@ -19,12 +19,12 @@ class PlaylistManager {
 
     func isInPlaylist(_ track: Track, playlistId: String) -> Bool {
         _ = self.membershipVersion
-        return TrackStorageService.shared.isTrack(track, inPlaylist: playlistId)
+        return TrackStorageManager.shared.isTrack(track, inPlaylist: playlistId)
     }
 
     func addToPlaylist(_ track: Track, playlistId: String) {
         do {
-            try TrackStorageService.shared.addTrack(track, toPlaylist: playlistId)
+            try TrackStorageManager.shared.addTrack(track, toPlaylist: playlistId)
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
@@ -34,7 +34,7 @@ class PlaylistManager {
 
     func removeFromPlaylist(_ track: Track, playlistId: String) {
         do {
-            try TrackStorageService.shared.removeTrack(track, fromPlaylist: playlistId)
+            try TrackStorageManager.shared.removeTrack(track, fromPlaylist: playlistId)
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {

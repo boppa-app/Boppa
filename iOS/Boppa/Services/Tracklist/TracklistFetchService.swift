@@ -12,7 +12,7 @@ class TracklistFetchService {
     static let shared = TracklistFetchService()
 
     private let paginated = PaginatedScriptExecutor.shared
-    private let db = TracklistStorageService.shared
+    private let db = TracklistStorageManager.shared
 
     private init() {}
 

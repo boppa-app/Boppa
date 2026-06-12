@@ -69,10 +69,10 @@ class TracklistViewModel {
 
     func load() {
         let stored = self.tracklist.storedTracklist
-            ?? TracklistStorageService.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
+            ?? TracklistStorageManager.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
         if let stored, stored.isSavedToLibrary {
-            self.tracklist = TracklistStorageService.shared.tracklistWithRelations(from: stored)
+            self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
             self.isPersisted = true
             self.isPinned = stored.isPinned
             self.loadFromCache(storedTracklist: stored)
@@ -89,7 +89,7 @@ class TracklistViewModel {
                 queue: .main
             ) { [weak self] _ in
                 guard let self else { return }
-                if let stored = TracklistStorageService.shared.findStoredTracklist(
+                if let stored = TracklistStorageManager.shared.findStoredTracklist(
                     mediaId: self.tracklist.mediaId,
                     mediaSourceId: self.tracklist.mediaSourceId
                 ) {
@@ -105,7 +105,7 @@ class TracklistViewModel {
 
         Task {
             do {
-                _ = try await TracklistStorageService.shared.saveTracklistToLibrary(
+                _ = try await TracklistStorageManager.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
@@ -135,7 +135,7 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist) {
-        self.unsortedTracks = TracklistStorageService.shared.loadTracksForTracklist(storedTracklist)
+        self.unsortedTracks = TracklistStorageManager.shared.loadTracksForTracklist(storedTracklist)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
     }
@@ -198,7 +198,7 @@ class TracklistViewModel {
 
         Task {
             do {
-                let stored = try await TracklistStorageService.shared.saveTracklistToLibrary(
+                let stored = try await TracklistStorageManager.shared.saveTracklistToLibrary(
                     tracklist: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
@@ -208,7 +208,7 @@ class TracklistViewModel {
                     }
                 )
 
-                self.tracklist = TracklistStorageService.shared.tracklistWithRelations(from: stored)
+                self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
                 self.isPersisted = true
                 self.isSaving = false
                 NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
@@ -223,7 +223,7 @@ class TracklistViewModel {
 
     func deleteFromLibrary() {
         guard let stored = self.tracklist.storedTracklist else { return }
-        try? TracklistStorageService.shared.deleteStoredTracklist(stored)
+        try? TracklistStorageManager.shared.deleteStoredTracklist(stored)
         self.isPersisted = false
         NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
         logger.info("Deleted tracklist '\(self.tracklist.title)' from library")
@@ -232,7 +232,7 @@ class TracklistViewModel {
     func togglePin() {
         guard let stored = self.tracklist.storedTracklist else { return }
         let newIsPinned = !self.isPinned
-        try? TracklistStorageService.shared.setPin(stored, isPinned: newIsPinned)
+        try? TracklistStorageManager.shared.setPin(stored, isPinned: newIsPinned)
         self.isPinned = newIsPinned
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
         logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(self.tracklist.title)'")

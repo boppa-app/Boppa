@@ -3,10 +3,10 @@ import Foundation
 import os
 import SQLiteData
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "TracklistStorageService")
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "TracklistStorageManager")
 
-class TracklistStorageService {
-    static let shared = TracklistStorageService()
+class TracklistStorageManager {
+    static let shared = TracklistStorageManager()
 
     @Dependency(\.defaultDatabase) var database
 
@@ -85,7 +85,7 @@ class TracklistStorageService {
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> StoredTracklist {
         guard let mediaSource = resolveMediaSource(mediaSourceId: tracklist.mediaSourceId) else {
-            throw NSError(domain: "TracklistStorageService", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
+            throw NSError(domain: "TracklistStorageManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
         }
 
         let (script, itemParams) = try buildFetchParams(tracklist: tracklist, config: mediaSource.config)
@@ -183,7 +183,7 @@ class TracklistStorageService {
             }
 
             for join in joins {
-                try TrackStorageService.shared.deleteIfOrphaned(mediaId: join.trackMediaId, mediaSourceId: join.trackMediaSourceId, db: db)
+                try TrackStorageManager.shared.deleteIfOrphaned(mediaId: join.trackMediaId, mediaSourceId: join.trackMediaSourceId, db: db)
             }
         }
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
@@ -359,7 +359,7 @@ class TracklistStorageService {
                         .and($0.trackMediaSourceId.eq(existing.mediaSourceId))
                 }.delete().execute(db)
 
-                try TrackStorageService.shared.deleteIfOrphaned(mediaId: existing.mediaId, mediaSourceId: existing.mediaSourceId, db: db)
+                try TrackStorageManager.shared.deleteIfOrphaned(mediaId: existing.mediaId, mediaSourceId: existing.mediaSourceId, db: db)
             }
         }
     }
@@ -376,11 +376,11 @@ class TracklistStorageService {
             script = config.data?.getAlbum
             itemParams["subtitle"] = tracklist.subtitle ?? ""
         default:
-            throw NSError(domain: "TracklistStorageService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot save this tracklist type to library"])
+            throw NSError(domain: "TracklistStorageManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot save this tracklist type to library"])
         }
 
         guard let script else {
-            throw NSError(domain: "TracklistStorageService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No script available for this tracklist type"])
+            throw NSError(domain: "TracklistStorageManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "No script available for this tracklist type"])
         }
         return (script, itemParams)
     }

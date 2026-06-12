@@ -56,7 +56,7 @@ struct ArtistDetailView: View {
 
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
                 )
             )
         }
@@ -130,7 +130,7 @@ struct ArtistDetailView: View {
 
                                     tracklistType: .album,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
+                                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
                                 )
                             )) { EmptyView() }
                                 .opacity(0)
@@ -218,7 +218,7 @@ struct ArtistDetailView: View {
 
                                     tracklistType: .playlist,
                                     artists: tracklist.artists,
-                                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
+                                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
                                 )
                             )) { EmptyView() }
                                 .opacity(0)

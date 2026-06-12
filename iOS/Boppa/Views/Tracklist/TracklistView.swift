@@ -92,7 +92,7 @@ struct TracklistView: View {
         .sheet(isPresented: self.$showActionSheet) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
-                mediaSource: TracklistStorageService.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId),
+                mediaSource: TracklistStorageManager.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId),
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
                 sortMode: self.viewModel.sortMode,
@@ -116,7 +116,7 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = TracklistStorageService.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId) {
+            if let mediaSource = TracklistStorageManager.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId) {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
@@ -129,7 +129,7 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = TracklistStorageService.shared.resolveMediaSource(mediaSourceId: artist.mediaSourceId) {
+            if let mediaSource = TracklistStorageManager.shared.resolveMediaSource(mediaSourceId: artist.mediaSourceId) {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }
@@ -144,7 +144,7 @@ struct TracklistView: View {
 
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
-                    storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )
             )
         }
