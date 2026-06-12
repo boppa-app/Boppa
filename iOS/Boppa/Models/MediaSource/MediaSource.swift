@@ -9,7 +9,7 @@ nonisolated struct MediaSource: Identifiable, Hashable {
     var name: String
     var url: String
     var configData: Data
-    var sortOrder: Int
+    var sortOrder: String
     var isEnabled: Bool
     var contextValuesJSON: String
 }
@@ -23,7 +23,7 @@ extension MediaSource {
         (try? JSONDecoder().decode([String: String].self, from: Data(self.contextValuesJSON.utf8))) ?? [:]
     }
 
-    init(id: String, name: String, url: String, config: MediaSourceConfig, sortOrder: Int = 0, isEnabled: Bool = true) {
+    init(id: String, name: String, url: String, config: MediaSourceConfig, sortOrder: String = "a0", isEnabled: Bool = true) {
         self.id = id
         self.name = name
         self.url = url

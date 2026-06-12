@@ -98,7 +98,6 @@ struct SearchToolbarView: View {
         .accessibilityHint("Choose which media source to search")
         .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {
             MediaSourcePickerSheet(
-                mediaSources: self.viewModel.mediaSources,
                 mediaSourcePickerMode: .single(
                     selectedID: self.viewModel.selectedMediaSource?.id,
                     onSelect: { mediaSource in

@@ -30,16 +30,13 @@ class AddMediaSourceViewModel {
                 mediaSourceUrl: formattedSourceUrl
             )
 
-            let startOrder: Int = {
-                let existing = try? self.database.read { db in
-                    try MediaSource.order { $0.sortOrder.desc() }.fetchOne(db)?.sortOrder
-                }
-                return (existing ?? nil ?? -1) + 1
-            }()
-
-            try await database.write { db in
-                for (index, var mediaSource) in mediaSources.enumerated() {
-                    mediaSource.sortOrder = startOrder + index
+            try await self.database.write { db in
+                let maxKey: String? = try MediaSource.order { $0.sortOrder.desc() }.fetchOne(db)?.sortOrder
+                var prevKey = maxKey
+                for var mediaSource in mediaSources {
+                    let newKey = FractionalIndex.generateKeyBetween(prevKey, nil)
+                    mediaSource.sortOrder = newKey
+                    prevKey = newKey
                     try MediaSource.insert { mediaSource }.execute(db)
                 }
             }

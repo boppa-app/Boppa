@@ -12,10 +12,7 @@ nonisolated struct StoredTracklist {
     var fromArtistMediaId: String?
     var isPinned: Bool
     var isSavedToLibrary: Bool
-    var prevMediaId: String?
-    var prevMediaSourceId: String?
-    var nextMediaId: String?
-    var nextMediaSourceId: String?
+    var sortOrder: String
 }
 
 extension StoredTracklist: Identifiable {

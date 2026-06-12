@@ -48,7 +48,7 @@ class TracklistStorageService {
             }
         let storedTracks: [StoredTrack]
         if isLikes {
-            storedTracks = try query.order { tt, _ in tt.addedAt.desc() }.select { _, t in t }.fetchAll(db)
+            storedTracks = try query.order { tt, _ in tt.sortOrder.desc() }.select { _, t in t }.fetchAll(db)
         } else {
             storedTracks = try query.order { tt, _ in tt.sortOrder }.select { _, t in t }.fetchAll(db)
         }
@@ -115,22 +115,6 @@ class TracklistStorageService {
 
     func deleteStoredTracklist(_ storedTracklist: StoredTracklist) throws {
         try self.database.write { db in
-            if let prevId = storedTracklist.prevMediaId, let prevSourceId = storedTracklist.prevMediaSourceId {
-                try StoredTracklist.update {
-                    $0.nextMediaId = #bind(storedTracklist.nextMediaId)
-                    $0.nextMediaSourceId = #bind(storedTracklist.nextMediaSourceId)
-                }
-                .where { $0.mediaId.eq(prevId).and($0.mediaSourceId.eq(prevSourceId)) }
-                .execute(db)
-            }
-            if let nextId = storedTracklist.nextMediaId, let nextSourceId = storedTracklist.nextMediaSourceId {
-                try StoredTracklist.update {
-                    $0.prevMediaId = #bind(storedTracklist.prevMediaId)
-                    $0.prevMediaSourceId = #bind(storedTracklist.prevMediaSourceId)
-                }
-                .where { $0.mediaId.eq(nextId).and($0.mediaSourceId.eq(nextSourceId)) }
-                .execute(db)
-            }
             try StoredTracklist
                 .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
                 .delete()
@@ -210,9 +194,12 @@ class TracklistStorageService {
         }
 
         let typeString = tracklist.tracklistType.rawValue
-        let tail = try StoredTracklist
-            .where { $0.tracklistType.eq(typeString).and($0.nextMediaId.is(nil)) }
-            .fetchOne(db)
+        let maxKey = try StoredTracklist
+            .where { $0.tracklistType.eq(typeString) }
+            .order { $0.sortOrder.desc() }
+            .fetchOne(db)?
+            .sortOrder
+        let newSortOrder = FractionalIndex.generateKeyBetween(maxKey, nil)
 
         try StoredTracklist.insert {
             StoredTracklist.Draft(
@@ -225,10 +212,7 @@ class TracklistStorageService {
                 fromArtistMediaId: fromArtistMediaId,
                 isPinned: false,
                 isSavedToLibrary: true,
-                prevMediaId: tail?.mediaId,
-                prevMediaSourceId: tail?.mediaSourceId,
-                nextMediaId: nil,
-                nextMediaSourceId: nil
+                sortOrder: newSortOrder
             )
         }.execute(db)
 
@@ -237,20 +221,12 @@ class TracklistStorageService {
             .fetchOne(db)!
 
         try self.replaceTracklistArtists(tracklist: inserted, artists: tracklist.artists, db: db)
-
-        if let tail {
-            try StoredTracklist.update {
-                $0.nextMediaId = #bind(Optional(tracklist.mediaId))
-                $0.nextMediaSourceId = #bind(Optional(tracklist.mediaSourceId))
-            }
-            .where { $0.mediaId.eq(tail.mediaId).and($0.mediaSourceId.eq(tail.mediaSourceId)) }
-            .execute(db)
-        }
-
         return inserted
     }
 
     private func persistTracks(_ tracks: [Track], into tracklist: StoredTracklist, db: Database, pruneStale: Bool) throws {
+        let newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
+
         let existingJoins = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -272,11 +248,12 @@ class TracklistStorageService {
             .fetchAll(db)
 
         for (index, track) in tracks.enumerated() {
+            let newKey = newKeys[index]
             if let match = existingTracks.first(where: { $0.identityMatches(track) }) {
                 if let join = existingJoins.first(where: { $0.trackMediaId == match.mediaId && $0.trackMediaSourceId == match.mediaSourceId }),
-                   join.sortOrder != index
+                   join.sortOrder != newKey
                 {
-                    try StoredTracklistTrack.update { $0.sortOrder = index }
+                    try StoredTracklistTrack.update { $0.sortOrder = newKey }
                         .where {
                             $0.tracklistMediaId.eq(join.tracklistMediaId)
                                 .and($0.tracklistMediaSourceId.eq(join.tracklistMediaSourceId))
@@ -300,10 +277,9 @@ class TracklistStorageService {
                         tracklistMediaSourceId: tracklist.mediaSourceId,
                         trackMediaId: track.mediaId,
                         trackMediaSourceId: track.mediaSourceId,
-                        sortOrder: index,
-                        addedAt: Date().timeIntervalSince1970
+                        sortOrder: newKey
                     )
-                } onConflictDoUpdate: { $0.sortOrder = index }
+                } onConflictDoUpdate: { $0.sortOrder = newKey }
                     .execute(db)
             }
         }
@@ -408,7 +384,8 @@ class TracklistStorageService {
             .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
             .delete()
             .execute(db)
-        for (index, artist) in artists.enumerated() {
+        let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: artists.count)
+        for (artist, key) in zip(artists, keys) {
             try self.upsertArtist(artist, db: db)
             try StoredTrackArtist.insert {
                 StoredTrackArtist.Draft(
@@ -416,7 +393,7 @@ class TracklistStorageService {
                     trackMediaSourceId: track.mediaSourceId,
                     artistMediaId: artist.mediaId,
                     artistMediaSourceId: artist.mediaSourceId,
-                    sortOrder: index
+                    sortOrder: key
                 )
             }.execute(db)
         }
@@ -427,7 +404,8 @@ class TracklistStorageService {
             .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
             .delete()
             .execute(db)
-        for (index, album) in albums.enumerated() {
+        let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: albums.count)
+        for (album, key) in zip(albums, keys) {
             try self.upsertAlbumTracklist(album, db: db)
             try StoredTrackAlbum.insert {
                 StoredTrackAlbum.Draft(
@@ -435,7 +413,7 @@ class TracklistStorageService {
                     trackMediaSourceId: track.mediaSourceId,
                     tracklistMediaId: album.mediaId,
                     tracklistMediaSourceId: album.mediaSourceId,
-                    sortOrder: index
+                    sortOrder: key
                 )
             }.execute(db)
         }
@@ -446,7 +424,8 @@ class TracklistStorageService {
             .where { $0.tracklistMediaId.eq(tracklist.mediaId).and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId)) }
             .delete()
             .execute(db)
-        for (index, artist) in artists.enumerated() {
+        let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: artists.count)
+        for (artist, key) in zip(artists, keys) {
             try self.upsertArtist(artist, db: db)
             try StoredTracklistArtist.insert {
                 StoredTracklistArtist.Draft(
@@ -454,7 +433,7 @@ class TracklistStorageService {
                     tracklistMediaSourceId: tracklist.mediaSourceId,
                     artistMediaId: artist.mediaId,
                     artistMediaSourceId: artist.mediaSourceId,
-                    sortOrder: index
+                    sortOrder: key
                 )
             }.execute(db)
         }
@@ -499,9 +478,12 @@ class TracklistStorageService {
             .execute(db)
         } else {
             let typeString = Tracklist.TracklistType.album.rawValue
-            let tail = try StoredTracklist
-                .where { $0.tracklistType.eq(typeString).and($0.nextMediaId.is(nil)) }
-                .fetchOne(db)
+            let maxKey = try StoredTracklist
+                .where { $0.tracklistType.eq(typeString) }
+                .order { $0.sortOrder.desc() }
+                .fetchOne(db)?
+                .sortOrder
+            let newSortOrder = FractionalIndex.generateKeyBetween(maxKey, nil)
             try StoredTracklist.insert {
                 StoredTracklist.Draft(
                     mediaId: album.mediaId,
@@ -513,20 +495,9 @@ class TracklistStorageService {
                     fromArtistMediaId: nil,
                     isPinned: false,
                     isSavedToLibrary: false,
-                    prevMediaId: tail?.mediaId,
-                    prevMediaSourceId: tail?.mediaSourceId,
-                    nextMediaId: nil,
-                    nextMediaSourceId: nil
+                    sortOrder: newSortOrder
                 )
             }.execute(db)
-            if let tail {
-                try StoredTracklist.update {
-                    $0.nextMediaId = #bind(Optional(album.mediaId))
-                    $0.nextMediaSourceId = #bind(Optional(album.mediaSourceId))
-                }
-                .where { $0.mediaId.eq(tail.mediaId).and($0.mediaSourceId.eq(tail.mediaSourceId)) }
-                .execute(db)
-            }
         }
     }
 }

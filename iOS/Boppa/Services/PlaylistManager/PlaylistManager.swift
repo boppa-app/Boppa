@@ -42,21 +42,22 @@ class PlaylistManager {
             try self.database.write { db in
                 let tracklist = try self.findOrCreatePlaylist(playlistId: playlistId, db: db)
                 try TracklistStorageService.shared.upsertTrack(track, db: db)
-                let count = try StoredTracklistTrack
+                let maxKey = try StoredTracklistTrack
                     .where {
                         $0.tracklistMediaId.eq(tracklist.mediaId)
                             .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
                     }
-                    .fetchAll(db)
-                    .count
+                    .order { $0.sortOrder.desc() }
+                    .fetchOne(db)?
+                    .sortOrder
+                let newKey = FractionalIndex.generateKeyBetween(maxKey, nil)
                 try StoredTracklistTrack.insert {
                     StoredTracklistTrack.Draft(
                         tracklistMediaId: tracklist.mediaId,
                         tracklistMediaSourceId: tracklist.mediaSourceId,
                         trackMediaId: track.mediaId,
                         trackMediaSourceId: track.mediaSourceId,
-                        sortOrder: count,
-                        addedAt: Date().timeIntervalSince1970
+                        sortOrder: newKey
                     )
                 }.execute(db)
             }
@@ -116,10 +117,7 @@ class PlaylistManager {
                 fromArtistMediaId: nil,
                 isPinned: false,
                 isSavedToLibrary: true,
-                prevMediaId: nil,
-                prevMediaSourceId: nil,
-                nextMediaId: nil,
-                nextMediaSourceId: nil
+                sortOrder: "a0"
             )
         }.execute(db)
         return try StoredTracklist

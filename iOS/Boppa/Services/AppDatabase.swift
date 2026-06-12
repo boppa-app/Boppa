@@ -22,7 +22,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "name" TEXT NOT NULL,
                   "url" TEXT NOT NULL,
                   "configData" BLOB NOT NULL,
-                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   "isEnabled" INTEGER NOT NULL DEFAULT 1,
                   "contextValuesJSON" TEXT NOT NULL DEFAULT '{}'
                 ) STRICT
@@ -53,14 +53,9 @@ extension DatabaseWriter where Self == DatabasePool {
                   "fromArtistMediaId" TEXT,
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
-                  "prevMediaId" TEXT,
-                  "prevMediaSourceId" TEXT,
-                  "nextMediaId" TEXT,
-                  "nextMediaSourceId" TEXT,
+                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   PRIMARY KEY ("mediaId", "mediaSourceId"),
-                  FOREIGN KEY ("fromArtistMediaId", "mediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId"),
-                  FOREIGN KEY ("prevMediaId", "prevMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId"),
-                  FOREIGN KEY ("nextMediaId", "nextMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId")
+                  FOREIGN KEY ("fromArtistMediaId", "mediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)
@@ -87,8 +82,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "tracklistMediaSourceId" TEXT NOT NULL,
                   "trackMediaId" TEXT NOT NULL,
                   "trackMediaSourceId" TEXT NOT NULL,
-                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
-                  "addedAt" REAL NOT NULL DEFAULT 0,
+                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   PRIMARY KEY ("tracklistMediaId", "tracklistMediaSourceId", "trackMediaId", "trackMediaSourceId"),
                   FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE,
                   FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId")
@@ -103,7 +97,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "trackMediaSourceId" TEXT NOT NULL,
                   "artistMediaId" TEXT NOT NULL,
                   "artistMediaSourceId" TEXT NOT NULL,
-                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   PRIMARY KEY ("trackMediaId", "trackMediaSourceId", "artistMediaId", "artistMediaSourceId"),
                   FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId") ON DELETE CASCADE,
                   FOREIGN KEY ("artistMediaId", "artistMediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")
@@ -118,7 +112,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "trackMediaSourceId" TEXT NOT NULL,
                   "tracklistMediaId" TEXT NOT NULL,
                   "tracklistMediaSourceId" TEXT NOT NULL,
-                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   PRIMARY KEY ("trackMediaId", "trackMediaSourceId", "tracklistMediaId", "tracklistMediaSourceId"),
                   FOREIGN KEY ("trackMediaId", "trackMediaSourceId") REFERENCES "tracks"("mediaId", "mediaSourceId") ON DELETE CASCADE,
                   FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE
@@ -133,7 +127,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "tracklistMediaSourceId" TEXT NOT NULL,
                   "artistMediaId" TEXT NOT NULL,
                   "artistMediaSourceId" TEXT NOT NULL,
-                  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   PRIMARY KEY ("tracklistMediaId", "tracklistMediaSourceId", "artistMediaId", "artistMediaSourceId"),
                   FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE,
                   FOREIGN KEY ("artistMediaId", "artistMediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")

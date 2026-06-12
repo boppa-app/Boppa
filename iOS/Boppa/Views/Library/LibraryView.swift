@@ -124,7 +124,6 @@ struct LibraryView: View {
             }
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
                 MediaSourcePickerSheet(
-                    mediaSources: self.viewModel.mediaSources,
                     mediaSourcePickerMode: .multi(selectedMediaSourceIds: self.$viewModel.visibleMediaSourceIds)
                 )
                 .presentationDetents([.medium])

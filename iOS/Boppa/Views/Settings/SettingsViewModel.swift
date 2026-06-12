@@ -20,14 +20,19 @@ class SettingsViewModel {
     func moveMediaSources(from source: IndexSet, to destination: Int) {
         var reordered = self.mediaSources
         reordered.move(fromOffsets: source, toOffset: destination)
+        let newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: reordered.count)
         try? self.database.write { db in
-            for (index, mediaSource) in reordered.enumerated() {
-                try MediaSource.update { $0.sortOrder = index }
+            for (mediaSource, key) in zip(reordered, newKeys) {
+                try MediaSource.update { $0.sortOrder = key }
                     .where { $0.id.eq(mediaSource.id) }
                     .execute(db)
             }
         }
-        self.mediaSources = reordered
+        self.mediaSources = zip(reordered, newKeys).map { mediaSource, key in
+            var updated = mediaSource
+            updated.sortOrder = key
+            return updated
+        }
     }
 
     func deleteMediaSources(at offsets: IndexSet) -> [String] {

@@ -1,3 +1,5 @@
+import Dependencies
+import SQLiteData
 import SwiftUI
 
 enum MediaSourcePickerMode {
@@ -6,9 +8,10 @@ enum MediaSourcePickerMode {
 }
 
 struct MediaSourcePickerSheet: View {
-    let mediaSources: [MediaSource]
     let mediaSourcePickerMode: MediaSourcePickerMode
 
+    @Dependency(\.defaultDatabase) private var database
+    @State private var mediaSources: [MediaSource] = []
     @State private var gridPadding: CGFloat = 0
 
     private var title: String {
@@ -24,7 +27,7 @@ struct MediaSourcePickerSheet: View {
                 let pad = MediaSourceGridLayout.sidePadding(for: geometry.size.width)
 
                 ScrollView {
-                    MediaSourceGridView(mediaSources: self.mediaSources.sorted(by: { $0.sortOrder < $1.sortOrder })) { mediaSources in
+                    MediaSourceGridView(mediaSources: self.mediaSources) { mediaSources in
                         self.mediaSourceButton(mediaSources)
                     }
                     .padding(.top, -pad + 16)
@@ -37,6 +40,11 @@ struct MediaSourcePickerSheet: View {
             .navigationTitle(self.title)
             .navigationBarTitleDisplayMode(.inline)
             .scrollContentBackground(.hidden)
+        }
+        .onAppear {
+            self.mediaSources = (try? self.database.read { db in
+                try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
+            }) ?? []
         }
     }
 

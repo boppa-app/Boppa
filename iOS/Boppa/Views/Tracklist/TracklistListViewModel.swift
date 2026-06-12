@@ -114,22 +114,6 @@ class TracklistListViewModel {
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
             try? self.database.write { db in
-                if let prevMediaId = stored.prevMediaId, let prevMediaSourceId = stored.prevMediaSourceId {
-                    try StoredTracklist.update {
-                        $0.nextMediaId = stored.nextMediaId
-                        $0.nextMediaSourceId = stored.nextMediaSourceId
-                    }
-                    .where { $0.mediaId.eq(prevMediaId).and($0.mediaSourceId.eq(prevMediaSourceId)) }
-                    .execute(db)
-                }
-                if let nextMediaId = stored.nextMediaId, let nextMediaSourceId = stored.nextMediaSourceId {
-                    try StoredTracklist.update {
-                        $0.prevMediaId = stored.prevMediaId
-                        $0.prevMediaSourceId = stored.prevMediaSourceId
-                    }
-                    .where { $0.mediaId.eq(nextMediaId).and($0.mediaSourceId.eq(nextMediaSourceId)) }
-                    .execute(db)
-                }
                 try StoredTracklist
                     .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
                     .delete()
@@ -142,7 +126,7 @@ class TracklistListViewModel {
 
     func moveTracklist(from source: IndexSet, to destination: Int) {
         self.tracklists.move(fromOffsets: source, toOffset: destination)
-        self.persistDLLOrder()
+        self.persistAllSortOrders()
     }
 
     func togglePin(tracklist: Tracklist) {
@@ -166,20 +150,15 @@ class TracklistListViewModel {
         logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(stored.title)'")
     }
 
-    private func persistDLLOrder() {
+    private func persistAllSortOrders() {
+        var newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: self.tracklists.count)
+        if self.libraryType == .albums { newKeys = newKeys.reversed() }
         try? self.database.write { db in
-            for (index, tracklist) in self.tracklists.enumerated() {
+            for (tracklist, key) in zip(self.tracklists, newKeys) {
                 guard let stored = tracklist.storedTracklist else { continue }
-                let prev = index > 0 ? self.tracklists[index - 1].storedTracklist : nil
-                let next = index < self.tracklists.count - 1 ? self.tracklists[index + 1].storedTracklist : nil
-                try StoredTracklist.update {
-                    $0.prevMediaId = prev?.mediaId
-                    $0.prevMediaSourceId = prev?.mediaSourceId
-                    $0.nextMediaId = next?.mediaId
-                    $0.nextMediaSourceId = next?.mediaSourceId
-                }
-                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
-                .execute(db)
+                try StoredTracklist.update { $0.sortOrder = key }
+                    .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                    .execute(db)
             }
         }
     }
@@ -226,32 +205,16 @@ class TracklistListViewModel {
         }
 
         let result: [Tracklist] = (try? self.database.read { db in
-            let allStored = try StoredTracklist
+            var allStored = try StoredTracklist
                 .where { $0.tracklistType.eq(typeString).and($0.isSavedToLibrary.eq(true)) }
+                .order { $0.sortOrder }
                 .fetchAll(db)
 
-            let filtered = allStored.filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-            let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
-            var ordered: [StoredTracklist] = []
+            if type == .albums { allStored.reverse() }
 
-            if let head = filtered.first(where: { $0.prevMediaId == nil }) {
-                var current: StoredTracklist? = head
-                while let node = current {
-                    ordered.append(node)
-                    if let nextMediaId = node.nextMediaId, let nextMediaSourceId = node.nextMediaSourceId {
-                        current = lookup["\(nextMediaId)|\(nextMediaSourceId)"]
-                    } else {
-                        current = nil
-                    }
-                }
-            }
-
-            let orderedIds = Set(ordered.map { $0.id })
-            for item in filtered where !orderedIds.contains(item.id) {
-                ordered.append(item)
-            }
-
-            return try ordered.map { try TracklistStorageService.shared.tracklist(from: $0, db: db) }
+            return try allStored
+                .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
+                .map { try TracklistStorageService.shared.tracklist(from: $0, db: db) }
         }) ?? []
 
         self.tracklists = result

@@ -7,6 +7,5 @@ nonisolated struct StoredTracklistTrack {
     var tracklistMediaSourceId: String
     var trackMediaId: String
     var trackMediaSourceId: String
-    var sortOrder: Int
-    var addedAt: Double
+    var sortOrder: String
 }
