@@ -1,7 +1,5 @@
-import Dependencies
 import Foundation
 import os
-import SQLiteData
 import SwiftUI
 
 private let logger = Logger(
@@ -29,9 +27,6 @@ class TracklistListViewModel {
     var errorMessage: String?
     var sortMode: SortMode = .defaultOrder
     var isEditing = false
-
-    @ObservationIgnored
-    @Dependency(\.defaultDatabase) var database
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
@@ -127,11 +122,7 @@ class TracklistListViewModel {
     func togglePin(tracklist: Tracklist) {
         guard let stored = tracklist.storedTracklist else { return }
         let newIsPinned = !stored.isPinned
-        try? self.database.write { db in
-            try StoredTracklist.update { $0.isPinned = newIsPinned }
-                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
-                .execute(db)
-        }
+        try? TracklistStorageService.shared.setPin(stored, isPinned: newIsPinned)
         if let index = self.tracklists.firstIndex(where: { $0.id == tracklist.id }) {
             var updatedStored = stored
             updatedStored.isPinned = newIsPinned
@@ -146,16 +137,10 @@ class TracklistListViewModel {
     }
 
     private func persistAllSortOrders() {
-        var newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: self.tracklists.count)
-        if self.libraryType == .albums { newKeys = newKeys.reversed() }
-        try? self.database.write { db in
-            for (tracklist, key) in zip(self.tracklists, newKeys) {
-                guard let stored = tracklist.storedTracklist else { continue }
-                try StoredTracklist.update { $0.sortOrder = key }
-                    .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
-                    .execute(db)
-            }
-        }
+        try? TracklistStorageService.shared.updateSortOrders(
+            for: self.tracklists,
+            reversed: self.libraryType == .albums
+        )
     }
 
     func loadFromArtist(
@@ -193,26 +178,12 @@ class TracklistListViewModel {
     }
 
     private func reloadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
-        let typeString: String
-        switch type {
-        case .albums: typeString = "album"
-        case .playlists: typeString = "playlist"
-        }
-
-        let result: [Tracklist] = (try? self.database.read { db in
-            var allStored = try StoredTracklist
-                .where { $0.tracklistType.eq(typeString).and($0.isSavedToLibrary.eq(true)) }
-                .order { $0.sortOrder }
-                .fetchAll(db)
-
-            if type == .albums { allStored.reverse() }
-
-            return try allStored
-                .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-                .map { try TracklistStorageService.shared.tracklist(from: $0, db: db) }
-        }) ?? []
-
-        self.tracklists = result
+        let typeString = type == .albums ? "album" : "playlist"
+        self.tracklists = TracklistStorageService.shared.loadLibraryTracklists(
+            type: typeString,
+            visibleMediaSourceIds: visibleMediaSourceIds,
+            reversed: type == .albums
+        )
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 

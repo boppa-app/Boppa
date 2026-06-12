@@ -1,7 +1,5 @@
-import Dependencies
 import Foundation
 import os
-import SQLiteData
 
 extension Notification.Name {
     static let tracklistPinChanged = Notification.Name("tracklistPinChanged")
@@ -34,9 +32,6 @@ class TracklistViewModel {
     var sortMode: SortMode = .defaultOrder
     var hasMorePages = false
     var pageLoadId = 0
-
-    @ObservationIgnored
-    @Dependency(\.defaultDatabase) var database
 
     let searchHandler = FuzzySearchHandler<Track>()
 
@@ -237,11 +232,7 @@ class TracklistViewModel {
     func togglePin() {
         guard let stored = self.tracklist.storedTracklist else { return }
         let newIsPinned = !self.isPinned
-        try? self.database.write { db in
-            try StoredTracklist.update { $0.isPinned = newIsPinned }
-                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
-                .execute(db)
-        }
+        try? TracklistStorageService.shared.setPin(stored, isPinned: newIsPinned)
         self.isPinned = newIsPinned
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
         logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(self.tracklist.title)'")

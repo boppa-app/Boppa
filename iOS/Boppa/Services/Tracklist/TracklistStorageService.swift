@@ -113,6 +113,40 @@ class TracklistStorageService {
         return stored
     }
 
+    func setPin(_ storedTracklist: StoredTracklist, isPinned: Bool) throws {
+        try self.database.write { db in
+            try StoredTracklist.update { $0.isPinned = isPinned }
+                .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
+                .execute(db)
+        }
+    }
+
+    func updateSortOrders(for tracklists: [Tracklist], reversed: Bool) throws {
+        var keys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracklists.count)
+        if reversed { keys = keys.reversed() }
+        try self.database.write { db in
+            for (tracklist, key) in zip(tracklists, keys) {
+                guard let stored = tracklist.storedTracklist else { continue }
+                try StoredTracklist.update { $0.sortOrder = key }
+                    .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                    .execute(db)
+            }
+        }
+    }
+
+    func loadLibraryTracklists(type: String, visibleMediaSourceIds: Set<String>, reversed: Bool) -> [Tracklist] {
+        (try? self.database.read { db in
+            var allStored = try StoredTracklist
+                .where { $0.tracklistType.eq(type).and($0.isSavedToLibrary.eq(true)) }
+                .order { $0.sortOrder }
+                .fetchAll(db)
+            if reversed { allStored.reverse() }
+            return try allStored
+                .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
+                .map { try self.tracklist(from: $0, db: db) }
+        }) ?? []
+    }
+
     func deleteStoredTracklist(_ storedTracklist: StoredTracklist) throws {
         try self.database.write { db in
             let joins = try StoredTracklistTrack
