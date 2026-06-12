@@ -115,10 +115,30 @@ class TracklistStorageService {
 
     func deleteStoredTracklist(_ storedTracklist: StoredTracklist) throws {
         try self.database.write { db in
+            let joins = try StoredTracklistTrack
+                .where {
+                    $0.tracklistMediaId.eq(storedTracklist.mediaId)
+                        .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
+                }
+                .fetchAll(db)
+
             try StoredTracklist
                 .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
                 .delete()
                 .execute(db)
+
+            for join in joins {
+                let remaining = try StoredTracklistTrack
+                    .where { $0.trackMediaId.eq(join.trackMediaId).and($0.trackMediaSourceId.eq(join.trackMediaSourceId)) }
+                    .fetchAll(db)
+                    .count
+                if remaining == 0 {
+                    try StoredTrack
+                        .where { $0.mediaId.eq(join.trackMediaId).and($0.mediaSourceId.eq(join.trackMediaSourceId)) }
+                        .delete()
+                        .execute(db)
+                }
+            }
         }
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
     }

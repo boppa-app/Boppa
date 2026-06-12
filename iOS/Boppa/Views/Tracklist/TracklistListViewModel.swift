@@ -113,12 +113,7 @@ class TracklistListViewModel {
         guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
         let tracklist = self.tracklists[index]
         if let stored = tracklist.storedTracklist {
-            try? self.database.write { db in
-                try StoredTracklist
-                    .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
-                    .delete()
-                    .execute(db)
-            }
+            try? TracklistStorageService.shared.deleteStoredTracklist(stored)
         }
         self.tracklists.remove(at: index)
         NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
