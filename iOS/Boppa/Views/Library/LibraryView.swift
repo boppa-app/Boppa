@@ -122,6 +122,12 @@ struct LibraryView: View {
             .onReceive(NotificationCenter.default.publisher(for: .tracklistPinChanged)) { _ in
                 self.viewModel.loadPinnedTracklists()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .tracklistLibraryChanged)) { _ in
+                self.viewModel.loadAllContent()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .playlistMembershipChanged)) { _ in
+                self.viewModel.loadAllContent()
+            }
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
                 MediaSourcePickerSheet(
                     mediaSourcePickerMode: .multi(selectedMediaSourceIds: self.$viewModel.visibleMediaSourceIds)
