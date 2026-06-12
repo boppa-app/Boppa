@@ -156,22 +156,34 @@ class TracklistStorageService {
                 }
                 .fetchAll(db)
 
-            try StoredTracklist
-                .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
-                .delete()
-                .execute(db)
+            let albumRefCount = try StoredTrackAlbum
+                .where {
+                    $0.tracklistMediaId.eq(storedTracklist.mediaId)
+                        .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
+                }
+                .fetchAll(db)
+                .count
+
+            if albumRefCount > 0 {
+                try StoredTracklist.update { $0.isSavedToLibrary = false }
+                    .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
+                    .execute(db)
+                try StoredTracklistTrack
+                    .where {
+                        $0.tracklistMediaId.eq(storedTracklist.mediaId)
+                            .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
+                    }
+                    .delete()
+                    .execute(db)
+            } else {
+                try StoredTracklist
+                    .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
+                    .delete()
+                    .execute(db)
+            }
 
             for join in joins {
-                let remaining = try StoredTracklistTrack
-                    .where { $0.trackMediaId.eq(join.trackMediaId).and($0.trackMediaSourceId.eq(join.trackMediaSourceId)) }
-                    .fetchAll(db)
-                    .count
-                if remaining == 0 {
-                    try StoredTrack
-                        .where { $0.mediaId.eq(join.trackMediaId).and($0.mediaSourceId.eq(join.trackMediaSourceId)) }
-                        .delete()
-                        .execute(db)
-                }
+                try TrackStorageService.shared.deleteIfOrphaned(mediaId: join.trackMediaId, mediaSourceId: join.trackMediaSourceId, db: db)
             }
         }
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
@@ -347,16 +359,7 @@ class TracklistStorageService {
                         .and($0.trackMediaSourceId.eq(existing.mediaSourceId))
                 }.delete().execute(db)
 
-                let usageCount = try StoredTracklistTrack
-                    .where { $0.trackMediaId.eq(existing.mediaId).and($0.trackMediaSourceId.eq(existing.mediaSourceId)) }
-                    .fetchAll(db)
-                    .count
-                if usageCount == 0 {
-                    try StoredTrack
-                        .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
-                        .delete()
-                        .execute(db)
-                }
+                try TrackStorageService.shared.deleteIfOrphaned(mediaId: existing.mediaId, mediaSourceId: existing.mediaSourceId, db: db)
             }
         }
     }
