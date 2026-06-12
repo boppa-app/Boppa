@@ -198,7 +198,6 @@ class TracklistStorageService {
                 $0.title = tracklist.title
                 $0.subtitle = tracklist.subtitle
                 $0.artworkUrl = tracklist.artworkUrl
-                $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data()
                 $0.fromArtistMediaId = fromArtistMediaId
                 $0.isSavedToLibrary = true
             }
@@ -223,7 +222,6 @@ class TracklistStorageService {
                 subtitle: tracklist.subtitle,
                 artworkUrl: tracklist.artworkUrl,
                 tracklistType: typeString,
-                metadataJSON: (try? JSONSerialization.data(withJSONObject: tracklist.metadata)) ?? Data(),
                 fromArtistMediaId: fromArtistMediaId,
                 isPinned: false,
                 isSavedToLibrary: true,
@@ -335,10 +333,7 @@ class TracklistStorageService {
 
     private func buildFetchParams(tracklist: Tracklist, config: MediaSourceConfig) throws -> (script: String, params: [String: Any]) {
         let script: String?
-        var itemParams: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? ""]
-        for (key, value) in tracklist.metadata {
-            itemParams[key] = value
-        }
+        var itemParams: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
 
         switch tracklist.tracklistType {
         case .playlist:
@@ -378,8 +373,7 @@ class TracklistStorageService {
                     subtitle: track.subtitle,
                     duration: track.duration,
                     artworkUrl: track.artworkUrl,
-                    url: track.url,
-                    metadataJSON: (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
+                    url: track.url
                 )
             }.execute(db)
             let inserted = StoredTrack(
@@ -389,8 +383,7 @@ class TracklistStorageService {
                 subtitle: track.subtitle,
                 duration: track.duration,
                 artworkUrl: track.artworkUrl,
-                url: track.url,
-                metadataJSON: (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
+                url: track.url
             )
             try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
             try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
@@ -403,7 +396,6 @@ class TracklistStorageService {
             $0.subtitle = track.subtitle
             $0.duration = track.duration
             $0.artworkUrl = track.artworkUrl
-            $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: track.metadata)) ?? Data()
         }
         .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
         .execute(db)
@@ -474,11 +466,9 @@ class TracklistStorageService {
             .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
             .fetchOne(db)
         if let existing {
-            let mergedMetadata = self.deepMerge(existing.metadata, artist.metadata)
             try StoredArtist.update {
                 if !artist.name.isEmpty { $0.name = artist.name }
                 if artist.artworkUrl != nil { $0.artworkUrl = artist.artworkUrl }
-                $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: mergedMetadata)) ?? Data()
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
             .execute(db)
@@ -488,8 +478,7 @@ class TracklistStorageService {
                     mediaId: artist.mediaId,
                     mediaSourceId: artist.mediaSourceId,
                     name: artist.name,
-                    artworkUrl: artist.artworkUrl,
-                    metadataJSON: (try? JSONSerialization.data(withJSONObject: artist.metadata)) ?? Data()
+                    artworkUrl: artist.artworkUrl
                 )
             }.execute(db)
         }
@@ -501,12 +490,10 @@ class TracklistStorageService {
             .where { $0.mediaId.eq(album.mediaId).and($0.mediaSourceId.eq(album.mediaSourceId)) }
             .fetchOne(db)
         if let existing {
-            let mergedMetadata = self.deepMerge(existing.metadata, album.metadata)
             try StoredTracklist.update {
                 if !album.title.isEmpty { $0.title = album.title }
                 if album.subtitle != nil { $0.subtitle = album.subtitle }
                 if album.artworkUrl != nil { $0.artworkUrl = album.artworkUrl }
-                $0.metadataJSON = (try? JSONSerialization.data(withJSONObject: mergedMetadata)) ?? Data()
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
             .execute(db)
@@ -523,7 +510,6 @@ class TracklistStorageService {
                     subtitle: album.subtitle,
                     artworkUrl: album.artworkUrl,
                     tracklistType: typeString,
-                    metadataJSON: (try? JSONSerialization.data(withJSONObject: album.metadata)) ?? Data(),
                     fromArtistMediaId: nil,
                     isPinned: false,
                     isSavedToLibrary: false,
@@ -542,19 +528,5 @@ class TracklistStorageService {
                 .execute(db)
             }
         }
-    }
-
-    private func deepMerge(_ base: [String: Any], _ override: [String: Any]) -> [String: Any] {
-        var result = base
-        for (key, newValue) in override {
-            if let existingDict = result[key] as? [String: Any],
-               let newDict = newValue as? [String: Any]
-            {
-                result[key] = self.deepMerge(existingDict, newDict)
-            } else {
-                result[key] = newValue
-            }
-        }
-        return result
     }
 }

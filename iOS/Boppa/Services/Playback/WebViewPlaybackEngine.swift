@@ -257,7 +257,6 @@ final class WebViewPlaybackEngine: NSObject {
             "artworkUrl": track.artworkUrl ?? "",
             "url": track.url ?? "",
             "mediaSourceId": track.mediaSourceId,
-            "metadata": track.metadata,
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: trackData),

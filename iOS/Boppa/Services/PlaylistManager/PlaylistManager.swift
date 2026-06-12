@@ -113,7 +113,6 @@ class PlaylistManager {
                 subtitle: nil,
                 artworkUrl: nil,
                 tracklistType: tracklistType,
-                metadataJSON: Data(),
                 fromArtistMediaId: nil,
                 isPinned: false,
                 isSavedToLibrary: true,

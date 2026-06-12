@@ -36,7 +36,6 @@ extension DatabaseWriter where Self == DatabasePool {
                   "mediaSourceId" TEXT NOT NULL,
                   "name" TEXT NOT NULL,
                   "artworkUrl" TEXT,
-                  "metadataJSON" BLOB NOT NULL DEFAULT '{}',
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
@@ -51,7 +50,6 @@ extension DatabaseWriter where Self == DatabasePool {
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
                   "tracklistType" TEXT NOT NULL,
-                  "metadataJSON" BLOB NOT NULL DEFAULT '{}',
                   "fromArtistMediaId" TEXT,
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
@@ -77,7 +75,6 @@ extension DatabaseWriter where Self == DatabasePool {
                   "duration" INTEGER,
                   "artworkUrl" TEXT,
                   "url" TEXT,
-                  "metadataJSON" BLOB NOT NULL DEFAULT '{}',
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """

@@ -88,7 +88,7 @@ struct LibraryView: View {
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
                     artworkUrl: tracklist.artworkUrl,
-                    metadata: tracklist.metadata,
+
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
                     storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)

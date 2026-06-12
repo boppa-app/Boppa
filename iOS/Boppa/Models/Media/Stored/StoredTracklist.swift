@@ -9,7 +9,6 @@ nonisolated struct StoredTracklist {
     var subtitle: String?
     var artworkUrl: String?
     var tracklistType: String
-    var metadataJSON: Data
     var fromArtistMediaId: String?
     var isPinned: Bool
     var isSavedToLibrary: Bool
@@ -22,12 +21,6 @@ nonisolated struct StoredTracklist {
 extension StoredTracklist: Identifiable {
     var id: String {
         "\(self.mediaId)|\(self.mediaSourceId)"
-    }
-}
-
-extension StoredTracklist {
-    var metadata: [String: Any] {
-        (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]
     }
 }
 

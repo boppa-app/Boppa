@@ -11,7 +11,6 @@ struct Track: Identifiable, Equatable {
     let url: String?
     let artists: [Artist]
     let albums: [Tracklist]
-    let metadata: [String: Any]
 
     var trackKey: String {
         "\(self.mediaId)|\(self.mediaSourceId)"
@@ -26,8 +25,7 @@ struct Track: Identifiable, Equatable {
         artworkUrl: String? = nil,
         url: String? = nil,
         artists: [Artist] = [],
-        albums: [Tracklist] = [],
-        metadata: [String: Any] = [:]
+        albums: [Tracklist] = []
     ) {
         self.id = UUID()
         self.mediaId = mediaId
@@ -39,7 +37,6 @@ struct Track: Identifiable, Equatable {
         self.url = url
         self.artists = artists
         self.albums = albums
-        self.metadata = metadata
     }
 
     static func == (lhs: Track, rhs: Track) -> Bool {

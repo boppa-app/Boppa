@@ -53,7 +53,7 @@ struct ArtistDetailView: View {
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
                     artworkUrl: tracklist.artworkUrl,
-                    metadata: tracklist.metadata,
+
                     tracklistType: tracklist.tracklistType,
                     artists: tracklist.artists,
                     storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
@@ -127,7 +127,7 @@ struct ArtistDetailView: View {
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
                                     artworkUrl: tracklist.artworkUrl,
-                                    metadata: tracklist.metadata,
+
                                     tracklistType: .album,
                                     artists: tracklist.artists,
                                     storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
@@ -215,7 +215,7 @@ struct ArtistDetailView: View {
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
                                     artworkUrl: tracklist.artworkUrl,
-                                    metadata: tracklist.metadata,
+
                                     tracklistType: .playlist,
                                     artists: tracklist.artists,
                                     storedTracklist: TracklistStorageService.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)

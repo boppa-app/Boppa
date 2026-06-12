@@ -119,8 +119,7 @@ class PaginatedScriptExecutor {
                     mediaId: artistId,
                     mediaSourceId: mediaSourceId,
                     name: name,
-                    artworkUrl: data["artworkUrl"] as? String,
-                    metadata: data["metadata"] as? [String: Any] ?? [:]
+                    artworkUrl: data["artworkUrl"] as? String
                 ))
             }
         }
@@ -137,7 +136,6 @@ class PaginatedScriptExecutor {
                     title: title,
                     subtitle: data["subtitle"] as? String,
                     artworkUrl: data["artworkUrl"] as? String,
-                    metadata: data["metadata"] as? [String: Any] ?? [:],
                     tracklistType: .album
                 ))
             }
@@ -152,8 +150,7 @@ class PaginatedScriptExecutor {
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
             artists: artists,
-            albums: albums,
-            metadata: item["metadata"] as? [String: Any] ?? [:]
+            albums: albums
         )
     }
 
@@ -172,8 +169,7 @@ class PaginatedScriptExecutor {
                     mediaId: artistId,
                     mediaSourceId: mediaSourceId,
                     name: name,
-                    artworkUrl: data["artworkUrl"] as? String,
-                    metadata: data["metadata"] as? [String: Any] ?? [:]
+                    artworkUrl: data["artworkUrl"] as? String
                 ))
             }
         }
@@ -186,7 +182,6 @@ class PaginatedScriptExecutor {
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            metadata: item["metadata"] as? [String: Any] ?? [:],
             tracklistType: tracklistType,
             artists: artists
         )
@@ -201,8 +196,7 @@ class PaginatedScriptExecutor {
             mediaSourceId: mediaSourceId,
             name: name,
             artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String,
-            metadata: item["metadata"] as? [String: Any] ?? [:]
+            url: item["url"] as? String
         )
     }
 

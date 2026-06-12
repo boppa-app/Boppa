@@ -9,7 +9,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     let trackCount: Int?
     let artworkUrl: String?
     let url: String?
-    let metadata: [String: Any]
     let tracklistType: TracklistType
     let artists: [Artist]
     let fromArtist: Artist?
@@ -32,7 +31,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         trackCount: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
-        metadata: [String: Any] = [:],
         tracklistType: TracklistType,
         artists: [Artist] = [],
         fromArtist: Artist? = nil,
@@ -47,7 +45,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.trackCount = trackCount
         self.artworkUrl = artworkUrl
         self.url = url
-        self.metadata = metadata
         self.tracklistType = tracklistType
         self.artists = artists
         self.fromArtist = fromArtist
@@ -64,7 +61,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.trackCount = nil
         self.artworkUrl = storedTracklist.artworkUrl
         self.url = nil
-        self.metadata = storedTracklist.metadata
         self.tracklistType = TracklistType(rawValue: storedTracklist.tracklistType) ?? .playlist
         self.artists = artists
         self.fromArtist = fromArtist

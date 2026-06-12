@@ -10,7 +10,6 @@ nonisolated struct StoredTrack {
     var duration: Int?
     var artworkUrl: String?
     var url: String?
-    var metadataJSON: Data
 }
 
 extension StoredTrack: Identifiable {
@@ -30,10 +29,6 @@ extension StoredTrack: FuzzySearchable {
 }
 
 extension StoredTrack {
-    var metadata: [String: Any] {
-        (try? JSONSerialization.jsonObject(with: self.metadataJSON) as? [String: Any]) ?? [:]
-    }
-
     func toTrack(artists: [Artist] = [], albums: [Tracklist] = []) -> Track {
         Track(
             mediaId: self.mediaId,
@@ -44,8 +39,7 @@ extension StoredTrack {
             artworkUrl: self.artworkUrl,
             url: self.url,
             artists: artists,
-            albums: albums,
-            metadata: self.metadata
+            albums: albums
         )
     }
 
@@ -61,7 +55,6 @@ extension StoredTrack {
         self.identityMatches(track)
             && self.duration == track.duration
             && self.artworkUrl == track.artworkUrl
-            && NSDictionary(dictionary: self.metadata).isEqual(to: track.metadata)
             && artists == track.artists
             && albums == track.albums
     }

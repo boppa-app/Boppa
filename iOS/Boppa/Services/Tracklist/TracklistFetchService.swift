@@ -47,10 +47,7 @@ class TracklistFetchService {
 
         logger.info("Fetching artist '\(artist.name)' for '\(mediaSourceId)'...")
 
-        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? ""]
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
+        let itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
 
         let context = self.paginated.buildJSContext(params: ["item": itemParams], previousResult: nil)
         let jsResult = try await JSExecutionEngine.shared.execute(
@@ -82,10 +79,7 @@ class TracklistFetchService {
 
         logger.info("Fetching all albums for artist '\(artist.name)' on '\(mediaSourceId)'...")
 
-        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? ""]
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
+        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
         for (key, value) in artistDetail.metadata {
             itemParams[key] = value
         }
@@ -108,10 +102,7 @@ class TracklistFetchService {
 
         logger.info("Fetching all playlists for artist '\(artist.name)' on '\(mediaSourceId)'...")
 
-        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? ""]
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
+        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
         for (key, value) in artistDetail.metadata {
             itemParams[key] = value
         }
@@ -143,9 +134,6 @@ class TracklistFetchService {
         logger.info("Fetching \(scriptName) for artist '\(artist.name)' on '\(mediaSourceId)'...")
 
         var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? ""]
-        for (key, value) in artist.metadata {
-            itemParams[key] = value
-        }
         if let artistDetail = tracklist.artistDetail {
             for (key, value) in artistDetail.metadata {
                 itemParams[key] = value
@@ -167,10 +155,7 @@ class TracklistFetchService {
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
         logger.info("Fetching album '\(tracklist.title)' for '\(mediaSourceId)'...")
-        var itemParams: [String: Any] = ["subtitle": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? ""]
-        for (key, value) in tracklist.metadata {
-            itemParams[key] = value
-        }
+        let itemParams: [String: Any] = ["subtitle": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
         let page = try await paginated.executePage(script: script, params: ["item": itemParams], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSourceContext)
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
         logger.info("Fetched \(tracks.count) track(s) for album '\(tracklist.title)'")
@@ -186,10 +171,7 @@ class TracklistFetchService {
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
         logger.info("Fetching playlist '\(tracklist.title)' for '\(mediaSourceId)'...")
-        var itemParams: [String: Any] = ["user": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? ""]
-        for (key, value) in tracklist.metadata {
-            itemParams[key] = value
-        }
+        let itemParams: [String: Any] = ["user": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
         let page = try await paginated.executePage(script: script, params: ["item": itemParams], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSourceContext)
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
         logger.info("Fetched \(tracks.count) track(s) for playlist '\(tracklist.title)'")
