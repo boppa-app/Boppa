@@ -5,6 +5,26 @@ struct TracklistRow: View {
     var showMediaSourceIcon: Bool = false
     var showChevron: Bool = false
 
+    @ViewBuilder
+    private var subtitleView: some View {
+        if let subtitle = tracklist.subtitle {
+            if self.tracklist.tracklistType == .album, let year = tracklist.year {
+                (
+                    Text(subtitle).foregroundColor(Color(.systemGray))
+                        + Text(" | ").foregroundColor(Color(.systemGray6))
+                        + Text(verbatim: "\(year)").foregroundColor(Color(.systemGray3))
+                )
+                .font(.subheadline)
+                .lineLimit(1)
+            } else {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(Color(.systemGray))
+                    .lineLimit(1)
+            }
+        }
+    }
+
     private var resolvedMediaSource: MediaSource? {
         guard self.showMediaSourceIcon else { return nil }
         return MediaSourceStorageManager.shared.fetchOne(id: self.tracklist.mediaSourceId)
@@ -20,12 +40,7 @@ struct TracklistRow: View {
                         .foregroundColor(.white)
                         .lineLimit(1)
                 }
-                if let subtitle = self.tracklist.subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundColor(Color(.systemGray))
-                        .lineLimit(1)
-                }
+                self.subtitleView
             }
             Spacer()
             if let mediaSource = self.resolvedMediaSource {

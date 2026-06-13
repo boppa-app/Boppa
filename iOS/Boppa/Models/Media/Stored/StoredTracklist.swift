@@ -7,6 +7,7 @@ nonisolated struct StoredTracklist {
     var mediaSourceId: String
     var title: String
     var subtitle: String?
+    var year: Int?
     var artworkUrl: String?
     var tracklistType: String
     var isPinned: Bool

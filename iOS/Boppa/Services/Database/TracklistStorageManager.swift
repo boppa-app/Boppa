@@ -179,6 +179,7 @@ class TracklistStorageManager {
             try StoredTracklist.update {
                 $0.title = tracklist.title
                 $0.subtitle = tracklist.subtitle
+                $0.year = tracklist.year
                 $0.artworkUrl = tracklist.artworkUrl
                 $0.isSavedToLibrary = true
             }
@@ -203,6 +204,7 @@ class TracklistStorageManager {
                 mediaSourceId: tracklist.mediaSourceId,
                 title: tracklist.title,
                 subtitle: tracklist.subtitle,
+                year: tracklist.year,
                 artworkUrl: tracklist.artworkUrl,
                 tracklistType: typeString,
                 isPinned: false,

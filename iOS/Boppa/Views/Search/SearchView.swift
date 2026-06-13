@@ -237,6 +237,7 @@ struct SearchView: View {
                                     mediaSourceId: mediaSource.id,
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
+                                    year: tracklist.year,
                                     artworkUrl: tracklist.artworkUrl,
 
                                     tracklistType: .album,

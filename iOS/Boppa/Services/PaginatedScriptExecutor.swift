@@ -179,6 +179,7 @@ class PaginatedScriptExecutor {
             mediaSourceId: mediaSourceId,
             title: title,
             subtitle: item["subtitle"] as? String,
+            year: self.resolveInt(item["year"]),
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,

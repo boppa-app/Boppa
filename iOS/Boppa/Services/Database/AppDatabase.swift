@@ -52,6 +52,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes')),
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
+                  "year" INTEGER,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT

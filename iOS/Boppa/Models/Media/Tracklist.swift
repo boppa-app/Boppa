@@ -6,6 +6,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     let mediaSourceId: String
     let title: String
     let subtitle: String?
+    let year: Int?
     let trackCount: Int?
     let artworkUrl: String?
     let url: String?
@@ -27,6 +28,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         mediaSourceId: String,
         title: String,
         subtitle: String? = nil,
+        year: Int? = nil,
         trackCount: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
@@ -40,6 +42,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.mediaSourceId = mediaSourceId
         self.title = title
         self.subtitle = subtitle
+        self.year = year
         self.trackCount = trackCount
         self.artworkUrl = artworkUrl
         self.url = url
@@ -55,6 +58,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.mediaSourceId = storedTracklist.mediaSourceId
         self.title = storedTracklist.title
         self.subtitle = storedTracklist.subtitle
+        self.year = storedTracklist.year
         self.trackCount = nil
         self.artworkUrl = storedTracklist.artworkUrl
         self.url = nil
