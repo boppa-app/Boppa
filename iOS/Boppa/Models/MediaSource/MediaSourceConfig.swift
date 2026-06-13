@@ -10,14 +10,14 @@ struct MediaSourceConfig: Codable {
     let highlightColor: String?
     let customUserAgent: String?
     let login: LoginConfig?
-    let parse: [Parse]?
+    let context: [ContextConfig]?
     let search: SearchScripts?
     let get: GetScripts?
     let playback: PlaybackConfig
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, login, parse, search, get, playback, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, search, get, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -29,7 +29,7 @@ struct MediaSourceConfig: Codable {
         self.highlightColor = try container.decodeIfPresent(String.self, forKey: .highlightColor)
         self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
         self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
-        self.parse = try container.decodeIfPresent([Parse].self, forKey: .parse)
+        self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
         self.search = try container.decodeIfPresent(SearchScripts.self, forKey: .search)
         self.get = try container.decodeIfPresent(GetScripts.self, forKey: .get)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
@@ -45,7 +45,7 @@ struct MediaSourceConfig: Codable {
         try container.encodeIfPresent(self.highlightColor, forKey: .highlightColor)
         try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
         try container.encodeIfPresent(self.login, forKey: .login)
-        try container.encodeIfPresent(self.parse, forKey: .parse)
+        try container.encodeIfPresent(self.context, forKey: .context)
         try container.encodeIfPresent(self.search, forKey: .search)
         try container.encodeIfPresent(self.get, forKey: .get)
         try container.encode(self.playback, forKey: .playback)
@@ -59,7 +59,7 @@ struct LoginConfig: Codable {
     let cookies: [String]?
 }
 
-struct Parse: Codable {
+struct ContextConfig: Codable {
     let url: String
     let intervalSeconds: Int
     let userScripts: [Script]

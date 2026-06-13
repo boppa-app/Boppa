@@ -126,14 +126,14 @@ final class MediaSourceContextProvider: NSObject {
         }
 
         let config = mediaSource.config
-        guard let parses = config.parse, !parses.isEmpty else {
+        guard let entries = config.context, !entries.isEmpty else {
             logger.debug("refreshSource: mediaSource '\(mediaSourceId)' has no parses configured")
             return
         }
 
-        logger.info("Refreshing mediaSource '\(mediaSourceId)' with \(parses.count) parse(s) after login")
-        for parse in parses {
-            self.enqueueRefresh(mediaSourceId: config.id, parse: parse, customUserAgent: config.customUserAgent)
+        logger.info("Refreshing mediaSource '\(mediaSourceId)' with \(entries.count) parse(s) after login")
+        for entry in entries {
+            self.enqueueRefresh(mediaSourceId: config.id, context: entry, customUserAgent: config.customUserAgent)
         }
     }
 
@@ -150,30 +150,30 @@ final class MediaSourceContextProvider: NSObject {
 
         for mediaSource in mediaSources {
             let config = mediaSource.config
-            guard let parses = config.parse, !parses.isEmpty else {
+            guard let entries = config.context, !entries.isEmpty else {
                 logger.debug("Skipping mediaSource '\(config.name)': no parses configured")
                 continue
             }
 
-            logger.info("Source '\(config.name)' has \(parses.count) parse(s)")
+            logger.info("Source '\(config.name)' has \(entries.count) parse(s)")
 
-            for parse in parses {
-                let timerKey = "\(config.id)|\(parse.url)"
+            for entry in entries {
+                let timerKey = "\(config.id)|\(entry.url)"
 
-                logger.info("Enqueueing immediate refresh for '\(config.id)' -> \(parse.url) with \(parse.userScripts.count) script(s)")
-                self.enqueueRefresh(mediaSourceId: config.id, parse: parse, customUserAgent: config.customUserAgent)
+                logger.info("Enqueueing immediate refresh for '\(config.id)' -> \(entry.url) with \(entry.userScripts.count) script(s)")
+                self.enqueueRefresh(mediaSourceId: config.id, context: entry, customUserAgent: config.customUserAgent)
 
-                let interval = TimeInterval(parse.intervalSeconds)
+                let interval = TimeInterval(entry.intervalSeconds)
                 let mediaSourceId = config.id
                 let customUserAgent = config.customUserAgent
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
                     MainActor.assumeIsolated {
-                        logger.info("Timer fired: recurring refresh for '\(mediaSourceId)' -> \(parse.url)")
-                        MediaSourceContextProvider.shared.enqueueRefresh(mediaSourceId: mediaSourceId, parse: parse, customUserAgent: customUserAgent)
+                        logger.info("Timer fired: recurring refresh for '\(mediaSourceId)' -> \(entry.url)")
+                        MediaSourceContextProvider.shared.enqueueRefresh(mediaSourceId: mediaSourceId, context: entry, customUserAgent: customUserAgent)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
-                logger.info("Scheduled recurring refresh for '\(config.id)' at \(parse.url) every \(parse.intervalSeconds)s")
+                logger.info("Scheduled recurring refresh for '\(config.id)' at \(entry.url) every \(entry.intervalSeconds)s")
             }
         }
 
@@ -183,8 +183,8 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    private func enqueueRefresh(mediaSourceId: String, parse: Parse, customUserAgent: String?) {
-        let workItem = RefreshWorkItem(mediaSourceId: mediaSourceId, parse: parse, customUserAgent: customUserAgent)
+    private func enqueueRefresh(mediaSourceId: String, context: ContextConfig, customUserAgent: String?) {
+        let workItem = RefreshWorkItem(mediaSourceId: mediaSourceId, context: context, customUserAgent: customUserAgent)
         self.pendingWork.append(workItem)
         let queueSize = self.pendingWork.count
         let processing = self.isProcessing
@@ -207,14 +207,14 @@ final class MediaSourceContextProvider: NSObject {
         self.isProcessing = true
         self.currentMediaSourceId = workItem.mediaSourceId
 
-        guard let url = URL(string: workItem.parse.url) else {
-            logger.error("Invalid refresh URL: '\(workItem.parse.url)' for '\(workItem.mediaSourceId)'")
+        guard let url = URL(string: workItem.context.url) else {
+            logger.error("Invalid refresh URL: '\(workItem.context.url)' for '\(workItem.mediaSourceId)'")
             self.completeCurrentWork()
             return
         }
 
-        logger.info("Processing: '\(workItem.mediaSourceId)' -> \(url.absoluteString) with \(workItem.parse.userScripts.count) script(s)")
-        self.loadRefreshURL(url: url, scripts: workItem.parse.userScripts, mediaSourceId: workItem.mediaSourceId, customUserAgent: workItem.customUserAgent)
+        logger.info("Processing: '\(workItem.mediaSourceId)' -> \(url.absoluteString) with \(workItem.context.userScripts.count) script(s)")
+        self.loadRefreshURL(url: url, scripts: workItem.context.userScripts, mediaSourceId: workItem.mediaSourceId, customUserAgent: workItem.customUserAgent)
     }
 
     @MainActor
@@ -335,6 +335,6 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
 
 private struct RefreshWorkItem {
     let mediaSourceId: String
-    let parse: Parse
+    let context: ContextConfig
     let customUserAgent: String?
 }
