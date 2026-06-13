@@ -40,7 +40,6 @@ struct TracklistActionSheet: View {
                 List {
                     self.refreshRow
                     self.pinRow
-                    self.artistRow
                     self.sortRow
                     self.deleteRow
                 }
@@ -189,46 +188,6 @@ struct TracklistActionSheet: View {
         .listRowSeparator(.hidden)
         .accessibilityLabel(self.sortMode == .defaultOrder ? "Sort Tracks" : "Sort Tracks: \(self.sortMode.label)")
         .accessibilityHint("Choose how tracks are sorted")
-    }
-
-    @ViewBuilder
-    private var artistRow: some View {
-        if self.mediaSource?.config.data?.getArtist != nil {
-            ForEach(self.tracklist.artists) { artist in
-                Button {
-                    self.dismiss()
-                    self.onArtistSelected?(artist)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.purp)
-                            .frame(width: 24)
-                        (
-                            Text("Go to ")
-                                .italic()
-                                .foregroundColor(.white)
-                                + Text(artist.name)
-                                .bold()
-                                .foregroundColor(.purp)
-                        )
-                        .font(.body)
-                        .lineLimit(1)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.purp)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color(.systemGray6))
-                .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-                .listRowSeparator(.hidden)
-                .accessibilityLabel("Go to \(artist.name)")
-                .accessibilityHint("View artist page for \(artist.name)")
-            }
-        }
     }
 
     @ViewBuilder

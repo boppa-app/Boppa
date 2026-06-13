@@ -108,10 +108,7 @@ class TrackStorageManager {
         let inTracks = try StoredTrackArtist
             .where { $0.artistMediaId.eq(ref.artistMediaId).and($0.artistMediaSourceId.eq(ref.artistMediaSourceId)) }
             .fetchCount(db)
-        let inTracklists = try StoredTracklistArtist
-            .where { $0.artistMediaId.eq(ref.artistMediaId).and($0.artistMediaSourceId.eq(ref.artistMediaSourceId)) }
-            .fetchCount(db)
-        guard inTracks == 0, inTracklists == 0 else { return }
+        guard inTracks == 0 else { return }
         try StoredArtist
             .where { $0.mediaId.eq(ref.artistMediaId).and($0.mediaSourceId.eq(ref.artistMediaSourceId)) }
             .delete()

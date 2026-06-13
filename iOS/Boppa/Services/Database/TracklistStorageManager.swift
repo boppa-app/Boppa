@@ -64,8 +64,7 @@ class TracklistStorageManager {
     }
 
     func tracklist(from stored: StoredTracklist, db: Database) throws -> Tracklist {
-        let artists = try loadArtistsForTracklist(stored, db: db)
-        return Tracklist(storedTracklist: stored, artists: artists)
+        Tracklist(storedTracklist: stored)
     }
 
     func tracklistWithRelations(from stored: StoredTracklist) -> Tracklist {
@@ -196,18 +195,6 @@ class TracklistStorageManager {
             .map { Tracklist(storedTracklist: $0) }
     }
 
-    private func loadArtistsForTracklist(_ tracklist: StoredTracklist, db: Database) throws -> [Artist] {
-        try StoredTracklistArtist
-            .where { $0.tracklistMediaId.eq(tracklist.mediaId).and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId)) }
-            .join(StoredArtist.all) { ta, a in
-                ta.artistMediaId.eq(a.mediaId).and(ta.artistMediaSourceId.eq(a.mediaSourceId))
-            }
-            .order { ta, _ in ta.sortOrder }
-            .select { _, a in a }
-            .fetchAll(db)
-            .map { $0.toArtist() }
-    }
-
     // MARK: - Private: Tracklist Persistence
 
     private func upsertStoredTracklist(tracklist: Tracklist, db: Database) throws -> StoredTracklist {
@@ -223,7 +210,6 @@ class TracklistStorageManager {
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
             .execute(db)
-            try self.replaceTracklistArtists(tracklist: existing, artists: tracklist.artists, db: db)
             return try StoredTracklist
                 .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
                 .fetchOne(db) ?? existing
@@ -251,12 +237,9 @@ class TracklistStorageManager {
             )
         }.execute(db)
 
-        let inserted = try StoredTracklist
+        return try StoredTracklist
             .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
             .fetchOne(db)!
-
-        try self.replaceTracklistArtists(tracklist: inserted, artists: tracklist.artists, db: db)
-        return inserted
     }
 
     private func persistTracks(_ tracks: [Track], into tracklist: StoredTracklist, db: Database, pruneStale: Bool) throws {
@@ -418,26 +401,6 @@ class TracklistStorageManager {
                     trackMediaSourceId: track.mediaSourceId,
                     tracklistMediaId: album.mediaId,
                     tracklistMediaSourceId: album.mediaSourceId,
-                    sortOrder: key
-                )
-            }.execute(db)
-        }
-    }
-
-    private func replaceTracklistArtists(tracklist: StoredTracklist, artists: [Artist], db: Database) throws {
-        try StoredTracklistArtist
-            .where { $0.tracklistMediaId.eq(tracklist.mediaId).and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId)) }
-            .delete()
-            .execute(db)
-        let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: artists.count)
-        for (artist, key) in zip(artists, keys) {
-            try self.upsertArtist(artist, db: db)
-            try StoredTracklistArtist.insert {
-                StoredTracklistArtist.Draft(
-                    tracklistMediaId: tracklist.mediaId,
-                    tracklistMediaSourceId: tracklist.mediaSourceId,
-                    artistMediaId: artist.mediaId,
-                    artistMediaSourceId: artist.mediaSourceId,
                     sortOrder: key
                 )
             }.execute(db)

@@ -182,8 +182,7 @@ class PaginatedScriptExecutor {
             trackCount: self.resolveInt(item["trackCount"]),
             artworkUrl: item["artworkUrl"] as? String,
             url: item["url"] as? String,
-            tracklistType: tracklistType,
-            artists: artists
+            tracklistType: tracklistType
         )
     }
 

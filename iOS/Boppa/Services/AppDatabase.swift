@@ -49,7 +49,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "title" TEXT NOT NULL,
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
-                  "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes'))
+                  "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes')),
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',
@@ -120,21 +120,6 @@ extension DatabaseWriter where Self == DatabasePool {
 
             try #sql(
                 """
-                CREATE TABLE "tracklistArtists" (
-                  "tracklistMediaId" TEXT NOT NULL,
-                  "tracklistMediaSourceId" TEXT NOT NULL,
-                  "artistMediaId" TEXT NOT NULL,
-                  "artistMediaSourceId" TEXT NOT NULL,
-                  "sortOrder" TEXT NOT NULL DEFAULT 'a0',
-                  PRIMARY KEY ("tracklistMediaId", "tracklistMediaSourceId", "artistMediaId", "artistMediaSourceId"),
-                  FOREIGN KEY ("tracklistMediaId", "tracklistMediaSourceId") REFERENCES "tracklists"("mediaId", "mediaSourceId") ON DELETE CASCADE,
-                  FOREIGN KEY ("artistMediaId", "artistMediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")
-                ) STRICT
-                """
-            ).execute(db)
-
-            try #sql(
-                """
                 CREATE TABLE "cachedSearchQueries" (
                   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                   "query" TEXT NOT NULL,
@@ -149,7 +134,6 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql("CREATE INDEX idx_tracklistTracks_track ON tracklistTracks (trackMediaId, trackMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)").execute(db)
-            try #sql("CREATE INDEX idx_tracklistArtists_artist ON tracklistArtists (artistMediaId, artistMediaSourceId)").execute(db)
         }
         try migrator.migrate(database)
         return database

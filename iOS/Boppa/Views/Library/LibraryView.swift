@@ -96,7 +96,6 @@ struct LibraryView: View {
                     artworkUrl: tracklist.artworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    artists: tracklist.artists,
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )))
                 self.pendingTracklist = nil

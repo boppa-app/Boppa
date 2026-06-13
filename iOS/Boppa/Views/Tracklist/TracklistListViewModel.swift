@@ -128,7 +128,6 @@ class TracklistListViewModel {
             updatedStored.isPinned = newIsPinned
             self.tracklists[index] = Tracklist(
                 storedTracklist: updatedStored,
-                artists: tracklist.artists,
                 fromArtist: tracklist.fromArtist
             )
         }
