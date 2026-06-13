@@ -105,112 +105,59 @@ class PaginatedScriptExecutor {
     }
 
     func mapToTrack(_ item: [String: Any], mediaSourceId: String) -> Track? {
-        guard let title = item["title"] as? String,
-              let id = self.resolveString(item["id"])
-        else { return nil }
+        guard let script = ScriptTrackItem(item) else { return nil }
+        return self.mapToTrack(script, mediaSourceId: mediaSourceId)
+    }
 
-        var artists: [Artist] = []
-        if let rawArtists = item["artists"] as? [[String: Any]] {
-            for data in rawArtists {
-                guard let artistId = self.resolveString(data["id"]),
-                      let name = data["name"] as? String
-                else { continue }
-                artists.append(Artist(
-                    mediaId: artistId,
-                    mediaSourceId: mediaSourceId,
-                    name: name,
-                    artworkUrl: data["artworkUrl"] as? String
-                ))
-            }
-        }
-
-        var albums: [Tracklist] = []
-        if let rawAlbums = item["albums"] as? [[String: Any]] {
-            for data in rawAlbums {
-                guard let albumId = self.resolveString(data["id"]),
-                      let title = data["title"] as? String
-                else { continue }
-                albums.append(Tracklist(
-                    mediaId: albumId,
-                    mediaSourceId: mediaSourceId,
-                    title: title,
-                    subtitle: data["subtitle"] as? String,
-                    artworkUrl: data["artworkUrl"] as? String,
-                    tracklistType: .album
-                ))
-            }
-        }
-
-        return Track(
-            mediaId: id,
+    func mapToTrack(_ script: ScriptTrackItem, mediaSourceId: String) -> Track {
+        Track(
+            mediaId: script.id,
             mediaSourceId: mediaSourceId,
-            title: title,
-            subtitle: item["subtitle"] as? String,
-            duration: self.resolveInt(item["duration"]),
-            artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String,
-            artists: artists,
-            albums: albums
+            title: script.title,
+            subtitle: script.subtitle,
+            duration: script.duration,
+            artworkUrl: script.artworkUrl,
+            url: script.url,
+            artists: script.artists.map {
+                Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, artworkUrl: $0.artworkUrl)
+            },
+            albums: script.albums.map {
+                Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, artworkUrl: $0.artworkUrl, tracklistType: .album)
+            }
         )
     }
 
     func mapToTracklist(_ item: [String: Any], mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist? {
-        guard let title = item["title"] as? String,
-              let id = self.resolveString(item["id"])
-        else { return nil }
+        guard let script = ScriptTracklistItem(item) else { return nil }
+        return self.mapToTracklist(script, mediaSourceId: mediaSourceId, tracklistType: tracklistType)
+    }
 
-        var artists: [Artist] = []
-        if let rawArtists = item["artists"] as? [[String: Any]] {
-            for data in rawArtists {
-                guard let artistId = self.resolveString(data["id"]),
-                      let name = data["name"] as? String
-                else { continue }
-                artists.append(Artist(
-                    mediaId: artistId,
-                    mediaSourceId: mediaSourceId,
-                    name: name,
-                    artworkUrl: data["artworkUrl"] as? String
-                ))
-            }
-        }
-
-        return Tracklist(
-            mediaId: id,
+    func mapToTracklist(_ script: ScriptTracklistItem, mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist {
+        Tracklist(
+            mediaId: script.id,
             mediaSourceId: mediaSourceId,
-            title: title,
-            subtitle: item["subtitle"] as? String,
-            year: self.resolveInt(item["year"]),
-            trackCount: self.resolveInt(item["trackCount"]),
-            artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String,
+            title: script.title,
+            subtitle: script.subtitle,
+            year: script.year,
+            trackCount: script.trackCount,
+            artworkUrl: script.artworkUrl,
+            url: script.url,
             tracklistType: tracklistType
         )
     }
 
     func mapToArtist(_ item: [String: Any], mediaSourceId: String) -> Artist? {
-        guard let name = (item["name"] as? String),
-              let id = self.resolveString(item["id"])
-        else { return nil }
-        return Artist(
-            mediaId: id,
+        guard let script = ScriptArtistItem(item) else { return nil }
+        return self.mapToArtist(script, mediaSourceId: mediaSourceId)
+    }
+
+    func mapToArtist(_ script: ScriptArtistItem, mediaSourceId: String) -> Artist {
+        Artist(
+            mediaId: script.id,
             mediaSourceId: mediaSourceId,
-            name: name,
-            artworkUrl: item["artworkUrl"] as? String,
-            url: item["url"] as? String
+            name: script.name,
+            artworkUrl: script.artworkUrl,
+            url: script.url
         )
-    }
-
-    func resolveString(_ value: Any?) -> String? {
-        if let stringValue = value as? String { return stringValue }
-        if let intValue = value as? Int { return String(intValue) }
-        if let doubleValue = value as? Double { return String(Int(doubleValue)) }
-        return nil
-    }
-
-    func resolveInt(_ value: Any?) -> Int? {
-        if let intValue = value as? Int { return intValue }
-        if let doubleValue = value as? Double { return Int(doubleValue) }
-        if let stringValue = value as? String { return Int(stringValue) }
-        return nil
     }
 }
