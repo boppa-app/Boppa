@@ -14,7 +14,7 @@ extension DatabaseWriter where Self == DatabasePool {
         configuration.foreignKeysEnabled = true
         let database = try DatabasePool(path: url.path, configuration: configuration)
         var migrator = DatabaseMigrator()
-        migrator.registerMigration("v2") { db in
+        migrator.registerMigration("v1") { db in
             try #sql(
                 """
                 CREATE TABLE "mediaSources" (
@@ -142,6 +142,14 @@ extension DatabaseWriter where Self == DatabasePool {
                 ) STRICT
                 """
             ).execute(db)
+
+            try #sql("CREATE INDEX idx_tracklists_type_saved ON tracklists (tracklistType, isSavedToLibrary)").execute(db)
+            try #sql("CREATE INDEX idx_tracklists_isPinned ON tracklists (isPinned)").execute(db)
+            try #sql("CREATE INDEX idx_tracklistTracks_tracklist ON tracklistTracks (tracklistMediaId, tracklistMediaSourceId)").execute(db)
+            try #sql("CREATE INDEX idx_tracklistTracks_track ON tracklistTracks (trackMediaId, trackMediaSourceId)").execute(db)
+            try #sql("CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)").execute(db)
+            try #sql("CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)").execute(db)
+            try #sql("CREATE INDEX idx_tracklistArtists_artist ON tracklistArtists (artistMediaId, artistMediaSourceId)").execute(db)
         }
         try migrator.migrate(database)
         return database
