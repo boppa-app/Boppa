@@ -10,8 +10,6 @@ class TracklistStorageManager {
 
     @Dependency(\.defaultDatabase) var database
 
-    private let paginated = PaginatedScriptExecutor.shared
-
     private init() {}
 
     // MARK: - Reads
@@ -74,27 +72,7 @@ class TracklistStorageManager {
 
     // MARK: - Writes
 
-    @MainActor func saveTracklistToLibrary(
-        tracklist: Tracklist,
-        onPageFetched: (([Track]) -> Void)? = nil
-    ) async throws -> StoredTracklist {
-        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
-            throw NSError(domain: "TracklistStorageManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
-        }
-
-        let (script, itemParams) = try buildFetchParams(tracklist: tracklist, config: mediaSource.config)
-        logger.info("Saving tracklist '\(tracklist.title)' to library for '\(tracklist.mediaSourceId)'...")
-
-        let tracks = try await paginated.executeAllPages(
-            script: script,
-            params: ["item": itemParams],
-            customUserAgent: mediaSource.config.customUserAgent,
-            domain: mediaSource.config.url,
-            mediaSourceId: tracklist.mediaSourceId,
-            mediaSourceContext: mediaSource.contextValues,
-            onPageFetched: { onPageFetched?($0) }
-        )
-
+    func storeTracklist(_ tracklist: Tracklist, tracks: [Track]) async throws -> StoredTracklist {
         let stored = try await database.write { db in
             let stored = try self.upsertStoredTracklist(tracklist: tracklist, db: db)
             try self.persistTracks(tracks, into: stored, db: db, pruneStale: true)
@@ -102,8 +80,7 @@ class TracklistStorageManager {
                 .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
                 .fetchOne(db) ?? stored
         }
-
-        logger.info("Saved tracklist '\(tracklist.title)' with \(tracks.count) track(s) to library")
+        logger.info("Stored tracklist '\(tracklist.title)' with \(tracks.count) track(s) to library")
         return stored
     }
 
@@ -356,27 +333,6 @@ class TracklistStorageManager {
                 try TrackStorageManager.shared.deleteIfOrphaned(mediaId: existing.mediaId, mediaSourceId: existing.mediaSourceId, db: db)
             }
         }
-    }
-
-    private func buildFetchParams(tracklist: Tracklist, config: MediaSourceConfig) throws -> (script: String, params: [String: Any]) {
-        let script: String?
-        var itemParams: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
-
-        switch tracklist.tracklistType {
-        case .playlist:
-            script = config.data?.getPlaylist
-            itemParams["user"] = tracklist.subtitle ?? ""
-        case .album:
-            script = config.data?.getAlbum
-            itemParams["subtitle"] = tracklist.subtitle ?? ""
-        default:
-            throw NSError(domain: "TracklistStorageManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot save this tracklist type to library"])
-        }
-
-        guard let script else {
-            throw NSError(domain: "TracklistStorageManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "No script available for this tracklist type"])
-        }
-        return (script, itemParams)
     }
 
     func upsertTrack(_ track: Track, db: Database) throws {

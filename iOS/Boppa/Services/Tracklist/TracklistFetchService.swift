@@ -12,9 +12,25 @@ class TracklistFetchService {
     static let shared = TracklistFetchService()
 
     private let paginated = PaginatedScriptExecutor.shared
-    private let db = TracklistStorageManager.shared
 
     private init() {}
+
+    func fetchAllTracks(for tracklist: Tracklist, onPageFetched: (([Track]) -> Void)? = nil) async throws -> [Track] {
+        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
+            throw NSError(domain: "TracklistFetchService", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
+        }
+        let (script, itemParams) = try buildFetchParams(tracklist: tracklist, config: mediaSource.config)
+        logger.info("Fetching all tracks for '\(tracklist.title)' on '\(tracklist.mediaSourceId)'...")
+        return try await self.paginated.executeAllPages(
+            script: script,
+            params: ["item": itemParams],
+            customUserAgent: mediaSource.config.customUserAgent,
+            domain: mediaSource.config.url,
+            mediaSourceId: tracklist.mediaSourceId,
+            mediaSourceContext: mediaSource.contextValues,
+            onPageFetched: { onPageFetched?($0) }
+        )
+    }
 
     func fetchTracklist(tracklist: Tracklist, previousResult: [String: Any]? = nil) async throws -> TracklistResponse {
         guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
@@ -116,6 +132,27 @@ class TracklistFetchService {
     }
 
     // MARK: - Private
+
+    private func buildFetchParams(tracklist: Tracklist, config: MediaSourceConfig) throws -> (script: String, params: [String: Any]) {
+        let script: String?
+        var itemParams: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
+
+        switch tracklist.tracklistType {
+        case .playlist:
+            script = config.data?.getPlaylist
+            itemParams["user"] = tracklist.subtitle ?? ""
+        case .album:
+            script = config.data?.getAlbum
+            itemParams["subtitle"] = tracklist.subtitle ?? ""
+        default:
+            throw NSError(domain: "TracklistFetchService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot fetch tracks for this tracklist type"])
+        }
+
+        guard let script else {
+            throw NSError(domain: "TracklistFetchService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No script available for this tracklist type"])
+        }
+        return (script, itemParams)
+    }
 
     private func fetchArtistTracksPage(
         tracklist: Tracklist, script: String?, scriptName: String,

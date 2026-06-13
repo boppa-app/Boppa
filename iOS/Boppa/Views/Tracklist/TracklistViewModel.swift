@@ -105,8 +105,8 @@ class TracklistViewModel {
 
         Task {
             do {
-                _ = try await TracklistStorageManager.shared.saveTracklistToLibrary(
-                    tracklist: self.tracklist,
+                let tracks = try await TracklistFetchService.shared.fetchAllTracks(
+                    for: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
                         self.unsortedTracks = allTracksSoFar
@@ -114,6 +114,7 @@ class TracklistViewModel {
                         self.hasMorePages = false
                     }
                 )
+                _ = try await TracklistStorageManager.shared.storeTracklist(self.tracklist, tracks: tracks)
 
                 self.isRefreshing = false
 
@@ -198,8 +199,8 @@ class TracklistViewModel {
 
         Task {
             do {
-                let stored = try await TracklistStorageManager.shared.saveTracklistToLibrary(
-                    tracklist: self.tracklist,
+                let tracks = try await TracklistFetchService.shared.fetchAllTracks(
+                    for: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
                         self.unsortedTracks = allTracksSoFar
@@ -207,6 +208,7 @@ class TracklistViewModel {
                         self.hasMorePages = false
                     }
                 )
+                let stored = try await TracklistStorageManager.shared.storeTracklist(self.tracklist, tracks: tracks)
 
                 self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
                 self.isPersisted = true
