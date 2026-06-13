@@ -1,7 +1,5 @@
-import Dependencies
 import Foundation
 import os
-import SQLiteData
 
 @MainActor
 @Observable
@@ -18,9 +16,6 @@ class LibraryViewModel {
     private(set) var availableLibraryCategories: [SearchCategory] = []
     private var allLibraryTracks: [StoredTrack] = []
     private var allLibraryTracklists: [StoredTracklist] = []
-
-    @ObservationIgnored
-    @Dependency(\.defaultDatabase) var database
 
     var pinnedTracklists: [StoredTracklist] {
         let visibleIds = self.visibleMediaSourceStringIds
@@ -76,9 +71,7 @@ class LibraryViewModel {
     }
 
     func loadPinnedTracklists() {
-        self.allPinnedTracklists = (try? self.database.read { db in
-            try StoredTracklist.where(\.isPinned).fetchAll(db)
-        }) ?? []
+        self.allPinnedTracklists = TracklistStorageManager.shared.fetchPinnedTracklists()
         if !self.hasSetInitialPinnedState {
             self.hasSetInitialPinnedState = true
             self.isPinnedExpanded = !self.pinnedTracklists.isEmpty
@@ -128,12 +121,8 @@ class LibraryViewModel {
     }
 
     func loadAllContent() {
-        self.allLibraryTracks = (try? self.database.read { db in
-            try StoredTrack.fetchAll(db)
-        }) ?? []
-        self.allLibraryTracklists = (try? self.database.read { db in
-            try StoredTracklist.where(\.isSavedToLibrary).fetchAll(db)
-        }) ?? []
+        self.allLibraryTracks = TrackStorageManager.shared.fetchLibraryTracks()
+        self.allLibraryTracklists = TracklistStorageManager.shared.fetchLibraryTracklists()
         self.updateAvailableCategories()
     }
 

@@ -14,6 +14,18 @@ class TracklistStorageManager {
 
     // MARK: - Reads
 
+    func fetchPinnedTracklists() -> [StoredTracklist] {
+        (try? self.database.read { db in
+            try StoredTracklist.where(\.isPinned).fetchAll(db)
+        }) ?? []
+    }
+
+    func fetchLibraryTracklists() -> [StoredTracklist] {
+        (try? self.database.read { db in
+            try StoredTracklist.where(\.isSavedToLibrary).fetchAll(db)
+        }) ?? []
+    }
+
     func findStoredTracklist(mediaId: String, mediaSourceId: String) -> StoredTracklist? {
         try? self.database.read { db in
             try StoredTracklist

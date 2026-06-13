@@ -12,6 +12,14 @@ class TrackStorageManager {
 
     private init() {}
 
+    // MARK: - Reads
+
+    func fetchLibraryTracks() -> [StoredTrack] {
+        (try? self.database.read { db in
+            try StoredTrack.fetchAll(db)
+        }) ?? []
+    }
+
     // MARK: - Boppa Playlist Management
 
     func isTrack(_ track: Track, inPlaylist playlistId: String) -> Bool {
