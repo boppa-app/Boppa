@@ -1,7 +1,5 @@
-import Dependencies
 import Foundation
 import os
-import SQLiteData
 import WebKit
 
 extension Notification.Name {
@@ -23,9 +21,6 @@ final class MediaSourceContextProvider: NSObject {
 
     private static let refreshTimeoutSeconds: TimeInterval = 60
     private static let messageHandlerName = "contextCapture"
-
-    @ObservationIgnored
-    @Dependency(\.defaultDatabase) var database
 
     private var refreshTimers: [String: Timer] = [:]
     private var isProcessing = false
@@ -117,18 +112,14 @@ final class MediaSourceContextProvider: NSObject {
 
     @MainActor
     private func refreshFromDatabase() {
-        let mediaSources = (try? self.database.read { db in
-            try MediaSource.fetchAll(db)
-        }) ?? []
+        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
         logger.info("Fetched \(mediaSources.count) media source(s) from database")
         self.startMonitoring(mediaSources: mediaSources)
     }
 
     @MainActor
     private func refreshSource(id mediaSourceId: String) {
-        let mediaSources = (try? self.database.read { db in
-            try MediaSource.fetchAll(db)
-        }) ?? []
+        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
         guard let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId }) else {
             logger.warning("refreshSource: no mediaSource found with id '\(mediaSourceId)'")
             return
@@ -303,27 +294,8 @@ final class MediaSourceContextProvider: NSObject {
             return
         }
 
-        Task {
-            try? await self.database.write { db in
-                guard let mediaSource = try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db) else {
-                    logger.warning("Could not find MediaSource '\(mediaSourceId)' to store context values")
-                    return
-                }
-                var contextValues = mediaSource.contextValues
-                for (key, value) in values {
-                    if let stringValue = value as? String {
-                        contextValues[key] = stringValue
-                    } else {
-                        contextValues[key] = String(describing: value)
-                    }
-                }
-                let json = (try? JSONEncoder().encode(contextValues)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-                try MediaSource.update { $0.contextValuesJSON = json }
-                    .where { $0.id.eq(mediaSourceId) }
-                    .execute(db)
-                logger.info("Stored \(values.count) context value(s) for '\(mediaSourceId)'")
-            }
-        }
+        try? MediaSourceStorageManager.shared.mergeContextValues(id: mediaSourceId, newValues: values)
+        logger.info("Stored \(values.count) context value(s) for '\(mediaSourceId)'")
     }
 }
 

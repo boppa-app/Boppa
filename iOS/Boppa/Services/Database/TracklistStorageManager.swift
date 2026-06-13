@@ -16,12 +16,6 @@ class TracklistStorageManager {
 
     // MARK: - Reads
 
-    func resolveMediaSource(mediaSourceId: String) -> MediaSource? {
-        try? self.database.read { db in
-            try MediaSource.where { $0.id.eq(mediaSourceId) }.fetchOne(db)
-        }
-    }
-
     func findStoredTracklist(mediaId: String, mediaSourceId: String) -> StoredTracklist? {
         try? self.database.read { db in
             try StoredTracklist
@@ -84,7 +78,7 @@ class TracklistStorageManager {
         tracklist: Tracklist,
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> StoredTracklist {
-        guard let mediaSource = resolveMediaSource(mediaSourceId: tracklist.mediaSourceId) else {
+        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
             throw NSError(domain: "TracklistStorageManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
         }
 

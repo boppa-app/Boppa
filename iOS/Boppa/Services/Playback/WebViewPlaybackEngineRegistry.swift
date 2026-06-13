@@ -1,7 +1,5 @@
-import Dependencies
 import Foundation
 import os
-import SQLiteData
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
@@ -17,8 +15,6 @@ final class WebViewPlaybackEngineRegistry {
     private var mediaSourceRemovedObserver: NSObjectProtocol?
     private var mediaSourceEnabledObserver: NSObjectProtocol?
     private var mediaSourceDisabledObserver: NSObjectProtocol?
-
-    @Dependency(\.defaultDatabase) var database
 
     private init() {}
 
@@ -37,9 +33,7 @@ final class WebViewPlaybackEngineRegistry {
     }
 
     private func createEnginesForExistingSources() {
-        let mediaSources = (try? self.database.read { db in
-            try MediaSource.fetchAll(db)
-        }) ?? []
+        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
 
         for mediaSource in mediaSources {
             self.createEngine(for: mediaSource)
@@ -97,9 +91,7 @@ final class WebViewPlaybackEngineRegistry {
     }
 
     private func handleMediaSourceAdded() {
-        let mediaSources = (try? self.database.read { db in
-            try MediaSource.fetchAll(db)
-        }) ?? []
+        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
 
         for mediaSource in mediaSources where self.engines[mediaSource.id] == nil {
             self.createEngine(for: mediaSource)
@@ -116,10 +108,7 @@ final class WebViewPlaybackEngineRegistry {
 
     private func handleMediaSourceEnabled(id: String) {
         guard self.engines[id] == nil else { return }
-        let mediaSources = (try? self.database.read { db in
-            try MediaSource.fetchAll(db)
-        }) ?? []
-        guard let mediaSource = mediaSources.first(where: { $0.id == id }) else {
+        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: id) else {
             logger.warning("Enabled source '\(id)' not found in database")
             return
         }

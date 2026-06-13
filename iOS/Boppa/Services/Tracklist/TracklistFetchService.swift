@@ -17,7 +17,7 @@ class TracklistFetchService {
     private init() {}
 
     func fetchTracklist(tracklist: Tracklist, previousResult: [String: Any]? = nil) async throws -> TracklistResponse {
-        guard let mediaSource = db.resolveMediaSource(mediaSourceId: tracklist.mediaSourceId) else {
+        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
         let config = mediaSource.config

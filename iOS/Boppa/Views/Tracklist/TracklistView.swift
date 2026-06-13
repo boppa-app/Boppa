@@ -92,7 +92,7 @@ struct TracklistView: View {
         .sheet(isPresented: self.$showActionSheet) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
-                mediaSource: TracklistStorageManager.shared.resolveMediaSource(mediaSourceId: self.viewModel.tracklist.mediaSourceId),
+                mediaSource: MediaSourceStorageManager.shared.fetchOne(id: self.viewModel.tracklist.mediaSourceId),
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
                 sortMode: self.viewModel.sortMode,
@@ -116,7 +116,7 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = TracklistStorageManager.shared.resolveMediaSource(mediaSourceId: track.mediaSourceId) {
+            if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: track.mediaSourceId) {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
@@ -129,7 +129,7 @@ struct TracklistView: View {
             }
         }
         .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = TracklistStorageManager.shared.resolveMediaSource(mediaSourceId: artist.mediaSourceId) {
+            if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: artist.mediaSourceId) {
                 ArtistDetailView(artist: artist, mediaSource: mediaSource)
             }
         }

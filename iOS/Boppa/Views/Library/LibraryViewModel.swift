@@ -55,9 +55,7 @@ class LibraryViewModel {
     }
 
     func loadSources() {
-        let newSources = (try? self.database.read { db in
-            try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
-        }) ?? []
+        let newSources = MediaSourceStorageManager.shared.fetchAllEnabled()
 
         let oldIds = Set(self.mediaSources.map(\.id))
         self.mediaSources = newSources

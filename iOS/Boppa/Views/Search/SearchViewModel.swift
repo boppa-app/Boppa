@@ -1,7 +1,5 @@
-import Dependencies
 import Foundation
 import os
-import SQLiteData
 
 @MainActor
 @Observable
@@ -20,9 +18,6 @@ class SearchViewModel {
     var availableCategories: [SearchCategory] = []
     var lastSearchedQuery: String = ""
 
-    @ObservationIgnored
-    @Dependency(\.defaultDatabase) var database
-
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
         category: "SearchViewModel"
@@ -39,9 +34,7 @@ class SearchViewModel {
     private static let selectedMediaSourceKey = "search.selectedMediaSourceId"
 
     func loadSources() {
-        let sources = (try? self.database.read { db in
-            try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
-        }) ?? []
+        let sources = MediaSourceStorageManager.shared.fetchAllEnabled()
         self.mediaSources = sources
 
         if let current = self.selectedMediaSource,
@@ -100,9 +93,7 @@ class SearchViewModel {
         self.errorMessage = nil
 
         self.searchTask = Task {
-            let mediaSource = (try? await self.database.read { db in
-                try MediaSource.where { $0.id.eq(selectedId) }.fetchOne(db)
-            }) ?? self.selectedMediaSource!
+            let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: selectedId) ?? self.selectedMediaSource!
 
             do {
                 let response = try await SearchService.shared.search(
@@ -142,9 +133,7 @@ class SearchViewModel {
         self.isLoadingNextPage = true
 
         self.nextPageTask = Task {
-            let mediaSource = (try? await self.database.read { db in
-                try MediaSource.where { $0.id.eq(selectedId) }.fetchOne(db)
-            }) ?? self.selectedMediaSource!
+            let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: selectedId) ?? self.selectedMediaSource!
 
             do {
                 let response = try await SearchService.shared.searchNextPage(

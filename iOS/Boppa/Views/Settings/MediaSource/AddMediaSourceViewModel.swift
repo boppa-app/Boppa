@@ -1,6 +1,4 @@
-import Dependencies
 import Foundation
-import SQLiteData
 
 @MainActor
 @Observable
@@ -9,9 +7,6 @@ class AddMediaSourceViewModel {
     var configProviderUrl = "localhost:8788"
     var isLoading = false
     var errorMessage: String?
-
-    @ObservationIgnored
-    @Dependency(\.defaultDatabase) var database
 
     var isAddDisabled: Bool {
         self.mediaSourceUrl.isEmpty || self.configProviderUrl.isEmpty || self.isLoading
@@ -30,16 +25,7 @@ class AddMediaSourceViewModel {
                 mediaSourceUrl: formattedSourceUrl
             )
 
-            try await self.database.write { db in
-                let maxKey: String? = try MediaSource.order { $0.sortOrder.desc() }.fetchOne(db)?.sortOrder
-                var prevKey = maxKey
-                for var mediaSource in mediaSources {
-                    let newKey = FractionalIndex.generateKeyBetween(prevKey, nil)
-                    mediaSource.sortOrder = newKey
-                    prevKey = newKey
-                    try MediaSource.insert { mediaSource }.execute(db)
-                }
-            }
+            try MediaSourceStorageManager.shared.insert(mediaSources)
 
             let addedNames = mediaSources.map(\.name)
             NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["names": addedNames])
