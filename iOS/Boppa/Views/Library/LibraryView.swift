@@ -25,6 +25,12 @@ struct LibraryView: View {
         self.viewModel.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    private func refreshSearchHandlers() {
+        let query = self.viewModel.searchQuery
+        self.trackFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracks)
+        self.tracklistFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracklists)
+    }
+
     var body: some View {
         NavigationStack(path: self.$path) {
             VStack(spacing: 0) {
@@ -124,9 +130,11 @@ struct LibraryView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .tracklistLibraryChanged)) { _ in
                 self.viewModel.loadAllContent()
+                self.refreshSearchHandlers()
             }
             .onReceive(NotificationCenter.default.publisher(for: .playlistMembershipChanged)) { _ in
                 self.viewModel.loadAllContent()
+                self.refreshSearchHandlers()
             }
             .sheet(isPresented: self.$viewModel.showFilterSheet) {
                 MediaSourcePickerSheet(
@@ -190,6 +198,7 @@ struct LibraryView: View {
                 Spacer()
                 Button {
                     self.viewModel.loadAllContent()
+                    self.refreshSearchHandlers()
                     withAnimation(.easeInOut(duration: 0.25)) {
                         self.isSearchVisible = true
                     }
