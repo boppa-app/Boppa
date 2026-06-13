@@ -133,7 +133,7 @@ class TrackStorageManager {
     }
 
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
-        try TracklistStorageManager.shared.upsertTrack(track, db: db)
+        try self.upsertTrack(track, db: db)
         let maxKey = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -166,6 +166,150 @@ class TrackStorageManager {
             .execute(db)
         try self.deleteIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
     }
+
+    // MARK: - Track Reads
+
+    func loadArtistsForTrack(_ track: StoredTrack, db: Database) throws -> [Artist] {
+        try StoredTrackArtist
+            .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
+            .join(StoredArtist.all) { ta, a in
+                ta.artistMediaId.eq(a.mediaId).and(ta.artistMediaSourceId.eq(a.mediaSourceId))
+            }
+            .order { ta, _ in ta.sortOrder }
+            .select { _, a in a }
+            .fetchAll(db)
+            .map { $0.toArtist() }
+    }
+
+    func loadAlbumsForTrack(_ track: StoredTrack, db: Database) throws -> [Tracklist] {
+        try StoredTrackAlbum
+            .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
+            .join(StoredTracklist.all) { ta, tl in
+                ta.tracklistMediaId.eq(tl.mediaId).and(ta.tracklistMediaSourceId.eq(tl.mediaSourceId))
+            }
+            .order { ta, _ in ta.sortOrder }
+            .select { _, tl in tl }
+            .fetchAll(db)
+            .map { Tracklist(storedTracklist: $0) }
+    }
+
+    // MARK: - Track Writes
+
+    func upsertTrack(_ track: Track, db: Database) throws {
+        let existing = try StoredTrack
+            .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
+            .fetchOne(db)
+        if let existing {
+            let existingArtists = try loadArtistsForTrack(existing, db: db)
+            let existingAlbums = try loadAlbumsForTrack(existing, db: db)
+            if !existing.contentMatches(track, artists: existingArtists, albums: existingAlbums) {
+                try self.updateTrackScalars(track, stored: existing, db: db)
+                try self.replaceTrackArtists(track: existing, artists: track.artists, db: db)
+                try self.replaceTrackAlbums(track: existing, albums: track.albums, db: db)
+            }
+        } else {
+            try StoredTrack.insert {
+                StoredTrack.Draft(
+                    mediaId: track.mediaId,
+                    mediaSourceId: track.mediaSourceId,
+                    title: track.title,
+                    subtitle: track.subtitle,
+                    duration: track.duration,
+                    artworkUrl: track.artworkUrl,
+                    url: track.url
+                )
+            }.execute(db)
+            let inserted = StoredTrack(
+                mediaId: track.mediaId,
+                mediaSourceId: track.mediaSourceId,
+                title: track.title,
+                subtitle: track.subtitle,
+                duration: track.duration,
+                artworkUrl: track.artworkUrl,
+                url: track.url
+            )
+            try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
+            try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
+        }
+    }
+
+    func updateTrackScalars(_ track: Track, stored: StoredTrack, db: Database) throws {
+        try StoredTrack.update {
+            $0.title = track.title
+            $0.subtitle = track.subtitle
+            $0.duration = track.duration
+            $0.artworkUrl = track.artworkUrl
+        }
+        .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+        .execute(db)
+    }
+
+    func replaceTrackArtists(track: StoredTrack, artists: [Artist], db: Database) throws {
+        try StoredTrackArtist
+            .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
+            .delete()
+            .execute(db)
+        let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: artists.count)
+        for (artist, key) in zip(artists, keys) {
+            try self.upsertArtist(artist, db: db)
+            try StoredTrackArtist.insert {
+                StoredTrackArtist.Draft(
+                    trackMediaId: track.mediaId,
+                    trackMediaSourceId: track.mediaSourceId,
+                    artistMediaId: artist.mediaId,
+                    artistMediaSourceId: artist.mediaSourceId,
+                    sortOrder: key
+                )
+            }.execute(db)
+        }
+    }
+
+    func replaceTrackAlbums(track: StoredTrack, albums: [Tracklist], db: Database) throws {
+        try StoredTrackAlbum
+            .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
+            .delete()
+            .execute(db)
+        let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: albums.count)
+        for (album, key) in zip(albums, keys) {
+            try TracklistStorageManager.shared.upsertAlbumTracklist(album, db: db)
+            try StoredTrackAlbum.insert {
+                StoredTrackAlbum.Draft(
+                    trackMediaId: track.mediaId,
+                    trackMediaSourceId: track.mediaSourceId,
+                    tracklistMediaId: album.mediaId,
+                    tracklistMediaSourceId: album.mediaSourceId,
+                    sortOrder: key
+                )
+            }.execute(db)
+        }
+    }
+
+    @discardableResult
+    private func upsertArtist(_ artist: Artist, db: Database) throws -> String {
+        let existing = try StoredArtist
+            .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
+            .fetchOne(db)
+        if let existing {
+            try StoredArtist.update {
+                if !artist.name.isEmpty { $0.name = artist.name }
+                if artist.artworkUrl != nil { $0.artworkUrl = artist.artworkUrl }
+            }
+            .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
+            .execute(db)
+        } else {
+            try StoredArtist.insert {
+                StoredArtist.Draft(
+                    mediaId: artist.mediaId,
+                    mediaSourceId: artist.mediaSourceId,
+                    name: artist.name,
+                    artworkUrl: artist.artworkUrl
+                )
+            }.execute(db)
+        }
+        return artist.mediaId
+    }
+
+    // MARK: - Private
 
     private func findOrCreatePlaylist(playlistId: String, db: Database) throws -> StoredTracklist {
         let existing = try StoredTracklist
