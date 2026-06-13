@@ -245,6 +245,9 @@ class TrackStorageManager {
     }
 
     func replaceTrackArtists(track: StoredTrack, artists: [Artist], db: Database) throws {
+        let oldRefs = try StoredTrackArtist
+            .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
+            .fetchAll(db)
         try StoredTrackArtist
             .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
             .delete()
@@ -262,9 +265,15 @@ class TrackStorageManager {
                 )
             }.execute(db)
         }
+        for ref in oldRefs {
+            try self.deleteArtistIfOrphaned(ref, db: db)
+        }
     }
 
     func replaceTrackAlbums(track: StoredTrack, albums: [Tracklist], db: Database) throws {
+        let oldRefs = try StoredTrackAlbum
+            .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
+            .fetchAll(db)
         try StoredTrackAlbum
             .where { $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId)) }
             .delete()
@@ -281,6 +290,9 @@ class TrackStorageManager {
                     sortOrder: key
                 )
             }.execute(db)
+        }
+        for ref in oldRefs {
+            try self.deleteAlbumStubIfOrphaned(ref, db: db)
         }
     }
 
