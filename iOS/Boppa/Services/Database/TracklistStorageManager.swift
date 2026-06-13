@@ -65,16 +65,7 @@ class TracklistStorageManager {
 
     func tracklist(from stored: StoredTracklist, db: Database) throws -> Tracklist {
         let artists = try loadArtistsForTracklist(stored, db: db)
-        let fromArtist: Artist?
-        if let artistMediaId = stored.fromArtistMediaId {
-            fromArtist = try StoredArtist
-                .where { $0.mediaId.eq(artistMediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
-                .fetchOne(db)?
-                .toArtist()
-        } else {
-            fromArtist = nil
-        }
-        return Tracklist(storedTracklist: stored, artists: artists, fromArtist: fromArtist)
+        return Tracklist(storedTracklist: stored, artists: artists)
     }
 
     func tracklistWithRelations(from stored: StoredTracklist) -> Tracklist {
@@ -221,8 +212,6 @@ class TracklistStorageManager {
     // MARK: - Private: Tracklist Persistence
 
     private func upsertStoredTracklist(tracklist: Tracklist, db: Database) throws -> StoredTracklist {
-        let fromArtistMediaId = try tracklist.fromArtist.map { try self.upsertArtist($0, db: db) }
-
         let existing = try StoredTracklist
             .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
             .fetchOne(db)
@@ -231,7 +220,6 @@ class TracklistStorageManager {
                 $0.title = tracklist.title
                 $0.subtitle = tracklist.subtitle
                 $0.artworkUrl = tracklist.artworkUrl
-                $0.fromArtistMediaId = fromArtistMediaId
                 $0.isSavedToLibrary = true
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
@@ -258,7 +246,6 @@ class TracklistStorageManager {
                 subtitle: tracklist.subtitle,
                 artworkUrl: tracklist.artworkUrl,
                 tracklistType: typeString,
-                fromArtistMediaId: fromArtistMediaId,
                 isPinned: false,
                 isSavedToLibrary: true,
                 sortOrder: newSortOrder
@@ -511,7 +498,6 @@ class TracklistStorageManager {
                     subtitle: album.subtitle,
                     artworkUrl: album.artworkUrl,
                     tracklistType: typeString,
-                    fromArtistMediaId: nil,
                     isPinned: false,
                     isSavedToLibrary: false,
                     sortOrder: newSortOrder

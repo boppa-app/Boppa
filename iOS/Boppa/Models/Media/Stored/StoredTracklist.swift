@@ -9,7 +9,6 @@ nonisolated struct StoredTracklist {
     var subtitle: String?
     var artworkUrl: String?
     var tracklistType: String
-    var fromArtistMediaId: String?
     var isPinned: Bool
     var isSavedToLibrary: Bool
     var sortOrder: String

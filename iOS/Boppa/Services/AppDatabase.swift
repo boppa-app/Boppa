@@ -50,12 +50,10 @@ extension DatabaseWriter where Self == DatabasePool {
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
                   "tracklistType" TEXT NOT NULL,
-                  "fromArtistMediaId" TEXT,
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',
-                  PRIMARY KEY ("mediaId", "mediaSourceId"),
-                  FOREIGN KEY ("fromArtistMediaId", "mediaSourceId") REFERENCES "artists"("mediaId", "mediaSourceId")
+                  PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
             ).execute(db)

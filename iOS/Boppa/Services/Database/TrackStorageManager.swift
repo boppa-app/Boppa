@@ -187,7 +187,6 @@ class TrackStorageManager {
                 subtitle: nil,
                 artworkUrl: nil,
                 tracklistType: tracklistType,
-                fromArtistMediaId: nil,
                 isPinned: false,
                 isSavedToLibrary: true,
                 sortOrder: "a0"
