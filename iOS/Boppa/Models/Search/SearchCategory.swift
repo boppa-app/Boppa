@@ -32,23 +32,23 @@ enum SearchCategory: String, CaseIterable, Hashable {
         }
     }
 
-    func isAvailable(in data: MediaSourceData) -> Bool {
+    func isAvailable(in search: SearchScripts) -> Bool {
         switch self {
-        case .songs: return data.searchSongs != nil
-        case .videos: return data.searchVideos != nil
-        case .artists: return data.searchArtists != nil
-        case .albums: return data.searchAlbums != nil
-        case .playlists: return data.searchPlaylists != nil
+        case .songs: return search.songs != nil
+        case .videos: return search.videos != nil
+        case .artists: return search.artists != nil
+        case .albums: return search.albums != nil
+        case .playlists: return search.playlists != nil
         }
     }
 
-    func script(from data: MediaSourceData) -> String? {
+    func script(from search: SearchScripts) -> String? {
         switch self {
-        case .songs: return data.searchSongs
-        case .videos: return data.searchVideos
-        case .artists: return data.searchArtists
-        case .albums: return data.searchAlbums
-        case .playlists: return data.searchPlaylists
+        case .songs: return search.songs
+        case .videos: return search.videos
+        case .artists: return search.artists
+        case .albums: return search.albums
+        case .playlists: return search.playlists
         }
     }
 }

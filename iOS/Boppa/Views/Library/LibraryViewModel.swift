@@ -87,11 +87,11 @@ class LibraryViewModel {
     }
 
     private var songSourceIds: Set<String> {
-        Set(self.mediaSources.filter { $0.config.data?.searchSongs != nil }.map(\.id))
+        Set(self.mediaSources.filter { $0.config.search?.songs != nil }.map(\.id))
     }
 
     private var videoSourceIds: Set<String> {
-        Set(self.mediaSources.filter { $0.config.data?.searchVideos != nil }.map(\.id))
+        Set(self.mediaSources.filter { $0.config.search?.videos != nil }.map(\.id))
     }
 
     var categoryFilteredTracks: [StoredTrack] {

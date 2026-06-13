@@ -176,12 +176,12 @@ class SearchViewModel {
     }
 
     private func updateAvailableCategories() {
-        guard let data = self.selectedMediaSource?.config.data else {
+        guard let search = self.selectedMediaSource?.config.search else {
             self.availableCategories = []
             return
         }
 
-        self.availableCategories = SearchCategory.allCases.filter { $0.isAvailable(in: data) }
+        self.availableCategories = SearchCategory.allCases.filter { $0.isAvailable(in: search) }
 
         if !self.availableCategories.contains(self.selectedCategory),
            let first = self.availableCategories.first

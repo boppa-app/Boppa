@@ -11,12 +11,13 @@ struct MediaSourceConfig: Codable {
     let customUserAgent: String?
     let login: LoginConfig?
     let parse: [Parse]?
-    let data: MediaSourceData?
+    let search: SearchScripts?
+    let get: GetScripts?
     let playback: PlaybackConfig
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, login, parse, data, playback, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, login, parse, search, get, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -29,7 +30,8 @@ struct MediaSourceConfig: Codable {
         self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
         self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
         self.parse = try container.decodeIfPresent([Parse].self, forKey: .parse)
-        self.data = try container.decodeIfPresent(MediaSourceData.self, forKey: .data)
+        self.search = try container.decodeIfPresent(SearchScripts.self, forKey: .search)
+        self.get = try container.decodeIfPresent(GetScripts.self, forKey: .get)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
         self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
     }
@@ -44,7 +46,8 @@ struct MediaSourceConfig: Codable {
         try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
         try container.encodeIfPresent(self.login, forKey: .login)
         try container.encodeIfPresent(self.parse, forKey: .parse)
-        try container.encodeIfPresent(self.data, forKey: .data)
+        try container.encodeIfPresent(self.search, forKey: .search)
+        try container.encodeIfPresent(self.get, forKey: .get)
         try container.encode(self.playback, forKey: .playback)
         try container.encode(self.lastUpdated, forKey: .lastUpdated)
     }
@@ -79,17 +82,24 @@ enum ScriptInjectionTime: String, Codable {
     }
 }
 
-struct MediaSourceData: Codable {
-    let searchSongs: String?
-    let searchVideos: String?
-    let searchArtists: String?
-    let searchAlbums: String?
-    let searchPlaylists: String?
-    let getAlbum: String?
-    let getArtist: String?
-    let getPlaylist: String?
-    let getAlbumsForArtist: String?
-    let getSongsForArtist: String?
-    let getVideosForArtist: String?
-    let getPlaylistsForArtist: String?
+struct SearchScripts: Codable {
+    let songs: String?
+    let videos: String?
+    let albums: String?
+    let artists: String?
+    let playlists: String?
+}
+
+struct GetScripts: Codable {
+    let playlist: String?
+    let album: String?
+    let artist: GetArtistScripts?
+}
+
+struct GetArtistScripts: Codable {
+    let fetch: String?
+    let songs: String?
+    let albums: String?
+    let videos: String?
+    let playlists: String?
 }
