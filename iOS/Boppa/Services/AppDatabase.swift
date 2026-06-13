@@ -128,9 +128,10 @@ extension DatabaseWriter where Self == DatabasePool {
                 """
             ).execute(db)
 
-            try #sql("CREATE INDEX idx_tracklists_type_saved ON tracklists (tracklistType, isSavedToLibrary)").execute(db)
+            try #sql("CREATE INDEX idx_tracklists_type_sortOrder ON tracklists (tracklistType, sortOrder)").execute(db)
+            try #sql("CREATE INDEX idx_tracklists_isSavedToLibrary ON tracklists (isSavedToLibrary)").execute(db)
             try #sql("CREATE INDEX idx_tracklists_isPinned ON tracklists (isPinned)").execute(db)
-            try #sql("CREATE INDEX idx_tracklistTracks_tracklist ON tracklistTracks (tracklistMediaId, tracklistMediaSourceId)").execute(db)
+            try #sql("CREATE INDEX idx_tracklistTracks_tracklist_sorted ON tracklistTracks (tracklistMediaId, tracklistMediaSourceId, sortOrder)").execute(db)
             try #sql("CREATE INDEX idx_tracklistTracks_track ON tracklistTracks (trackMediaId, trackMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)").execute(db)
