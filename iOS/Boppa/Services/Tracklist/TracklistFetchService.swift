@@ -19,15 +19,15 @@ class TracklistFetchService {
         guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
             throw NSError(domain: "TracklistFetchService", code: 3, userInfo: [NSLocalizedDescriptionKey: "No media source found for tracklist"])
         }
-        let (script, itemParams) = try buildFetchParams(tracklist: tracklist, config: mediaSource.config)
+        let (script, params) = try buildFetchParams(tracklist: tracklist, config: mediaSource.config)
         logger.info("Fetching all tracks for '\(tracklist.title)' on '\(tracklist.mediaSourceId)'...")
         return try await self.paginated.executeAllPages(
             script: script,
-            params: ["item": itemParams],
+            params: params,
             customUserAgent: mediaSource.config.customUserAgent,
             domain: mediaSource.config.url,
             mediaSourceId: tracklist.mediaSourceId,
-            mediaSourceContext: mediaSource.contextValues,
+            context: mediaSource.contextValues,
             onPageFetched: { onPageFetched?($0) }
         )
     }
@@ -41,13 +41,13 @@ class TracklistFetchService {
 
         switch tracklist.tracklistType {
         case .album:
-            return try await self.fetchAlbumPage(tracklist: tracklist, config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
+            return try await self.fetchAlbumPage(tracklist: tracklist, config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues, previousResult: previousResult)
         case .playlist:
-            return try await self.fetchPlaylistPage(tracklist: tracklist, config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
+            return try await self.fetchPlaylistPage(tracklist: tracklist, config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues, previousResult: previousResult)
         case .artistSongs:
-            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getSongsForArtist, scriptName: "getSongsForArtist", config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
+            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getSongsForArtist, scriptName: "getSongsForArtist", config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues, previousResult: previousResult)
         case .artistVideos:
-            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getVideosForArtist, scriptName: "getVideosForArtist", config: config, mediaSourceId: mediaSourceId, mediaSourceContext: mediaSource.contextValues, previousResult: previousResult)
+            return try await self.fetchArtistTracksPage(tracklist: tracklist, script: config.data?.getVideosForArtist, scriptName: "getVideosForArtist", config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues, previousResult: previousResult)
         case .likes:
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
@@ -63,15 +63,15 @@ class TracklistFetchService {
 
         logger.info("Fetching artist '\(artist.name)' for '\(mediaSourceId)'...")
 
-        let itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
+        let params: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
 
-        let context = self.paginated.buildJSContext(params: ["item": itemParams], previousResult: nil)
+        let jsParams = self.paginated.buildJSParams(params: params, previousResult: nil)
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
-            context: context,
+            params: jsParams,
             customUserAgent: config.customUserAgent,
             domain: config.url,
-            mediaSourceContext: mediaSource.contextValues
+            context: mediaSource.contextValues
         )
 
         let songs = (jsResult["songs"] as? [[String: Any]])?.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
@@ -95,13 +95,13 @@ class TracklistFetchService {
 
         logger.info("Fetching all albums for artist '\(artist.name)' on '\(mediaSourceId)'...")
 
-        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
+        var params: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
         for (key, value) in artistDetail.metadata {
-            itemParams[key] = value
+            params[key] = value
         }
 
-        let context = self.paginated.buildJSContext(params: ["item": itemParams], previousResult: nil)
-        let jsResult = try await JSExecutionEngine.shared.execute(script: script, context: context, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSource.contextValues)
+        let jsParams = self.paginated.buildJSParams(params: params, previousResult: nil)
+        let jsResult = try await JSExecutionEngine.shared.execute(script: script, params: jsParams, customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
         let albums = (jsResult["items"] as? [[String: Any]] ?? []).compactMap { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) }
 
         logger.info("Fetched \(albums.count) album(s) for artist '\(artist.name)'")
@@ -118,13 +118,13 @@ class TracklistFetchService {
 
         logger.info("Fetching all playlists for artist '\(artist.name)' on '\(mediaSourceId)'...")
 
-        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
+        var params: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? "", "id": artist.mediaId]
         for (key, value) in artistDetail.metadata {
-            itemParams[key] = value
+            params[key] = value
         }
 
-        let context = self.paginated.buildJSContext(params: ["item": itemParams], previousResult: nil)
-        let jsResult = try await JSExecutionEngine.shared.execute(script: script, context: context, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSource.contextValues)
+        let jsParams = self.paginated.buildJSParams(params: params, previousResult: nil)
+        let jsResult = try await JSExecutionEngine.shared.execute(script: script, params: jsParams, customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
         let playlists = (jsResult["items"] as? [[String: Any]] ?? []).compactMap { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist) }
 
         logger.info("Fetched \(playlists.count) playlist(s) for artist '\(artist.name)'")
@@ -135,15 +135,15 @@ class TracklistFetchService {
 
     private func buildFetchParams(tracklist: Tracklist, config: MediaSourceConfig) throws -> (script: String, params: [String: Any]) {
         let script: String?
-        var itemParams: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
+        var params: [String: Any] = ["artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
 
         switch tracklist.tracklistType {
         case .playlist:
             script = config.data?.getPlaylist
-            itemParams["user"] = tracklist.subtitle ?? ""
+            params["user"] = tracklist.subtitle ?? ""
         case .album:
             script = config.data?.getAlbum
-            itemParams["subtitle"] = tracklist.subtitle ?? ""
+            params["subtitle"] = tracklist.subtitle ?? ""
         default:
             throw NSError(domain: "TracklistFetchService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot fetch tracks for this tracklist type"])
         }
@@ -151,13 +151,13 @@ class TracklistFetchService {
         guard let script else {
             throw NSError(domain: "TracklistFetchService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No script available for this tracklist type"])
         }
-        return (script, itemParams)
+        return (script, params)
     }
 
     private func fetchArtistTracksPage(
         tracklist: Tracklist, script: String?, scriptName: String,
         config: MediaSourceConfig, mediaSourceId: String,
-        mediaSourceContext: [String: String], previousResult: [String: Any]?
+        context: [String: String], previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
         guard let script else {
             logger.warning("No \(scriptName) script for '\(mediaSourceId)'")
@@ -170,14 +170,14 @@ class TracklistFetchService {
 
         logger.info("Fetching \(scriptName) for artist '\(artist.name)' on '\(mediaSourceId)'...")
 
-        var itemParams: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? ""]
+        var params: [String: Any] = ["name": artist.name, "artworkUrl": artist.artworkUrl ?? ""]
         if let artistDetail = tracklist.artistDetail {
             for (key, value) in artistDetail.metadata {
-                itemParams[key] = value
+                params[key] = value
             }
         }
 
-        let page = try await paginated.executePage(script: script, params: ["item": itemParams], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSourceContext)
+        let page = try await paginated.executePage(script: script, params: params, previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: context)
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
         logger.info("Fetched \(tracks.count) track(s) via \(scriptName) for artist '\(artist.name)'")
         return TracklistResponse(tracks: tracks, paginationContext: page.paginationContext)
@@ -185,15 +185,15 @@ class TracklistFetchService {
 
     private func fetchAlbumPage(
         tracklist: Tracklist, config: MediaSourceConfig,
-        mediaSourceId: String, mediaSourceContext: [String: String], previousResult: [String: Any]?
+        mediaSourceId: String, context: [String: String], previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
         guard let script = config.data?.getAlbum else {
             logger.warning("No getAlbum script for '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
         logger.info("Fetching album '\(tracklist.title)' for '\(mediaSourceId)'...")
-        let itemParams: [String: Any] = ["subtitle": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
-        let page = try await paginated.executePage(script: script, params: ["item": itemParams], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSourceContext)
+        let params: [String: Any] = ["subtitle": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
+        let page = try await paginated.executePage(script: script, params: params, previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: context)
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
         logger.info("Fetched \(tracks.count) track(s) for album '\(tracklist.title)'")
         return TracklistResponse(tracks: tracks, paginationContext: page.paginationContext)
@@ -201,15 +201,15 @@ class TracklistFetchService {
 
     private func fetchPlaylistPage(
         tracklist: Tracklist, config: MediaSourceConfig,
-        mediaSourceId: String, mediaSourceContext: [String: String], previousResult: [String: Any]?
+        mediaSourceId: String, context: [String: String], previousResult: [String: Any]?
     ) async throws -> TracklistResponse {
         guard let script = config.data?.getPlaylist else {
             logger.warning("No getPlaylist script for '\(mediaSourceId)'")
             return TracklistResponse(tracks: [], paginationContext: nil)
         }
         logger.info("Fetching playlist '\(tracklist.title)' for '\(mediaSourceId)'...")
-        let itemParams: [String: Any] = ["user": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
-        let page = try await paginated.executePage(script: script, params: ["item": itemParams], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, mediaSourceContext: mediaSourceContext)
+        let params: [String: Any] = ["user": tracklist.subtitle ?? "", "artworkUrl": tracklist.artworkUrl ?? "", "id": tracklist.mediaId]
+        let page = try await paginated.executePage(script: script, params: params, previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: context)
         let tracks = page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
         logger.info("Fetched \(tracks.count) track(s) for playlist '\(tracklist.title)'")
         return TracklistResponse(tracks: tracks, paginationContext: page.paginationContext)

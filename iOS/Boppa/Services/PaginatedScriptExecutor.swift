@@ -22,15 +22,15 @@ class PaginatedScriptExecutor {
         previousResult: [String: Any]?,
         customUserAgent: String?,
         domain: String,
-        mediaSourceContext: [String: String] = [:]
+        context: [String: String] = [:]
     ) async throws -> PageResult {
-        let context = self.buildJSContext(params: params, previousResult: previousResult)
+        let jsParams = self.buildJSParams(params: params, previousResult: previousResult)
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
-            context: context,
+            params: jsParams,
             customUserAgent: customUserAgent,
             domain: domain,
-            mediaSourceContext: mediaSourceContext
+            context: context
         )
         return self.parsePageResult(jsResult)
     }
@@ -41,7 +41,7 @@ class PaginatedScriptExecutor {
         customUserAgent: String?,
         domain: String,
         mediaSourceId: String,
-        mediaSourceContext: [String: String] = [:],
+        context: [String: String] = [:],
         onPageFetched: (([Track]) -> Void)? = nil
     ) async throws -> [Track] {
         var allTracks: [Track] = []
@@ -54,7 +54,7 @@ class PaginatedScriptExecutor {
                 previousResult: previousResult,
                 customUserAgent: customUserAgent,
                 domain: domain,
-                mediaSourceContext: mediaSourceContext
+                context: context
             )
 
             let tracks = page.items.compactMap { self.mapToTrack($0, mediaSourceId: mediaSourceId) }
@@ -74,17 +74,17 @@ class PaginatedScriptExecutor {
         return allTracks
     }
 
-    func buildJSContext(
+    func buildJSParams(
         params: [String: Any],
         previousResult: [String: Any]?
     ) -> [String: Any] {
-        var context: [String: Any] = params
+        var jsParams: [String: Any] = params
 
         if let previousResult {
-            context["previousResult"] = previousResult
+            jsParams["previousResult"] = previousResult
         }
 
-        return context
+        return jsParams
     }
 
     func parsePageResult(_ jsResult: [String: Any]) -> PageResult {

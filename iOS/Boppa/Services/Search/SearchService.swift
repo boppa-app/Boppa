@@ -33,7 +33,7 @@ class SearchService {
             previousResult: nil,
             customUserAgent: config.customUserAgent,
             domain: config.url,
-            mediaSourceContext: mediaSource.contextValues
+            context: mediaSource.contextValues
         )
 
         return self.buildResponse(page: page, category: category, mediaSourceId: config.id)
@@ -61,7 +61,7 @@ class SearchService {
             previousResult: paginationContext,
             customUserAgent: config.customUserAgent,
             domain: config.url,
-            mediaSourceContext: mediaSource.contextValues
+            context: mediaSource.contextValues
         )
 
         return self.buildResponse(page: page, category: category, mediaSourceId: config.id)

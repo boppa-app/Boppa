@@ -22,19 +22,19 @@ final class JSExecutionEngine: NSObject {
 
     func execute(
         script: String,
-        context: [String: Any],
+        params: [String: Any],
         customUserAgent: String? = nil,
         domain: String? = nil,
-        mediaSourceContext: [String: String] = [:]
+        context: [String: String] = [:]
     ) async throws -> [String: Any] {
-        var context = context
+        var params = params
         if let domain {
             let useDesktopStore = customUserAgent != nil
             let cookies = await WebDataStore.shared.getCookies(forDomain: domain, useDesktopStore: useDesktopStore)
-            context["cookies"] = cookies
+            params["cookies"] = cookies
         }
-        if !mediaSourceContext.isEmpty {
-            context["mediaSourceContext"] = mediaSourceContext
+        if !context.isEmpty {
+            params["context"] = context
         }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -73,7 +73,7 @@ final class JSExecutionEngine: NSObject {
             self.installFetch(in: jsContext)
             self.installTimers(in: jsContext)
             self.installConsole(in: jsContext)
-            self.installContext(in: jsContext, context: context)
+            self.installParams(in: jsContext, params: params)
             self.installHelpers(in: jsContext)
 
             let wrappedScript = """
@@ -106,13 +106,13 @@ final class JSExecutionEngine: NSObject {
         }
     }
 
-    private func installContext(in jsContext: JSContext, context: [String: Any]) {
-        if let data = try? JSONSerialization.data(withJSONObject: context),
+    private func installParams(in jsContext: JSContext, params: [String: Any]) {
+        if let data = try? JSONSerialization.data(withJSONObject: params),
            let json = String(data: data, encoding: .utf8)
         {
-            jsContext.evaluateScript("var context = \(json);")
+            jsContext.evaluateScript("var params = \(json);")
         } else {
-            jsContext.evaluateScript("var context = {};")
+            jsContext.evaluateScript("var params = {};")
         }
     }
 
