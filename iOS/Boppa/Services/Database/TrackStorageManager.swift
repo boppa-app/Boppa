@@ -78,7 +78,7 @@ class TrackStorageManager {
     func deleteIfOrphaned(mediaId: String, mediaSourceId: String, db: Database) throws {
         let remaining = try StoredTracklistTrack
             .where { $0.trackMediaId.eq(mediaId).and($0.trackMediaSourceId.eq(mediaSourceId)) }
-            .fetchAll(db).count
+            .fetchCount(db)
         guard remaining == 0 else { return }
 
         let artistRefs = try StoredTrackArtist
@@ -107,10 +107,10 @@ class TrackStorageManager {
     private func deleteArtistIfOrphaned(_ ref: StoredTrackArtist, db: Database) throws {
         let inTracks = try StoredTrackArtist
             .where { $0.artistMediaId.eq(ref.artistMediaId).and($0.artistMediaSourceId.eq(ref.artistMediaSourceId)) }
-            .fetchAll(db).count
+            .fetchCount(db)
         let inTracklists = try StoredTracklistArtist
             .where { $0.artistMediaId.eq(ref.artistMediaId).and($0.artistMediaSourceId.eq(ref.artistMediaSourceId)) }
-            .fetchAll(db).count
+            .fetchCount(db)
         guard inTracks == 0, inTracklists == 0 else { return }
         try StoredArtist
             .where { $0.mediaId.eq(ref.artistMediaId).and($0.mediaSourceId.eq(ref.artistMediaSourceId)) }
@@ -122,7 +122,7 @@ class TrackStorageManager {
     private func deleteAlbumStubIfOrphaned(_ ref: StoredTrackAlbum, db: Database) throws {
         let trackCount = try StoredTrackAlbum
             .where { $0.tracklistMediaId.eq(ref.tracklistMediaId).and($0.tracklistMediaSourceId.eq(ref.tracklistMediaSourceId)) }
-            .fetchAll(db).count
+            .fetchCount(db)
         guard trackCount == 0 else { return }
         let album = try StoredTracklist
             .where { $0.mediaId.eq(ref.tracklistMediaId).and($0.mediaSourceId.eq(ref.tracklistMediaSourceId)) }

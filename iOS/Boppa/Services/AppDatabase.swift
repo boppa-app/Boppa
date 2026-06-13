@@ -49,7 +49,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "title" TEXT NOT NULL,
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
-                  "tracklistType" TEXT NOT NULL,
+                  "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes'))
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',

@@ -135,8 +135,7 @@ class TracklistStorageManager {
                     $0.tracklistMediaId.eq(storedTracklist.mediaId)
                         .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
                 }
-                .fetchAll(db)
-                .count
+                .fetchCount(db)
 
             if albumRefCount > 0 {
                 try StoredTracklist.update { $0.isSavedToLibrary = false }
