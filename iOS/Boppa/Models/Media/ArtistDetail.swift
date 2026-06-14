@@ -12,7 +12,6 @@ struct ArtistDetail {
     let albums: [Tracklist]?
     let videos: [Track]?
     let playlists: [Tracklist]?
-    let metadata: [String: Any]
     let sectionOrder: [ArtistDetailSection]
 
     var isEmpty: Bool {
@@ -27,14 +26,12 @@ struct ArtistDetail {
         albums: [Tracklist]? = nil,
         videos: [Track]? = nil,
         playlists: [Tracklist]? = nil,
-        metadata: [String: Any] = [:],
         sectionOrder: [ArtistDetailSection] = [.songs, .albums, .videos, .playlists]
     ) {
         self.songs = songs
         self.albums = albums
         self.videos = videos
         self.playlists = playlists
-        self.metadata = metadata
         self.sectionOrder = sectionOrder
     }
 }

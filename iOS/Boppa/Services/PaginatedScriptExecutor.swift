@@ -105,11 +105,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToTrack(_ item: [String: Any], mediaSourceId: String) -> Track? {
-        guard let script = ScriptTrackItem(item) else { return nil }
+        guard let script = ScriptTrack(item) else { return nil }
         return self.mapToTrack(script, mediaSourceId: mediaSourceId)
     }
 
-    func mapToTrack(_ script: ScriptTrackItem, mediaSourceId: String) -> Track {
+    func mapToTrack(_ script: ScriptTrack, mediaSourceId: String) -> Track {
         Track(
             mediaId: script.id,
             mediaSourceId: mediaSourceId,
@@ -128,11 +128,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToTracklist(_ item: [String: Any], mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist? {
-        guard let script = ScriptTracklistItem(item) else { return nil }
+        guard let script = ScriptTracklist(item) else { return nil }
         return self.mapToTracklist(script, mediaSourceId: mediaSourceId, tracklistType: tracklistType)
     }
 
-    func mapToTracklist(_ script: ScriptTracklistItem, mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist {
+    func mapToTracklist(_ script: ScriptTracklist, mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist {
         Tracklist(
             mediaId: script.id,
             mediaSourceId: mediaSourceId,
@@ -147,11 +147,11 @@ class PaginatedScriptExecutor {
     }
 
     func mapToArtist(_ item: [String: Any], mediaSourceId: String) -> Artist? {
-        guard let script = ScriptArtistItem(item) else { return nil }
+        guard let script = ScriptArtist(item) else { return nil }
         return self.mapToArtist(script, mediaSourceId: mediaSourceId)
     }
 
-    func mapToArtist(_ script: ScriptArtistItem, mediaSourceId: String) -> Artist {
+    func mapToArtist(_ script: ScriptArtist, mediaSourceId: String) -> Artist {
         Artist(
             mediaId: script.id,
             mediaSourceId: mediaSourceId,

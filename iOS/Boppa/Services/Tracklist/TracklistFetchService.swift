@@ -99,7 +99,7 @@ class TracklistFetchService {
         }
     }
 
-    func fetchTracklistMetadata(tracklist: Tracklist) async throws -> ScriptTracklistItem? {
+    func fetchTracklistMetadata(tracklist: Tracklist) async throws -> GetTracklistResponse? {
         guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else { return nil }
         let config = mediaSource.config
         let script: String?
@@ -120,7 +120,7 @@ class TracklistFetchService {
             domain: config.url,
             context: mediaSource.contextValues
         )
-        return ScriptTracklistItem(jsResult)
+        return GetTracklistResponse(jsResult)
     }
 
     func fetchArtist(artist: Artist, mediaSource: MediaSource) async throws -> ArtistDetail {
@@ -143,7 +143,7 @@ class TracklistFetchService {
             context: mediaSource.contextValues
         )
 
-        let result = ScriptArtistFetchResult(jsResult)
+        let result = GetArtistResponse(jsResult)
         let songs = result.songs?.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
         let albums = result.albums?.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) }
         let videos = result.videos?.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
@@ -151,7 +151,7 @@ class TracklistFetchService {
         let sectionOrder = result.sectionOrder.compactMap { ArtistDetailSection(rawValue: $0) }
 
         logger.info("Fetched artist '\(artist.name)': \(songs?.count ?? 0) song(s), \(albums?.count ?? 0) album(s), \(videos?.count ?? 0) video(s), \(playlists?.count ?? 0) playlist(s)")
-        return ArtistDetail(songs: songs, albums: albums, videos: videos, playlists: playlists, metadata: result.metadata, sectionOrder: sectionOrder)
+        return ArtistDetail(songs: songs, albums: albums, videos: videos, playlists: playlists, sectionOrder: sectionOrder)
     }
 
     func fetchAlbumsForArtist(artist: Artist, mediaSource: MediaSource) async throws -> [Tracklist] {
