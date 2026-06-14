@@ -25,7 +25,7 @@ class SearchViewModel {
 
     private var searchTask: Task<Void, Never>?
     private var nextPageTask: Task<Void, Never>?
-    private var paginationContext: [String: Any]?
+    private var continuation: [String: Any]?
 
     var isQueryActive: Bool {
         !self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -71,7 +71,7 @@ class SearchViewModel {
     func search() {
         self.searchTask?.cancel()
         self.nextPageTask?.cancel()
-        self.paginationContext = nil
+        self.continuation = nil
         self.hasMorePages = false
         self.searchContextId = UUID().uuidString
 
@@ -105,8 +105,8 @@ class SearchViewModel {
                 guard !Task.isCancelled else { return }
 
                 self.results = response.result
-                self.paginationContext = response.paginationContext
-                self.hasMorePages = response.paginationContext != nil
+                self.continuation = response.continuation
+                self.hasMorePages = response.continuation != nil
                 self.isSearching = false
 
                 self.logger.info("Search returned \(response.result.count) result(s)")
@@ -124,7 +124,7 @@ class SearchViewModel {
     func loadNextPage() {
         guard !self.isLoadingNextPage,
               self.hasMorePages,
-              let paginationContext = self.paginationContext,
+              let continuation = self.continuation,
               let selectedId = self.selectedMediaSource?.id
         else { return }
 
@@ -137,7 +137,7 @@ class SearchViewModel {
 
             do {
                 let response = try await SearchService.shared.searchNextPage(
-                    paginationContext: paginationContext,
+                    continuation: continuation,
                     mediaSource: mediaSource,
                     category: self.selectedCategory,
                     query: trimmed
@@ -146,8 +146,8 @@ class SearchViewModel {
                 guard !Task.isCancelled else { return }
 
                 self.results.append(response.result)
-                self.paginationContext = response.paginationContext
-                self.hasMorePages = response.paginationContext != nil
+                self.continuation = response.continuation
+                self.hasMorePages = response.continuation != nil
                 self.isLoadingNextPage = false
 
                 self.logger.info("Next page returned \(response.result.count) result(s)")
@@ -170,7 +170,7 @@ class SearchViewModel {
         self.isSearching = false
         self.isLoadingNextPage = false
         self.hasMorePages = false
-        self.paginationContext = nil
+        self.continuation = nil
         self.selectedCategory = .songs
         self.lastSearchedQuery = ""
     }

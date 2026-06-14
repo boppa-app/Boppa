@@ -37,7 +37,7 @@ class TracklistViewModel {
 
     private var fetchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
-    private var paginationContext: [String: Any]?
+    private var continuation: [String: Any]?
 
     @ObservationIgnored
     private let observerBox = ObserverBox()
@@ -187,8 +187,8 @@ class TracklistViewModel {
                 guard !Task.isCancelled else { return }
                 self.unsortedTracks = response.tracks
                 self.tracks = response.tracks
-                self.paginationContext = response.tracks.isEmpty ? nil : response.paginationContext
-                self.hasMorePages = !response.tracks.isEmpty && response.paginationContext != nil
+                self.continuation = response.tracks.isEmpty ? nil : response.continuation
+                self.hasMorePages = !response.tracks.isEmpty && response.continuation != nil
 
                 guard !Task.isCancelled else { return }
 
@@ -271,7 +271,7 @@ class TracklistViewModel {
     }
 
     func loadNextPage() {
-        guard let paginationContext = self.paginationContext,
+        guard let continuation = self.continuation,
               !self.isLoading
         else {
             return
@@ -283,15 +283,15 @@ class TracklistViewModel {
             do {
                 let response = try await TracklistFetchService.shared.fetchTracklist(
                     tracklist: self.tracklist,
-                    previousResult: paginationContext
+                    previousResult: continuation
                 )
 
                 guard !Task.isCancelled else { return }
 
                 self.unsortedTracks.append(contentsOf: response.tracks)
                 self.tracks = self.unsortedTracks
-                self.paginationContext = response.paginationContext
-                self.hasMorePages = response.paginationContext != nil
+                self.continuation = response.continuation
+                self.hasMorePages = response.continuation != nil
                 self.pageLoadId += 1
                 self.isLoading = false
 

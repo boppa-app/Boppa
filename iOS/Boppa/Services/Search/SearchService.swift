@@ -35,7 +35,7 @@ class SearchService {
 
     @MainActor
     func searchNextPage(
-        paginationContext: [String: Any],
+        continuation: [String: Any],
         mediaSource: MediaSource,
         category: SearchCategory,
         query: String
@@ -49,7 +49,7 @@ class SearchService {
         }
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
-            params: scriptParams(["query": query], previousResult: paginationContext),
+            params: scriptParams(["query": query], previousResult: continuation),
             customUserAgent: config.customUserAgent,
             domain: config.url,
             context: mediaSource.contextValues
@@ -63,31 +63,31 @@ class SearchService {
             let response = SearchSongsResponse(jsResult)
             return SearchResponse(
                 result: .songs(response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }),
-                paginationContext: response.paginationContext
+                continuation: response.continuation
             )
         case .videos:
             let response = SearchVideosResponse(jsResult)
             return SearchResponse(
                 result: .videos(response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }),
-                paginationContext: response.paginationContext
+                continuation: response.continuation
             )
         case .albums:
             let response = SearchAlbumsResponse(jsResult)
             return SearchResponse(
                 result: .albums(response.items.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .album) }),
-                paginationContext: response.paginationContext
+                continuation: response.continuation
             )
         case .artists:
             let response = SearchArtistsResponse(jsResult)
             return SearchResponse(
                 result: .artists(response.items.map { $0.toArtist(mediaSourceId: mediaSourceId) }),
-                paginationContext: response.paginationContext
+                continuation: response.continuation
             )
         case .playlists:
             let response = SearchPlaylistsResponse(jsResult)
             return SearchResponse(
                 result: .playlists(response.items.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .playlist) }),
-                paginationContext: response.paginationContext
+                continuation: response.continuation
             )
         }
     }

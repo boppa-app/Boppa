@@ -5,7 +5,7 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", 
 
 struct TracklistResponse {
     let tracks: [Track]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
 }
 
 class TracklistFetchService {
@@ -28,7 +28,7 @@ class TracklistFetchService {
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
-                parseResponse: { dict in let r = ListAlbumResponse(dict); return (r.items, r.paginationContext) },
+                parseResponse: { dict in let r = ListAlbumResponse(dict); return (r.items, r.continuation) },
                 onPageFetched: onPageFetched
             )
         case .playlist:
@@ -36,7 +36,7 @@ class TracklistFetchService {
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
-                parseResponse: { dict in let r = ListPlaylistResponse(dict); return (r.items, r.paginationContext) },
+                parseResponse: { dict in let r = ListPlaylistResponse(dict); return (r.items, r.continuation) },
                 onPageFetched: onPageFetched
             )
         case .artistSongs:
@@ -44,7 +44,7 @@ class TracklistFetchService {
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.fromArtist?.mediaId ?? tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
-                parseResponse: { dict in let r = ListArtistSongsResponse(dict); return (r.items, r.paginationContext) },
+                parseResponse: { dict in let r = ListArtistSongsResponse(dict); return (r.items, r.continuation) },
                 onPageFetched: onPageFetched
             )
         case .artistVideos:
@@ -52,7 +52,7 @@ class TracklistFetchService {
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.fromArtist?.mediaId ?? tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
-                parseResponse: { dict in let r = ListArtistVideosResponse(dict); return (r.items, r.paginationContext) },
+                parseResponse: { dict in let r = ListArtistVideosResponse(dict); return (r.items, r.continuation) },
                 onPageFetched: onPageFetched
             )
         default:
@@ -62,38 +62,38 @@ class TracklistFetchService {
 
     func fetchTracklist(tracklist: Tracklist, previousResult: [String: Any]? = nil) async throws -> TracklistResponse {
         guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else {
-            return TracklistResponse(tracks: [], paginationContext: nil)
+            return TracklistResponse(tracks: [], continuation: nil)
         }
         let config = mediaSource.config
         let mediaSourceId = tracklist.mediaSourceId
 
         switch tracklist.tracklistType {
         case .album:
-            guard let script = config.list?.album else { return TracklistResponse(tracks: [], paginationContext: nil) }
+            guard let script = config.list?.album else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListAlbumResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.album")
-            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .playlist:
-            guard let script = config.list?.playlist else { return TracklistResponse(tracks: [], paginationContext: nil) }
+            guard let script = config.list?.playlist else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListPlaylistResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.playlist")
-            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .artistSongs:
-            guard let script = config.list?.artistSongs else { return TracklistResponse(tracks: [], paginationContext: nil) }
+            guard let script = config.list?.artistSongs else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListArtistSongsResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.artistSongs")
-            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .artistVideos:
-            guard let script = config.list?.artistVideos else { return TracklistResponse(tracks: [], paginationContext: nil) }
+            guard let script = config.list?.artistVideos else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListArtistVideosResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.artistVideos")
-            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .likes:
-            return TracklistResponse(tracks: [], paginationContext: nil)
+            return TracklistResponse(tracks: [], continuation: nil)
         }
     }
 
@@ -198,12 +198,12 @@ class TracklistFetchService {
                 script: script, params: scriptParams(params, previousResult: previousResult),
                 customUserAgent: config.customUserAgent, domain: config.url, context: context
             )
-            let (items, paginationContext) = parseResponse(jsResult)
+            let (items, continuation) = parseResponse(jsResult)
             let tracks = items.map { $0.toTrack(mediaSourceId: mediaSourceId) }
             allTracks.append(contentsOf: tracks)
             logger.info("Fetched page with \(tracks.count) track(s), total: \(allTracks.count)")
             onPageFetched?(allTracks)
-            guard let nextContext = paginationContext else { break }
+            guard let nextContext = continuation else { break }
             previousResult = nextContext
         }
 

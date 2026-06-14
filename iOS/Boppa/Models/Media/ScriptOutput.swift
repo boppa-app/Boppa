@@ -169,7 +169,7 @@ struct GetTracklistResponse {
 
 // MARK: - List Responses
 
-private func extractPaginationContext(_ dict: [String: Any]) -> [String: Any]? {
+private func extractContinuation(_ dict: [String: Any]) -> [String: Any]? {
     var ctx = dict
     ctx.removeValue(forKey: "items")
     ctx.removeValue(forKey: "__keyOrder")
@@ -178,55 +178,55 @@ private func extractPaginationContext(_ dict: [String: Any]) -> [String: Any]? {
 
 struct ListAlbumResponse {
     let items: [ScriptTrack]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct ListPlaylistResponse {
     let items: [ScriptTrack]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct ListArtistSongsResponse {
     let items: [ScriptTrack]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct ListArtistVideosResponse {
     let items: [ScriptTrack]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct ListArtistAlbumsResponse {
     let items: [ScriptTracklist]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct ListArtistPlaylistsResponse {
     let items: [ScriptTracklist]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
@@ -234,46 +234,46 @@ struct ListArtistPlaylistsResponse {
 
 struct SearchSongsResponse {
     let items: [ScriptTrack]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct SearchVideosResponse {
     let items: [ScriptTrack]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct SearchAlbumsResponse {
     let items: [ScriptTracklist]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct SearchPlaylistsResponse {
     let items: [ScriptTracklist]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
 struct SearchArtistsResponse {
     let items: [ScriptArtist]
-    let paginationContext: [String: Any]?
+    let continuation: [String: Any]?
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptArtist($0) }
-        self.paginationContext = extractPaginationContext(dict)
+        self.continuation = extractContinuation(dict)
     }
 }
 
