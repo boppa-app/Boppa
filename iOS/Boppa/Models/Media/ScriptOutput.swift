@@ -159,3 +159,113 @@ struct GetTracklistResponse {
         self.url = dict["url"] as? String
     }
 }
+
+// MARK: - List Responses
+
+private func extractPaginationContext(_ dict: [String: Any]) -> [String: Any]? {
+    var ctx = dict
+    ctx.removeValue(forKey: "items")
+    ctx.removeValue(forKey: "__keyOrder")
+    return ctx.values.contains { !($0 is NSNull) } ? ctx : nil
+}
+
+struct ListAlbumResponse {
+    let items: [ScriptTrack]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct ListPlaylistResponse {
+    let items: [ScriptTrack]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct ListArtistSongsResponse {
+    let items: [ScriptTrack]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct ListArtistVideosResponse {
+    let items: [ScriptTrack]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct ListArtistAlbumsResponse {
+    let items: [ScriptTracklist]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct ListArtistPlaylistsResponse {
+    let items: [ScriptTracklist]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+// MARK: - Search Responses
+
+struct SearchSongsResponse {
+    let items: [ScriptTrack]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct SearchVideosResponse {
+    let items: [ScriptTrack]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct SearchAlbumsResponse {
+    let items: [ScriptTracklist]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct SearchPlaylistsResponse {
+    let items: [ScriptTracklist]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTracklist($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+struct SearchArtistsResponse {
+    let items: [ScriptArtist]
+    let paginationContext: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptArtist($0) }
+        self.paginationContext = extractPaginationContext(dict)
+    }
+}

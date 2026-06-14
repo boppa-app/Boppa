@@ -22,21 +22,17 @@ class SearchService {
         guard let search = config.search else {
             throw SearchError.noSearchConfig
         }
-
         guard let script = category.script(from: search) else {
             throw SearchError.noSearchConfig
         }
-
-        let page = try await self.paginated.executePage(
+        let jsResult = try await paginated.executeRaw(
             script: script,
             params: ["query": query],
-            previousResult: nil,
             customUserAgent: config.customUserAgent,
             domain: config.url,
             context: mediaSource.contextValues
         )
-
-        return self.buildResponse(page: page, category: category, mediaSourceId: config.id)
+        return self.buildResponse(jsResult: jsResult, category: category, mediaSourceId: config.id)
     }
 
     @MainActor
@@ -50,12 +46,10 @@ class SearchService {
         guard let search = config.search else {
             throw SearchError.noSearchConfig
         }
-
         guard let script = category.script(from: search) else {
             throw SearchError.noSearchConfig
         }
-
-        let page = try await self.paginated.executePage(
+        let jsResult = try await paginated.executeRaw(
             script: script,
             params: ["query": query],
             previousResult: paginationContext,
@@ -63,25 +57,41 @@ class SearchService {
             domain: config.url,
             context: mediaSource.contextValues
         )
-
-        return self.buildResponse(page: page, category: category, mediaSourceId: config.id)
+        return self.buildResponse(jsResult: jsResult, category: category, mediaSourceId: config.id)
     }
 
-    private func buildResponse(page: PageResult, category: SearchCategory, mediaSourceId: String) -> SearchResponse {
-        let result: SearchResult
+    private func buildResponse(jsResult: [String: Any], category: SearchCategory, mediaSourceId: String) -> SearchResponse {
         switch category {
         case .songs:
-            result = .songs(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) })
+            let response = SearchSongsResponse(jsResult)
+            return SearchResponse(
+                result: .songs(response.items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }),
+                paginationContext: response.paginationContext
+            )
         case .videos:
-            result = .videos(page.items.compactMap { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) })
+            let response = SearchVideosResponse(jsResult)
+            return SearchResponse(
+                result: .videos(response.items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }),
+                paginationContext: response.paginationContext
+            )
         case .albums:
-            result = .albums(page.items.compactMap { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) })
+            let response = SearchAlbumsResponse(jsResult)
+            return SearchResponse(
+                result: .albums(response.items.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) }),
+                paginationContext: response.paginationContext
+            )
         case .artists:
-            result = .artists(page.items.compactMap { self.paginated.mapToArtist($0, mediaSourceId: mediaSourceId) })
+            let response = SearchArtistsResponse(jsResult)
+            return SearchResponse(
+                result: .artists(response.items.map { self.paginated.mapToArtist($0, mediaSourceId: mediaSourceId) }),
+                paginationContext: response.paginationContext
+            )
         case .playlists:
-            result = .playlists(page.items.compactMap { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist) })
+            let response = SearchPlaylistsResponse(jsResult)
+            return SearchResponse(
+                result: .playlists(response.items.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist) }),
+                paginationContext: response.paginationContext
+            )
         }
-
-        return SearchResponse(result: result, paginationContext: page.paginationContext)
     }
 }
