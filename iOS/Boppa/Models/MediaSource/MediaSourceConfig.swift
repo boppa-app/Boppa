@@ -12,12 +12,13 @@ struct MediaSourceConfig: Codable {
     let login: LoginConfig?
     let context: [ContextConfig]?
     let search: SearchScripts?
+    let list: ListScripts?
     let get: GetScripts?
     let playback: PlaybackConfig
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, search, get, playback, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, search, list, get, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -31,6 +32,7 @@ struct MediaSourceConfig: Codable {
         self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
         self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
         self.search = try container.decodeIfPresent(SearchScripts.self, forKey: .search)
+        self.list = try container.decodeIfPresent(ListScripts.self, forKey: .list)
         self.get = try container.decodeIfPresent(GetScripts.self, forKey: .get)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
         self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
@@ -47,6 +49,7 @@ struct MediaSourceConfig: Codable {
         try container.encodeIfPresent(self.login, forKey: .login)
         try container.encodeIfPresent(self.context, forKey: .context)
         try container.encodeIfPresent(self.search, forKey: .search)
+        try container.encodeIfPresent(self.list, forKey: .list)
         try container.encodeIfPresent(self.get, forKey: .get)
         try container.encode(self.playback, forKey: .playback)
         try container.encode(self.lastUpdated, forKey: .lastUpdated)
@@ -90,16 +93,19 @@ struct SearchScripts: Codable {
     let playlists: String?
 }
 
-struct GetScripts: Codable {
-    let playlist: String?
+struct ListScripts: Codable {
     let album: String?
-    let artist: GetArtistScripts?
+    let playlist: String?
+    let artistSongs: String?
+    let artistVideos: String?
+    let artistAlbums: String?
+    let artistPlaylists: String?
 }
 
-struct GetArtistScripts: Codable {
-    let fetch: String?
-    let songs: String?
-    let albums: String?
-    let videos: String?
-    let playlists: String?
+struct GetScripts: Codable {
+    let artist: String?
+    let song: String?
+    let video: String?
+    let album: String?
+    let playlist: String?
 }

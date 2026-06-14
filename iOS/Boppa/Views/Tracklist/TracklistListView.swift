@@ -8,7 +8,6 @@ struct TracklistListView: View {
     @State private var tracklistToDelete: Tracklist?
 
     let artist: Artist?
-    let artistDetail: ArtistDetail?
     let mediaSource: MediaSource?
     let type: TracklistListType
     let title: String
@@ -17,13 +16,11 @@ struct TracklistListView: View {
 
     init(
         artist: Artist,
-        artistDetail: ArtistDetail,
         mediaSource: MediaSource,
         type: TracklistListType,
         title: String
     ) {
         self.artist = artist
-        self.artistDetail = artistDetail
         self.mediaSource = mediaSource
         self.type = type
         self.title = title
@@ -33,7 +30,6 @@ struct TracklistListView: View {
 
     init(type: TracklistListType, title: String, visibleMediaSourceIds: Set<String>) {
         self.artist = nil
-        self.artistDetail = nil
         self.mediaSource = nil
         self.type = type
         self.title = title
@@ -132,13 +128,11 @@ struct TracklistListView: View {
                     visibleMediaSourceIds: self.visibleMediaSourceIds
                 )
             } else if let artist = self.artist,
-                      let artistDetail = self.artistDetail,
                       let mediaSource = self.mediaSource
             {
                 self.viewModel.loadFromArtist(
                     type: self.type,
                     artist: artist,
-                    artistDetail: artistDetail,
                     mediaSource: mediaSource
                 )
             }
@@ -166,9 +160,9 @@ struct TracklistListView: View {
         guard let mediaSource = self.mediaSource else { return false }
         switch self.type {
         case .albums:
-            return mediaSource.config.get?.album != nil
+            return mediaSource.config.list?.album != nil
         case .playlists:
-            return mediaSource.config.get?.playlist != nil
+            return mediaSource.config.list?.playlist != nil
         }
     }
 

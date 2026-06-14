@@ -145,16 +145,15 @@ class TracklistListViewModel {
     func loadFromArtist(
         type: TracklistListType,
         artist: Artist,
-        artistDetail: ArtistDetail,
         mediaSource: MediaSource
     ) {
         guard !self.didLoad else { return }
         self.didLoad = true
         switch type {
         case .albums:
-            self.fetchAlbums(artist: artist, artistDetail: artistDetail, mediaSource: mediaSource)
+            self.fetchAlbums(artist: artist, mediaSource: mediaSource)
         case .playlists:
-            self.fetchPlaylists(artist: artist, artistDetail: artistDetail, mediaSource: mediaSource)
+            self.fetchPlaylists(artist: artist, mediaSource: mediaSource)
         }
     }
 
@@ -188,7 +187,6 @@ class TracklistListViewModel {
 
     private func fetchAlbums(
         artist: Artist,
-        artistDetail: ArtistDetail,
         mediaSource: MediaSource
     ) {
         self.fetchTask?.cancel()
@@ -199,7 +197,6 @@ class TracklistListViewModel {
             do {
                 let result = try await TracklistFetchService.shared.fetchAlbumsForArtist(
                     artist: artist,
-                    artistDetail: artistDetail,
                     mediaSource: mediaSource
                 )
 
@@ -221,7 +218,6 @@ class TracklistListViewModel {
 
     private func fetchPlaylists(
         artist: Artist,
-        artistDetail: ArtistDetail,
         mediaSource: MediaSource
     ) {
         self.fetchTask?.cancel()
@@ -232,7 +228,6 @@ class TracklistListViewModel {
             do {
                 let result = try await TracklistFetchService.shared.fetchPlaylistsForArtist(
                     artist: artist,
-                    artistDetail: artistDetail,
                     mediaSource: mediaSource
                 )
 

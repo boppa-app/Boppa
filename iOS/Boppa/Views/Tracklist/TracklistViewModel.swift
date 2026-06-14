@@ -105,6 +105,21 @@ class TracklistViewModel {
 
         Task {
             do {
+                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(tracklist: self.tracklist) {
+                    self.tracklist = Tracklist(
+                        mediaId: self.tracklist.mediaId,
+                        mediaSourceId: self.tracklist.mediaSourceId,
+                        title: meta.title.isEmpty ? self.tracklist.title : meta.title,
+                        subtitle: meta.subtitle ?? self.tracklist.subtitle,
+                        year: meta.year ?? self.tracklist.year,
+                        trackCount: meta.trackCount ?? self.tracklist.trackCount,
+                        artworkUrl: meta.artworkUrl ?? self.tracklist.artworkUrl,
+                        url: meta.url ?? self.tracklist.url,
+                        tracklistType: self.tracklist.tracklistType,
+                        storedTracklist: self.tracklist.storedTracklist
+                    )
+                }
+
                 let tracks = try await TracklistFetchService.shared.fetchAllTracks(
                     for: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
@@ -199,6 +214,21 @@ class TracklistViewModel {
 
         Task {
             do {
+                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(tracklist: self.tracklist) {
+                    self.tracklist = Tracklist(
+                        mediaId: self.tracklist.mediaId,
+                        mediaSourceId: self.tracklist.mediaSourceId,
+                        title: meta.title,
+                        subtitle: meta.subtitle,
+                        year: meta.year,
+                        trackCount: meta.trackCount,
+                        artworkUrl: meta.artworkUrl,
+                        url: meta.url,
+                        tracklistType: self.tracklist.tracklistType,
+                        storedTracklist: self.tracklist.storedTracklist
+                    )
+                }
+
                 let tracks = try await TracklistFetchService.shared.fetchAllTracks(
                     for: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in

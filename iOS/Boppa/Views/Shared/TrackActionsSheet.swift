@@ -40,7 +40,7 @@ struct TrackActionsSheet: View {
                 .accessibilityHint("Play \(self.track.title) after the current track")
 
                 ForEach(self.track.artists) { artist in
-                    if self.mediaSource.config.get?.artist?.fetch != nil {
+                    if self.mediaSource.config.get?.artist != nil {
                         Button {
                             self.dismiss()
                             self.onArtistSelected?(artist)
@@ -60,7 +60,7 @@ struct TrackActionsSheet: View {
                 }
 
                 ForEach(self.track.albums) { album in
-                    if self.mediaSource.config.get?.album != nil {
+                    if self.mediaSource.config.list?.album != nil {
                         Button {
                             self.dismiss()
                             self.onAlbumSelected?(album)
