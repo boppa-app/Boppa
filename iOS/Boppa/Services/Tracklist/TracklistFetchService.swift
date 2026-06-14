@@ -11,8 +11,6 @@ struct TracklistResponse {
 class TracklistFetchService {
     static let shared = TracklistFetchService()
 
-    private let paginated = PaginatedScriptExecutor.shared
-
     private init() {}
 
     func fetchAllTracks(for tracklist: Tracklist, onPageFetched: (([Track]) -> Void)? = nil) async throws -> [Track] {
@@ -72,31 +70,27 @@ class TracklistFetchService {
         switch tracklist.tracklistType {
         case .album:
             guard let script = config.list?.album else { return TracklistResponse(tracks: [], paginationContext: nil) }
-            let jsResult = try await paginated.executeRaw(script: script, params: ["id": tracklist.mediaId], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
-            let response = ListAlbumResponse(jsResult)
+            let response = try ListAlbumResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.album")
-            return TracklistResponse(tracks: response.items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
 
         case .playlist:
             guard let script = config.list?.playlist else { return TracklistResponse(tracks: [], paginationContext: nil) }
-            let jsResult = try await paginated.executeRaw(script: script, params: ["id": tracklist.mediaId], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
-            let response = ListPlaylistResponse(jsResult)
+            let response = try ListPlaylistResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.playlist")
-            return TracklistResponse(tracks: response.items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
 
         case .artistSongs:
             guard let script = config.list?.artistSongs else { return TracklistResponse(tracks: [], paginationContext: nil) }
-            let jsResult = try await paginated.executeRaw(script: script, params: ["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
-            let response = ListArtistSongsResponse(jsResult)
+            let response = try ListArtistSongsResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.artistSongs")
-            return TracklistResponse(tracks: response.items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
 
         case .artistVideos:
             guard let script = config.list?.artistVideos else { return TracklistResponse(tracks: [], paginationContext: nil) }
-            let jsResult = try await paginated.executeRaw(script: script, params: ["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult, customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
-            let response = ListArtistVideosResponse(jsResult)
+            let response = try ListArtistVideosResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.artistVideos")
-            return TracklistResponse(tracks: response.items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
+            return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, paginationContext: response.paginationContext)
 
         case .likes:
             return TracklistResponse(tracks: [], paginationContext: nil)
@@ -115,7 +109,7 @@ class TracklistFetchService {
         guard let script else { return nil }
 
         logger.info("Fetching metadata for '\(tracklist.title)' on '\(tracklist.mediaSourceId)'...")
-        let jsResult = try await paginated.executeRaw(
+        let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: ["id": tracklist.mediaId],
             customUserAgent: config.customUserAgent,
@@ -134,7 +128,7 @@ class TracklistFetchService {
         }
 
         logger.info("Fetching artist '\(artist.name)' for '\(mediaSourceId)'...")
-        let jsResult = try await paginated.executeRaw(
+        let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: ["id": artist.mediaId],
             customUserAgent: config.customUserAgent,
@@ -143,10 +137,10 @@ class TracklistFetchService {
         )
 
         let result = GetArtistResponse(jsResult)
-        let songs = result.songs?.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
-        let albums = result.albums?.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) }
-        let videos = result.videos?.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
-        let playlists = result.playlists?.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist) }
+        let songs = result.songs?.map { $0.toTrack(mediaSourceId: mediaSourceId) }
+        let albums = result.albums?.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .album) }
+        let videos = result.videos?.map { $0.toTrack(mediaSourceId: mediaSourceId) }
+        let playlists = result.playlists?.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .playlist) }
         let sectionOrder = result.sectionOrder.compactMap { ArtistDetailSection(rawValue: $0) }
 
         logger.info("Fetched artist '\(artist.name)': \(songs?.count ?? 0) song(s), \(albums?.count ?? 0) album(s), \(videos?.count ?? 0) video(s), \(playlists?.count ?? 0) playlist(s)")
@@ -161,13 +155,12 @@ class TracklistFetchService {
             return []
         }
         logger.info("Fetching all albums for artist '\(artist.name)' on '\(mediaSourceId)'...")
-        let jsResult = try await paginated.executeRaw(
+        let response = try ListArtistAlbumsResponse(await JSExecutionEngine.shared.execute(
             script: script, params: ["id": artist.mediaId],
             customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues
-        )
-        let response = ListArtistAlbumsResponse(jsResult)
+        ))
         logger.info("Fetched \(response.items.count) album(s) for artist '\(artist.name)'")
-        return response.items.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .album) }
+        return response.items.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .album) }
     }
 
     func fetchPlaylistsForArtist(artist: Artist, mediaSource: MediaSource) async throws -> [Tracklist] {
@@ -178,13 +171,12 @@ class TracklistFetchService {
             return []
         }
         logger.info("Fetching all playlists for artist '\(artist.name)' on '\(mediaSourceId)'...")
-        let jsResult = try await paginated.executeRaw(
+        let response = try ListArtistPlaylistsResponse(await JSExecutionEngine.shared.execute(
             script: script, params: ["id": artist.mediaId],
             customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues
-        )
-        let response = ListArtistPlaylistsResponse(jsResult)
+        ))
         logger.info("Fetched \(response.items.count) playlist(s) for artist '\(artist.name)'")
-        return response.items.map { self.paginated.mapToTracklist($0, mediaSourceId: mediaSourceId, tracklistType: .playlist) }
+        return response.items.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .playlist) }
     }
 
     // MARK: - Private
@@ -202,12 +194,12 @@ class TracklistFetchService {
         var previousResult: [String: Any]? = nil
 
         while true {
-            let jsResult = try await paginated.executeRaw(
-                script: script, params: params, previousResult: previousResult,
+            let jsResult = try await JSExecutionEngine.shared.execute(
+                script: script, params: scriptParams(params, previousResult: previousResult),
                 customUserAgent: config.customUserAgent, domain: config.url, context: context
             )
             let (items, paginationContext) = parseResponse(jsResult)
-            let tracks = items.map { self.paginated.mapToTrack($0, mediaSourceId: mediaSourceId) }
+            let tracks = items.map { $0.toTrack(mediaSourceId: mediaSourceId) }
             allTracks.append(contentsOf: tracks)
             logger.info("Fetched page with \(tracks.count) track(s), total: \(allTracks.count)")
             onPageFetched?(allTracks)

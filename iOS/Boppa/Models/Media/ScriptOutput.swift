@@ -16,6 +16,13 @@ func scriptInt(_ value: Any?) -> Int? {
     return nil
 }
 
+func scriptParams(_ params: [String: Any], previousResult: [String: Any]? = nil) -> [String: Any] {
+    guard let previousResult else { return params }
+    var merged = params
+    merged["previousResult"] = previousResult
+    return merged
+}
+
 // MARK: - Embedded Ref Types (Nested Within ScriptTrack)
 
 struct ScriptArtistRef {
@@ -267,5 +274,51 @@ struct SearchArtistsResponse {
     init(_ dict: [String: Any]) {
         self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptArtist($0) }
         self.paginationContext = extractPaginationContext(dict)
+    }
+}
+
+// MARK: - Domain Mapping
+
+extension ScriptTrack {
+    func toTrack(mediaSourceId: String) -> Track {
+        Track(
+            mediaId: self.id,
+            mediaSourceId: mediaSourceId,
+            title: self.title,
+            subtitle: self.subtitle,
+            duration: self.duration,
+            artworkUrl: self.artworkUrl,
+            url: self.url,
+            artists: self.artists.map { Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, artworkUrl: $0.artworkUrl) },
+            albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, artworkUrl: $0.artworkUrl, tracklistType: .album) }
+        )
+    }
+}
+
+extension ScriptTracklist {
+    func toTracklist(mediaSourceId: String, tracklistType: Tracklist.TracklistType) -> Tracklist {
+        Tracklist(
+            mediaId: self.id,
+            mediaSourceId: mediaSourceId,
+            title: self.title,
+            subtitle: self.subtitle,
+            year: self.year,
+            trackCount: self.trackCount,
+            artworkUrl: self.artworkUrl,
+            url: self.url,
+            tracklistType: tracklistType
+        )
+    }
+}
+
+extension ScriptArtist {
+    func toArtist(mediaSourceId: String) -> Artist {
+        Artist(
+            mediaId: self.id,
+            mediaSourceId: mediaSourceId,
+            name: self.name,
+            artworkUrl: self.artworkUrl,
+            url: self.url
+        )
     }
 }
