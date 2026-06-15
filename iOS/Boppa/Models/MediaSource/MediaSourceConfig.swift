@@ -11,14 +11,12 @@ struct MediaSourceConfig: Codable {
     let customUserAgent: String?
     let login: LoginConfig?
     let context: [ContextConfig]?
-    let search: SearchScripts?
-    let list: ListScripts?
-    let get: GetScripts?
+    let data: DataScripts
     let playback: PlaybackConfig
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, search, list, get, playback, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, data, playback, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -31,9 +29,7 @@ struct MediaSourceConfig: Codable {
         self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
         self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
         self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
-        self.search = try container.decodeIfPresent(SearchScripts.self, forKey: .search)
-        self.list = try container.decodeIfPresent(ListScripts.self, forKey: .list)
-        self.get = try container.decodeIfPresent(GetScripts.self, forKey: .get)
+        self.data = try container.decode(DataScripts.self, forKey: .data)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
         self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
     }
@@ -48,12 +44,16 @@ struct MediaSourceConfig: Codable {
         try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
         try container.encodeIfPresent(self.login, forKey: .login)
         try container.encodeIfPresent(self.context, forKey: .context)
-        try container.encodeIfPresent(self.search, forKey: .search)
-        try container.encodeIfPresent(self.list, forKey: .list)
-        try container.encodeIfPresent(self.get, forKey: .get)
+        try container.encode(self.data, forKey: .data)
         try container.encode(self.playback, forKey: .playback)
         try container.encode(self.lastUpdated, forKey: .lastUpdated)
     }
+}
+
+struct DataScripts: Codable {
+    let search: SearchScripts?
+    let list: ListScripts?
+    let get: GetScripts?
 }
 
 struct LoginConfig: Codable {

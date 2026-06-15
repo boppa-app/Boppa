@@ -176,7 +176,7 @@ class SearchViewModel {
     }
 
     private func updateAvailableCategories() {
-        guard let search = self.selectedMediaSource?.config.search else {
+        guard let search = self.selectedMediaSource?.config.data.search else {
             self.availableCategories = []
             return
         }

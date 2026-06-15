@@ -229,7 +229,7 @@ struct SearchView: View {
                 case let .albums(tracklists):
                     ForEach(Array(tracklists.enumerated()), id: \.element.id) { _, tracklist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
-                           mediaSource.config.list?.album != nil
+                           mediaSource.config.data.list?.album != nil
                         {
                             Button {
                                 self.path.append(SearchDestination.tracklist(Tracklist(
@@ -260,7 +260,7 @@ struct SearchView: View {
                 case let .artists(artists):
                     ForEach(Array(artists.enumerated()), id: \.element.id) { _, artist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
-                           mediaSource.config.get?.artist != nil
+                           mediaSource.config.data.get?.artist != nil
                         {
                             Button {
                                 self.path.append(SearchDestination.artist(artist, mediaSource))
@@ -281,7 +281,7 @@ struct SearchView: View {
                 case let .playlists(tracklists):
                     ForEach(Array(tracklists.enumerated()), id: \.element.id) { _, tracklist in
                         if let mediaSource = self.viewModel.selectedMediaSource,
-                           mediaSource.config.list?.playlist != nil
+                           mediaSource.config.data.list?.playlist != nil
                         {
                             Button {
                                 self.path.append(SearchDestination.tracklist(Tracklist(

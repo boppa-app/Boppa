@@ -17,7 +17,7 @@ class SearchService {
         category: SearchCategory
     ) async throws -> SearchResponse {
         let config = mediaSource.config
-        guard let search = config.search else {
+        guard let search = config.data.search else {
             throw SearchError.noSearchConfig
         }
         guard let script = category.script(from: search) else {
@@ -41,7 +41,7 @@ class SearchService {
         query: String
     ) async throws -> SearchResponse {
         let config = mediaSource.config
-        guard let search = config.search else {
+        guard let search = config.data.search else {
             throw SearchError.noSearchConfig
         }
         guard let script = category.script(from: search) else {

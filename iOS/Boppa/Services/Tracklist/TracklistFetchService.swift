@@ -24,7 +24,7 @@ class TracklistFetchService {
 
         switch tracklist.tracklistType {
         case .album:
-            guard let script = config.list?.album else { throw self.missingScriptError("list.album") }
+            guard let script = config.data.list?.album else { throw self.missingScriptError("list.album") }
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
@@ -32,7 +32,7 @@ class TracklistFetchService {
                 onPageFetched: onPageFetched
             )
         case .playlist:
-            guard let script = config.list?.playlist else { throw self.missingScriptError("list.playlist") }
+            guard let script = config.data.list?.playlist else { throw self.missingScriptError("list.playlist") }
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
@@ -40,7 +40,7 @@ class TracklistFetchService {
                 onPageFetched: onPageFetched
             )
         case .artistSongs:
-            guard let script = config.list?.artistSongs else { throw self.missingScriptError("list.artistSongs") }
+            guard let script = config.data.list?.artistSongs else { throw self.missingScriptError("list.artistSongs") }
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.fromArtist?.mediaId ?? tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
@@ -48,7 +48,7 @@ class TracklistFetchService {
                 onPageFetched: onPageFetched
             )
         case .artistVideos:
-            guard let script = config.list?.artistVideos else { throw self.missingScriptError("list.artistVideos") }
+            guard let script = config.data.list?.artistVideos else { throw self.missingScriptError("list.artistVideos") }
             return try await self.fetchAllTrackPages(
                 script: script, params: ["id": tracklist.fromArtist?.mediaId ?? tracklist.mediaId],
                 config: config, mediaSourceId: mediaSourceId, context: mediaSource.contextValues,
@@ -69,25 +69,25 @@ class TracklistFetchService {
 
         switch tracklist.tracklistType {
         case .album:
-            guard let script = config.list?.album else { return TracklistResponse(tracks: [], continuation: nil) }
+            guard let script = config.data.list?.album else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListAlbumResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.album")
             return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .playlist:
-            guard let script = config.list?.playlist else { return TracklistResponse(tracks: [], continuation: nil) }
+            guard let script = config.data.list?.playlist else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListPlaylistResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.playlist")
             return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .artistSongs:
-            guard let script = config.list?.artistSongs else { return TracklistResponse(tracks: [], continuation: nil) }
+            guard let script = config.data.list?.artistSongs else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListArtistSongsResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.artistSongs")
             return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
 
         case .artistVideos:
-            guard let script = config.list?.artistVideos else { return TracklistResponse(tracks: [], continuation: nil) }
+            guard let script = config.data.list?.artistVideos else { return TracklistResponse(tracks: [], continuation: nil) }
             let response = try ListArtistVideosResponse(await JSExecutionEngine.shared.execute(script: script, params: scriptParams(["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult), customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues))
             logger.info("Fetched \(response.items.count) track(s) via list.artistVideos")
             return TracklistResponse(tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }, continuation: response.continuation)
@@ -103,11 +103,11 @@ class TracklistFetchService {
         logger.info("Fetching metadata for '\(tracklist.title)' on '\(tracklist.mediaSourceId)'...")
         switch tracklist.tracklistType {
         case .album:
-            guard let script = config.get?.album else { return nil }
+            guard let script = config.data.get?.album else { return nil }
             let jsResult = try await JSExecutionEngine.shared.execute(script: script, params: ["id": tracklist.mediaId], customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
             return GetAlbumResponse(jsResult)
         case .playlist:
-            guard let script = config.get?.playlist else { return nil }
+            guard let script = config.data.get?.playlist else { return nil }
             let jsResult = try await JSExecutionEngine.shared.execute(script: script, params: ["id": tracklist.mediaId], customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
             return GetPlaylistResponse(jsResult)
         default:
@@ -118,7 +118,7 @@ class TracklistFetchService {
     func fetchArtist(artist: Artist, mediaSource: MediaSource) async throws -> ArtistDetail {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
-        guard let script = config.get?.artist else {
+        guard let script = config.data.get?.artist else {
             logger.warning("No get.artist script for '\(mediaSourceId)'")
             return ArtistDetail()
         }
@@ -146,7 +146,7 @@ class TracklistFetchService {
     func fetchAlbumsForArtist(artist: Artist, mediaSource: MediaSource) async throws -> [Tracklist] {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
-        guard let script = config.list?.artistAlbums else {
+        guard let script = config.data.list?.artistAlbums else {
             logger.warning("No list.artistAlbums script for '\(mediaSourceId)'")
             return []
         }
@@ -162,7 +162,7 @@ class TracklistFetchService {
     func fetchPlaylistsForArtist(artist: Artist, mediaSource: MediaSource) async throws -> [Tracklist] {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
-        guard let script = config.list?.artistPlaylists else {
+        guard let script = config.data.list?.artistPlaylists else {
             logger.warning("No list.artistPlaylists script for '\(mediaSourceId)'")
             return []
         }

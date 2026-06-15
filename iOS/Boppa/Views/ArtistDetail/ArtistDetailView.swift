@@ -116,7 +116,7 @@ struct ArtistDetailView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(Array(albums.enumerated()), id: \.element.id) { _, tracklist in
-                if self.mediaSource.config.list?.album != nil {
+                if self.mediaSource.config.data.list?.album != nil {
                     TracklistRow(tracklist: tracklist, showChevron: true)
                         .background(
                             NavigationLink(destination: TracklistView(
@@ -203,7 +203,7 @@ struct ArtistDetailView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(Array(playlists.enumerated()), id: \.element.id) { _, tracklist in
-                if self.mediaSource.config.list?.playlist != nil {
+                if self.mediaSource.config.data.list?.playlist != nil {
                     TracklistRow(tracklist: tracklist, showChevron: true)
                         .background(
                             NavigationLink(destination: TracklistView(

@@ -160,9 +160,9 @@ struct TracklistListView: View {
         guard let mediaSource = self.mediaSource else { return false }
         switch self.type {
         case .albums:
-            return mediaSource.config.list?.album != nil
+            return mediaSource.config.data.list?.album != nil
         case .playlists:
-            return mediaSource.config.list?.playlist != nil
+            return mediaSource.config.data.list?.playlist != nil
         }
     }
 
