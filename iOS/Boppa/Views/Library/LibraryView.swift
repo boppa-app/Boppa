@@ -11,6 +11,7 @@ struct LibraryView: View {
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
     @State private var path = NavigationPath()
+    @State private var activeMediaSourceId: String?
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
 
@@ -73,6 +74,7 @@ struct LibraryView: View {
             }
             .onChange(of: self.path.count, initial: true) { _, count in
                 self.isAtNavigationRoot = count == 0
+                if count == 0 { self.activeMediaSourceId = nil }
             }
             .onChange(of: self.navigationResetId) { _, _ in
                 self.path = NavigationPath()
@@ -83,11 +85,13 @@ struct LibraryView: View {
                 guard let artist,
                       let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == artist.mediaSourceId })
                 else { return }
+                self.activeMediaSourceId = mediaSource.id
                 self.path.append(LibraryDestination.artist(artist, mediaSource))
                 self.pendingArtist = nil
             }
             .onChange(of: self.pendingTracklist) { _, tracklist in
                 guard let tracklist else { return }
+                self.activeMediaSourceId = tracklist.mediaSourceId
                 self.path.append(LibraryDestination.tracklist(Tracklist(
                     mediaId: tracklist.mediaId,
                     mediaSourceId: tracklist.mediaSourceId,
@@ -105,9 +109,13 @@ struct LibraryView: View {
                 case let .tracklist(tracklist):
                     TracklistView(tracklist: tracklist)
                 case let .playlists(visibleIds):
-                    TracklistListView(type: .playlists, title: "Playlists", visibleMediaSourceIds: visibleIds)
+                    TracklistListView(type: .playlists, title: "Playlists", visibleMediaSourceIds: visibleIds) { sourceId in
+                        self.activeMediaSourceId = sourceId
+                    }
                 case let .albums(visibleIds):
-                    TracklistListView(type: .albums, title: "Albums", visibleMediaSourceIds: visibleIds)
+                    TracklistListView(type: .albums, title: "Albums", visibleMediaSourceIds: visibleIds) { sourceId in
+                        self.activeMediaSourceId = sourceId
+                    }
                 case let .artist(artist, mediaSource):
                     ArtistDetailView(artist: artist, mediaSource: mediaSource)
                 }
@@ -115,13 +123,23 @@ struct LibraryView: View {
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
+                let removedIds = notification.userInfo?["ids"] as? [String] ?? []
+                if let active = self.activeMediaSourceId, removedIds.contains(active) {
+                    self.path = NavigationPath()
+                    self.refreshSearchHandlers()
+                }
                 self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
                 self.viewModel.loadSources()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { notification in
+                let disabledId = notification.userInfo?["id"] as? String
+                if let disabledId, self.activeMediaSourceId == disabledId {
+                    self.path = NavigationPath()
+                    self.refreshSearchHandlers()
+                }
                 self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .tracklistPinChanged)) { _ in
@@ -252,6 +270,7 @@ struct LibraryView: View {
                     } else {
                         ForEach(Array(self.viewModel.pinnedTracklists.enumerated()), id: \.element.id) { _, stored in
                             Button {
+                                self.activeMediaSourceId = stored.mediaSourceId
                                 self.path.append(LibraryDestination.tracklist(Tracklist(storedTracklist: stored)))
                             } label: {
                                 TracklistRow(
@@ -352,6 +371,7 @@ struct LibraryView: View {
             if let tracklists = self.tracklistFuzzyHandler.filteredItems, !tracklists.isEmpty {
                 ForEach(tracklists, id: \.id) { stored in
                     Button {
+                        self.activeMediaSourceId = stored.mediaSourceId
                         self.path.append(LibraryDestination.tracklist(Tracklist(storedTracklist: stored)))
                     } label: {
                         TracklistRow(
@@ -434,6 +454,7 @@ struct LibraryView: View {
         .onTapGesture {
             switch section {
             case .likes:
+                self.activeMediaSourceId = "boppa.app"
                 self.path.append(LibraryDestination.tracklist(Tracklist(
                     mediaId: "likes",
                     mediaSourceId: "boppa.app",
@@ -441,8 +462,10 @@ struct LibraryView: View {
                     tracklistType: .likes
                 )))
             case .playlists:
+                self.activeMediaSourceId = nil
                 self.path.append(LibraryDestination.playlists(self.viewModel.visibleMediaSourceStringIds))
             case .albums:
+                self.activeMediaSourceId = nil
                 self.path.append(LibraryDestination.albums(self.viewModel.visibleMediaSourceStringIds))
             }
         }

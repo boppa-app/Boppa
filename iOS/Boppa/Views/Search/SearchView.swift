@@ -10,6 +10,7 @@ struct SearchView: View {
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
     @State private var path = NavigationPath()
+    @State private var activeMediaSourceId: String?
     @FocusState private var isSearchFieldFocused: Bool
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
@@ -64,8 +65,13 @@ struct SearchView: View {
                 self.viewModel.loadSources()
                 self.cacheManager.load()
             }
-            .onChange(of: self.path.count, initial: true) { _, count in
+            .onChange(of: self.path.count, initial: true) { oldCount, count in
                 self.isAtNavigationRoot = count == 0
+                if count == 0 {
+                    self.activeMediaSourceId = nil
+                } else if oldCount == 0 {
+                    self.activeMediaSourceId = self.viewModel.selectedMediaSource?.id
+                }
             }
             .onChange(of: self.navigationResetId) { _, _ in
                 self.path = NavigationPath()
@@ -106,13 +112,25 @@ struct SearchView: View {
                 let removedIds = notification.userInfo?["ids"] as? [String] ?? []
                 if let selected = self.viewModel.selectedMediaSource, removedIds.contains(selected.id) {
                     self.viewModel.clearSearch()
+                    self.isSearchFieldFocused = false
+                }
+                if let active = self.activeMediaSourceId, removedIds.contains(active) {
+                    self.path = NavigationPath()
                 }
                 self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
                 self.viewModel.loadSources()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { notification in
+                let disabledId = notification.userInfo?["id"] as? String
+                if let disabledId, self.viewModel.selectedMediaSource?.id == disabledId {
+                    self.viewModel.clearSearch()
+                    self.isSearchFieldFocused = false
+                }
+                if let disabledId, self.activeMediaSourceId == disabledId {
+                    self.path = NavigationPath()
+                }
                 self.viewModel.loadSources()
             }
         }

@@ -13,6 +13,7 @@ struct TracklistListView: View {
     let title: String
     let isLibraryMode: Bool
     let visibleMediaSourceIds: Set<String>
+    var onTracklistSelected: ((String) -> Void)?
 
     init(
         artist: Artist,
@@ -28,13 +29,14 @@ struct TracklistListView: View {
         self.visibleMediaSourceIds = []
     }
 
-    init(type: TracklistListType, title: String, visibleMediaSourceIds: Set<String>) {
+    init(type: TracklistListType, title: String, visibleMediaSourceIds: Set<String>, onTracklistSelected: ((String) -> Void)? = nil) {
         self.artist = nil
         self.mediaSource = nil
         self.type = type
         self.title = title
         self.isLibraryMode = true
         self.visibleMediaSourceIds = visibleMediaSourceIds
+        self.onTracklistSelected = onTracklistSelected
     }
 
     var body: some View {
@@ -208,6 +210,7 @@ struct TracklistListView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 if self.canNavigateToTracklist {
+                                    self.onTracklistSelected?(tracklist.mediaSourceId)
                                     self.selectedTracklistId = tracklist.id
                                 }
                             }
