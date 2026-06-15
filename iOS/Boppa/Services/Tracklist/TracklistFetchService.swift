@@ -97,26 +97,22 @@ class TracklistFetchService {
         }
     }
 
-    func fetchTracklistMetadata(tracklist: Tracklist) async throws -> GetTracklistResponse? {
+    func fetchTracklistMetadata(tracklist: Tracklist) async throws -> (any TracklistMetadata)? {
         guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId) else { return nil }
         let config = mediaSource.config
-        let script: String?
-        switch tracklist.tracklistType {
-        case .album: script = config.get?.album
-        case .playlist: script = config.get?.playlist
-        default: return nil
-        }
-        guard let script else { return nil }
-
         logger.info("Fetching metadata for '\(tracklist.title)' on '\(tracklist.mediaSourceId)'...")
-        let jsResult = try await JSExecutionEngine.shared.execute(
-            script: script,
-            params: ["id": tracklist.mediaId],
-            customUserAgent: config.customUserAgent,
-            domain: config.url,
-            context: mediaSource.contextValues
-        )
-        return GetTracklistResponse(jsResult)
+        switch tracklist.tracklistType {
+        case .album:
+            guard let script = config.get?.album else { return nil }
+            let jsResult = try await JSExecutionEngine.shared.execute(script: script, params: ["id": tracklist.mediaId], customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
+            return GetAlbumResponse(jsResult)
+        case .playlist:
+            guard let script = config.get?.playlist else { return nil }
+            let jsResult = try await JSExecutionEngine.shared.execute(script: script, params: ["id": tracklist.mediaId], customUserAgent: config.customUserAgent, domain: config.url, context: mediaSource.contextValues)
+            return GetPlaylistResponse(jsResult)
+        default:
+            return nil
+        }
     }
 
     func fetchArtist(artist: Artist, mediaSource: MediaSource) async throws -> ArtistDetail {
