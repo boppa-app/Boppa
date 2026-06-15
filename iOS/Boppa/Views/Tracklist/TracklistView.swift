@@ -156,7 +156,7 @@ struct TracklistView: View {
             } else if self.viewModel.tracks.isEmpty && self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.viewModel.tracks.isEmpty {
+            } else if self.viewModel.displayTracks.isEmpty {
                 self.emptyState
             } else {
                 self.trackList

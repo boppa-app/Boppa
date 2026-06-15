@@ -12,13 +12,6 @@ enum TracklistListType {
     case playlists
 }
 
-private class ObserverBox {
-    var observer: NSObjectProtocol?
-    deinit {
-        if let observer { NotificationCenter.default.removeObserver(observer) }
-    }
-}
-
 @MainActor
 @Observable
 class TracklistListViewModel {
@@ -36,7 +29,40 @@ class TracklistListViewModel {
     private var libraryVisibleSourceIds: Set<String> = []
 
     @ObservationIgnored
-    private let observerBox = ObserverBox()
+    private var observers: [NSObjectProtocol] = []
+
+    init() {
+        self.observers.append(
+            NotificationCenter.default.addObserver(
+                forName: .tracklistLibraryChanged,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self, let type = self.libraryType else { return }
+                self.reloadFromLibrary(type: type, visibleMediaSourceIds: self.libraryVisibleSourceIds)
+            }
+        )
+        for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceRemoved, .mediaSourceEnabled, .mediaSourceAdded] {
+            self.observers.append(
+                NotificationCenter.default.addObserver(
+                    forName: name,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    guard let self, let type = self.libraryType else { return }
+                    let enabledIds = Set(MediaSourceStorageManager.shared.fetchAllEnabled().map(\.id))
+                    self.libraryVisibleSourceIds = enabledIds
+                    self.reloadFromLibrary(type: type, visibleMediaSourceIds: enabledIds)
+                }
+            )
+        }
+    }
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
 
     var displayTracklists: [Tracklist] {
         if self.isEditing {
@@ -160,18 +186,6 @@ class TracklistListViewModel {
     func loadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
         self.libraryType = type
         self.libraryVisibleSourceIds = visibleMediaSourceIds
-
-        if self.observerBox.observer == nil {
-            self.observerBox.observer = NotificationCenter.default.addObserver(
-                forName: .tracklistLibraryChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                guard let self, let type = self.libraryType else { return }
-                self.loadFromLibrary(type: type, visibleMediaSourceIds: self.libraryVisibleSourceIds)
-            }
-        }
-
         self.reloadFromLibrary(type: type, visibleMediaSourceIds: visibleMediaSourceIds)
     }
 

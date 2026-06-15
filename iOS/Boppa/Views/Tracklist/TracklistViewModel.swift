@@ -11,19 +11,13 @@ private let logger = Logger(
     category: "TracklistViewModel"
 )
 
-private class ObserverBox {
-    var observer: NSObjectProtocol?
-    deinit {
-        if let observer { NotificationCenter.default.removeObserver(observer) }
-    }
-}
-
 @MainActor
 @Observable
 class TracklistViewModel {
     var tracklist: Tracklist
     var isPersisted: Bool
     var tracks: [Track] = []
+    private var enabledSourceIds: Set<String> = []
     var isLoading = false
     var isRefreshing = false
     var isSaving = false
@@ -40,17 +34,58 @@ class TracklistViewModel {
     private var continuation: [String: Any]?
 
     @ObservationIgnored
-    private let observerBox = ObserverBox()
+    private var observers: [NSObjectProtocol] = []
 
     init(tracklist: Tracklist) {
         self.tracklist = tracklist
         self.isPersisted = tracklist.isPersisted
+
+        if tracklist.mediaSourceId == "boppa.app" {
+            self.enabledSourceIds = Set(MediaSourceStorageManager.shared.fetchAllEnabled().map(\.id))
+            self.observers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .playlistMembershipChanged,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    guard let self else { return }
+                    if let stored = TracklistStorageManager.shared.findStoredTracklist(
+                        mediaId: self.tracklist.mediaId,
+                        mediaSourceId: self.tracklist.mediaSourceId
+                    ) {
+                        self.loadFromCache(storedTracklist: stored)
+                    }
+                }
+            )
+            for name: Notification.Name in [.mediaSourceAdded, .mediaSourceEnabled, .mediaSourceDisabled, .mediaSourceRemoved] {
+                self.observers.append(
+                    NotificationCenter.default.addObserver(
+                        forName: name,
+                        object: nil,
+                        queue: .main
+                    ) { [weak self] _ in
+                        guard let self else { return }
+                        self.enabledSourceIds = Set(MediaSourceStorageManager.shared.fetchAllEnabled().map(\.id))
+                    }
+                )
+            }
+        }
+    }
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     var displayTracks: [Track] {
         var base = self.tracks
         if self.tracklist.mediaSourceId == "boppa.app" {
-            base = base.filter { PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId) }
+            let enabledIds = self.enabledSourceIds
+            base = base.filter {
+                enabledIds.contains($0.mediaSourceId) &&
+                    PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
+            }
         }
         let items = self.searchHandler.displayItems(from: base)
         if self.searchHandler.filteredItems != nil {
@@ -80,22 +115,6 @@ class TracklistViewModel {
 
         if self.tracks.isEmpty {
             self.fetchFirstPage()
-        }
-
-        if self.tracklist.mediaSourceId == "boppa.app", self.observerBox.observer == nil {
-            self.observerBox.observer = NotificationCenter.default.addObserver(
-                forName: .playlistMembershipChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                guard let self else { return }
-                if let stored = TracklistStorageManager.shared.findStoredTracklist(
-                    mediaId: self.tracklist.mediaId,
-                    mediaSourceId: self.tracklist.mediaSourceId
-                ) {
-                    self.loadFromCache(storedTracklist: stored)
-                }
-            }
         }
     }
 

@@ -129,11 +129,12 @@ class LibraryViewModel {
     func updateAvailableCategories() {
         let songIds = self.songSourceIds
         let videoIds = self.videoSourceIds
+        let visibleIds = self.visibleMediaSourceStringIds
 
-        let hasSongs = self.allLibraryTracks.contains { songIds.contains($0.mediaSourceId) }
-        let hasVideos = self.allLibraryTracks.contains { videoIds.contains($0.mediaSourceId) }
-        let hasAlbums = self.allLibraryTracklists.contains { $0.tracklistType == "album" }
-        let hasPlaylists = self.allLibraryTracklists.contains { $0.tracklistType == "playlist" }
+        let hasSongs = self.allLibraryTracks.contains { visibleIds.contains($0.mediaSourceId) && songIds.contains($0.mediaSourceId) }
+        let hasVideos = self.allLibraryTracks.contains { visibleIds.contains($0.mediaSourceId) && videoIds.contains($0.mediaSourceId) }
+        let hasAlbums = self.allLibraryTracklists.contains { visibleIds.contains($0.mediaSourceId) && $0.tracklistType == "album" }
+        let hasPlaylists = self.allLibraryTracklists.contains { visibleIds.contains($0.mediaSourceId) && $0.tracklistType == "playlist" }
 
         var categories: [SearchCategory] = []
         if hasSongs { categories.append(.songs) }
