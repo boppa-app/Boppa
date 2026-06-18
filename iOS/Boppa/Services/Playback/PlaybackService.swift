@@ -67,10 +67,6 @@ final class PlaybackService {
 
         let isSwitchingEngines = previousEngine != nil
 
-        engine.setNowPlayingInfo(track: track)
-        // Modify the previous engine's MediaSession metadata so that subsequent loads on it
-        // trigger MediaSession metadata mutation and avoid blank artwork in NowPlayingInfo
-        if isSwitchingEngines { previousEngine?.setNowPlayingInfo(track: track) }
         engine.activateNowPlayingInfo()
 
         if let previousEngine {
