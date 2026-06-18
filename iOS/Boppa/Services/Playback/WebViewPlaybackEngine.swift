@@ -34,17 +34,11 @@ final class WebViewPlaybackEngine: NSObject {
             getMediaSessionInterceptScript(messageHandlerName: Self.messageHandlerName)
         )
         self.attachToWindow(self.webView)
-        let html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>* { margin: 0; padding: 0; } html, body, iframe { width: 100%; height: 100%; border: none; overflow: hidden; }</style>
-        </head>
-        <body></body>
-        </html>
-        """
-        self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(config.url)"))
+        if let playbackUrl = config.playback.url {
+            self.webView.load(URLRequest(url: URL(string: playbackUrl)!))
+        } else if let html = config.playback.html {
+            self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(config.url)"))
+        }
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
