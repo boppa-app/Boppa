@@ -65,24 +65,11 @@ final class PlaybackService {
             self?.handleEngineEvent(event)
         }
 
-        let isSwitchingEngines = previousEngine != nil
-
-        engine.setNowPlayingInfo(track: track)
-        // Modify the previous engine's MediaSession metadata so that subsequent loads on it
-        // trigger MediaSession metadata mutation and avoid blank artwork in NowPlayingInfo
-        if isSwitchingEngines { previousEngine?.setNowPlayingInfo(track: track) }
-        engine.activateNowPlayingInfo()
-
-        if let previousEngine {
-            previousEngine.pause(shouldPauseKeepAlive: false)
-        }
-        engine.pause(shouldPauseKeepAlive: false)
         engine.load(track: track)
 
         if let previousEngine {
-            logger.info("Engine switch detected — deactivating previous engine")
-            previousEngine.deactivateNowPlayingInfo()
-            previousEngine.pause(shouldPauseKeepAlive: !isSwitchingEngines)
+            logger.info("Engine switch detected — stopping previous engine")
+            previousEngine.stop()
         }
         self.activeEngine = engine
     }

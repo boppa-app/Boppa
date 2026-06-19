@@ -8,27 +8,6 @@ private let logger = Logger(
     category: "WebViewPlaybackEngine"
 )
 
-private extension UInt16 {
-    var littleEndianBytes: Data {
-        var value = self.littleEndian
-        return Data(bytes: &value, count: MemoryLayout<UInt16>.size)
-    }
-}
-
-private extension UInt32 {
-    var littleEndianBytes: Data {
-        var value = self.littleEndian
-        return Data(bytes: &value, count: MemoryLayout<UInt32>.size)
-    }
-}
-
-private extension Int16 {
-    var littleEndianBytes: Data {
-        var value = self.littleEndian
-        return Data(bytes: &value, count: MemoryLayout<Int16>.size)
-    }
-}
-
 @MainActor
 final class WebViewPlaybackEngine: NSObject {
     static let messageHandlerName = "playerCallback"
@@ -39,8 +18,6 @@ final class WebViewPlaybackEngine: NSObject {
     private let config: MediaSourceConfig
 
     private var navigationContinuation: CheckedContinuation<Void, Never>?
-
-    private static let silentAudioDataURI: String = generateSilentWAVDataURI()
 
     init(config: MediaSourceConfig) {
         self.config = config
@@ -53,30 +30,12 @@ final class WebViewPlaybackEngine: NSObject {
         )
         super.init()
         self.webView.configuration.userContentController.add(self, name: Self.messageHandlerName)
-        self.webView.configuration.userContentController.addUserScript(
-            getMediaSessionInterceptScript(messageHandlerName: Self.messageHandlerName)
-        )
         self.attachToWindow(self.webView)
-        let html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>* { margin: 0; padding: 0; } html, body, iframe { width: 100%; height: 100%; border: none; overflow: hidden; }</style>
-        </head>
-        <body>
-            <audio id="boppa-keepalive-audio" src="\(Self.silentAudioDataURI)" muted loop></audio>
-            <script>
-                (function() {
-                    var audio = document.getElementById('boppa-keepalive-audio');
-                    audio.volume = 0.0001;
-                    audio.playbackRate = 0.0001;
-                })();
-            </script>
-        </body>
-        </html>
-        """
-        self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(config.url)"))
+        if let playbackUrl = config.playback.url {
+            self.webView.load(URLRequest(url: URL(string: playbackUrl)!))
+        } else if let html = config.playback.html {
+            self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(config.url)"))
+        }
         logger.info("WebViewPlaybackEngine created for '\(config.name)'")
     }
 
@@ -106,149 +65,6 @@ final class WebViewPlaybackEngine: NSObject {
         }
     }
 
-    func setNowPlayingInfo(track: Track) {
-        self.setMediaSessionDetails(
-            title: track.title,
-            artist: track.subtitle ?? "",
-            artworkUrl: track.artworkUrl ?? "",
-            duration: track.duration.map { Double($0) / 1000.0 },
-            playbackRate: 0.0,
-            position: 0,
-            playbackState: "playing"
-        )
-    }
-
-    func activateNowPlayingInfo() {
-        let script = """
-        (function() {
-            var audio = document.getElementById('boppa-keepalive-audio');
-            if (!audio) return;
-            audio.play();
-            audio.muted = false;
-        })();
-        """
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error { logger.error("activateNowPlayingInfo error: \(error.localizedDescription)") }
-        }
-    }
-
-    func deactivateNowPlayingInfo() {
-        let script = """
-        (function() {
-            var audio = document.getElementById('boppa-keepalive-audio');
-            if (!audio) return;
-            audio.muted = true;
-        })();
-        """
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error { logger.error("deactivateNowPlayingInfo error: \(error.localizedDescription)") }
-        }
-    }
-
-    private func setMediaSessionDetails(
-        title: String? = nil,
-        artist: String? = nil,
-        artworkUrl: String? = nil,
-        duration: Double? = nil,
-        playbackRate: Double? = nil,
-        position: Double? = nil,
-        playbackState: String? = nil
-    ) {
-        var scriptParts: [String] = []
-        scriptParts.append("if (!('mediaSession' in navigator)) return;")
-
-        if let playbackState {
-            scriptParts.append("""
-            window.__boppaPlaybackState = '\(playbackState)';
-            if (window.__boppaOriginalPlaybackStateSetter) {
-                window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, '\(playbackState)');
-            }
-            """)
-        }
-
-        if title != nil || artist != nil || artworkUrl != nil {
-            let escapedTitle = (title ?? "")
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
-            let escapedArtist = (artist ?? "")
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
-            let escapedArtworkUrl = (artworkUrl ?? "")
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
-
-            scriptParts.append("""
-            var metadataInit = {
-                title: '\(escapedTitle)',
-                artist: '\(escapedArtist)'
-            };
-            if ('\(escapedArtworkUrl)') {
-                metadataInit.artwork = [{ src: '\(escapedArtworkUrl)' }];
-            }
-            var newMetadata = new MediaMetadata(metadataInit);
-
-            var desc = Object.getOwnPropertyDescriptor(navigator.mediaSession, 'metadata');
-            if (desc && desc.set) {
-                var originalSetter = Object.getOwnPropertyDescriptor(
-                    navigator.mediaSession.__proto__, 'metadata'
-                );
-                if (originalSetter && originalSetter.set) {
-                    originalSetter.set.call(navigator.mediaSession, newMetadata);
-                }
-                Object.defineProperty(navigator.mediaSession, 'metadata', {
-                    get: function() { return newMetadata; },
-                    set: function(val) {
-                        if (originalSetter && originalSetter.set) {
-                            originalSetter.set.call(navigator.mediaSession, newMetadata);
-                        }
-                    },
-                    configurable: true
-                });
-            } else {
-                navigator.mediaSession.metadata = newMetadata;
-            }
-            """)
-        }
-
-        if duration != nil || playbackRate != nil || position != nil {
-            var updates: [String] = []
-            if let duration {
-                updates.append("window.__boppaDuration = \(duration);")
-            }
-            if let playbackRate {
-                updates.append("window.__boppaPlaybackRate = \(playbackRate);")
-            }
-            if let position {
-                updates.append("window.__boppaPosition = \(position);")
-            }
-
-            scriptParts.append("""
-            var currentPos = window.__boppaGetCurrentPosition ? window.__boppaGetCurrentPosition() : 0;
-            \(updates.joined(separator: "\n"))
-            if (window.__boppaOriginalSetPositionState && window.__boppaDuration > 0) {
-                try {
-                    var pos = \(position != nil ? "Math.min(window.__boppaPosition, window.__boppaDuration)" : "Math.min(currentPos, window.__boppaDuration)");
-                    window.__boppaPosition = pos;
-                    window.__boppaPositionTimestamp = Date.now();
-                    window.__boppaOriginalSetPositionState.call(navigator.mediaSession, {
-                        duration: window.__boppaDuration,
-                        playbackRate: window.__boppaPlaybackRate ?? 1.0,
-                        position: pos
-                    });
-                } catch (e) {}
-            }
-            """)
-        }
-
-        let script = "(function() { \(scriptParts.joined(separator: "\n")) })();"
-
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error {
-                logger.error("Set media session details error: \(error.localizedDescription)")
-            }
-        }
-    }
-
     private func serializeTrackData(track: Track) -> String? {
         let trackData: [String: Any] = [
             "title": track.title,
@@ -272,19 +88,11 @@ final class WebViewPlaybackEngine: NSObject {
             .replacingOccurrences(of: "\r", with: "\\r")
     }
 
-    // TODO: Evaluate if this is necessary, see why play to resume via widget is quiet
-    // sometimes (after inactivity) and requires sequential play/pause/play taps
+    // TODO: See why play to resume via widget is quiet sometimes (after inactivity) and requires sequential play/pause/play taps
     func play() {
         let script = """
         (function() {
-            if (window.boppaMute) window.boppaMute();
-            if (window.boppaPause) window.boppaPause();
             if (window.boppaPlay) window.boppaPlay();
-            if (window.boppaPause) window.boppaPause();
-            if (window.boppaPlay) window.boppaPlay();
-            if (window.boppaUnmute) window.boppaUnmute();
-            var audio = document.getElementById('boppa-keepalive-audio');
-            if (audio && audio.paused) audio.play();
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
@@ -292,20 +100,12 @@ final class WebViewPlaybackEngine: NSObject {
                 logger.error("Play command error: \(error.localizedDescription)")
             }
         }
-        self.setMediaSessionDetails(playbackRate: 1.0, playbackState: "playing")
     }
 
-    func pause(shouldPauseKeepAlive: Bool? = true) {
+    func pause() {
         let script = """
         (function() {
             if (window.boppaPause) window.boppaPause();
-            // Need to pause keep alive because otherwise play/pause state drifts when 
-            // pausing externally (ex: AirPods/CarPlay). However messes with position
-            // in NowPlayingInfo, sometimes will glitch position to 0 when resuming.
-            if (\((shouldPauseKeepAlive ?? true) ? "true" : "false")) {
-                var audio = document.getElementById('boppa-keepalive-audio');
-                if (audio && audio.pause) audio.pause();
-            }
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
@@ -313,7 +113,6 @@ final class WebViewPlaybackEngine: NSObject {
                 logger.error("Pause command error: \(error.localizedDescription)")
             }
         }
-        self.setMediaSessionDetails(playbackRate: 0.0001, playbackState: "paused")
     }
 
     func seek(to timeSeconds: Double) {
@@ -324,27 +123,41 @@ final class WebViewPlaybackEngine: NSObject {
                 logger.error("Seek command error: \(error.localizedDescription)")
             }
         }
-        self.setMediaSessionDetails(position: timeSeconds)
     }
 
     func stop() {
-        self.pause()
+        let script = """
+        (function() {
+            if (window.boppaStop) window.boppaStop();
+        })();
+        """
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error { logger.error("Stop command error: \(error.localizedDescription)") }
+        }
         logger.info("WebViewPlaybackEngine stopped")
     }
 
     func preloadArtwork(urls: [String]) {
         guard !urls.isEmpty else { return }
-        let escapedUrls = urls.compactMap { url -> String? in
+        let calls = urls.compactMap { url -> String? in
             guard !url.isEmpty else { return nil }
-            return url
+            let id = Self.artworkElementId(for: url)
+            let escapedUrl = url
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "'", with: "\\'")
+            return """
+            (function() {
+                if (document.getElementById('\(id)')) return;
+                var img = document.createElement('img');
+                img.id = '\(id)';
+                img.src = '\(escapedUrl)';
+                img.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+                document.body.appendChild(img);
+            })();
+            """
         }
-        guard !escapedUrls.isEmpty else { return }
-
-        let calls = escapedUrls.map { "window.__boppaPreloadArtwork('\($0)');" }.joined(separator: "\n")
-        let script = "(function() { \(calls) })();"
-        self.webView.evaluateJavaScript(script) { _, error in
+        guard !calls.isEmpty else { return }
+        self.webView.evaluateJavaScript(calls.joined(separator: "\n")) { _, error in
             if let error {
                 logger.error("Preload artwork error: \(error.localizedDescription)")
             }
@@ -353,21 +166,25 @@ final class WebViewPlaybackEngine: NSObject {
 
     func removeArtwork(urls: [String]) {
         guard !urls.isEmpty else { return }
-        let escapedUrls = urls.compactMap { url -> String? in
+        let calls = urls.compactMap { url -> String? in
             guard !url.isEmpty else { return nil }
-            return url
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
+            let id = Self.artworkElementId(for: url)
+            return "var el = document.getElementById('\(id)'); if (el) el.remove();"
         }
-        guard !escapedUrls.isEmpty else { return }
-
-        let calls = escapedUrls.map { "window.__boppaRemoveArtwork('\($0)');" }.joined(separator: "\n")
-        let script = "(function() { \(calls) })();"
-        self.webView.evaluateJavaScript(script) { _, error in
+        guard !calls.isEmpty else { return }
+        self.webView.evaluateJavaScript(calls.joined(separator: "\n")) { _, error in
             if let error {
                 logger.error("Remove artwork error: \(error.localizedDescription)")
             }
         }
+    }
+
+    private static func artworkElementId(for url: String) -> String {
+        var hash: Int32 = 0
+        for char in url.unicodeScalars {
+            hash = (hash &<< 5) &- hash &+ Int32(char.value)
+        }
+        return "boppa-artwork-\(String(abs(hash), radix: 36))"
     }
 
     func tearDown() {
@@ -436,7 +253,6 @@ final class WebViewPlaybackEngine: NSObject {
         let event: PlayerEvent
         switch type {
         case "play", "initialPlay":
-            self.setMediaSessionDetails(playbackRate: 1.0)
             event = .playing
         case "pause":
             event = .paused
@@ -465,40 +281,6 @@ final class WebViewPlaybackEngine: NSObject {
         if let intValue = dict[key] as? Int { return Double(intValue) }
         if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
         return 0
-    }
-
-    private static func generateSilentWAVDataURI() -> String {
-        let sampleRate: UInt32 = 44100
-        let duration: UInt32 = 1
-        let numSamples = sampleRate * duration
-        let dataSize = numSamples * 2 // 16-bit = 2 bytes per sample
-
-        var wavData = Data()
-
-        // WAV header
-        wavData.append("RIFF".data(using: .ascii)!)
-        wavData.append(UInt32(36 + dataSize).littleEndianBytes)
-        wavData.append("WAVE".data(using: .ascii)!)
-        wavData.append("fmt ".data(using: .ascii)!)
-        wavData.append(UInt32(16).littleEndianBytes) // PCM
-        wavData.append(UInt16(1).littleEndianBytes) // AudioFormat (PCM)
-        wavData.append(UInt16(1).littleEndianBytes) // NumChannels (mono)
-        wavData.append(sampleRate.littleEndianBytes)
-        wavData.append((sampleRate * 2).littleEndianBytes) // ByteRate
-        wavData.append(UInt16(2).littleEndianBytes) // BlockAlign
-        wavData.append(UInt16(16).littleEndianBytes) // BitsPerSample
-        wavData.append("data".data(using: .ascii)!)
-        wavData.append(dataSize.littleEndianBytes)
-
-        // Audio data: near-silence (very low amplitude sine wave at 20Hz)
-        for i in 0 ..< numSamples {
-            let t = Double(i) / Double(sampleRate)
-            let sample = Int16(sin(2.0 * .pi * 20.0 * t) * 3.0)
-            wavData.append(sample.littleEndianBytes)
-        }
-
-        let base64 = wavData.base64EncodedString()
-        return "data:audio/wav;base64,\(base64)"
     }
 }
 
