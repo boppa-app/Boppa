@@ -41,7 +41,7 @@ final class TrackQueueManager {
     private static let artworkPreloadWindow = 50
 
     private let registry = WebViewPlaybackEngineRegistry.shared
-    private var preloadedArtworkUrls: Set<String> = []
+    private var preloadedArtworkBySource: [String: Set<String>] = [:]
 
     private init() {}
 
@@ -132,7 +132,7 @@ final class TrackQueueManager {
         self.currentIndex = 0
         self.contextId = nil
         self.trackIdToEntry = [:]
-        self.preloadedArtworkUrls = []
+        self.preloadedArtworkBySource = [:]
     }
 
     func applyReorder(_ reorderedEntries: [QueueEntry]) {
@@ -174,20 +174,28 @@ final class TrackQueueManager {
         let startIndex = max(0, self.currentIndex - window)
         let endIndex = min(self.entries.count - 1, self.currentIndex + window)
 
-        var desiredUrls: Set<String> = []
+        var desiredBySource: [String: Set<String>] = [:]
         for i in startIndex ... endIndex {
-            if let url = self.entries[i].track.artworkUrl, !url.isEmpty {
-                desiredUrls.insert(url)
+            let track = self.entries[i].track
+            if let url = track.artworkUrl, !url.isEmpty {
+                desiredBySource[track.mediaSourceId, default: []].insert(url)
             }
         }
 
-        let toAdd = desiredUrls.subtracting(self.preloadedArtworkUrls)
-        let toRemove = self.preloadedArtworkUrls.subtracting(desiredUrls)
+        for (mediaSourceId, desiredUrls) in desiredBySource {
+            guard let engine = self.registry.engine(for: mediaSourceId) else { continue }
+            let previousUrls = self.preloadedArtworkBySource[mediaSourceId] ?? []
+            let toAdd = desiredUrls.subtracting(previousUrls)
+            let toRemove = previousUrls.subtracting(desiredUrls)
+            if !toAdd.isEmpty { engine.preloadArtwork(urls: Array(toAdd)) }
+            if !toRemove.isEmpty { engine.removeArtwork(urls: Array(toRemove)) }
+        }
 
-        let engines = self.registry.allEngines
-        if !toAdd.isEmpty { engines.forEach { $0.preloadArtwork(urls: Array(toAdd)) } }
-        if !toRemove.isEmpty { engines.forEach { $0.removeArtwork(urls: Array(toRemove)) } }
+        for (mediaSourceId, previousUrls) in self.preloadedArtworkBySource where desiredBySource[mediaSourceId] == nil {
+            guard let engine = self.registry.engine(for: mediaSourceId) else { continue }
+            engine.removeArtwork(urls: Array(previousUrls))
+        }
 
-        self.preloadedArtworkUrls = desiredUrls
+        self.preloadedArtworkBySource = desiredBySource
     }
 }
