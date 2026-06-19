@@ -65,13 +65,6 @@ final class WebViewPlaybackEngine: NSObject {
         }
     }
 
-    func deactivateNowPlayingInfo() {
-        let script = "window.postMessage({type: 'boppaDeactivateKeepalive'}, '*');"
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error { logger.error("deactivateNowPlayingInfo error: \(error.localizedDescription)") }
-        }
-    }
-
     private func serializeTrackData(track: Track) -> String? {
         let trackData: [String: Any] = [
             "title": track.title,
@@ -133,7 +126,14 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func stop() {
-        self.pause()
+        let script = """
+        (function() {
+            if (window.boppaStop) window.boppaStop();
+        })();
+        """
+        self.webView.evaluateJavaScript(script) { _, error in
+            if let error { logger.error("Stop command error: \(error.localizedDescription)") }
+        }
         logger.info("WebViewPlaybackEngine stopped")
     }
 
