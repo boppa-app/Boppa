@@ -102,18 +102,11 @@ final class WebViewPlaybackEngine: NSObject {
             .replacingOccurrences(of: "\r", with: "\\r")
     }
 
-    // TODO: Evaluate if this is necessary, see why play to resume via widget is quiet
-    // sometimes (after inactivity) and requires sequential play/pause/play taps
+    // TODO: See why play to resume via widget is quiet sometimes (after inactivity) and requires sequential play/pause/play taps
     func play() {
         let script = """
         (function() {
-            if (window.boppaMute) window.boppaMute();
-            if (window.boppaPause) window.boppaPause();
             if (window.boppaPlay) window.boppaPlay();
-            if (window.boppaPause) window.boppaPause();
-            if (window.boppaPlay) window.boppaPlay();
-            if (window.boppaUnmute) window.boppaUnmute();
-            window.postMessage({type: 'boppaActivateKeepalive'}, '*');
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
