@@ -65,7 +65,6 @@ final class PlaybackService {
             self?.handleEngineEvent(event)
         }
 
-        engine.activateNowPlayingInfo()
         engine.load(track: track)
 
         if let previousEngine {

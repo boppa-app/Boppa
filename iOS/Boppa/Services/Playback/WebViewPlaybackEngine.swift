@@ -65,13 +65,6 @@ final class WebViewPlaybackEngine: NSObject {
         }
     }
 
-    func activateNowPlayingInfo() {
-        let script = "window.postMessage({type: 'boppaActivateKeepalive'}, '*');"
-        self.webView.evaluateJavaScript(script) { _, error in
-            if let error { logger.error("activateNowPlayingInfo error: \(error.localizedDescription)") }
-        }
-    }
-
     func deactivateNowPlayingInfo() {
         let script = "window.postMessage({type: 'boppaDeactivateKeepalive'}, '*');"
         self.webView.evaluateJavaScript(script) { _, error in
