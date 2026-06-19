@@ -123,13 +123,10 @@ final class WebViewPlaybackEngine: NSObject {
         }
     }
 
-    func pause(shouldPauseKeepAlive: Bool? = true) {
+    func pause() {
         let script = """
         (function() {
             if (window.boppaPause) window.boppaPause();
-            if (\((shouldPauseKeepAlive ?? true) ? "true" : "false")) {
-                window.postMessage({type: 'boppaDeactivateKeepalive'}, '*');
-            }
         })();
         """
         self.webView.evaluateJavaScript(script) { _, error in
