@@ -35,7 +35,7 @@ struct MediaSourceDetailView: View {
                     if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty {
                         NavigationLink(destination: ConfigContextView(contexts: contexts)) {
                             HStack(spacing: 8) {
-                                Image(systemName: "globe")
+                                Image(systemName: "globe.fill")
                                     .foregroundColor(.purp)
                                 Text("Context")
                                     .foregroundColor(.white)
@@ -45,7 +45,7 @@ struct MediaSourceDetailView: View {
 
                     NavigationLink(destination: ConfigDataView(data: self.viewModel.mediaSource.config.data)) {
                         HStack(spacing: 8) {
-                            Image(systemName: "doc.text")
+                            Image(systemName: "document.fill")
                                 .foregroundColor(.purp)
                             Text("Data")
                                 .foregroundColor(.white)
@@ -54,7 +54,7 @@ struct MediaSourceDetailView: View {
 
                     NavigationLink(destination: ConfigPlaybackView(playback: self.viewModel.mediaSource.config.playback)) {
                         HStack(spacing: 8) {
-                            Image(systemName: "play.circle")
+                            Image(systemName: "play.fill")
                                 .foregroundColor(.purp)
                             Text("Playback")
                                 .foregroundColor(.white)

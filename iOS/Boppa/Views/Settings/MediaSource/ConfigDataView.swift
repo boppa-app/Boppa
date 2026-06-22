@@ -11,55 +11,57 @@ struct ConfigDataView: View {
                 onBack: { self.dismiss() }
             )
 
-            List {
-                if !self.searchItems.isEmpty {
-                    Section("Search") {
-                        ForEach(self.searchItems, id: \.label) { item in
-                            NavigationLink(destination: CodeView(
-                                title: item.label,
-                                code: item.code
-                            )) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "doc.text")
-                                        .foregroundColor(.purp)
-                                    Text(item.label)
-                                        .foregroundColor(.white)
+            ScrollFadeView {
+                List {
+                    if !self.searchItems.isEmpty {
+                        Section("Search") {
+                            ForEach(self.searchItems, id: \.label) { item in
+                                NavigationLink(destination: CodeView(
+                                    title: item.label,
+                                    code: item.code
+                                )) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "text.document")
+                                            .foregroundColor(.purp)
+                                        Text(item.label)
+                                            .foregroundColor(.white)
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                if !self.getItems.isEmpty {
-                    Section("Get") {
-                        ForEach(self.getItems, id: \.label) { item in
-                            NavigationLink(destination: CodeView(
-                                title: item.label,
-                                code: item.code
-                            )) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "doc.text")
-                                        .foregroundColor(.purp)
-                                    Text(item.label)
-                                        .foregroundColor(.white)
+                    if !self.getItems.isEmpty {
+                        Section("Get") {
+                            ForEach(self.getItems, id: \.label) { item in
+                                NavigationLink(destination: CodeView(
+                                    title: item.label,
+                                    code: item.code
+                                )) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "text.document")
+                                            .foregroundColor(.purp)
+                                        Text(item.label)
+                                            .foregroundColor(.white)
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                if !self.listItems.isEmpty {
-                    Section("List") {
-                        ForEach(self.listItems, id: \.label) { item in
-                            NavigationLink(destination: CodeView(
-                                title: item.label,
-                                code: item.code
-                            )) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "doc.text")
-                                        .foregroundColor(.purp)
-                                    Text(item.label)
-                                        .foregroundColor(.white)
+                    if !self.listItems.isEmpty {
+                        Section("List") {
+                            ForEach(self.listItems, id: \.label) { item in
+                                NavigationLink(destination: CodeView(
+                                    title: item.label,
+                                    code: item.code
+                                )) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "text.document")
+                                            .foregroundColor(.purp)
+                                        Text(item.label)
+                                            .foregroundColor(.white)
+                                    }
                                 }
                             }
                         }
