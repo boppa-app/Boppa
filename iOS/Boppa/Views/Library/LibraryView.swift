@@ -122,25 +122,27 @@ struct LibraryView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
+                self.refreshSearchHandlers()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
                 let removedId = notification.userInfo?["id"] as? String
                 if let active = self.activeMediaSourceId, active == removedId {
                     self.path = NavigationPath()
-                    self.refreshSearchHandlers()
                 }
                 self.viewModel.loadSources()
+                self.refreshSearchHandlers()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
                 self.viewModel.loadSources()
+                self.refreshSearchHandlers()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { notification in
                 let disabledId = notification.userInfo?["id"] as? String
                 if let disabledId, self.activeMediaSourceId == disabledId {
                     self.path = NavigationPath()
-                    self.refreshSearchHandlers()
                 }
                 self.viewModel.loadSources()
+                self.refreshSearchHandlers()
             }
             .onReceive(NotificationCenter.default.publisher(for: .tracklistPinChanged)) { _ in
                 self.viewModel.loadPinnedTracklists()
