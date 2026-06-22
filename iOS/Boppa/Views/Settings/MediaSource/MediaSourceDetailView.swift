@@ -29,6 +29,37 @@ struct MediaSourceDetailView: View {
                     LabeledContent("URL", value: self.viewModel.mediaSource.url)
                 }
 
+                Section("Config") {
+                    if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty {
+                        NavigationLink(destination: ConfigContextView(contexts: contexts)) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "globe")
+                                    .foregroundColor(.purp)
+                                Text("Context")
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }
+
+                    NavigationLink(destination: ConfigDataView(data: self.viewModel.mediaSource.config.data)) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc.text")
+                                .foregroundColor(.purp)
+                            Text("Data")
+                                .foregroundColor(.white)
+                        }
+                    }
+
+                    NavigationLink(destination: ConfigPlaybackView(playback: self.viewModel.mediaSource.config.playback)) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "play.circle")
+                                .foregroundColor(.purp)
+                            Text("Playback")
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+
                 if let _ = self.viewModel.loginURL {
                     Section("Authentication") {
                         if self.viewModel.isCheckingLogin {

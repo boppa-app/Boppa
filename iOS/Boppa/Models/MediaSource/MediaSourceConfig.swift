@@ -63,12 +63,14 @@ struct LoginConfig: Codable {
 }
 
 struct ContextConfig: Codable {
+    let title: String
     let url: String
     let intervalSeconds: Int
     let userScripts: [Script]
 }
 
 struct Script: Codable {
+    let title: String
     let content: String
     let injectionTime: ScriptInjectionTime
 }

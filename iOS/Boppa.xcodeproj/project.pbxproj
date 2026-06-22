@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3A28404E2FE9D63C000D6917 /* Highlighter in Frameworks */ = {isa = PBXBuildFile; productRef = 3A28404D2FE9D63C000D6917 /* Highlighter */; };
 		3A4039782FDA0F1800311402 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 3A4039772FDA0F1800311402 /* Yams */; };
 		3A40397B2FDA22E600311402 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 3A40397A2FDA22E600311402 /* Kingfisher */; };
 		3A8D65D22F99BB380078E6B0 /* Ifrit in Frameworks */ = {isa = PBXBuildFile; productRef = F1E2CA112F996DBC000CA0FD /* Ifrit */; };
@@ -74,6 +75,7 @@
 			files = (
 				3A40397B2FDA22E600311402 /* Kingfisher in Frameworks */,
 				3A941D122FC6658D0061370B /* SQLiteData in Frameworks */,
+				3A28404E2FE9D63C000D6917 /* Highlighter in Frameworks */,
 				3A4039782FDA0F1800311402 /* Yams in Frameworks */,
 				3A8D65D22F99BB380078E6B0 /* Ifrit in Frameworks */,
 			);
@@ -150,6 +152,7 @@
 				3A941D112FC6658D0061370B /* SQLiteData */,
 				3A4039772FDA0F1800311402 /* Yams */,
 				3A40397A2FDA22E600311402 /* Kingfisher */,
+				3A28404D2FE9D63C000D6917 /* Highlighter */,
 			);
 			productName = Boppa;
 			productReference = F1D7341C2F4284C300035B3B /* Boppa.app */;
@@ -238,6 +241,7 @@
 				3A941D0F2FC665700061370B /* XCRemoteSwiftPackageReference "sqlite-data" */,
 				3A4039762FDA09AE00311402 /* XCRemoteSwiftPackageReference "Yams" */,
 				3A4039792FDA22D200311402 /* XCRemoteSwiftPackageReference "kingfisher" */,
+				3A28404C2FE9D628000D6917 /* XCRemoteSwiftPackageReference "HighlighterSwift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F1D7341D2F4284C300035B3B /* Products */;
@@ -660,6 +664,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3A28404C2FE9D628000D6917 /* XCRemoteSwiftPackageReference "HighlighterSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/smittytone/HighlighterSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.0;
+			};
+		};
 		3A4039762FDA09AE00311402 /* XCRemoteSwiftPackageReference "Yams" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jpsim/Yams";
@@ -695,6 +707,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3A28404D2FE9D63C000D6917 /* Highlighter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3A28404C2FE9D628000D6917 /* XCRemoteSwiftPackageReference "HighlighterSwift" */;
+			productName = Highlighter;
+		};
 		3A4039772FDA0F1800311402 /* Yams */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3A4039762FDA09AE00311402 /* XCRemoteSwiftPackageReference "Yams" */;
