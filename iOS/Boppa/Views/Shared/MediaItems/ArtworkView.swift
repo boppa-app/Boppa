@@ -73,6 +73,8 @@ private struct ArtworkImageContent: View {
         Group {
             if let img = loadedImage {
                 ZStack {
+                    Color(.systemGray6)
+
                     Image(uiImage: img)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
