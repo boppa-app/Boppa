@@ -109,12 +109,12 @@ struct SearchView: View {
                 self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
-                let removedIds = notification.userInfo?["ids"] as? [String] ?? []
-                if let selected = self.viewModel.selectedMediaSource, removedIds.contains(selected.id) {
+                let removedId = notification.userInfo?["id"] as? String
+                if let selected = self.viewModel.selectedMediaSource, selected.id == removedId {
                     self.viewModel.clearSearch()
                     self.isSearchFieldFocused = false
                 }
-                if let active = self.activeMediaSourceId, removedIds.contains(active) {
+                if let active = self.activeMediaSourceId, active == removedId {
                     self.path = NavigationPath()
                 }
                 self.viewModel.loadSources()

@@ -175,8 +175,7 @@ struct SettingsView: View {
     }
 
     private func deleteMediaSources(at offsets: IndexSet) {
-        let deletedIds = self.viewModel.deleteMediaSources(at: offsets)
-        NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["ids": deletedIds])
+        self.viewModel.deleteMediaSource(at: offsets)
     }
 }
 

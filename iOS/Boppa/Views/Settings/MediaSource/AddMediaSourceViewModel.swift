@@ -20,15 +20,14 @@ class AddMediaSourceViewModel {
         let formattedProviderUrl = self.configProviderUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         do {
-            let mediaSources = try await MediaSourceImportService.shared.fetchMediaSources(
+            let mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(
                 configProviderUrl: formattedProviderUrl,
                 mediaSourceUrl: formattedSourceUrl
             )
 
-            try MediaSourceStorageManager.shared.insert(mediaSources)
+            try MediaSourceStorageManager.shared.insert([mediaSource])
 
-            let addedNames = mediaSources.map(\.name)
-            NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["names": addedNames])
+            NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["id": mediaSource.id])
 
             self.isLoading = false
             return true

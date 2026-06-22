@@ -28,15 +28,13 @@ final class PlaybackService {
     private let registry = WebViewPlaybackEngineRegistry.shared
     private var activeEngine: WebViewPlaybackEngine?
 
-    private var mediaSourceRemovedObserver: NSObjectProtocol?
-    private var mediaSourceDisabledObserver: NSObjectProtocol?
+    private var mediaSourceDisabledOrRemovedObserver: NSObjectProtocol?
     private var userPaused: Bool = false
 
     private static let previousTrackSeekThreshold: Double = 3
 
     private init() {
-        self.observeMediaSourceRemoved()
-        self.observeMediaSourceDisabled()
+        self.observeMediaSourceDisabledOrRemoved()
         logger.info("PlaybackService initialized")
     }
 
@@ -165,46 +163,21 @@ final class PlaybackService {
         }
     }
 
-    private func observeMediaSourceRemoved() {
-        self.mediaSourceRemovedObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourceRemoved,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor [weak self] in
-                guard let self,
-                      let ids = notification.userInfo?["ids"] as? [String]
-                else { return }
-                self.handleMediaSourceRemoved(ids: ids)
+    private func observeMediaSourceDisabledOrRemoved() {
+        for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceRemoved] {
+            self.mediaSourceDisabledOrRemovedObserver = NotificationCenter.default.addObserver(
+                forName: name,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self,
+                          let currentTrack = self.currentTrack,
+                          !currentTrack.isMediaSourceEnabled
+                    else { return }
+                    self.stop()
+                }
             }
-        }
-    }
-
-    private func observeMediaSourceDisabled() {
-        self.mediaSourceDisabledObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourceDisabled,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor [weak self] in
-                guard let self,
-                      let id = notification.userInfo?["id"] as? String
-                else { return }
-                self.handleMediaSourceRemoved(ids: [id])
-            }
-        }
-    }
-
-    private func handleMediaSourceRemoved(ids: [String]) {
-        if let currentTrack = self.currentTrack, ids.contains(currentTrack.mediaSourceId) {
-            self.stop()
-            logger.info("Stopped playback: media source '\(currentTrack.mediaSourceId)' was removed")
-            return
-        }
-
-        for id in ids {
-            self.queueManager.removeTracks(forMediaSource: id)
-            logger.info("Removed queued tracks for deleted media source: \(id)")
         }
     }
 }

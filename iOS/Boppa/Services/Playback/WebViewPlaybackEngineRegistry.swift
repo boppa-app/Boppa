@@ -12,9 +12,8 @@ final class WebViewPlaybackEngineRegistry {
 
     private var engines: [String: WebViewPlaybackEngine] = [:]
     private var mediaSourceAddedObserver: NSObjectProtocol?
-    private var mediaSourceRemovedObserver: NSObjectProtocol?
+    private var mediaSourceDisabledOrRemovedObserver: NSObjectProtocol?
     private var mediaSourceEnabledObserver: NSObjectProtocol?
-    private var mediaSourceDisabledObserver: NSObjectProtocol?
 
     private init() {}
 
@@ -53,14 +52,16 @@ final class WebViewPlaybackEngineRegistry {
             }
         }
 
-        self.mediaSourceRemovedObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourceRemoved,
-            object: nil,
-            queue: .main
-        ) { notification in
-            MainActor.assumeIsolated {
-                if let ids = notification.userInfo?["ids"] as? [String] {
-                    self.handleMediaSourceRemoved(ids: ids)
+        for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceRemoved] {
+            self.mediaSourceDisabledOrRemovedObserver = NotificationCenter.default.addObserver(
+                forName: name,
+                object: nil,
+                queue: .main
+            ) { notification in
+                MainActor.assumeIsolated {
+                    if let id = notification.userInfo?["id"] as? String {
+                        self.handleMediaSourceDisabledOrRemoved(id: id)
+                    }
                 }
             }
         }
@@ -76,18 +77,6 @@ final class WebViewPlaybackEngineRegistry {
                 }
             }
         }
-
-        self.mediaSourceDisabledObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourceDisabled,
-            object: nil,
-            queue: .main
-        ) { notification in
-            MainActor.assumeIsolated {
-                if let id = notification.userInfo?["id"] as? String {
-                    self.handleMediaSourceDisabled(id: id)
-                }
-            }
-        }
     }
 
     private func handleMediaSourceAdded() {
@@ -99,11 +88,9 @@ final class WebViewPlaybackEngineRegistry {
         }
     }
 
-    private func handleMediaSourceRemoved(ids: [String]) {
-        for id in ids {
-            self.destroyEngine(for: id)
-            logger.info("Destroyed engine for removed source '\(id)'")
-        }
+    private func handleMediaSourceDisabledOrRemoved(id: String) {
+        self.destroyEngine(for: id)
+        logger.info("Destroyed engine for disabled/removed source '\(id)'")
     }
 
     private func handleMediaSourceEnabled(id: String) {
@@ -114,11 +101,6 @@ final class WebViewPlaybackEngineRegistry {
         }
         self.createEngine(for: mediaSource)
         logger.info("Created engine for enabled source '\(mediaSource.name)'")
-    }
-
-    private func handleMediaSourceDisabled(id: String) {
-        self.destroyEngine(for: id)
-        logger.info("Destroyed engine for disabled source '\(id)'")
     }
 
     private func createEngine(for mediaSource: MediaSource) {

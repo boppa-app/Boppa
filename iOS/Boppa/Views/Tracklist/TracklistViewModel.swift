@@ -81,9 +81,9 @@ class TracklistViewModel {
     var displayTracks: [Track] {
         var base = self.tracks
         if self.tracklist.mediaSourceId == "boppa.app" {
-            let enabledIds = self.enabledSourceIds
+            let allSourceIds = Set(MediaSourceStorageManager.shared.fetchAll().map(\.id))
             base = base.filter {
-                enabledIds.contains($0.mediaSourceId) &&
+                allSourceIds.contains($0.mediaSourceId) &&
                     PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
             }
         }

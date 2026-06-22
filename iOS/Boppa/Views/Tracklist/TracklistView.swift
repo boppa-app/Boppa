@@ -93,6 +93,7 @@ struct TracklistView: View {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
                 mediaSource: MediaSourceStorageManager.shared.fetchOne(id: self.viewModel.tracklist.mediaSourceId),
+                isMediaSourceEnabled: self.viewModel.tracklist.isMediaSourceEnabled,
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
                 sortMode: self.viewModel.sortMode,
@@ -120,6 +121,7 @@ struct TracklistView: View {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
+                    isMediaSourceEnabled: track.isMediaSourceEnabled,
                     onArtistSelected: { artist in self.pendingArtist = artist },
                     onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
                 )
@@ -171,9 +173,10 @@ struct TracklistView: View {
                 ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
                     TrackRow(
                         track: track,
-                        isSelected: TrackQueueManager.shared.isTrackSelected(track, contextId: self.contextId),
+                        isSelected: track.isMediaSourceEnabled && TrackQueueManager.shared.isTrackSelected(track, contextId: self.contextId),
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
+                        isMediaSourceEnabled: track.isMediaSourceEnabled,
                         onTap: {
                             self.playTrack(track, at: index)
                         },

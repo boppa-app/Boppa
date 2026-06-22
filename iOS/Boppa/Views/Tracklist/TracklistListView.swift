@@ -206,25 +206,30 @@ struct TracklistListView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
                     } else {
-                        TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode, showChevron: self.canNavigateToTracklist)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                if self.canNavigateToTracklist {
-                                    self.onTracklistSelected?(tracklist.mediaSourceId)
-                                    self.selectedTracklistId = tracklist.id
-                                }
+                        TracklistRow(
+                            tracklist: tracklist,
+                            showMediaSourceIcon: self.isLibraryMode,
+                            showChevron: self.canNavigateToTracklist,
+                            isMediaSourceEnabled: tracklist.isMediaSourceEnabled
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if self.canNavigateToTracklist {
+                                self.onTracklistSelected?(tracklist.mediaSourceId)
+                                self.selectedTracklistId = tracklist.id
                             }
-                            .background(
-                                NavigationLink(
-                                    destination: TracklistView(tracklist: tracklist),
-                                    tag: tracklist.id,
-                                    selection: self.$selectedTracklistId
-                                ) { EmptyView() }
-                                    .opacity(0)
-                            )
-                            .listRowBackground(Color.black)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparator(.hidden)
+                        }
+                        .background(
+                            NavigationLink(
+                                destination: TracklistView(tracklist: tracklist),
+                                tag: tracklist.id,
+                                selection: self.$selectedTracklistId
+                            ) { EmptyView() }
+                                .opacity(0)
+                        )
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
                     }
                 }
                 .onMove { source, destination in

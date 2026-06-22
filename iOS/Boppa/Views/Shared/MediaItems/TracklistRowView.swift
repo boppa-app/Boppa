@@ -4,6 +4,7 @@ struct TracklistRow: View {
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
     var showChevron: Bool = false
+    var isMediaSourceEnabled: Bool = true
 
     @ViewBuilder
     private var subtitleView: some View {
@@ -33,6 +34,7 @@ struct TracklistRow: View {
     var body: some View {
         HStack(spacing: 12) {
             ArtworkView(url: self.tracklist.artworkUrl, tracklistType: self.tracklist.tracklistType, size: 72)
+                .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(self.tracklist.title)
@@ -42,6 +44,7 @@ struct TracklistRow: View {
                 }
                 self.subtitleView
             }
+            .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             Spacer()
             if let mediaSource = self.resolvedMediaSource {
                 self.mediaSourceIcon(mediaSource)

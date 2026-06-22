@@ -51,6 +51,13 @@ struct Track: Identifiable, Equatable {
             && lhs.albums == rhs.albums
     }
 
+    var isMediaSourceEnabled: Bool {
+        guard let source = MediaSourceStorageManager.shared.fetchOne(id: self.mediaSourceId) else {
+            return false
+        }
+        return source.isEnabled
+    }
+
     var formattedDuration: String? {
         guard let duration else { return nil }
         return Track.formatTime(seconds: Double(duration) / 1000.0)

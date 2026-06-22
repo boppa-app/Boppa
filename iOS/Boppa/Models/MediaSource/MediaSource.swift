@@ -33,23 +33,17 @@ extension MediaSource {
         self.contextValuesJSON = "{}"
     }
 
-    static func fromConfigData(_ data: Data) throws -> [MediaSource] {
-        let configs: [MediaSourceConfig]
+    static func fromConfigData(_ data: Data) throws -> MediaSource {
+        let config: MediaSourceConfig
         do {
-            configs = try YAMLDecoder().decode([MediaSourceConfig].self, from: data)
+            config = try YAMLDecoder().decode(MediaSourceConfig.self, from: data)
         } catch let decodingError as DecodingError {
             throw MediaSourceImportError.malformedConfig(detail: describeDecodingError(decodingError))
         } catch {
             throw MediaSourceImportError.malformedConfig(detail: error.localizedDescription)
         }
 
-        guard !configs.isEmpty else {
-            throw MediaSourceImportError.malformedConfig(detail: "Config array is empty")
-        }
-
-        return configs.map { config in
-            MediaSource(id: config.id, name: config.name, url: config.url, config: config)
-        }
+        return MediaSource(id: config.id, name: config.name, url: config.url, config: config)
     }
 
     private static func describeDecodingError(_ error: DecodingError) -> String {

@@ -12,6 +12,7 @@ struct TrackRow: View {
     var isSelected: Bool = false
     var isLoading: Bool = false
     var isPlaying: Bool = false
+    var isMediaSourceEnabled: Bool = true
     var style: TrackRowStyle = .regular
     var onTap: (() -> Void)?
     var onEllipsisTap: (() -> Void)?
@@ -41,22 +42,38 @@ struct TrackRow: View {
     var body: some View {
         HStack(spacing: self.style == .compact ? 10 : 12) {
             ArtworkView(url: self.track.artworkUrl, placeholder: "music.note", size: self.artworkSize)
+                .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             VStack(alignment: .leading, spacing: self.style == .compact ? 2 : 4) {
                 Text(self.track.title)
                     .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
-                    .foregroundColor(self.isSelected ? .purp : .white)
+                    .foregroundColor(!self.isMediaSourceEnabled ? Color(.systemGray3) : (self.isSelected ? .purp : .white))
                     .lineLimit(1)
+                    .opacity(!self.isMediaSourceEnabled ? 0.7 : 1.0)
                 if let subtitle = self.track.subtitle {
                     Text(subtitle)
                         .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
-                        .foregroundColor(Color(.systemGray))
+                        .foregroundColor(!self.isMediaSourceEnabled ? Color(.systemGray4) : Color(.systemGray))
                         .lineLimit(1)
+                        .opacity(!self.isMediaSourceEnabled ? 0.7 : 1.0)
                 }
             }
             Spacer()
-            if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
+            if !self.isMediaSourceEnabled {
+                if self.style == .regular {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(Color(.systemGray4))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            self.onEllipsisTap?()
+                        }
+                        .accessibilityLabel("More Options")
+                        .accessibilityHint("More options for \(self.track.title)")
+                        .accessibilityAddTraits(.isButton)
+                }
+            } else if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
                 Image(systemName: "xmark")
                     .foregroundColor(.purp)
                     .frame(width: 44, height: 44)
@@ -113,11 +130,13 @@ struct TrackRow: View {
         .padding(.vertical, self.verticalPadding)
         .contentShape(Rectangle())
         .onTapGesture {
-            self.onTap?()
+            if self.isMediaSourceEnabled {
+                self.onTap?()
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel([self.track.title, self.track.subtitle].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityHint("Play \(self.track.title)")
+        .accessibilityHint(!self.isMediaSourceEnabled ? "Source unavailable" : "Play \(self.track.title)")
         .accessibilityAddTraits(.isButton)
     }
 }

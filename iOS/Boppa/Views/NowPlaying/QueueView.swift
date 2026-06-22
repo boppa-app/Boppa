@@ -86,6 +86,7 @@ final class QueueTableViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        self.reloadData()
         self.scrollToCurrentTrack(animated: false)
     }
 
@@ -160,7 +161,8 @@ final class QueueTableViewController: UITableViewController {
             return self.queueManager.currentEntry.map { [$0] } ?? []
         case .all:
             guard !entries.isEmpty else { return [] }
-            return Array(entries[currentIndex...]) + Array(entries[..<currentIndex])
+            let reordered = Array(entries[currentIndex...]) + Array(entries[..<currentIndex])
+            return reordered.filter { $0.track.isMediaSourceEnabled }
         }
     }
 

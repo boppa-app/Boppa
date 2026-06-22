@@ -87,6 +87,13 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.storedTracklist?.isSavedToLibrary == true
     }
 
+    var isMediaSourceEnabled: Bool {
+        guard let source = MediaSourceStorageManager.shared.fetchOne(id: self.mediaSourceId) else {
+            return false
+        }
+        return source.isEnabled
+    }
+
     var formattedTrackCount: String? {
         guard let trackCount else { return nil }
         return "\(trackCount) track\(trackCount == 1 ? "" : "s")"

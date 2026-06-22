@@ -50,9 +50,9 @@ class TracklistListViewModel {
                     queue: .main
                 ) { [weak self] _ in
                     guard let self, let type = self.libraryType else { return }
-                    let enabledIds = Set(MediaSourceStorageManager.shared.fetchAllEnabled().map(\.id))
-                    self.libraryVisibleSourceIds = enabledIds
-                    self.reloadFromLibrary(type: type, visibleMediaSourceIds: enabledIds)
+                    let allIds = Set(MediaSourceStorageManager.shared.fetchAll().map(\.id))
+                    self.libraryVisibleSourceIds = allIds
+                    self.reloadFromLibrary(type: type, visibleMediaSourceIds: allIds)
                 }
             )
         }

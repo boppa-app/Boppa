@@ -3,6 +3,7 @@ import SwiftUI
 struct TracklistActionSheet: View {
     let tracklist: Tracklist
     let mediaSource: MediaSource?
+    var isMediaSourceEnabled: Bool = true
     let isPinned: Bool
     let isRefreshing: Bool
     let sortMode: SortMode
@@ -38,7 +39,9 @@ struct TracklistActionSheet: View {
                     .padding(.bottom, 12)
 
                 List {
-                    self.refreshRow
+                    if self.isMediaSourceEnabled {
+                        self.refreshRow
+                    }
                     self.pinRow
                     self.sortRow
                     self.deleteRow

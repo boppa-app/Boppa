@@ -124,8 +124,8 @@ struct LibraryView: View {
                 self.viewModel.loadSources()
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
-                let removedIds = notification.userInfo?["ids"] as? [String] ?? []
-                if let active = self.activeMediaSourceId, removedIds.contains(active) {
+                let removedId = notification.userInfo?["id"] as? String
+                if let active = self.activeMediaSourceId, active == removedId {
                     self.path = NavigationPath()
                     self.refreshSearchHandlers()
                 }
@@ -166,6 +166,7 @@ struct LibraryView: View {
                     TrackActionsSheet(
                         track: track,
                         mediaSource: mediaSource,
+                        isMediaSourceEnabled: track.isMediaSourceEnabled,
                         onArtistSelected: { artist in self.pendingArtist = artist },
                         onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
                     )
@@ -276,7 +277,8 @@ struct LibraryView: View {
                                 TracklistRow(
                                     tracklist: Tracklist(storedTracklist: stored),
                                     showMediaSourceIcon: true,
-                                    showChevron: true
+                                    showChevron: true,
+                                    isMediaSourceEnabled: stored.isMediaSourceEnabled
                                 )
                             }
                             .buttonStyle(.plain)
@@ -463,10 +465,10 @@ struct LibraryView: View {
                 )))
             case .playlists:
                 self.activeMediaSourceId = nil
-                self.path.append(LibraryDestination.playlists(self.viewModel.visibleMediaSourceStringIds))
+                self.path.append(LibraryDestination.playlists(self.viewModel.visibleMediaSourceStringIds.union(self.viewModel.disabledMediaSourceIds)))
             case .albums:
                 self.activeMediaSourceId = nil
-                self.path.append(LibraryDestination.albums(self.viewModel.visibleMediaSourceStringIds))
+                self.path.append(LibraryDestination.albums(self.viewModel.visibleMediaSourceStringIds.union(self.viewModel.disabledMediaSourceIds)))
             }
         }
         .listRowBackground(Color.black)

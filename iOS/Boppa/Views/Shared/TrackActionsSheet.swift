@@ -3,6 +3,7 @@ import SwiftUI
 struct TrackActionsSheet: View {
     let track: Track
     let mediaSource: MediaSource
+    var isMediaSourceEnabled: Bool = true
     var onArtistSelected: ((Artist) -> Void)?
     var onAlbumSelected: ((Tracklist) -> Void)?
 
@@ -23,59 +24,63 @@ struct TrackActionsSheet: View {
                 .padding(.bottom, 12)
 
             List {
-                Button {
-                    TrackQueueManager.shared.playNext(self.track)
-                    self.dismiss()
-                } label: {
-                    self.actionRowLabel(
-                        name: "Play Next",
-                        icon: "text.line.first.and.arrowtriangle.forward"
-                    )
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color(.systemGray6))
-                .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-                .listRowSeparator(.hidden)
-                .accessibilityLabel("Play Next")
-                .accessibilityHint("Play \(self.track.title) after the current track")
-
-                ForEach(self.track.artists) { artist in
-                    if self.mediaSource.config.data.get?.artist != nil {
-                        Button {
-                            self.dismiss()
-                            self.onArtistSelected?(artist)
-                        } label: {
-                            self.navigationRowLabel(
-                                name: artist.name,
-                                icon: "person.fill"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(Color(.systemGray6))
-                        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-                        .listRowSeparator(.hidden)
-                        .accessibilityLabel("Go to \(artist.name)")
-                        .accessibilityHint("View artist page for \(artist.name)")
+                if self.isMediaSourceEnabled {
+                    Button {
+                        TrackQueueManager.shared.playNext(self.track)
+                        self.dismiss()
+                    } label: {
+                        self.actionRowLabel(
+                            name: "Play Next",
+                            icon: "text.line.first.and.arrowtriangle.forward"
+                        )
                     }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color(.systemGray6))
+                    .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                    .listRowSeparator(.hidden)
+                    .accessibilityLabel("Play Next")
+                    .accessibilityHint("Play \(self.track.title) after the current track")
                 }
 
-                ForEach(self.track.albums) { album in
-                    if self.mediaSource.config.data.list?.album != nil {
-                        Button {
-                            self.dismiss()
-                            self.onAlbumSelected?(album)
-                        } label: {
-                            self.navigationRowLabel(
-                                name: album.title,
-                                icon: self.albumIcon
-                            )
+                if self.isMediaSourceEnabled {
+                    ForEach(self.track.artists) { artist in
+                        if self.mediaSource.config.data.get?.artist != nil {
+                            Button {
+                                self.dismiss()
+                                self.onArtistSelected?(artist)
+                            } label: {
+                                self.navigationRowLabel(
+                                    name: artist.name,
+                                    icon: "person.fill"
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color(.systemGray6))
+                            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                            .listRowSeparator(.hidden)
+                            .accessibilityLabel("Go to \(artist.name)")
+                            .accessibilityHint("View artist page for \(artist.name)")
                         }
-                        .buttonStyle(.plain)
-                        .listRowBackground(Color(.systemGray6))
-                        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
-                        .listRowSeparator(.hidden)
-                        .accessibilityLabel("Go to \(album.title)")
-                        .accessibilityHint("View album page for \(album.title)")
+                    }
+
+                    ForEach(self.track.albums) { album in
+                        if self.mediaSource.config.data.list?.album != nil {
+                            Button {
+                                self.dismiss()
+                                self.onAlbumSelected?(album)
+                            } label: {
+                                self.navigationRowLabel(
+                                    name: album.title,
+                                    icon: self.albumIcon
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color(.systemGray6))
+                            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                            .listRowSeparator(.hidden)
+                            .accessibilityLabel("Go to \(album.title)")
+                            .accessibilityHint("View album page for \(album.title)")
+                        }
                     }
                 }
             }

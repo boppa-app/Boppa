@@ -43,7 +43,15 @@ final class TrackQueueManager {
     private let registry = WebViewPlaybackEngineRegistry.shared
     private var preloadedArtworkBySource: [String: Set<String>] = [:]
 
-    private init() {}
+    private init() {
+        for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceEnabled, .mediaSourceRemoved, .mediaSourceAdded] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.updateArtworkPreloads()
+                }
+            }
+        }
+    }
 
     func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
         self.contextId = contextId
@@ -64,31 +72,51 @@ final class TrackQueueManager {
 
         if self.repeatMode == .one { return self.currentTrack }
 
-        if self.currentIndex + 1 < self.entries.count {
-            self.currentIndex += 1
-        } else if self.repeatMode == .all {
-            self.currentIndex = 0
-        } else {
-            return nil
-        }
+        let startIndex = self.currentIndex
+        var nextIndex = startIndex
 
-        self.updateArtworkPreloads()
-        return self.currentTrack
+        while true {
+            if nextIndex + 1 < self.entries.count {
+                nextIndex += 1
+            } else if self.repeatMode == .all {
+                nextIndex = 0
+            } else {
+                return nil
+            }
+
+            if nextIndex == startIndex { return nil }
+
+            if self.entries[nextIndex].track.isMediaSourceEnabled {
+                self.currentIndex = nextIndex
+                self.updateArtworkPreloads()
+                return self.currentTrack
+            }
+        }
     }
 
     func rewindToPrevious() -> Track? {
         guard !self.entries.isEmpty else { return nil }
 
-        if self.currentIndex - 1 >= 0 {
-            self.currentIndex -= 1
-        } else if self.repeatMode == .all {
-            self.currentIndex = self.entries.count - 1
-        } else {
-            return nil
-        }
+        let startIndex = self.currentIndex
+        var prevIndex = startIndex
 
-        self.updateArtworkPreloads()
-        return self.currentTrack
+        while true {
+            if prevIndex - 1 >= 0 {
+                prevIndex -= 1
+            } else if self.repeatMode == .all {
+                prevIndex = self.entries.count - 1
+            } else {
+                return nil
+            }
+
+            if prevIndex == startIndex { return nil }
+
+            if self.entries[prevIndex].track.isMediaSourceEnabled {
+                self.currentIndex = prevIndex
+                self.updateArtworkPreloads()
+                return self.currentTrack
+            }
+        }
     }
 
     // MARK: - Queue Mutation
@@ -112,21 +140,6 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
-    func removeTracks(forMediaSource mediaSourceId: String) {
-        let currentId = self.currentEntry?.id
-        let removed = self.entries.filter { $0.track.mediaSourceId == mediaSourceId }
-        for entry in removed {
-            self.trackIdToEntry.removeValue(forKey: entry.track.trackKey)
-        }
-        self.entries.removeAll { $0.track.mediaSourceId == mediaSourceId }
-
-        if let currentId, let newIndex = self.entries.firstIndex(where: { $0.id == currentId }) {
-            self.currentIndex = newIndex
-        } else {
-            self.currentIndex = min(self.currentIndex, max(self.entries.count - 1, 0))
-        }
-    }
-
     func clearQueue() {
         self.entries = []
         self.currentIndex = 0
@@ -137,7 +150,8 @@ final class TrackQueueManager {
 
     func applyReorder(_ reorderedEntries: [QueueEntry]) {
         let currentId = self.currentEntry?.id
-        self.entries = reorderedEntries
+        let disabledEntries = self.entries.filter { !$0.track.isMediaSourceEnabled }
+        self.entries = reorderedEntries + disabledEntries
         if let currentId {
             self.currentIndex = self.entries.firstIndex(where: { $0.id == currentId }) ?? 0
         }
@@ -171,15 +185,29 @@ final class TrackQueueManager {
         guard !self.entries.isEmpty else { return }
 
         let window = Self.artworkPreloadWindow
-        let startIndex = max(0, self.currentIndex - window)
-        let endIndex = min(self.entries.count - 1, self.currentIndex + window)
 
         var desiredBySource: [String: Set<String>] = [:]
-        for i in startIndex ... endIndex {
+
+        var count = 0
+        for i in self.currentIndex ..< self.entries.count {
             let track = self.entries[i].track
+            guard track.isMediaSourceEnabled else { continue }
             if let url = track.artworkUrl, !url.isEmpty {
                 desiredBySource[track.mediaSourceId, default: []].insert(url)
             }
+            count += 1
+            if count >= window { break }
+        }
+
+        count = 0
+        for i in stride(from: self.currentIndex - 1, through: 0, by: -1) {
+            let track = self.entries[i].track
+            guard track.isMediaSourceEnabled else { continue }
+            if let url = track.artworkUrl, !url.isEmpty {
+                desiredBySource[track.mediaSourceId, default: []].insert(url)
+            }
+            count += 1
+            if count >= window { break }
         }
 
         for (mediaSourceId, desiredUrls) in desiredBySource {

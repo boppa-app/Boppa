@@ -21,6 +21,15 @@ extension StoredTracklist: Identifiable {
     }
 }
 
+extension StoredTracklist {
+    var isMediaSourceEnabled: Bool {
+        guard let source = MediaSourceStorageManager.shared.fetchOne(id: self.mediaSourceId) else {
+            return false
+        }
+        return source.isEnabled
+    }
+}
+
 extension StoredTracklist: FuzzySearchable {
     var fuzzyTitle: String {
         self.title

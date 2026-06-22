@@ -16,14 +16,12 @@ class SettingsViewModel {
         self.mediaSources = (try? MediaSourceStorageManager.shared.updateSortOrders(reordered)) ?? reordered
     }
 
-    func deleteMediaSources(at offsets: IndexSet) -> [String] {
-        var deletedIds: [String] = []
+    func deleteMediaSource(at offsets: IndexSet) {
         for index in offsets.sorted().reversed() {
             let mediaSource = self.mediaSources[index]
-            deletedIds.append(mediaSource.id)
             try? MediaSourceStorageManager.shared.delete(id: mediaSource.id)
             self.mediaSources.remove(at: index)
+            NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["id": mediaSource.id])
         }
-        return deletedIds
     }
 }

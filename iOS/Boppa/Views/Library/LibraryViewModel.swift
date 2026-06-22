@@ -19,7 +19,8 @@ class LibraryViewModel {
 
     var pinnedTracklists: [StoredTracklist] {
         let visibleIds = self.visibleMediaSourceStringIds
-        return self.allPinnedTracklists.filter { visibleIds.contains($0.mediaSourceId) }
+        let disabledIds = self.disabledMediaSourceIds
+        return self.allPinnedTracklists.filter { visibleIds.contains($0.mediaSourceId) || disabledIds.contains($0.mediaSourceId) }
     }
 
     enum LibrarySection: String, CaseIterable {
@@ -49,22 +50,16 @@ class LibraryViewModel {
         }
     }
 
+    var disabledMediaSourceIds: Set<String> {
+        Set(self.mediaSources.filter { !$0.isEnabled }.map(\.id))
+    }
+
     func loadSources() {
-        let newSources = MediaSourceStorageManager.shared.fetchAllEnabled()
+        let newSources = MediaSourceStorageManager.shared.fetchAll()
 
-        let oldIds = Set(self.mediaSources.map(\.id))
         self.mediaSources = newSources
-        let newIds = Set(newSources.map(\.id))
-
-        let added = newIds.subtracting(oldIds)
-        let removed = oldIds.subtracting(newIds)
-
-        self.visibleMediaSourceIds.formUnion(added)
-        self.visibleMediaSourceIds.subtract(removed)
-
-        if oldIds.isEmpty {
-            self.visibleMediaSourceIds = newIds
-        }
+        let enabledIds = Set(newSources.filter(\.isEnabled).map(\.id))
+        self.visibleMediaSourceIds = enabledIds
 
         self.loadPinnedTracklists()
         self.loadAllContent()
