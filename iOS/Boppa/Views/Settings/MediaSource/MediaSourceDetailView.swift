@@ -12,21 +12,23 @@ struct MediaSourceDetailView: View {
             )
 
             List {
-                Section("Enabled") {
+                Section("Details") {
+                    LabeledContent("Name", value: self.viewModel.mediaSource.name)
+                    LabeledContent("URL", value: self.viewModel.mediaSource.url)
+                }
+
+                Section("Options") {
                     HStack {
+                        Text("Enabled")
+                            .foregroundColor(.white)
+                        Spacer()
                         SolidToggle(isOn: self.$viewModel.isSourceEnabled)
                             .fixedSize()
                             .accessibilityLabel("Enable Media Source")
                             .accessibilityValue(self.viewModel.isSourceEnabled ? "On" : "Off")
                             .accessibilityHint("Toggle to enable or disable this media source")
                             .accessibilityAddTraits(.isButton)
-                        Spacer()
                     }
-                }
-
-                Section("Details") {
-                    LabeledContent("Name", value: self.viewModel.mediaSource.name)
-                    LabeledContent("URL", value: self.viewModel.mediaSource.url)
                 }
 
                 Section("Config") {
