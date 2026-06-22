@@ -5,8 +5,6 @@ import os
 @Observable
 class LibraryViewModel {
     var mediaSources: [MediaSource] = []
-    var visibleMediaSourceIds: Set<String> = []
-    var showFilterSheet = false
     var isPinnedExpanded = false
     private var allPinnedTracklists: [StoredTracklist] = []
     private var hasSetInitialPinnedState = false
@@ -18,9 +16,7 @@ class LibraryViewModel {
     private var allLibraryTracklists: [StoredTracklist] = []
 
     var pinnedTracklists: [StoredTracklist] {
-        let visibleIds = self.visibleMediaSourceStringIds
-        let disabledIds = self.disabledMediaSourceIds
-        return self.allPinnedTracklists.filter { visibleIds.contains($0.mediaSourceId) || disabledIds.contains($0.mediaSourceId) }
+        self.allPinnedTracklists
     }
 
     enum LibrarySection: String, CaseIterable {
@@ -50,17 +46,8 @@ class LibraryViewModel {
         }
     }
 
-    var disabledMediaSourceIds: Set<String> {
-        Set(self.mediaSources.filter { !$0.isEnabled }.map(\.id))
-    }
-
     func loadSources() {
-        let newSources = MediaSourceStorageManager.shared.fetchAll()
-
-        self.mediaSources = newSources
-        let enabledIds = Set(newSources.filter(\.isEnabled).map(\.id))
-        self.visibleMediaSourceIds = enabledIds
-
+        self.mediaSources = MediaSourceStorageManager.shared.fetchAll()
         self.loadPinnedTracklists()
         self.loadAllContent()
     }
@@ -73,14 +60,6 @@ class LibraryViewModel {
         }
     }
 
-    var filteredSources: [MediaSource] {
-        self.mediaSources.filter { self.visibleMediaSourceIds.contains($0.id) }
-    }
-
-    var visibleMediaSourceStringIds: Set<String> {
-        Set(self.filteredSources.map(\.id))
-    }
-
     private var songSourceIds: Set<String> {
         Set(self.mediaSources.filter { $0.config.data.search?.songs != nil }.map(\.id))
     }
@@ -90,26 +69,24 @@ class LibraryViewModel {
     }
 
     var categoryFilteredTracks: [StoredTrack] {
-        let visibleIds = self.visibleMediaSourceStringIds
         switch self.selectedLibraryCategory {
         case .songs:
             let ids = self.songSourceIds
-            return self.allLibraryTracks.filter { visibleIds.contains($0.mediaSourceId) && ids.contains($0.mediaSourceId) }
+            return self.allLibraryTracks.filter { ids.contains($0.mediaSourceId) }
         case .videos:
             let ids = self.videoSourceIds
-            return self.allLibraryTracks.filter { visibleIds.contains($0.mediaSourceId) && ids.contains($0.mediaSourceId) }
+            return self.allLibraryTracks.filter { ids.contains($0.mediaSourceId) }
         default:
             return []
         }
     }
 
     var categoryFilteredTracklists: [StoredTracklist] {
-        let visibleIds = self.visibleMediaSourceStringIds
         switch self.selectedLibraryCategory {
         case .albums:
-            return self.allLibraryTracklists.filter { visibleIds.contains($0.mediaSourceId) && $0.tracklistType == "album" }
+            return self.allLibraryTracklists.filter { $0.tracklistType == "album" }
         case .playlists:
-            return self.allLibraryTracklists.filter { visibleIds.contains($0.mediaSourceId) && $0.tracklistType == "playlist" }
+            return self.allLibraryTracklists.filter { $0.tracklistType == "playlist" }
         default:
             return []
         }
@@ -124,12 +101,11 @@ class LibraryViewModel {
     func updateAvailableCategories() {
         let songIds = self.songSourceIds
         let videoIds = self.videoSourceIds
-        let visibleIds = self.visibleMediaSourceStringIds
 
-        let hasSongs = self.allLibraryTracks.contains { visibleIds.contains($0.mediaSourceId) && songIds.contains($0.mediaSourceId) }
-        let hasVideos = self.allLibraryTracks.contains { visibleIds.contains($0.mediaSourceId) && videoIds.contains($0.mediaSourceId) }
-        let hasAlbums = self.allLibraryTracklists.contains { visibleIds.contains($0.mediaSourceId) && $0.tracklistType == "album" }
-        let hasPlaylists = self.allLibraryTracklists.contains { visibleIds.contains($0.mediaSourceId) && $0.tracklistType == "playlist" }
+        let hasSongs = self.allLibraryTracks.contains { songIds.contains($0.mediaSourceId) }
+        let hasVideos = self.allLibraryTracks.contains { videoIds.contains($0.mediaSourceId) }
+        let hasAlbums = self.allLibraryTracklists.contains { $0.tracklistType == "album" }
+        let hasPlaylists = self.allLibraryTracklists.contains { $0.tracklistType == "playlist" }
 
         var categories: [SearchCategory] = []
         if hasSongs { categories.append(.songs) }

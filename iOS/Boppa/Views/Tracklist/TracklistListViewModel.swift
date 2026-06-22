@@ -26,7 +26,6 @@ class TracklistListViewModel {
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
     private var libraryType: TracklistListType?
-    private var libraryVisibleSourceIds: Set<String> = []
 
     @ObservationIgnored
     private var observers: [NSObjectProtocol] = []
@@ -39,7 +38,7 @@ class TracklistListViewModel {
                 queue: .main
             ) { [weak self] _ in
                 guard let self, let type = self.libraryType else { return }
-                self.reloadFromLibrary(type: type, visibleMediaSourceIds: self.libraryVisibleSourceIds)
+                self.reloadFromLibrary(type: type)
             }
         )
         for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceRemoved, .mediaSourceEnabled, .mediaSourceAdded] {
@@ -50,9 +49,7 @@ class TracklistListViewModel {
                     queue: .main
                 ) { [weak self] _ in
                     guard let self, let type = self.libraryType else { return }
-                    let allIds = Set(MediaSourceStorageManager.shared.fetchAll().map(\.id))
-                    self.libraryVisibleSourceIds = allIds
-                    self.reloadFromLibrary(type: type, visibleMediaSourceIds: allIds)
+                    self.reloadFromLibrary(type: type)
                 }
             )
         }
@@ -183,17 +180,15 @@ class TracklistListViewModel {
         }
     }
 
-    func loadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
+    func loadFromLibrary(type: TracklistListType) {
         self.libraryType = type
-        self.libraryVisibleSourceIds = visibleMediaSourceIds
-        self.reloadFromLibrary(type: type, visibleMediaSourceIds: visibleMediaSourceIds)
+        self.reloadFromLibrary(type: type)
     }
 
-    private func reloadFromLibrary(type: TracklistListType, visibleMediaSourceIds: Set<String>) {
+    private func reloadFromLibrary(type: TracklistListType) {
         let typeString = type == .albums ? "album" : "playlist"
         self.tracklists = TracklistStorageManager.shared.loadLibraryTracklists(
             type: typeString,
-            visibleMediaSourceIds: visibleMediaSourceIds,
             reversed: type == .albums
         )
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")

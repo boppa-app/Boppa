@@ -107,16 +107,14 @@ class TracklistStorageManager {
         }
     }
 
-    func loadLibraryTracklists(type: String, visibleMediaSourceIds: Set<String>, reversed: Bool) -> [Tracklist] {
+    func loadLibraryTracklists(type: String, reversed: Bool) -> [Tracklist] {
         (try? self.database.read { db in
             var allStored = try StoredTracklist
                 .where { $0.tracklistType.eq(type).and($0.isSavedToLibrary.eq(true)) }
                 .order { $0.sortOrder }
                 .fetchAll(db)
             if reversed { allStored.reverse() }
-            return try allStored
-                .filter { visibleMediaSourceIds.contains($0.mediaSourceId) }
-                .map { try self.tracklist(from: $0, db: db) }
+            return try allStored.map { try self.tracklist(from: $0, db: db) }
         }) ?? []
     }
 

@@ -17,7 +17,6 @@ class TracklistViewModel {
     var tracklist: Tracklist
     var isPersisted: Bool
     var tracks: [Track] = []
-    private var enabledSourceIds: Set<String> = []
     var isLoading = false
     var isRefreshing = false
     var isSaving = false
@@ -41,7 +40,6 @@ class TracklistViewModel {
         self.isPersisted = tracklist.isPersisted
 
         if tracklist.mediaSourceId == "boppa.app" {
-            self.enabledSourceIds = Set(MediaSourceStorageManager.shared.fetchAllEnabled().map(\.id))
             self.observers.append(
                 NotificationCenter.default.addObserver(
                     forName: .playlistMembershipChanged,
@@ -57,18 +55,6 @@ class TracklistViewModel {
                     }
                 }
             )
-            for name: Notification.Name in [.mediaSourceAdded, .mediaSourceEnabled, .mediaSourceDisabled, .mediaSourceRemoved] {
-                self.observers.append(
-                    NotificationCenter.default.addObserver(
-                        forName: name,
-                        object: nil,
-                        queue: .main
-                    ) { [weak self] _ in
-                        guard let self else { return }
-                        self.enabledSourceIds = Set(MediaSourceStorageManager.shared.fetchAllEnabled().map(\.id))
-                    }
-                )
-            }
         }
     }
 
@@ -81,10 +67,8 @@ class TracklistViewModel {
     var displayTracks: [Track] {
         var base = self.tracks
         if self.tracklist.mediaSourceId == "boppa.app" {
-            let allSourceIds = Set(MediaSourceStorageManager.shared.fetchAll().map(\.id))
             base = base.filter {
-                allSourceIds.contains($0.mediaSourceId) &&
-                    PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
+                PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
             }
         }
         let items = self.searchHandler.displayItems(from: base)

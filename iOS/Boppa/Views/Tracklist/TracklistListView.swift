@@ -12,7 +12,6 @@ struct TracklistListView: View {
     let type: TracklistListType
     let title: String
     let isLibraryMode: Bool
-    let visibleMediaSourceIds: Set<String>
     var onTracklistSelected: ((String) -> Void)?
 
     init(
@@ -26,16 +25,14 @@ struct TracklistListView: View {
         self.type = type
         self.title = title
         self.isLibraryMode = false
-        self.visibleMediaSourceIds = []
     }
 
-    init(type: TracklistListType, title: String, visibleMediaSourceIds: Set<String>, onTracklistSelected: ((String) -> Void)? = nil) {
+    init(type: TracklistListType, title: String, onTracklistSelected: ((String) -> Void)? = nil) {
         self.artist = nil
         self.mediaSource = nil
         self.type = type
         self.title = title
         self.isLibraryMode = true
-        self.visibleMediaSourceIds = visibleMediaSourceIds
         self.onTracklistSelected = onTracklistSelected
     }
 
@@ -125,10 +122,7 @@ struct TracklistListView: View {
         .onAppear {
             if self.isLibraryMode {
                 self.viewModel.loadSortMode(type: self.type)
-                self.viewModel.loadFromLibrary(
-                    type: self.type,
-                    visibleMediaSourceIds: self.visibleMediaSourceIds
-                )
+                self.viewModel.loadFromLibrary(type: self.type)
             } else if let artist = self.artist,
                       let mediaSource = self.mediaSource
             {

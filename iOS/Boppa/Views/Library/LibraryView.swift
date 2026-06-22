@@ -17,8 +17,8 @@ struct LibraryView: View {
 
     private enum LibraryDestination: Hashable {
         case tracklist(Tracklist)
-        case playlists(Set<String>)
-        case albums(Set<String>)
+        case playlists
+        case albums
         case artist(Artist, MediaSource)
     }
 
@@ -108,12 +108,12 @@ struct LibraryView: View {
                 switch destination {
                 case let .tracklist(tracklist):
                     TracklistView(tracklist: tracklist)
-                case let .playlists(visibleIds):
-                    TracklistListView(type: .playlists, title: "Playlists", visibleMediaSourceIds: visibleIds) { sourceId in
+                case .playlists:
+                    TracklistListView(type: .playlists, title: "Playlists") { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
-                case let .albums(visibleIds):
-                    TracklistListView(type: .albums, title: "Albums", visibleMediaSourceIds: visibleIds) { sourceId in
+                case .albums:
+                    TracklistListView(type: .albums, title: "Albums") { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
                 case let .artist(artist, mediaSource):
@@ -154,14 +154,6 @@ struct LibraryView: View {
             .onReceive(NotificationCenter.default.publisher(for: .playlistMembershipChanged)) { _ in
                 self.viewModel.loadAllContent()
                 self.refreshSearchHandlers()
-            }
-            .sheet(isPresented: self.$viewModel.showFilterSheet) {
-                MediaSourcePickerSheet(
-                    mediaSourcePickerMode: .multi(selectedMediaSourceIds: self.$viewModel.visibleMediaSourceIds)
-                )
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(Color(.systemGray6))
             }
             .sheet(item: self.$trackForActions) { track in
                 if let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == track.mediaSourceId }) {
@@ -206,15 +198,6 @@ struct LibraryView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
-                Button {
-                    self.viewModel.showFilterSheet = true
-                } label: {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .font(.system(size: 20))
-                        .foregroundColor(.purp)
-                }
-                .accessibilityLabel("Filter")
-                .accessibilityHint("Filter library by media source")
                 Spacer()
                 Button {
                     self.viewModel.loadAllContent()
@@ -467,10 +450,10 @@ struct LibraryView: View {
                 )))
             case .playlists:
                 self.activeMediaSourceId = nil
-                self.path.append(LibraryDestination.playlists(self.viewModel.visibleMediaSourceStringIds.union(self.viewModel.disabledMediaSourceIds)))
+                self.path.append(LibraryDestination.playlists)
             case .albums:
                 self.activeMediaSourceId = nil
-                self.path.append(LibraryDestination.albums(self.viewModel.visibleMediaSourceStringIds.union(self.viewModel.disabledMediaSourceIds)))
+                self.path.append(LibraryDestination.albums)
             }
         }
         .listRowBackground(Color.black)
