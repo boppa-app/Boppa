@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var searchResetId = 0
     @State private var libraryResetId = 0
     @State private var settingsResetId = 0
+    @State private var searchFocusId = 0
     @State private var searchIsAtRoot = true
     @State private var libraryIsAtRoot = true
     @State private var settingsIsAtRoot = true
@@ -22,7 +23,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                SearchView(navigationResetId: self.searchResetId, isAtNavigationRoot: self.$searchIsAtRoot)
+                SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot)
                     .opacity(self.selectedTab == 0 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 0)
                 LibraryView(navigationResetId: self.libraryResetId, isAtNavigationRoot: self.$libraryIsAtRoot)
@@ -46,7 +47,9 @@ struct ContentView: View {
                 onSameTabTapped: { tab in
                     withAnimation(.easeInOut(duration: 0.35)) {
                         switch tab {
-                        case 0: if !self.searchIsAtRoot { self.searchResetId += 1 }
+                        case 0:
+                            if !self.searchIsAtRoot { self.searchResetId += 1 }
+                            self.searchFocusId += 1
                         case 1: if !self.libraryIsAtRoot { self.libraryResetId += 1 }
                         case 2: if !self.settingsIsAtRoot { self.settingsResetId += 1 }
                         default: break

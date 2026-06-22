@@ -13,6 +13,7 @@ struct SearchView: View {
     @State private var activeMediaSourceId: String?
     @FocusState private var isSearchFieldFocused: Bool
     var navigationResetId: Int = 0
+    var focusSearchId: Int = 0
     @Binding var isAtNavigationRoot: Bool
 
     private var showBubbles: Bool {
@@ -77,6 +78,9 @@ struct SearchView: View {
                 self.path = NavigationPath()
                 self.pendingArtist = nil
                 self.pendingTracklist = nil
+            }
+            .onChange(of: self.focusSearchId) { _, _ in
+                self.isSearchFieldFocused = true
             }
             .onChange(of: self.pendingArtist) { _, artist in
                 guard let artist, let mediaSource = self.viewModel.selectedMediaSource else { return }
