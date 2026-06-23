@@ -117,14 +117,16 @@ struct NowPlayingView: View {
 
     private var transportControls: some View {
         HStack {
-            Button {} label: {
+            Button {
+                self.viewModel.toggleShuffle()
+            } label: {
                 Image(systemName: "shuffle")
                     .font(.system(size: 18))
-                    .foregroundColor(Color(.systemGray))
+                    .foregroundColor(self.viewModel.shuffleEnabled ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
-            .accessibilityLabel("Shuffle")
-            .accessibilityHint("Shuffle mode not yet available")
+            .accessibilityLabel(self.viewModel.shuffleEnabled ? "Shuffle On" : "Shuffle Off")
+            .accessibilityHint("Toggle shuffle mode")
 
             Spacer()
 

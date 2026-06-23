@@ -44,6 +44,10 @@ final class NowPlayingViewModel {
         self.queueManager.repeatMode
     }
 
+    var shuffleEnabled: Bool {
+        self.queueManager.shuffleEnabled
+    }
+
     var artworkURL: URL? {
         guard let artworkUrl = self.currentTrack?.artworkUrl else { return nil }
         return URL(string: artworkUrl)
@@ -121,6 +125,10 @@ final class NowPlayingViewModel {
 
     func cycleRepeatMode() {
         self.queueManager.cycleRepeatMode()
+    }
+
+    func toggleShuffle() {
+        self.queueManager.toggleShuffle()
     }
 
     func handleSeekEditingChanged(editing: Bool, newValue: Double) {

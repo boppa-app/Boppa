@@ -96,7 +96,7 @@ final class QueueTableViewController: UITableViewController {
 
     private func startObserving() {
         self.observationTask = Task { [weak self] in
-            var lastEntryIds = TrackQueueManager.shared.entries.map(\.id)
+            var lastEntryIds = TrackQueueManager.shared.activeEntries.map(\.id)
             var lastCurrentIndex = TrackQueueManager.shared.currentIndex
             var lastRepeatMode = TrackQueueManager.shared.repeatMode
             var lastIsPlaying = PlaybackService.shared.isPlaying
@@ -108,6 +108,8 @@ final class QueueTableViewController: UITableViewController {
                 await withCheckedContinuation { continuation in
                     withObservationTracking {
                         _ = self.queueManager.entries
+                        _ = self.queueManager.shuffledEntries
+                        _ = self.queueManager.shuffleEnabled
                         _ = self.queueManager.currentIndex
                         _ = self.queueManager.repeatMode
                         _ = self.playbackService.isPlaying
@@ -119,7 +121,7 @@ final class QueueTableViewController: UITableViewController {
 
                 guard !Task.isCancelled else { return }
 
-                let currentEntryIds = self.queueManager.entries.map(\.id)
+                let currentEntryIds = self.queueManager.activeEntries.map(\.id)
                 let currentIndex = self.queueManager.currentIndex
                 let repeatMode = self.queueManager.repeatMode
                 let isPlaying = self.playbackService.isPlaying
@@ -152,7 +154,7 @@ final class QueueTableViewController: UITableViewController {
     }
 
     private func computeDisplayEntries() -> [QueueEntry] {
-        let entries = self.queueManager.entries
+        let entries = self.queueManager.activeEntries
         let currentIndex = self.queueManager.currentIndex
         let repeatMode = self.queueManager.repeatMode
 

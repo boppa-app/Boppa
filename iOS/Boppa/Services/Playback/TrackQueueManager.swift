@@ -18,14 +18,21 @@ final class TrackQueueManager {
     static let shared = TrackQueueManager()
 
     private(set) var entries: [QueueEntry] = []
+    private(set) var shuffledEntries: [QueueEntry] = []
+    private(set) var shuffleEnabled = false
     private(set) var currentIndex: Int = 0
 
     private(set) var repeatMode: RepeatMode = .off
     private(set) var contextId: String?
 
+    var activeEntries: [QueueEntry] {
+        self.shuffleEnabled ? self.shuffledEntries : self.entries
+    }
+
     var currentEntry: QueueEntry? {
-        guard !self.entries.isEmpty, self.currentIndex >= 0, self.currentIndex < self.entries.count else { return nil }
-        return self.entries[self.currentIndex]
+        let active = self.activeEntries
+        guard !active.isEmpty, self.currentIndex >= 0, self.currentIndex < active.count else { return nil }
+        return active[self.currentIndex]
     }
 
     var currentTrack: Track? {
@@ -33,7 +40,7 @@ final class TrackQueueManager {
     }
 
     var queue: [Track] {
-        self.entries.map(\.track)
+        self.activeEntries.map(\.track)
     }
 
     private static let artworkPreloadWindow = 50
@@ -54,18 +61,27 @@ final class TrackQueueManager {
     func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
         self.contextId = contextId
         self.entries = tracks.map { QueueEntry(track: $0) }
-        self.currentIndex = min(max(index, 0), max(self.entries.count - 1, 0))
+        let clampedIndex = min(max(index, 0), max(self.entries.count - 1, 0))
+        if self.shuffleEnabled {
+            let anchor = self.entries.indices.contains(clampedIndex) ? self.entries[clampedIndex] : nil
+            self.rebuildShuffledEntries(anchoredAt: anchor)
+            self.currentIndex = 0
+        } else {
+            self.shuffledEntries = []
+            self.currentIndex = clampedIndex
+        }
         self.updateArtworkPreloads()
     }
 
     func jump(to entry: QueueEntry) {
-        guard let index = self.entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        guard let index = self.activeEntries.firstIndex(where: { $0.id == entry.id }) else { return }
         self.currentIndex = index
         self.updateArtworkPreloads()
     }
 
     func advanceToNext() -> Track? {
-        guard !self.entries.isEmpty else { return nil }
+        let active = self.activeEntries
+        guard !active.isEmpty else { return nil }
 
         if self.repeatMode == .one { return self.currentTrack }
 
@@ -73,7 +89,7 @@ final class TrackQueueManager {
         var nextIndex = startIndex
 
         while true {
-            if nextIndex + 1 < self.entries.count {
+            if nextIndex + 1 < active.count {
                 nextIndex += 1
             } else if self.repeatMode == .all {
                 nextIndex = 0
@@ -83,7 +99,7 @@ final class TrackQueueManager {
 
             if nextIndex == startIndex { return nil }
 
-            if self.entries[nextIndex].track.isMediaSourceEnabled {
+            if active[nextIndex].track.isMediaSourceEnabled {
                 self.currentIndex = nextIndex
                 self.updateArtworkPreloads()
                 return self.currentTrack
@@ -92,7 +108,8 @@ final class TrackQueueManager {
     }
 
     func rewindToPrevious() -> Track? {
-        guard !self.entries.isEmpty else { return nil }
+        let active = self.activeEntries
+        guard !active.isEmpty else { return nil }
 
         let startIndex = self.currentIndex
         var prevIndex = startIndex
@@ -101,14 +118,14 @@ final class TrackQueueManager {
             if prevIndex - 1 >= 0 {
                 prevIndex -= 1
             } else if self.repeatMode == .all {
-                prevIndex = self.entries.count - 1
+                prevIndex = active.count - 1
             } else {
                 return nil
             }
 
             if prevIndex == startIndex { return nil }
 
-            if self.entries[prevIndex].track.isMediaSourceEnabled {
+            if active[prevIndex].track.isMediaSourceEnabled {
                 self.currentIndex = prevIndex
                 self.updateArtworkPreloads()
                 return self.currentTrack
@@ -120,24 +137,26 @@ final class TrackQueueManager {
 
     func playNext(_ track: Track) {
         let entry = QueueEntry(track: track, userAdded: true)
-        let insertIndex = self.entries.isEmpty ? 0 : self.currentIndex + 1
-        self.entries.insert(entry, at: insertIndex)
+        self.entries.insert(entry, at: self.insertionIndexAfterCurrent(in: self.entries))
+        self.shuffledEntries.insert(entry, at: self.insertionIndexAfterCurrent(in: self.shuffledEntries))
         self.updateArtworkPreloads()
     }
 
     func addToQueue(_ track: Track) {
         let entry = QueueEntry(track: track, userAdded: true)
-        let insertIndex = self.entries.lastIndex(where: \.userAdded).map { $0 + 1 }
-            ?? (self.entries.isEmpty ? 0 : self.currentIndex + 1)
-        self.entries.insert(entry, at: insertIndex)
+        self.entries.insert(entry, at: self.insertionIndexAfterLastUserAdded(in: self.entries))
+        self.shuffledEntries.insert(entry, at: self.insertionIndexAfterLastUserAdded(in: self.shuffledEntries))
         self.updateArtworkPreloads()
     }
 
     func removeFromQueue(_ entry: QueueEntry) {
-        guard let index = self.entries.firstIndex(where: { $0.id == entry.id }) else { return }
-        guard index != self.currentIndex else { return }
-        self.entries.remove(at: index)
-        if index < self.currentIndex {
+        guard let activeIndex = self.activeEntries.firstIndex(where: { $0.id == entry.id }) else { return }
+        guard activeIndex != self.currentIndex else { return }
+
+        self.entries.removeAll { $0.id == entry.id }
+        self.shuffledEntries.removeAll { $0.id == entry.id }
+
+        if activeIndex < self.currentIndex {
             self.currentIndex -= 1
         }
         self.updateArtworkPreloads()
@@ -145,6 +164,7 @@ final class TrackQueueManager {
 
     func clearQueue() {
         self.entries = []
+        self.shuffledEntries = []
         self.currentIndex = 0
         self.contextId = nil
         self.preloadedArtworkBySource = [:]
@@ -152,15 +172,35 @@ final class TrackQueueManager {
 
     func applyReorder(_ reorderedEntries: [QueueEntry]) {
         let currentId = self.currentEntry?.id
-        let disabledEntries = self.entries.filter { !$0.track.isMediaSourceEnabled }
-        self.entries = reorderedEntries + disabledEntries
+        if self.shuffleEnabled {
+            let disabledEntries = self.shuffledEntries.filter { !$0.track.isMediaSourceEnabled }
+            self.shuffledEntries = reorderedEntries + disabledEntries
+        } else {
+            let disabledEntries = self.entries.filter { !$0.track.isMediaSourceEnabled }
+            self.entries = reorderedEntries + disabledEntries
+        }
         if let currentId {
-            self.currentIndex = self.entries.firstIndex(where: { $0.id == currentId }) ?? 0
+            self.currentIndex = self.activeEntries.firstIndex(where: { $0.id == currentId }) ?? 0
         }
     }
 
+    func toggleShuffle() {
+        let anchor = self.currentEntry
+        self.shuffleEnabled.toggle()
+        if self.shuffleEnabled {
+            self.rebuildShuffledEntries(anchoredAt: anchor)
+            self.currentIndex = 0
+        } else {
+            self.shuffledEntries = []
+            self.currentIndex = anchor.flatMap { entry in self.entries.firstIndex(where: { $0.id == entry.id }) } ?? 0
+        }
+        self.updateArtworkPreloads()
+    }
+
     func clearRepeatOne() {
-        if self.repeatMode == .one { self.repeatMode = .off }
+        guard self.repeatMode == .one else { return }
+        self.repeatMode = .off
+        self.handleRepeatModeChanged()
     }
 
     func cycleRepeatMode() {
@@ -169,6 +209,15 @@ final class TrackQueueManager {
         case .all: self.repeatMode = .one
         case .one: self.repeatMode = .off
         }
+        self.handleRepeatModeChanged()
+    }
+
+    private func handleRepeatModeChanged() {
+        guard self.shuffleEnabled else { return }
+        let anchor = self.currentEntry
+        self.rebuildShuffledEntries(anchoredAt: anchor)
+        self.currentIndex = 0
+        self.updateArtworkPreloads()
     }
 
     func isTrackSelected(_ track: Track, contextId: String) -> Bool {
@@ -176,16 +225,44 @@ final class TrackQueueManager {
         return self.currentEntry?.track.trackKey == track.trackKey
     }
 
+    private func insertionIndexAfterCurrent(in array: [QueueEntry]) -> Int {
+        guard !array.isEmpty else { return 0 }
+        guard let currentId = self.currentEntry?.id, let idx = array.firstIndex(where: { $0.id == currentId }) else {
+            return array.count
+        }
+        return idx + 1
+    }
+
+    private func insertionIndexAfterLastUserAdded(in array: [QueueEntry]) -> Int {
+        array.lastIndex(where: \.userAdded).map { $0 + 1 } ?? self.insertionIndexAfterCurrent(in: array)
+    }
+
+    private func rebuildShuffledEntries(anchoredAt anchor: QueueEntry?) {
+        var pool = self.entries
+        if self.repeatMode == .off, let anchor, let anchorIdx = pool.firstIndex(where: { $0.id == anchor.id }) {
+            pool = Array(pool[anchorIdx...])
+        }
+
+        var anchored: [QueueEntry] = []
+        if let anchor, let idx = pool.firstIndex(where: { $0.id == anchor.id }) {
+            anchored.append(pool.remove(at: idx))
+        }
+        let userAdded = pool.filter(\.userAdded)
+        let rest = pool.filter { !$0.userAdded }
+        self.shuffledEntries = anchored + userAdded + rest.shuffled()
+    }
+
     private func updateArtworkPreloads() {
-        guard !self.entries.isEmpty else { return }
+        let entries = self.activeEntries
+        guard !entries.isEmpty else { return }
 
         let window = Self.artworkPreloadWindow
 
         var desiredBySource: [String: Set<String>] = [:]
 
         var count = 0
-        for i in self.currentIndex ..< self.entries.count {
-            let track = self.entries[i].track
+        for i in self.currentIndex ..< entries.count {
+            let track = entries[i].track
             guard track.isMediaSourceEnabled else { continue }
             if let url = track.artworkUrl, !url.isEmpty {
                 desiredBySource[track.mediaSourceId, default: []].insert(url)
@@ -196,7 +273,7 @@ final class TrackQueueManager {
 
         count = 0
         for i in stride(from: self.currentIndex - 1, through: 0, by: -1) {
-            let track = self.entries[i].track
+            let track = entries[i].track
             guard track.isMediaSourceEnabled else { continue }
             if let url = track.artworkUrl, !url.isEmpty {
                 desiredBySource[track.mediaSourceId, default: []].insert(url)
