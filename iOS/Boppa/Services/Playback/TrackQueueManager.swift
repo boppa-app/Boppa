@@ -125,6 +125,14 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
+    func addToQueue(_ track: Track) {
+        let entry = QueueEntry(track: track, userAdded: true)
+        let insertIndex = self.entries.lastIndex(where: \.userAdded).map { $0 + 1 }
+            ?? (self.entries.isEmpty ? 0 : self.currentIndex + 1)
+        self.entries.insert(entry, at: insertIndex)
+        self.updateArtworkPreloads()
+    }
+
     func removeFromQueue(_ entry: QueueEntry) {
         guard let index = self.entries.firstIndex(where: { $0.id == entry.id }) else { return }
         guard index != self.currentIndex else { return }

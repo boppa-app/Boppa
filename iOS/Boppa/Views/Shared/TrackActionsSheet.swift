@@ -40,6 +40,22 @@ struct TrackActionsSheet: View {
                     .listRowSeparator(.hidden)
                     .accessibilityLabel("Play Next")
                     .accessibilityHint("Play \(self.track.title) after the current track")
+
+                    Button {
+                        TrackQueueManager.shared.addToQueue(self.track)
+                        self.dismiss()
+                    } label: {
+                        self.actionRowLabel(
+                            name: "Add to Queue",
+                            icon: "text.line.last.and.arrowtriangle.forward"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color(.systemGray6))
+                    .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                    .listRowSeparator(.hidden)
+                    .accessibilityLabel("Add to Queue")
+                    .accessibilityHint("Add \(self.track.title) to the end of the queue")
                 }
 
                 if self.isMediaSourceEnabled {
