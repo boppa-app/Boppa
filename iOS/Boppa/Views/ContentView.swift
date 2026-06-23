@@ -21,43 +21,51 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot)
-                    .opacity(self.selectedTab == 0 ? 1 : 0)
-                    .allowsHitTesting(self.selectedTab == 0)
-                LibraryView(navigationResetId: self.libraryResetId, isAtNavigationRoot: self.$libraryIsAtRoot)
-                    .opacity(self.selectedTab == 1 ? 1 : 0)
-                    .allowsHitTesting(self.selectedTab == 1)
-                SettingsView(selectedTab: self.$selectedTab, navigationResetId: self.settingsResetId, isAtNavigationRoot: self.$settingsIsAtRoot)
-                    .opacity(self.selectedTab == 2 ? 1 : 0)
-                    .allowsHitTesting(self.selectedTab == 2)
-            }
-            .frame(maxHeight: .infinity)
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
 
-            if self.showMiniPlayer {
-                VStack(spacing: 0) {
-                    MiniPlayerView(showNowPlaying: self.$showNowPlaying)
+            VStack(spacing: 0) {
+                ZStack {
+                    SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot)
+                        .opacity(self.selectedTab == 0 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 0)
+                    LibraryView(navigationResetId: self.libraryResetId, isAtNavigationRoot: self.$libraryIsAtRoot)
+                        .opacity(self.selectedTab == 1 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 1)
+                    SettingsView(selectedTab: self.$selectedTab, navigationResetId: self.settingsResetId, isAtNavigationRoot: self.$settingsIsAtRoot)
+                        .opacity(self.selectedTab == 2 ? 1 : 0)
+                        .allowsHitTesting(self.selectedTab == 2)
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-            ContentTabView(
-                selectedTab: self.$selectedTab,
-                hideSeparator: self.showMiniPlayer,
-                onSameTabTapped: { tab in
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        switch tab {
-                        case 0:
-                            if !self.searchIsAtRoot { self.searchResetId += 1 }
-                            self.searchFocusId += 1
-                        case 1: if !self.libraryIsAtRoot { self.libraryResetId += 1 }
-                        case 2: if !self.settingsIsAtRoot { self.settingsResetId += 1 }
-                        default: break
-                        }
+                .frame(maxHeight: .infinity)
+
+                if self.showMiniPlayer {
+                    VStack(spacing: 0) {
+                        MiniPlayerView(showNowPlaying: self.$showNowPlaying)
                     }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-            )
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+
+                if !isLandscape {
+                    ContentTabView(
+                        selectedTab: self.$selectedTab,
+                        hideSeparator: self.showMiniPlayer,
+                        onSameTabTapped: { tab in
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                switch tab {
+                                case 0:
+                                    if !self.searchIsAtRoot { self.searchResetId += 1 }
+                                    self.searchFocusId += 1
+                                case 1: if !self.libraryIsAtRoot { self.libraryResetId += 1 }
+                                case 2: if !self.settingsIsAtRoot { self.settingsResetId += 1 }
+                                default: break
+                                }
+                            }
+                        }
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {

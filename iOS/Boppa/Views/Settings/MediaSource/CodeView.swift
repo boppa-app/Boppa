@@ -23,6 +23,7 @@ struct CodeView: View {
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
+        .allowsLandscape()
     }
 }
 
