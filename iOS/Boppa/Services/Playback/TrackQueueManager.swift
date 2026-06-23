@@ -47,8 +47,10 @@ final class TrackQueueManager {
 
     private let registry = WebViewPlaybackEngineRegistry.shared
     private var preloadedArtworkBySource: [String: Set<String>] = [:]
+    private let isTrackEnabled: (Track) -> Bool
 
-    private init() {
+    init(isTrackEnabled: @escaping (Track) -> Bool = { $0.isMediaSourceEnabled }) {
+        self.isTrackEnabled = isTrackEnabled
         for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceEnabled, .mediaSourceRemoved, .mediaSourceAdded] {
             NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -99,7 +101,7 @@ final class TrackQueueManager {
 
             if nextIndex == startIndex { return nil }
 
-            if active[nextIndex].track.isMediaSourceEnabled {
+            if self.isTrackEnabled(active[nextIndex].track) {
                 self.currentIndex = nextIndex
                 self.updateArtworkPreloads()
                 return self.currentTrack
@@ -125,7 +127,7 @@ final class TrackQueueManager {
 
             if prevIndex == startIndex { return nil }
 
-            if active[prevIndex].track.isMediaSourceEnabled {
+            if self.isTrackEnabled(active[prevIndex].track) {
                 self.currentIndex = prevIndex
                 self.updateArtworkPreloads()
                 return self.currentTrack
@@ -173,10 +175,10 @@ final class TrackQueueManager {
     func applyReorder(_ reorderedEntries: [QueueEntry]) {
         let currentId = self.currentEntry?.id
         if self.shuffleEnabled {
-            let disabledEntries = self.shuffledEntries.filter { !$0.track.isMediaSourceEnabled }
+            let disabledEntries = self.shuffledEntries.filter { !self.isTrackEnabled($0.track) }
             self.shuffledEntries = reorderedEntries + disabledEntries
         } else {
-            let disabledEntries = self.entries.filter { !$0.track.isMediaSourceEnabled }
+            let disabledEntries = self.entries.filter { !self.isTrackEnabled($0.track) }
             self.entries = reorderedEntries + disabledEntries
         }
         if let currentId {
@@ -263,7 +265,7 @@ final class TrackQueueManager {
         var count = 0
         for i in self.currentIndex ..< entries.count {
             let track = entries[i].track
-            guard track.isMediaSourceEnabled else { continue }
+            guard self.isTrackEnabled(track) else { continue }
             if let url = track.artworkUrl, !url.isEmpty {
                 desiredBySource[track.mediaSourceId, default: []].insert(url)
             }
@@ -274,7 +276,7 @@ final class TrackQueueManager {
         count = 0
         for i in stride(from: self.currentIndex - 1, through: 0, by: -1) {
             let track = entries[i].track
-            guard track.isMediaSourceEnabled else { continue }
+            guard self.isTrackEnabled(track) else { continue }
             if let url = track.artworkUrl, !url.isEmpty {
                 desiredBySource[track.mediaSourceId, default: []].insert(url)
             }
