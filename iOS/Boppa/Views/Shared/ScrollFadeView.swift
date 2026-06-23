@@ -37,7 +37,7 @@ struct ScrollFadeView<Content: View>: View {
     let fadeHeight: CGFloat
 
     @State private var topFade: CGFloat = 0
-    @State private var bottomFade: CGFloat = 1
+    @State private var bottomFade: CGFloat = 0
 
     init(fadeHeight: CGFloat = 40, @ViewBuilder content: () -> Content) {
         self.fadeHeight = fadeHeight
