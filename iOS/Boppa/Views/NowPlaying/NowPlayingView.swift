@@ -183,8 +183,8 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.isRepeatActive ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
-            .accessibilityLabel(self.viewModel.repeatMode == .one ? "Repeat One" : "Repeat All")
-            .accessibilityHint("Toggle single track repeat")
+            .accessibilityLabel(self.viewModel.repeatMode == .one ? "Repeat One" : self.viewModel.repeatMode == .all ? "Repeat All" : "Repeat Off")
+            .accessibilityHint("Cycle repeat mode")
         }
     }
 

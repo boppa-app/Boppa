@@ -159,6 +159,9 @@ final class QueueTableViewController: UITableViewController {
         switch repeatMode {
         case .one:
             return self.queueManager.currentEntry.map { [$0] } ?? []
+        case .off:
+            guard !entries.isEmpty else { return [] }
+            return Array(entries[currentIndex...]).filter { $0.track.isMediaSourceEnabled }
         case .all:
             guard !entries.isEmpty else { return [] }
             let reordered = Array(entries[currentIndex...]) + Array(entries[..<currentIndex])

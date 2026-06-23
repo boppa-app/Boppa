@@ -20,7 +20,7 @@ final class TrackQueueManager {
     private(set) var entries: [QueueEntry] = []
     private(set) var currentIndex: Int = 0
 
-    private(set) var repeatMode: RepeatMode = .all
+    private(set) var repeatMode: RepeatMode = .off
     private(set) var contextId: String?
 
     private(set) var trackIdToEntry: [String: QueueEntry] = [:]
@@ -158,13 +158,14 @@ final class TrackQueueManager {
     }
 
     func clearRepeatOne() {
-        if self.repeatMode == .one { self.repeatMode = .all }
+        if self.repeatMode == .one { self.repeatMode = .off }
     }
 
     func cycleRepeatMode() {
         switch self.repeatMode {
+        case .off: self.repeatMode = .all
         case .all: self.repeatMode = .one
-        case .one: self.repeatMode = .all
+        case .one: self.repeatMode = .off
         }
     }
 
