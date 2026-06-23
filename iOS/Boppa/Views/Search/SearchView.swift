@@ -235,14 +235,6 @@ struct SearchView: View {
     private var resultsList: some View {
         ScrollFadeView {
             List {
-                if self.showBubbles {
-                    Color.black
-                        .frame(height: self.scrollHandler.bubblesBarHeight)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                }
-
                 switch self.viewModel.results {
                 case let .songs(tracks), let .videos(tracks):
                     ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
@@ -358,7 +350,7 @@ struct SearchView: View {
                 }
             }
             .listStyle(.plain)
-            .padding(.top, -10)
+            .contentMargins(.top, self.showBubbles ? self.scrollHandler.bubblesBarHeight : 0)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
             .modifier(ScrollDirectionTracker(

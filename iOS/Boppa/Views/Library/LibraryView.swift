@@ -306,7 +306,8 @@ struct LibraryView: View {
                     self.searchResultRows
                 }
                 .listStyle(.plain)
-                .padding(.top, -10)
+                .listSectionSpacing(0)
+                .contentMargins(.top, 0)
                 .scrollContentBackground(.hidden)
                 .scrollDismissesKeyboard(.immediately)
                 .modifier(ScrollDirectionTracker(
