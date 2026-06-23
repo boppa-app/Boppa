@@ -38,6 +38,7 @@ struct ScrollDirectionTracker: ViewModifier {
 class SearchBarScrollHandler {
     var showSearchBar = true
     var searchBarTopFade: CGFloat = 0
+    var bubblesBarHeight: CGFloat = 0
 
     let fadeHeight: CGFloat = 40
 
@@ -78,7 +79,7 @@ class SearchBarScrollHandler {
 
             // Accumulate if velocity is high enough OR if the spacer is about to become visible (contentOffset < searchBarHeight).
             // This ensures the search bar always appears before the black spacer is exposed, even during very slow scrolls.
-            let spacerAboutToShow = newInfo.contentOffset < categoryBubblesBarHeight
+            let spacerAboutToShow = newInfo.contentOffset < self.bubblesBarHeight
             if velocity > velocityThreshold || spacerAboutToShow {
                 self.accumulatedScrollUp += abs(delta)
 

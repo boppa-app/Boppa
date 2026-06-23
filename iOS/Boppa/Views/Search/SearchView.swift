@@ -11,6 +11,7 @@ struct SearchView: View {
     @State private var pendingTracklist: Tracklist?
     @State private var path = NavigationPath()
     @State private var activeMediaSourceId: String?
+    @State private var keyboardTop: CGFloat = UIScreen.main.bounds.height
     @FocusState private var isSearchFieldFocused: Bool
     var navigationResetId: Int = 0
     var focusSearchId: Int = 0
@@ -48,7 +49,6 @@ struct SearchView: View {
             .onChange(of: self.isSearchFieldFocused) { _, focused in
                 if !focused {
                     self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
-                    self.cacheManager.updateFilter("")
                 } else {
                     self.scrollHandler.showSearchBar = true
                     self.cacheManager.updateFilter(self.viewModel.searchQuery)
@@ -108,6 +108,10 @@ struct SearchView: View {
                 case let .artist(artist, mediaSource):
                     ArtistDetailView(artist: artist, mediaSource: mediaSource)
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+                guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+                self.keyboardTop = frame.origin.y
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
@@ -173,28 +177,36 @@ struct SearchView: View {
     }
 
     private var recentSearchesView: some View {
-        VStack(spacing: 0) {
-            if self.showBubbles {
-                Color.clear.frame(height: categoryBubblesBarHeight)
-            }
-            SearchCacheView(
-                cachedQueries: self.cacheManager.displayedQueries,
-                onSelect: { cached in
-                    self.viewModel.searchQuery = cached.query
-                    self.viewModel.search()
-                    self.isSearchFieldFocused = false
-                    self.cacheManager.saveQuery(cached.query)
-                },
-                onRemove: { cached in
-                    self.cacheManager.removeQuery(cached)
-                },
-                onClearAll: {
-                    self.cacheManager.clearAll()
+        GeometryReader { geo in
+            let keyboardOverlap = max(0, geo.frame(in: .global).maxY - self.keyboardTop)
+            VStack(spacing: 0) {
+                if self.showBubbles {
+                    Color.clear.frame(height: self.scrollHandler.bubblesBarHeight)
+                    Rectangle()
+                        .fill(Color.purp)
+                        .frame(height: 1)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
                 }
-            )
-            Spacer()
+                SearchCacheView(
+                    cachedQueries: self.cacheManager.displayedQueries,
+                    keyboardHeight: keyboardOverlap,
+                    onSelect: { cached in
+                        self.viewModel.searchQuery = cached.query
+                        self.viewModel.search()
+                        self.isSearchFieldFocused = false
+                        self.cacheManager.saveQuery(cached.query)
+                    },
+                    onRemove: { cached in
+                        self.cacheManager.removeQuery(cached)
+                    },
+                    onClearAll: {
+                        self.cacheManager.clearAll()
+                    }
+                )
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyStateView: some View {
@@ -225,7 +237,7 @@ struct SearchView: View {
             List {
                 if self.showBubbles {
                     Color.black
-                        .frame(height: categoryBubblesBarHeight)
+                        .frame(height: self.scrollHandler.bubblesBarHeight)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)

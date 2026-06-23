@@ -24,6 +24,9 @@ class SearchCacheManager {
     @ObservationIgnored
     private var fuzzySearchTask: Task<Void, Never>?
 
+    @ObservationIgnored
+    private var currentFilter: String = ""
+
     private static let maxCachedQueries = 25
 
     func load() {
@@ -33,13 +36,14 @@ class SearchCacheManager {
                 .limit(Self.maxCachedQueries)
                 .fetchAll(db)
         }) ?? []
-        self.displayedQueries = self.cachedQueries
+        self.updateFilter(self.currentFilter)
     }
 
     func updateFilter(_ text: String) {
         self.fuzzySearchTask?.cancel()
 
         let trimmed = text.trimmingCharacters(in: .whitespaces)
+        self.currentFilter = trimmed
         guard !trimmed.isEmpty else {
             self.displayedQueries = self.cachedQueries
             return

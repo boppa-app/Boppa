@@ -27,8 +27,6 @@ struct HorizontalFadeModifier: ViewModifier {
     }
 }
 
-let categoryBubblesBarHeight: CGFloat = 40
-
 struct CategoryBubblesBar<Category: CategoryBarItem>: View {
     let categories: [Category]
     let selectedCategory: Category
@@ -76,6 +74,13 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
             }
             .padding(.top, 10)
             .background(Color.black)
+            .background(
+                GeometryReader { geo in
+                    Color.clear.onChange(of: geo.size.height, initial: true) { _, height in
+                        self.scrollHandler.bubblesBarHeight = height
+                    }
+                }
+            )
 
             LinearGradient(
                 colors: [.black.opacity(self.scrollHandler.searchBarTopFade), .clear],
@@ -94,7 +99,7 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
         let isSelected = self.selectedCategory == category && (!self.isFocused || self.highlightSelectedWhenFocused)
         return HStack(spacing: 5) {
             Image(systemName: category.icon)
-                .font(.system(size: 13))
+                .font(.system(size: 15))
             Text(category.displayName)
                 .font(.system(size: 15, weight: .medium))
         }

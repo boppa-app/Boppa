@@ -298,7 +298,7 @@ struct LibraryView: View {
             ScrollFadeView {
                 List {
                     Color.black
-                        .frame(height: categoryBubblesBarHeight)
+                        .frame(height: self.scrollHandler.bubblesBarHeight)
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
