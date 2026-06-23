@@ -23,8 +23,6 @@ final class TrackQueueManager {
     private(set) var repeatMode: RepeatMode = .off
     private(set) var contextId: String?
 
-    private(set) var trackIdToEntry: [String: QueueEntry] = [:]
-
     var currentEntry: QueueEntry? {
         guard !self.entries.isEmpty, self.currentIndex >= 0, self.currentIndex < self.entries.count else { return nil }
         return self.entries[self.currentIndex]
@@ -56,7 +54,6 @@ final class TrackQueueManager {
     func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
         self.contextId = contextId
         self.entries = tracks.map { QueueEntry(track: $0) }
-        self.rebuildTrackIdMap()
         self.currentIndex = min(max(index, 0), max(self.entries.count - 1, 0))
         self.updateArtworkPreloads()
     }
@@ -125,7 +122,6 @@ final class TrackQueueManager {
         let entry = QueueEntry(track: track, userAdded: true)
         let insertIndex = self.entries.isEmpty ? 0 : self.currentIndex + 1
         self.entries.insert(entry, at: insertIndex)
-        self.trackIdToEntry[track.trackKey] = entry
         self.updateArtworkPreloads()
     }
 
@@ -133,7 +129,6 @@ final class TrackQueueManager {
         guard let index = self.entries.firstIndex(where: { $0.id == entry.id }) else { return }
         guard index != self.currentIndex else { return }
         self.entries.remove(at: index)
-        self.trackIdToEntry.removeValue(forKey: entry.track.trackKey)
         if index < self.currentIndex {
             self.currentIndex -= 1
         }
@@ -144,7 +139,6 @@ final class TrackQueueManager {
         self.entries = []
         self.currentIndex = 0
         self.contextId = nil
-        self.trackIdToEntry = [:]
         self.preloadedArtworkBySource = [:]
     }
 
@@ -171,15 +165,7 @@ final class TrackQueueManager {
 
     func isTrackSelected(_ track: Track, contextId: String) -> Bool {
         guard self.contextId == contextId else { return false }
-        guard let entry = self.trackIdToEntry[track.trackKey] else { return false }
-        return entry.id == self.currentEntry?.id
-    }
-
-    private func rebuildTrackIdMap() {
-        self.trackIdToEntry = [:]
-        for entry in self.entries {
-            self.trackIdToEntry[entry.track.trackKey] = entry
-        }
+        return self.currentEntry?.track.trackKey == track.trackKey
     }
 
     private func updateArtworkPreloads() {
