@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var trackForActions: Track?
 
     var viewModel: NowPlayingViewModel
 
@@ -21,6 +22,18 @@ struct NowPlayingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .preferredColorScheme(.dark)
+        .sheet(item: self.$trackForActions) { track in
+            if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: track.mediaSourceId) {
+                TrackActionsSheet(
+                    track: track,
+                    mediaSource: mediaSource,
+                    isMediaSourceEnabled: track.isMediaSourceEnabled
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(.systemGray6))
+            }
+        }
     }
 
     private var mediaDisplaySection: some View {
@@ -69,6 +82,12 @@ struct NowPlayingView: View {
                     .accessibilityLabel(self.viewModel.trackSubtitle)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                self.trackForActions = self.viewModel.currentTrack
+            }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("View actions for this track")
 
             Button {
                 self.viewModel.toggleLike()
