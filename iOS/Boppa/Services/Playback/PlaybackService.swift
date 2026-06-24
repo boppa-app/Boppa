@@ -89,7 +89,7 @@ final class PlaybackService {
     }
 
     func next(userInitiated: Bool = false) {
-        if userInitiated { self.queueManager.clearRepeatOne() }
+        if userInitiated { self.queueManager.exitRepeatOneOnUserSkip() }
         guard let nextTrack = self.queueManager.advanceToNext() else { return }
         self.currentTime = 0
         self.playTrack(nextTrack)
@@ -100,7 +100,7 @@ final class PlaybackService {
         if self.currentTime > Self.previousTrackSeekThreshold {
             self.seek(to: 0)
         } else {
-            if userInitiated { self.queueManager.clearRepeatOne() }
+            if userInitiated { self.queueManager.exitRepeatOneOnUserSkip() }
             guard let prevTrack = self.queueManager.rewindToPrevious() else { return }
             self.currentTime = 0
             self.playTrack(prevTrack)

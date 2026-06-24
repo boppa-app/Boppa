@@ -199,9 +199,9 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
-    func clearRepeatOne() {
+    func exitRepeatOneOnUserSkip() {
         guard self.repeatMode == .one else { return }
-        self.repeatMode = .off
+        self.repeatMode = .all
         self.handleRepeatModeChanged()
     }
 
