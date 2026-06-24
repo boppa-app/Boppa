@@ -11,6 +11,8 @@ struct ContentView: View {
     @State private var searchIsAtRoot = true
     @State private var libraryIsAtRoot = true
     @State private var settingsIsAtRoot = true
+    @State private var libraryPendingArtist: Artist?
+    @State private var libraryPendingTracklist: Tracklist?
 
     private var playbackService: PlaybackService {
         PlaybackService.shared
@@ -29,9 +31,14 @@ struct ContentView: View {
                     SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot)
                         .opacity(self.selectedTab == 0 ? 1 : 0)
                         .allowsHitTesting(self.selectedTab == 0)
-                    LibraryView(navigationResetId: self.libraryResetId, isAtNavigationRoot: self.$libraryIsAtRoot)
-                        .opacity(self.selectedTab == 1 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 1)
+                    LibraryView(
+                        navigationResetId: self.libraryResetId,
+                        isAtNavigationRoot: self.$libraryIsAtRoot,
+                        externalPendingArtist: self.$libraryPendingArtist,
+                        externalPendingTracklist: self.$libraryPendingTracklist
+                    )
+                    .opacity(self.selectedTab == 1 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 1)
                     SettingsView(selectedTab: self.$selectedTab, navigationResetId: self.settingsResetId, isAtNavigationRoot: self.$settingsIsAtRoot)
                         .opacity(self.selectedTab == 2 ? 1 : 0)
                         .allowsHitTesting(self.selectedTab == 2)
@@ -69,9 +76,19 @@ struct ContentView: View {
         }
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: self.$showNowPlaying) {
-            NowPlayingView(viewModel: self.nowPlayingViewModel)
-                .presentationDragIndicator(.visible)
-                .presentationBackground(Color.black)
+            NowPlayingView(
+                viewModel: self.nowPlayingViewModel,
+                onArtistSelected: { artist in
+                    self.selectedTab = 1
+                    self.libraryPendingArtist = artist
+                },
+                onAlbumSelected: { tracklist in
+                    self.selectedTab = 1
+                    self.libraryPendingTracklist = tracklist
+                }
+            )
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color.black)
         }
     }
 }

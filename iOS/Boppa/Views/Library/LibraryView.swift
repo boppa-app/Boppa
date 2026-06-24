@@ -14,6 +14,8 @@ struct LibraryView: View {
     @State private var activeMediaSourceId: String?
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
+    @Binding var externalPendingArtist: Artist?
+    @Binding var externalPendingTracklist: Tracklist?
 
     private enum LibraryDestination: Hashable {
         case tracklist(Tracklist)
@@ -103,6 +105,16 @@ struct LibraryView: View {
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )))
                 self.pendingTracklist = nil
+            }
+            .onChange(of: self.externalPendingArtist) { _, artist in
+                guard let artist else { return }
+                self.pendingArtist = artist
+                self.externalPendingArtist = nil
+            }
+            .onChange(of: self.externalPendingTracklist) { _, tracklist in
+                guard let tracklist else { return }
+                self.pendingTracklist = tracklist
+                self.externalPendingTracklist = nil
             }
             .navigationDestination(for: LibraryDestination.self) { destination in
                 switch destination {
@@ -467,6 +479,6 @@ struct LibraryView: View {
 }
 
 #Preview {
-    LibraryView(isAtNavigationRoot: .constant(true))
+    LibraryView(isAtNavigationRoot: .constant(true), externalPendingArtist: .constant(nil), externalPendingTracklist: .constant(nil))
         .preferredColorScheme(.dark)
 }

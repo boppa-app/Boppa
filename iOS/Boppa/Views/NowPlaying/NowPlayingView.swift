@@ -5,6 +5,8 @@ struct NowPlayingView: View {
     @State private var trackForActions: Track?
 
     var viewModel: NowPlayingViewModel
+    var onArtistSelected: ((Artist) -> Void)?
+    var onAlbumSelected: ((Tracklist) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,7 +29,15 @@ struct NowPlayingView: View {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
-                    isMediaSourceEnabled: track.isMediaSourceEnabled
+                    isMediaSourceEnabled: track.isMediaSourceEnabled,
+                    onArtistSelected: { artist in
+                        self.dismiss()
+                        self.onArtistSelected?(artist)
+                    },
+                    onAlbumSelected: { tracklist in
+                        self.dismiss()
+                        self.onAlbumSelected?(tracklist)
+                    }
                 )
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
