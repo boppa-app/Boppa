@@ -191,15 +191,15 @@ struct TrackQueueManagerTests {
         #expect(manager.currentIndex == 1)
     }
 
-    @Test func clearRepeatOneAllowsAdvanceToActuallyMoveForward() {
+    @Test func exitRepeatOneOnUserSkipAllowsAdvanceToActuallyMoveForward() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
         manager.cycleRepeatMode() // off -> all
         manager.cycleRepeatMode() // all -> one
 
-        manager.clearRepeatOne()
-        #expect(manager.repeatMode == .off)
+        manager.exitRepeatOneOnUserSkip()
+        #expect(manager.repeatMode == .all)
         #expect(manager.advanceToNext()?.trackKey == tracks[1].trackKey)
     }
 
