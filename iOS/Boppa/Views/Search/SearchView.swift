@@ -1,5 +1,10 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let navigateToArtistInSearch = Notification.Name("navigateToArtistInSearch")
+    static let navigateToTracklistInSearch = Notification.Name("navigateToTracklistInSearch")
+}
+
 // TODO: Swiping up in search view should refresh results
 
 struct SearchView: View {
@@ -16,6 +21,8 @@ struct SearchView: View {
     var navigationResetId: Int = 0
     var focusSearchId: Int = 0
     @Binding var isAtNavigationRoot: Bool
+    @Binding var externalPendingArtist: Artist?
+    @Binding var externalPendingTracklist: Tracklist?
 
     private var showBubbles: Bool {
         (self.isSearchFieldFocused || self.viewModel.isQueryActive) && !self.viewModel.availableCategories.isEmpty
@@ -100,6 +107,29 @@ struct SearchView: View {
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )))
                 self.pendingTracklist = nil
+            }
+            .onChange(of: self.externalPendingArtist) { _, artist in
+                guard let artist,
+                      let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: artist.mediaSourceId)
+                else { return }
+                self.path.append(SearchDestination.artist(artist, mediaSource))
+                self.externalPendingArtist = nil
+            }
+            .onChange(of: self.externalPendingTracklist) { _, tracklist in
+                guard let tracklist,
+                      let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId)
+                else { return }
+                self.path.append(SearchDestination.tracklist(Tracklist(
+                    mediaId: tracklist.mediaId,
+                    mediaSourceId: mediaSource.id,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
+
+                    tracklistType: tracklist.tracklistType,
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                )))
+                self.externalPendingTracklist = nil
             }
             .navigationDestination(for: SearchDestination.self) { destination in
                 switch destination {
@@ -386,6 +416,6 @@ struct SearchView: View {
 }
 
 #Preview {
-    SearchView(isAtNavigationRoot: .constant(true))
+    SearchView(isAtNavigationRoot: .constant(true), externalPendingArtist: .constant(nil), externalPendingTracklist: .constant(nil))
         .preferredColorScheme(.dark)
 }

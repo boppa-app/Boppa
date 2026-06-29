@@ -13,6 +13,8 @@ struct ContentView: View {
     @State private var settingsIsAtRoot = true
     @State private var libraryPendingArtist: Artist?
     @State private var libraryPendingTracklist: Tracklist?
+    @State private var searchPendingArtist: Artist?
+    @State private var searchPendingTracklist: Tracklist?
 
     private var playbackService: PlaybackService {
         PlaybackService.shared
@@ -28,7 +30,7 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 ZStack {
-                    SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot)
+                    SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot, externalPendingArtist: self.$searchPendingArtist, externalPendingTracklist: self.$searchPendingTracklist)
                         .opacity(self.selectedTab == 0 ? 1 : 0)
                         .allowsHitTesting(self.selectedTab == 0)
                     LibraryView(
@@ -44,6 +46,16 @@ struct ContentView: View {
                         .allowsHitTesting(self.selectedTab == 2)
                 }
                 .frame(maxHeight: .infinity)
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToArtistInSearch)) { notification in
+                    guard let artist = notification.object as? Artist else { return }
+                    self.searchPendingArtist = artist
+                    self.selectedTab = 0
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToTracklistInSearch)) { notification in
+                    guard let tracklist = notification.object as? Tracklist else { return }
+                    self.searchPendingTracklist = tracklist
+                    self.selectedTab = 0
+                }
 
                 if self.showMiniPlayer {
                     VStack(spacing: 0) {
@@ -79,12 +91,10 @@ struct ContentView: View {
             NowPlayingView(
                 viewModel: self.nowPlayingViewModel,
                 onArtistSelected: { artist in
-                    self.selectedTab = 1
-                    self.libraryPendingArtist = artist
+                    NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
                 },
                 onAlbumSelected: { tracklist in
-                    self.selectedTab = 1
-                    self.libraryPendingTracklist = tracklist
+                    NotificationCenter.default.post(name: .navigateToTracklistInSearch, object: tracklist)
                 }
             )
             .presentationDragIndicator(.visible)

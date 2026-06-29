@@ -5,8 +5,6 @@ struct TracklistView: View {
     @State private var viewModel: TracklistViewModel
     @State private var showActionSheet = false
     @State private var trackForActions: Track?
-    @State private var pendingArtist: Artist?
-    @State private var pendingTracklist: Tracklist?
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
     }
@@ -106,7 +104,7 @@ struct TracklistView: View {
                 onSortSelected: { mode in
                     self.viewModel.setSortMode(mode)
                 },
-                onArtistSelected: { artist in self.pendingArtist = artist },
+                onArtistSelected: nil,
                 onDelete: {
                     self.viewModel.deleteFromLibrary()
                     self.dismiss()
@@ -122,32 +120,17 @@ struct TracklistView: View {
                     track: track,
                     mediaSource: mediaSource,
                     isMediaSourceEnabled: track.isMediaSourceEnabled,
-                    onArtistSelected: { artist in self.pendingArtist = artist },
-                    onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
+                    onArtistSelected: { artist in
+                        NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
+                    },
+                    onAlbumSelected: { tracklist in
+                        NotificationCenter.default.post(name: .navigateToTracklistInSearch, object: tracklist)
+                    }
                 )
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(.systemGray6))
             }
-        }
-        .navigationDestination(item: self.$pendingArtist) { artist in
-            if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: artist.mediaSourceId) {
-                ArtistDetailView(artist: artist, mediaSource: mediaSource)
-            }
-        }
-        .navigationDestination(item: self.$pendingTracklist) { tracklist in
-            TracklistView(
-                tracklist: Tracklist(
-                    mediaId: tracklist.mediaId,
-                    mediaSourceId: tracklist.mediaSourceId,
-                    title: tracklist.title,
-                    subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
-
-                    tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
-                )
-            )
         }
     }
 

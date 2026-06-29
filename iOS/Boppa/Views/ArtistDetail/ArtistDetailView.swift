@@ -4,8 +4,6 @@ struct ArtistDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = ArtistDetailViewModel()
     @State private var trackForActions: Track?
-    @State private var pendingArtist: Artist?
-    @State private var pendingTracklist: Tracklist?
 
     let artist: Artist
     let mediaSource: MediaSource
@@ -35,29 +33,16 @@ struct ArtistDetailView: View {
             TrackActionsSheet(
                 track: track,
                 mediaSource: self.mediaSource,
-                onArtistSelected: { artist in self.pendingArtist = artist },
-                onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
+                onArtistSelected: { artist in
+                    NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
+                },
+                onAlbumSelected: { tracklist in
+                    NotificationCenter.default.post(name: .navigateToTracklistInSearch, object: tracklist)
+                }
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGray6))
-        }
-        .navigationDestination(item: self.$pendingArtist) { artist in
-            ArtistDetailView(artist: artist, mediaSource: self.mediaSource)
-        }
-        .navigationDestination(item: self.$pendingTracklist) { tracklist in
-            TracklistView(
-                tracklist: Tracklist(
-                    mediaId: tracklist.mediaId,
-                    mediaSourceId: self.mediaSource.id,
-                    title: tracklist.title,
-                    subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
-
-                    tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: self.mediaSource.id)
-                )
-            )
         }
     }
 

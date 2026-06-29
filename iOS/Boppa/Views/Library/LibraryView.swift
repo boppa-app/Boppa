@@ -173,8 +173,12 @@ struct LibraryView: View {
                         track: track,
                         mediaSource: mediaSource,
                         isMediaSourceEnabled: track.isMediaSourceEnabled,
-                        onArtistSelected: { artist in self.pendingArtist = artist },
-                        onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
+                        onArtistSelected: { artist in
+                            NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
+                        },
+                        onAlbumSelected: { tracklist in
+                            NotificationCenter.default.post(name: .navigateToTracklistInSearch, object: tracklist)
+                        }
                     )
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
