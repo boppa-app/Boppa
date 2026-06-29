@@ -21,7 +21,7 @@ struct ConfigDataView: View {
                                     code: item.code
                                 )) {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "text.document")
+                                        Image(systemName: "doc.text")
                                             .foregroundColor(.purp)
                                         Text(item.label)
                                             .foregroundColor(.white)
@@ -39,7 +39,7 @@ struct ConfigDataView: View {
                                     code: item.code
                                 )) {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "text.document")
+                                        Image(systemName: "doc.text")
                                             .foregroundColor(.purp)
                                         Text(item.label)
                                             .foregroundColor(.white)
@@ -57,7 +57,7 @@ struct ConfigDataView: View {
                                     code: item.code
                                 )) {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "text.document")
+                                        Image(systemName: "doc.text")
                                             .foregroundColor(.purp)
                                         Text(item.label)
                                             .foregroundColor(.white)
