@@ -73,6 +73,7 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
                 .mask(self.horizontalFadeMask)
             }
             .padding(.top, 10)
+            .padding(.bottom, 10)
             .background(Color.black)
             .background(
                 GeometryReader { geo in

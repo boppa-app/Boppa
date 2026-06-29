@@ -309,17 +309,10 @@ struct LibraryView: View {
         return ZStack(alignment: .top) {
             ScrollFadeView {
                 List {
-                    Color.black
-                        .frame(height: self.scrollHandler.bubblesBarHeight)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-
                     self.searchResultRows
                 }
                 .listStyle(.plain)
-                .listSectionSpacing(0)
-                .contentMargins(.top, 0)
+                .contentMargins(.top, self.scrollHandler.bubblesBarHeight)
                 .scrollContentBackground(.hidden)
                 .scrollDismissesKeyboard(.immediately)
                 .modifier(ScrollDirectionTracker(
