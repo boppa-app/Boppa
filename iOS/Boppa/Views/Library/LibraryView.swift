@@ -176,9 +176,7 @@ struct LibraryView: View {
                         onArtistSelected: { artist in
                             NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
                         },
-                        onAlbumSelected: { tracklist in
-                            NotificationCenter.default.post(name: .navigateToTracklistInSearch, object: tracklist)
-                        }
+                        onAlbumSelected: { tracklist in postTracklistNavigation(tracklist) }
                     )
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)

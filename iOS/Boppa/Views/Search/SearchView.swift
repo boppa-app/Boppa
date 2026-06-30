@@ -3,6 +3,18 @@ import SwiftUI
 extension Notification.Name {
     static let navigateToArtistInSearch = Notification.Name("navigateToArtistInSearch")
     static let navigateToTracklistInSearch = Notification.Name("navigateToTracklistInSearch")
+    static let navigateToTracklistInLibrary = Notification.Name("navigateToTracklistInLibrary")
+}
+
+func postTracklistNavigation(_ tracklist: Tracklist) {
+    let isSaved = TracklistStorageManager.shared.findStoredTracklist(
+        mediaId: tracklist.mediaId,
+        mediaSourceId: tracklist.mediaSourceId
+    ) != nil
+    NotificationCenter.default.post(
+        name: isSaved ? .navigateToTracklistInLibrary : .navigateToTracklistInSearch,
+        object: tracklist
+    )
 }
 
 // TODO: Swiping up in search view should refresh results

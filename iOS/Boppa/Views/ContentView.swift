@@ -56,6 +56,11 @@ struct ContentView: View {
                     self.searchPendingTracklist = tracklist
                     self.selectedTab = 0
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToTracklistInLibrary)) { notification in
+                    guard let tracklist = notification.object as? Tracklist else { return }
+                    self.libraryPendingTracklist = tracklist
+                    self.selectedTab = 1
+                }
 
                 if self.showMiniPlayer {
                     VStack(spacing: 0) {
@@ -93,9 +98,7 @@ struct ContentView: View {
                 onArtistSelected: { artist in
                     NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
                 },
-                onAlbumSelected: { tracklist in
-                    NotificationCenter.default.post(name: .navigateToTracklistInSearch, object: tracklist)
-                }
+                onAlbumSelected: { tracklist in postTracklistNavigation(tracklist) }
             )
             .presentationDragIndicator(.visible)
             .presentationBackground(Color.black)
