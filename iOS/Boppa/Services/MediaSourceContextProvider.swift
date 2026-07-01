@@ -255,10 +255,10 @@ final class MediaSourceContextProvider: NSObject {
     private func buildContractScript() -> String {
         """
         (function() {
-            window.boppaMediaSourceContextDone = function() {
-                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'done' });
+            window.boppaContextDone = function() {
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'contextDone' });
             };
-            window.boppaSetMediaSourceContextValues = function(values) {
+            window.boppaSetContextValues = function(values) {
                 window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'contextValues', values: values });
             };
             window.boppaPopup = function(id) {
@@ -278,8 +278,8 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    private func handleDoneMessage() {
-        logger.info("boppaMediaSourceContextDone signaled. Completing work item.")
+    private func handleContextDoneMessage() {
+        logger.info("boppaContextDone signaled. Completing work item.")
         self.completeCurrentWork()
     }
 
@@ -312,8 +312,8 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
             }
 
             switch type {
-            case "done":
-                self.handleDoneMessage()
+            case "contextDone":
+                self.handleContextDoneMessage()
 
             case "contextValues":
                 if let values = body["values"] as? [String: Any] {
