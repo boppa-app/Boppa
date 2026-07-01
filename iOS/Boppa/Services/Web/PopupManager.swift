@@ -151,9 +151,16 @@ private struct PopupSheetView: View {
                 .navigationTitle(self.title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text(self.title)
+                            .fontWeight(.semibold)
+                    }
+                    .sharedBackgroundVisibilityIfAvailable(.hidden)
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done", action: self.onDone)
-                            .foregroundColor(Color.purp)
+                        Button(action: self.onDone) {
+                            Image(systemName: "door.left.hand.open")
+                                .foregroundColor(Color.purp)
+                        }
                     }
                     .sharedBackgroundVisibilityIfAvailable(.hidden)
                 }

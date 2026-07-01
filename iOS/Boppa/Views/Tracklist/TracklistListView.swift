@@ -52,7 +52,7 @@ struct TracklistListView: View {
                     trailing: {
                         if self.isLibraryMode {
                             if self.viewModel.isEditing {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Image(systemName: "door.left.hand.open")
                                     .font(.system(size: 16))
                                     .foregroundColor(.purp)
                                     .frame(width: 44, height: 44)
