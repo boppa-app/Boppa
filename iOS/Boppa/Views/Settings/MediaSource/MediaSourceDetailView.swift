@@ -61,6 +61,17 @@ struct MediaSourceDetailView: View {
                                     .foregroundColor(.white)
                             }
                         }
+
+                        if let popups = self.viewModel.mediaSource.config.popup, !popups.isEmpty {
+                            NavigationLink(destination: ConfigPopupView(popups: popups)) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.bubble")
+                                        .foregroundColor(.purp)
+                                    Text("Popup")
+                                        .foregroundColor(.white)
+                                }
+                            }
+                        }
                     }
                 }
             }

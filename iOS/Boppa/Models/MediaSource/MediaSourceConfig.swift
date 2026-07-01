@@ -66,7 +66,6 @@ struct ContextConfig: Codable {
 struct PopupConfig: Codable {
     let title: String
     let url: String
-    let timeoutSeconds: Int
     let userScripts: [Script]
 }
 
