@@ -39,10 +39,17 @@ struct MediaSourceDetailView: View {
                         }
                     }
 
-                    if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty,
-                       let gatheredDate = self.viewModel.mediaSource.contextLastGatheredDate
-                    {
-                        Section("Status") {
+                    Section("Status") {
+                        LabeledContent {
+                            Text(relativeTimeFormatter.localizedString(for: self.viewModel.mediaSource.lastUpdatedDate, relativeTo: Date()))
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        } label: {
+                            Text("Last Updated")
+                        }
+
+                        if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty,
+                           let gatheredDate = self.viewModel.mediaSource.contextLastGatheredDate
+                        {
                             LabeledContent {
                                 Text(relativeTimeFormatter.localizedString(for: gatheredDate, relativeTo: Date()))
                                     .frame(maxWidth: .infinity, alignment: .trailing)

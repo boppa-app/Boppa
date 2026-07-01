@@ -11,6 +11,7 @@ nonisolated struct MediaSource: Identifiable, Hashable {
     var configData: Data
     var sortOrder: String
     var isEnabled: Bool
+    var lastUpdatedTimestamp: Double
     var contextValuesJSON: String
     var contextLastGatheredTimestamp: Double?
 }
@@ -22,6 +23,10 @@ extension MediaSource {
 
     var contextValues: [String: String] {
         (try? JSONDecoder().decode([String: String].self, from: Data(self.contextValuesJSON.utf8))) ?? [:]
+    }
+
+    var lastUpdatedDate: Date {
+        Date(timeIntervalSince1970: self.lastUpdatedTimestamp)
     }
 
     var contextLastGatheredDate: Date? {
@@ -41,6 +46,7 @@ extension MediaSource {
         self.configData = (try? YAMLEncoder().encode(config)).flatMap { Data($0.utf8) } ?? Data()
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
+        self.lastUpdatedTimestamp = Date().timeIntervalSince1970
         self.contextValuesJSON = "{}"
         self.contextLastGatheredTimestamp = nil
     }

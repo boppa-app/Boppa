@@ -24,6 +24,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "configData" BLOB NOT NULL,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   "isEnabled" INTEGER NOT NULL DEFAULT 1,
+                  "lastUpdatedTimestamp" REAL NOT NULL,
                   "contextValuesJSON" TEXT NOT NULL DEFAULT '{}',
                   "contextLastGatheredTimestamp" REAL
                 ) STRICT
