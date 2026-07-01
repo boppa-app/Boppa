@@ -7,7 +7,6 @@ extension Notification.Name {
     static let mediaSourceRemoved = Notification.Name("mediaSourceRemoved")
     static let mediaSourceEnabled = Notification.Name("mediaSourceEnabled")
     static let mediaSourceDisabled = Notification.Name("mediaSourceDisabled")
-    static let mediaSourceLoginCompleted = Notification.Name("mediaSourceLoginCompleted")
 }
 
 private let logger = Logger(
@@ -30,7 +29,6 @@ final class MediaSourceContextProvider: NSObject {
     private var currentMediaSourceId: String?
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
-    private var mediaSourceLoginObserver: NSObjectProtocol?
 
     override private init() {
         super.init()
@@ -86,18 +84,6 @@ final class MediaSourceContextProvider: NSObject {
                 MediaSourceContextProvider.shared.refreshFromDatabase()
             }
         }
-
-        self.mediaSourceLoginObserver = NotificationCenter.default.addObserver(
-            forName: .mediaSourceLoginCompleted,
-            object: nil,
-            queue: .main
-        ) { notification in
-            guard let mediaSourceId = notification.userInfo?["mediaSourceId"] as? String else { return }
-            MainActor.assumeIsolated {
-                logger.info("Received mediaSourceLoginCompleted for '\(mediaSourceId)', triggering refresh...")
-                MediaSourceContextProvider.shared.refreshSource(id: mediaSourceId)
-            }
-        }
     }
 
     func stopAllTimers() {
@@ -115,26 +101,6 @@ final class MediaSourceContextProvider: NSObject {
         let mediaSources = MediaSourceStorageManager.shared.fetchAll()
         logger.info("Fetched \(mediaSources.count) media source(s) from database")
         self.startMonitoring(mediaSources: mediaSources)
-    }
-
-    @MainActor
-    private func refreshSource(id mediaSourceId: String) {
-        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
-        guard let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId }) else {
-            logger.warning("refreshSource: no mediaSource found with id '\(mediaSourceId)'")
-            return
-        }
-
-        let config = mediaSource.config
-        guard let entries = config.context, !entries.isEmpty else {
-            logger.debug("refreshSource: mediaSource '\(mediaSourceId)' has no parses configured")
-            return
-        }
-
-        logger.info("Refreshing mediaSource '\(mediaSourceId)' with \(entries.count) parse(s) after login")
-        for entry in entries {
-            self.enqueueRefresh(mediaSourceId: config.id, context: entry, customUserAgent: config.customUserAgent)
-        }
     }
 
     @MainActor
@@ -240,7 +206,14 @@ final class MediaSourceContextProvider: NSObject {
         )
 
         self.activeWebView = webView
+        self.startTimeout(for: mediaSourceId)
 
+        logger.info("Loading: \(url.absoluteString) (timeout: \(Self.refreshTimeoutSeconds)s)")
+        webView.load(URLRequest(url: url))
+    }
+
+    @MainActor
+    private func startTimeout(for mediaSourceId: String) {
         let timeout = Self.refreshTimeoutSeconds
         self.timeoutTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(timeout))
@@ -248,25 +221,48 @@ final class MediaSourceContextProvider: NSObject {
             logger.warning("Timeout (\(timeout)s) for '\(mediaSourceId)'. Moving on.")
             MediaSourceContextProvider.shared.completeCurrentWork()
         }
+    }
 
-        let urlStr = url.absoluteString
-        logger.info("Loading: \(urlStr) (timeout: \(timeout)s)")
-        webView.load(URLRequest(url: url))
+    @MainActor
+    private func handlePopupRequest(id: String) {
+        guard let mediaSourceId = self.currentMediaSourceId else {
+            logger.warning("Popup requested but no current mediaSource id")
+            return
+        }
+
+        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
+        guard let mediaSource = mediaSources.first(where: { $0.id == mediaSourceId }),
+              let popupConfig = mediaSource.config.popup?[id]
+        else {
+            logger.warning("No popup config '\(id)' found for mediaSource '\(mediaSourceId)'")
+            return
+        }
+
+        self.timeoutTask?.cancel()
+        self.timeoutTask = nil
+
+        PopupManager.shared.showPopup(
+            config: popupConfig,
+            customUserAgent: mediaSource.config.customUserAgent,
+            onDismiss: { [weak self] in
+                guard let self else { return }
+                self.activeWebView?.reload()
+                self.startTimeout(for: mediaSourceId)
+            }
+        )
     }
 
     private func buildContractScript() -> String {
         """
         (function() {
             window.boppaMediaSourceContextDone = function() {
-                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({
-                    type: 'done'
-                });
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'done' });
             };
             window.boppaSetMediaSourceContextValues = function(values) {
-                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({
-                    type: 'contextValues',
-                    values: values
-                });
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'contextValues', values: values });
+            };
+            window.boppaPopup = function(id) {
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'popup', id: id });
             };
         })();
         """
@@ -325,6 +321,10 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
                 } else {
                     logger.warning("contextValues message missing 'values' dictionary")
                 }
+
+            case "popup":
+                let id = body["id"] as? String ?? ""
+                self.handlePopupRequest(id: id)
 
             default:
                 logger.warning("Unknown message type: \(type)")

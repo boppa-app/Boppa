@@ -9,7 +9,6 @@ struct MediaSourceConfig: Codable {
     let iconSvg: String?
     let highlightColor: String?
     let customUserAgent: String?
-    let login: LoginConfig?
     let context: [ContextConfig]?
     let data: DataScripts
     let playback: PlaybackConfig
@@ -17,7 +16,7 @@ struct MediaSourceConfig: Codable {
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, data, playback, popup, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, context, data, playback, popup, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -28,7 +27,6 @@ struct MediaSourceConfig: Codable {
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
         self.highlightColor = try container.decodeIfPresent(String.self, forKey: .highlightColor)
         self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
-        self.login = try container.decodeIfPresent(LoginConfig.self, forKey: .login)
         self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
         self.data = try container.decode(DataScripts.self, forKey: .data)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
@@ -44,7 +42,6 @@ struct MediaSourceConfig: Codable {
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)
         try container.encodeIfPresent(self.highlightColor, forKey: .highlightColor)
         try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
-        try container.encodeIfPresent(self.login, forKey: .login)
         try container.encodeIfPresent(self.context, forKey: .context)
         try container.encode(self.data, forKey: .data)
         try container.encode(self.playback, forKey: .playback)
@@ -57,12 +54,6 @@ struct DataScripts: Codable {
     let search: SearchScripts?
     let list: ListScripts?
     let get: GetScripts?
-}
-
-struct LoginConfig: Codable {
-    let url: String
-    let required: Bool?
-    let cookies: [String]?
 }
 
 struct ContextConfig: Codable {

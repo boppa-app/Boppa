@@ -194,12 +194,22 @@ final class WebViewPlaybackEngine: NSObject {
         logger.info("WebViewPlaybackEngine torn down for '\(self.config.name)'")
     }
 
+    private func reloadPlayback() {
+        if let url = self.config.playback.url {
+            self.webView.load(URLRequest(url: URL(string: url)!))
+        } else if let html = self.config.playback.html {
+            self.webView.loadHTMLString(html, baseURL: URL(string: "https://\(self.config.url)"))
+        }
+    }
+
     private static func contractScript() -> String {
         """
         (function() {
-            // Post events back to Swift
             window.postEvent = function(eventObj) {
                 window.webkit.messageHandlers.\(self.messageHandlerName).postMessage(eventObj);
+            };
+            window.boppaPopup = function(id) {
+                window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({ type: 'popup', id: id });
             };
         })();
         """
@@ -245,6 +255,19 @@ final class WebViewPlaybackEngine: NSObject {
             let seekTime = self.extractDouble(from: dict, key: "seekTime")
             logger.info("Received seekCommand from webview: \(seekTime)s")
             PlaybackService.shared.seek(to: seekTime)
+            return
+        case "popup":
+            let id = dict["id"] as? String ?? ""
+            guard let popupConfig = self.config.popup?[id] else {
+                logger.warning("No popup config found for id '\(id)'")
+                return
+            }
+            PlaybackService.shared.stop()
+            PopupManager.shared.showPopup(
+                config: popupConfig,
+                customUserAgent: self.config.customUserAgent,
+                onDismiss: { [weak self] in self?.reloadPlayback() }
+            )
             return
         default:
             break
