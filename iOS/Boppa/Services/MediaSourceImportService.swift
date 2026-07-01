@@ -13,16 +13,11 @@ class MediaSourceImportService {
         self.session = URLSession(configuration: configuration)
     }
 
-    func buildConfigURL(configProviderUrl: String, mediaSourceUrl: String) -> URL? {
-        let host = configProviderUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-        let scheme = host.hasPrefix("localhost") || host.hasPrefix("127.0.0.1") ? "http" : "https"
-        let urlString = "\(scheme)://\(host)/msc/\(mediaSourceUrl).yaml"
-        return URL(string: urlString)
-    }
-
-    func fetchMediaSource(configProviderUrl: String, mediaSourceUrl: String) async throws -> MediaSource {
-        guard let url = buildConfigURL(configProviderUrl: configProviderUrl, mediaSourceUrl: mediaSourceUrl) else {
-            self.logger.error("Invalid config URL for provider: \(configProviderUrl), mediaSource: \(mediaSourceUrl)")
+    func fetchMediaSource(configUrl: String) async throws -> MediaSource {
+        let normalized = configUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = (normalized.hasPrefix("http://") || normalized.hasPrefix("https://")) ? normalized : "https://\(normalized)"
+        guard let url = URL(string: urlString) else {
+            self.logger.error("Invalid config URL: \(configUrl)")
             throw MediaSourceImportError.invalidURL
         }
 
@@ -33,11 +28,11 @@ class MediaSourceImportService {
         }
         guard httpResponse.statusCode == 200 else {
             self.logger.error("Server returned status \(httpResponse.statusCode) for \(url.absoluteString)")
-            throw MediaSourceImportError.serverError(statusCode: httpResponse.statusCode, mediaSourceUrl: mediaSourceUrl)
+            throw MediaSourceImportError.serverError(statusCode: httpResponse.statusCode, mediaSourceUrl: urlString)
         }
 
         let mediaSource = try MediaSource.fromConfigData(data)
-        self.logger.info("Successfully created media source '\(mediaSource.name)' for \(mediaSourceUrl)")
+        self.logger.info("Successfully created media source '\(mediaSource.name)' from \(urlString)")
 
         return mediaSource
     }

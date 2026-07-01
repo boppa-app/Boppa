@@ -3,28 +3,23 @@ import Foundation
 @MainActor
 @Observable
 class AddMediaSourceViewModel {
-    var mediaSourceUrl = ""
-    var configProviderUrl = "localhost:8788"
+    var configUrl = ""
     var isLoading = false
     var isGatheringContext = false
     var errorMessage: String?
 
     var isAddDisabled: Bool {
-        self.mediaSourceUrl.isEmpty || self.configProviderUrl.isEmpty || self.isLoading
+        self.configUrl.isEmpty || self.isLoading
     }
 
     func addMediaSource() async -> Bool {
         self.isLoading = true
         self.errorMessage = nil
 
-        let formattedSourceUrl = self.mediaSourceUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let formattedProviderUrl = self.configProviderUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let formattedUrl = self.configUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         do {
-            let mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(
-                configProviderUrl: formattedProviderUrl,
-                mediaSourceUrl: formattedSourceUrl
-            )
+            let mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(configUrl: formattedUrl)
 
             try MediaSourceStorageManager.shared.insert([mediaSource])
 

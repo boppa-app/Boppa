@@ -4,41 +4,19 @@ struct AddMediaSourceView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel = AddMediaSourceViewModel()
-    @State private var showingEditAlert = false
-    @State private var isConfigProviderEditable = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Media Source URL") {
-                    TextField("freesound.org", text: self.$viewModel.mediaSourceUrl)
+                Section("Media Source Config URL") {
+                    TextField("boppa.app/freemusicarchive.yaml", text: self.$viewModel.configUrl)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .disabled(self.viewModel.isLoading)
                         .tint(Color.purp)
-                        .accessibilityLabel("Media Source URL")
-                        .accessibilityHint("Enter the URL of the media source")
-                }
-                Section("Config Provider URL") {
-                    TextField(self.viewModel.configProviderUrl, text: self.$viewModel.configProviderUrl)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                        .disabled(self.viewModel.isLoading)
-                        .foregroundColor(self.isConfigProviderEditable ? Color.white : Color.purp)
-                        .overlay {
-                            if !self.isConfigProviderEditable {
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        self.showingEditAlert = true
-                                    }
-                            }
-                        }
-                        .tint(Color.purp)
-                        .accessibilityLabel("Config Provider URL")
-                        .accessibilityHint(self.isConfigProviderEditable ? "Enter a custom config provider URL" : "Tap to edit the config provider URL")
+                        .accessibilityLabel("Media Source Config URL")
+                        .accessibilityHint("Enter the URL of the media source config")
                 }
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -59,14 +37,6 @@ struct AddMediaSourceView: View {
             .toolbar {
                 self.cancelToolbarItem
                 self.addToolbarItem
-            }
-            .alert("Edit Config Provider URL?", isPresented: self.$showingEditAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Edit") {
-                    self.isConfigProviderEditable = true
-                }
-            } message: {
-                Text("Are you sure you want to change the default config provider URL? Only use trusted config provided URLs.")
             }
         }
     }
