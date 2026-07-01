@@ -6,6 +6,7 @@ class AddMediaSourceViewModel {
     var mediaSourceUrl = ""
     var configProviderUrl = "localhost:8788"
     var isLoading = false
+    var isGatheringContext = false
     var errorMessage: String?
 
     var isAddDisabled: Bool {
@@ -27,8 +28,15 @@ class AddMediaSourceViewModel {
 
             try MediaSourceStorageManager.shared.insert([mediaSource])
 
-            NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["id": mediaSource.id])
+            let hasContextConfigs = !(mediaSource.config.context ?? []).isEmpty
+            if hasContextConfigs {
+                self.isGatheringContext = true
+                MediaSourceContextProvider.shared.refresh()
+                await MediaSourceContextProvider.shared.waitForFirstContextGather(mediaSourceId: mediaSource.id)
+                self.isGatheringContext = false
+            }
 
+            NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["id": mediaSource.id])
             self.isLoading = false
             return true
         } catch {

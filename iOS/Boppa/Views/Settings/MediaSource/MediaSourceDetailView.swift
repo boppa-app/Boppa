@@ -1,5 +1,11 @@
 import SwiftUI
 
+private let relativeTimeFormatter: RelativeDateTimeFormatter = {
+    let f = RelativeDateTimeFormatter()
+    f.unitsStyle = .full
+    return f
+}()
+
 struct MediaSourceDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State var viewModel: MediaSourceDetailViewModel
@@ -21,14 +27,28 @@ struct MediaSourceDetailView: View {
                     Section("Options") {
                         HStack {
                             Text("Enabled")
-                                .foregroundColor(.white)
+                                .foregroundColor(self.viewModel.isContextGathered ? .white : .secondary)
                             Spacer()
                             SolidToggle(isOn: self.$viewModel.isSourceEnabled)
                                 .fixedSize()
+                                .disabled(!self.viewModel.isContextGathered)
                                 .accessibilityLabel("Enable Media Source")
                                 .accessibilityValue(self.viewModel.isSourceEnabled ? "On" : "Off")
-                                .accessibilityHint("Toggle to enable or disable this media source")
+                                .accessibilityHint(self.viewModel.isContextGathered ? "Toggle to enable or disable this media source" : "Available after context is gathered")
                                 .accessibilityAddTraits(.isButton)
+                        }
+                    }
+
+                    if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty,
+                       let gatheredDate = self.viewModel.mediaSource.contextLastGatheredDate
+                    {
+                        Section("Status") {
+                            LabeledContent {
+                                Text(relativeTimeFormatter.localizedString(for: gatheredDate, relativeTo: Date()))
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                            } label: {
+                                Text("Context Gathered")
+                            }
                         }
                     }
 

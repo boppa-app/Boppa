@@ -5,6 +5,10 @@ import Foundation
 class MediaSourceDetailViewModel {
     var mediaSource: MediaSource
 
+    var isContextGathered: Bool {
+        self.mediaSource.isContextGathered
+    }
+
     var isSourceEnabled: Bool {
         get { self.mediaSource.isEnabled }
         set {

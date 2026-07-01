@@ -12,6 +12,7 @@ nonisolated struct MediaSource: Identifiable, Hashable {
     var sortOrder: String
     var isEnabled: Bool
     var contextValuesJSON: String
+    var contextLastGatheredTimestamp: Double?
 }
 
 extension MediaSource {
@@ -23,6 +24,16 @@ extension MediaSource {
         (try? JSONDecoder().decode([String: String].self, from: Data(self.contextValuesJSON.utf8))) ?? [:]
     }
 
+    var contextLastGatheredDate: Date? {
+        guard let ts = contextLastGatheredTimestamp else { return nil }
+        return Date(timeIntervalSince1970: ts)
+    }
+
+    var isContextGathered: Bool {
+        guard let contexts = config.context, !contexts.isEmpty else { return true }
+        return self.contextLastGatheredTimestamp != nil
+    }
+
     init(id: String, name: String, url: String, config: MediaSourceConfig, sortOrder: String = "a0", isEnabled: Bool = true) {
         self.id = id
         self.name = name
@@ -31,6 +42,7 @@ extension MediaSource {
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
         self.contextValuesJSON = "{}"
+        self.contextLastGatheredTimestamp = nil
     }
 
     static func fromConfigData(_ data: Data) throws -> MediaSource {

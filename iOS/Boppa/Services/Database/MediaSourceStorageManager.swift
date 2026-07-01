@@ -21,9 +21,10 @@ class MediaSourceStorageManager {
     }
 
     func fetchAllEnabled() -> [MediaSource] {
-        (try? self.database.read { db in
+        let all = (try? self.database.read { db in
             try MediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
         }) ?? []
+        return all.filter { $0.isContextGathered }
     }
 
     func fetchOne(id: String) -> MediaSource? {
@@ -77,6 +78,20 @@ class MediaSourceStorageManager {
             try MediaSource.where { $0.id.eq(id) }.delete().execute(db)
         }
         logger.info("Deleted media source '\(id)'")
+    }
+
+    func setContextLastGatheredTimestamp(id: String) throws -> Bool {
+        var wasNil = false
+        try self.database.write { db in
+            let mediaSource = try MediaSource.where { $0.id.eq(id) }.fetchOne(db)
+            guard let mediaSource else { return }
+            wasNil = mediaSource.contextLastGatheredTimestamp == nil
+            let now = Date().timeIntervalSince1970
+            try MediaSource.update { $0.contextLastGatheredTimestamp = #bind(now) }
+                .where { $0.id.eq(id) }
+                .execute(db)
+        }
+        return wasNil
     }
 
     func mergeContextValues(id: String, newValues: [String: Any]) throws {

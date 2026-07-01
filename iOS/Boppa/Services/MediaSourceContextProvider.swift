@@ -23,12 +23,15 @@ final class MediaSourceContextProvider: NSObject {
 
     private var refreshTimers: [String: Timer] = [:]
     private var isProcessing = false
-    private var pendingWork: [RefreshWorkItem] = []
+    private var pendingWork: [(mediaSourceId: String, url: URL, scripts: [Script], customUserAgent: String?)] = []
     private var activeWebView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
     private var currentMediaSourceId: String?
+    private var currentContextURL: String?
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
+    private var pendingContextURLs: [String: Set<String>] = [:]
+    private var contextGatheredContinuations: [String: CheckedContinuation<Void, Never>] = [:]
 
     override private init() {
         super.init()
@@ -97,6 +100,21 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
+    func refresh() {
+        self.refreshFromDatabase()
+    }
+
+    @MainActor
+    func waitForFirstContextGather(mediaSourceId: String) async {
+        if MediaSourceStorageManager.shared.fetchOne(id: mediaSourceId)?.contextLastGatheredTimestamp != nil {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            self.contextGatheredContinuations[mediaSourceId] = continuation
+        }
+    }
+
+    @MainActor
     private func refreshFromDatabase() {
         let mediaSources = MediaSourceStorageManager.shared.fetchAll()
         logger.info("Fetched \(mediaSources.count) media source(s) from database")
@@ -113,21 +131,29 @@ final class MediaSourceContextProvider: NSObject {
         self.pendingWork.removeAll()
         self.tearDownWebView()
         self.isProcessing = false
+        self.pendingContextURLs.removeAll()
 
         for mediaSource in mediaSources {
             let config = mediaSource.config
             guard let entries = config.context, !entries.isEmpty else {
-                logger.debug("Skipping mediaSource '\(config.name)': no parses configured")
+                logger.debug("Skipping mediaSource '\(config.name)': no context configured")
                 continue
             }
 
-            logger.info("Source '\(config.name)' has \(entries.count) parse(s)")
+            logger.info("Source '\(config.name)' has \(entries.count) context config(s)")
+
+            self.pendingContextURLs[config.id] = Set(entries.map { $0.url })
 
             for entry in entries {
+                guard let url = URL(string: entry.url) else {
+                    logger.error("Invalid context URL '\(entry.url)' for '\(config.id)'")
+                    continue
+                }
+
                 let timerKey = "\(config.id)|\(entry.url)"
 
                 logger.info("Enqueueing immediate refresh for '\(config.id)' -> \(entry.url) with \(entry.userScripts.count) script(s)")
-                self.enqueueRefresh(mediaSourceId: config.id, context: entry, customUserAgent: config.customUserAgent)
+                self.enqueueRefresh(mediaSourceId: config.id, url: url, scripts: entry.userScripts, customUserAgent: config.customUserAgent)
 
                 let interval = TimeInterval(entry.intervalSeconds)
                 let mediaSourceId = config.id
@@ -135,7 +161,7 @@ final class MediaSourceContextProvider: NSObject {
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
                     MainActor.assumeIsolated {
                         logger.info("Timer fired: recurring refresh for '\(mediaSourceId)' -> \(entry.url)")
-                        MediaSourceContextProvider.shared.enqueueRefresh(mediaSourceId: mediaSourceId, context: entry, customUserAgent: customUserAgent)
+                        MediaSourceContextProvider.shared.enqueueRefresh(mediaSourceId: mediaSourceId, url: url, scripts: entry.userScripts, customUserAgent: customUserAgent)
                     }
                 }
                 self.refreshTimers[timerKey] = timer
@@ -149,38 +175,30 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    private func enqueueRefresh(mediaSourceId: String, context: ContextConfig, customUserAgent: String?) {
-        let workItem = RefreshWorkItem(mediaSourceId: mediaSourceId, context: context, customUserAgent: customUserAgent)
-        self.pendingWork.append(workItem)
+    private func enqueueRefresh(mediaSourceId: String, url: URL, scripts: [Script], customUserAgent: String?) {
+        self.pendingWork.append((mediaSourceId: mediaSourceId, url: url, scripts: scripts, customUserAgent: customUserAgent))
         let queueSize = self.pendingWork.count
-        let processing = self.isProcessing
-        logger.debug("Enqueued refresh for '\(mediaSourceId)'. Queue size: \(queueSize), isProcessing: \(processing)")
+        logger.debug("Enqueued refresh for '\(mediaSourceId)'. Queue size: \(queueSize), isProcessing: \(self.isProcessing)")
         self.processNextIfIdle()
     }
 
     @MainActor
     private func processNextIfIdle() {
         guard !self.isProcessing else {
-            let waiting = self.pendingWork.count
-            logger.debug("Queue processor busy, \(waiting) item(s) waiting")
+            logger.debug("Queue processor busy, \(self.pendingWork.count) item(s) waiting")
             return
         }
-        guard let workItem = pendingWork.first else {
+        guard let item = self.pendingWork.first else {
             logger.debug("Queue empty, nothing to process")
             return
         }
         self.pendingWork.removeFirst()
         self.isProcessing = true
-        self.currentMediaSourceId = workItem.mediaSourceId
+        self.currentMediaSourceId = item.mediaSourceId
+        self.currentContextURL = item.url.absoluteString
 
-        guard let url = URL(string: workItem.context.url) else {
-            logger.error("Invalid refresh URL: '\(workItem.context.url)' for '\(workItem.mediaSourceId)'")
-            self.completeCurrentWork()
-            return
-        }
-
-        logger.info("Processing: '\(workItem.mediaSourceId)' -> \(url.absoluteString) with \(workItem.context.userScripts.count) script(s)")
-        self.loadRefreshURL(url: url, scripts: workItem.context.userScripts, mediaSourceId: workItem.mediaSourceId, customUserAgent: workItem.customUserAgent)
+        logger.info("Processing: '\(item.mediaSourceId)' -> \(item.url.absoluteString) with \(item.scripts.count) script(s)")
+        self.loadRefreshURL(url: item.url, scripts: item.scripts, customUserAgent: item.customUserAgent)
     }
 
     @MainActor
@@ -190,13 +208,14 @@ final class MediaSourceContextProvider: NSObject {
         self.tearDownWebView()
         self.isProcessing = false
         self.currentMediaSourceId = nil
+        self.currentContextURL = nil
         let remaining = self.pendingWork.count
         logger.debug("Work item complete. \(remaining) item(s) remaining.")
         self.processNextIfIdle()
     }
 
     @MainActor
-    private func loadRefreshURL(url: URL, scripts: [Script], mediaSourceId: String, customUserAgent: String?) {
+    private func loadRefreshURL(url: URL, scripts: [Script], customUserAgent: String?) {
         let webView = WebViewFactory.makeWebView(
             scripts: scripts,
             contractScript: self.buildContractScript(),
@@ -206,15 +225,16 @@ final class MediaSourceContextProvider: NSObject {
         )
 
         self.activeWebView = webView
-        self.startTimeout(for: mediaSourceId)
+        self.startTimeout()
 
         logger.info("Loading: \(url.absoluteString) (timeout: \(Self.refreshTimeoutSeconds)s)")
         webView.load(URLRequest(url: url))
     }
 
     @MainActor
-    private func startTimeout(for mediaSourceId: String) {
+    private func startTimeout() {
         let timeout = Self.refreshTimeoutSeconds
+        let mediaSourceId = self.currentMediaSourceId ?? "unknown"
         self.timeoutTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(timeout))
             guard !Task.isCancelled else { return }
@@ -247,7 +267,7 @@ final class MediaSourceContextProvider: NSObject {
             onDismiss: { [weak self] in
                 guard let self else { return }
                 self.activeWebView?.reload()
-                self.startTimeout(for: mediaSourceId)
+                self.startTimeout()
             }
         )
     }
@@ -279,7 +299,25 @@ final class MediaSourceContextProvider: NSObject {
 
     @MainActor
     private func handleContextDoneMessage() {
-        logger.info("boppaContextDone signaled. Completing work item.")
+        logger.info("boppaContextDone signaled.")
+
+        if let mediaSourceId = self.currentMediaSourceId,
+           let contextURL = self.currentContextURL
+        {
+            self.pendingContextURLs[mediaSourceId]?.remove(contextURL)
+
+            if self.pendingContextURLs[mediaSourceId]?.isEmpty == true {
+                self.pendingContextURLs.removeValue(forKey: mediaSourceId)
+                let isFirstGather = (try? MediaSourceStorageManager.shared.setContextLastGatheredTimestamp(id: mediaSourceId)) ?? false
+                if isFirstGather, let continuation = self.contextGatheredContinuations.removeValue(forKey: mediaSourceId) {
+                    logger.info("All context gathered for '\(mediaSourceId)' for the first time. Resuming continuation.")
+                    continuation.resume()
+                } else {
+                    logger.info("All context gathered for '\(mediaSourceId)'. Timestamp updated.")
+                }
+            }
+        }
+
         self.completeCurrentWork()
     }
 
@@ -331,10 +369,4 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
             }
         }
     }
-}
-
-private struct RefreshWorkItem {
-    let mediaSourceId: String
-    let context: ContextConfig
-    let customUserAgent: String?
 }

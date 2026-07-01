@@ -90,7 +90,7 @@ struct AddMediaSourceView: View {
             if self.viewModel.isLoading {
                 ProgressView()
                     .tint(.purp)
-                    .accessibilityLabel("Adding media source")
+                    .accessibilityLabel(self.viewModel.isGatheringContext ? "Gathering context" : "Adding media source")
             } else {
                 Button(action: { self.addMediaSource() }) {
                     Image(systemName: "checkmark").font(.title3)
