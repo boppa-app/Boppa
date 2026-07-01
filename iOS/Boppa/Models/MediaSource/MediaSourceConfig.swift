@@ -13,10 +13,11 @@ struct MediaSourceConfig: Codable {
     let context: [ContextConfig]?
     let data: DataScripts
     let playback: PlaybackConfig
+    let popup: [String: PopupConfig]?
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, data, playback, lastUpdated
+        case id, name, url, iconSvg, highlightColor, customUserAgent, login, context, data, playback, popup, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -31,6 +32,7 @@ struct MediaSourceConfig: Codable {
         self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
         self.data = try container.decode(DataScripts.self, forKey: .data)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
+        self.popup = try container.decodeIfPresent([String: PopupConfig].self, forKey: .popup)
         self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
     }
 
@@ -46,6 +48,7 @@ struct MediaSourceConfig: Codable {
         try container.encodeIfPresent(self.context, forKey: .context)
         try container.encode(self.data, forKey: .data)
         try container.encode(self.playback, forKey: .playback)
+        try container.encodeIfPresent(self.popup, forKey: .popup)
         try container.encode(self.lastUpdated, forKey: .lastUpdated)
     }
 }
@@ -67,6 +70,43 @@ struct ContextConfig: Codable {
     let url: String
     let intervalSeconds: Int
     let userScripts: [Script]
+}
+
+struct PopupConfig: Codable {
+    let title: String
+    let url: String
+    let timeoutSeconds: Int
+    let userScripts: [Script]
+}
+
+struct PlaybackConfig: Codable {
+    let url: String?
+    let html: String?
+    let userScripts: [Script]
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.url = try container.decodeIfPresent(String.self, forKey: .url)
+        self.html = try container.decodeIfPresent(String.self, forKey: .html)
+        self.userScripts = try container.decode([Script].self, forKey: .userScripts)
+
+        if self.url == nil, self.html == nil {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: container.codingPath,
+                    debugDescription: "playback config must have either 'url' or 'html'"
+                )
+            )
+        }
+        if self.url != nil, self.html != nil {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: container.codingPath,
+                    debugDescription: "playback config must have only one of 'url' or 'html', not both"
+                )
+            )
+        }
+    }
 }
 
 struct Script: Codable {
