@@ -14,12 +14,11 @@ class MediaSourceImportService {
     }
 
     func fetchMediaSource(configUrl: String) async throws -> MediaSource {
-        let normalized = configUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-        let urlString = (normalized.hasPrefix("http://") || normalized.hasPrefix("https://")) ? normalized : "https://\(normalized)"
-        guard let url = URL(string: urlString) else {
+        guard let url = Self.normalizeConfigUrl(configUrl) else {
             self.logger.error("Invalid config URL: \(configUrl)")
             throw MediaSourceImportError.invalidURL
         }
+        let urlString = url.absoluteString
 
         self.logger.info("Fetching config from: \(url.absoluteString)")
         let (data, response) = try await session.data(from: url)
@@ -39,7 +38,7 @@ class MediaSourceImportService {
 
     func updateAllMediaSources() async {
         let mediaSources = MediaSourceStorageManager.shared.fetchAll()
-        let updatable = mediaSources.filter { $0.configUrl != nil && $0.autoUpdate }
+        let updatable = Self.sourcesToUpdate(mediaSources)
         guard !updatable.isEmpty else { return }
 
         self.logger.info("Updating \(updatable.count) media source config(s) from remote")
@@ -49,12 +48,12 @@ class MediaSourceImportService {
                 group.addTask {
                     do {
                         let updated = try await self.fetchMediaSource(configUrl: source.configUrl!)
-                        guard updated.id == source.id else {
-                            self.logger.warning("Config ID mismatch for '\(source.id)': remote returned '\(updated.id)', skipping")
-                            return
-                        }
-                        guard updated.version != source.version else {
-                            self.logger.info("Config for '\(source.id)' is up to date (version \(source.version))")
+                        guard Self.shouldApplyUpdate(stored: source, fetched: updated) else {
+                            if updated.id != source.id {
+                                self.logger.warning("Config ID mismatch for '\(source.id)': remote returned '\(updated.id)', skipping")
+                            } else {
+                                self.logger.info("Config for '\(source.id)' is up to date (version \(source.version))")
+                            }
                             return
                         }
                         try MediaSourceStorageManager.shared.updateConfig(
@@ -71,5 +70,24 @@ class MediaSourceImportService {
                 }
             }
         }
+    }
+
+    static func normalizeConfigUrl(_ raw: String) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let urlString = trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://")
+            ? trimmed
+            : "https://\(trimmed)"
+        guard let url = URL(string: urlString), url.host != nil else { return nil }
+        return url
+    }
+
+    static func sourcesToUpdate(_ sources: [MediaSource]) -> [MediaSource] {
+        sources.filter { $0.configUrl != nil && $0.autoUpdate }
+    }
+
+    static func shouldApplyUpdate(stored: MediaSource, fetched: MediaSource) -> Bool {
+        guard fetched.id == stored.id else { return false }
+        return fetched.version != stored.version
     }
 }
