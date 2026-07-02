@@ -31,9 +31,45 @@ class MediaSourceImportService {
             throw MediaSourceImportError.serverError(statusCode: httpResponse.statusCode, mediaSourceUrl: urlString)
         }
 
-        let mediaSource = try MediaSource.fromConfigData(data)
+        let mediaSource = try MediaSource.fromConfigData(data, configUrl: urlString)
         self.logger.info("Successfully created media source '\(mediaSource.name)' from \(urlString)")
 
         return mediaSource
+    }
+
+    func updateAllMediaSources() async {
+        let mediaSources = MediaSourceStorageManager.shared.fetchAll()
+        let updatable = mediaSources.filter { $0.configUrl != nil && $0.autoUpdate }
+        guard !updatable.isEmpty else { return }
+
+        self.logger.info("Updating \(updatable.count) media source config(s) from remote")
+
+        await withTaskGroup(of: Void.self) { group in
+            for source in updatable {
+                group.addTask {
+                    do {
+                        let updated = try await self.fetchMediaSource(configUrl: source.configUrl!)
+                        guard updated.id == source.id else {
+                            self.logger.warning("Config ID mismatch for '\(source.id)': remote returned '\(updated.id)', skipping")
+                            return
+                        }
+                        guard updated.version != source.version else {
+                            self.logger.info("Config for '\(source.id)' is up to date (version \(source.version))")
+                            return
+                        }
+                        try MediaSourceStorageManager.shared.updateConfig(
+                            id: source.id,
+                            configData: updated.configData,
+                            name: updated.name,
+                            url: updated.url,
+                            version: updated.version
+                        )
+                        self.logger.info("Updated config for '\(source.id)' to version '\(updated.version)'")
+                    } catch {
+                        self.logger.error("Failed to update config for '\(source.id)': \(error)")
+                    }
+                }
+            }
+        }
     }
 }

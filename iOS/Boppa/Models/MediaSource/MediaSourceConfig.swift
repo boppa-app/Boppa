@@ -4,6 +4,7 @@ import WebKit
 // TODO: Add version, updateUrl (URL to check for config updates), and downloadUrl (URL to download config) fields
 struct MediaSourceConfig: Codable {
     let id: String
+    let version: String
     let name: String
     let url: String
     let iconSvg: String?
@@ -16,12 +17,13 @@ struct MediaSourceConfig: Codable {
     let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, iconSvg, highlightColor, customUserAgent, context, data, playback, popup, lastUpdated
+        case id, version, name, url, iconSvg, highlightColor, customUserAgent, context, data, playback, popup, lastUpdated
     }
 
     nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decode(String.self, forKey: .id)
+        self.version = try container.decode(String.self, forKey: .version)
         self.name = try container.decode(String.self, forKey: .name)
         self.url = try container.decode(String.self, forKey: .url)
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
@@ -37,6 +39,7 @@ struct MediaSourceConfig: Codable {
     nonisolated func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.id, forKey: .id)
+        try container.encode(self.version, forKey: .version)
         try container.encode(self.name, forKey: .name)
         try container.encode(self.url, forKey: .url)
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)

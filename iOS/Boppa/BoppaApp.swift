@@ -56,19 +56,19 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
+        let rootView = ContentView()
+            .preferredColorScheme(.dark)
+
+        let hostingController = UIHostingController(rootView: rootView)
+        let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = .dark
+        window.rootViewController = hostingController
+        window.makeKeyAndVisible()
+        self.window = window
+
         Task {
+            await MediaSourceImportService.shared.updateAllMediaSources()
             MediaSourceContextProvider.shared.startMonitoring()
-
-            let rootView = ContentView()
-                .preferredColorScheme(.dark)
-
-            let hostingController = UIHostingController(rootView: rootView)
-            let window = UIWindow(windowScene: windowScene)
-            window.overrideUserInterfaceStyle = .dark
-            window.rootViewController = hostingController
-            window.makeKeyAndVisible()
-            self.window = window
-
             WebViewPlaybackEngineRegistry.shared.start()
         }
     }

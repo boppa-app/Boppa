@@ -37,9 +37,23 @@ struct MediaSourceDetailView: View {
                                 .accessibilityHint(self.viewModel.isContextGathered ? "Toggle to enable or disable this media source" : "Available after context is gathered")
                                 .accessibilityAddTraits(.isButton)
                         }
+
+                        if self.viewModel.mediaSource.configUrl != nil {
+                            HStack {
+                                Text("Auto-Update")
+                                Spacer()
+                                SolidToggle(isOn: self.$viewModel.isAutoUpdateEnabled)
+                                    .fixedSize()
+                                    .accessibilityLabel("Auto-Update Config")
+                                    .accessibilityValue(self.viewModel.isAutoUpdateEnabled ? "On" : "Off")
+                                    .accessibilityAddTraits(.isButton)
+                            }
+                        }
                     }
 
                     Section("Status") {
+                        LabeledContent("Version", value: self.viewModel.mediaSource.version)
+
                         LabeledContent {
                             Text(relativeTimeFormatter.localizedString(for: self.viewModel.mediaSource.lastUpdatedDate, relativeTo: Date()))
                                 .frame(maxWidth: .infinity, alignment: .trailing)

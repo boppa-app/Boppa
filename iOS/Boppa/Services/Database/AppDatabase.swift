@@ -19,8 +19,11 @@ extension DatabaseWriter where Self == DatabasePool {
                 """
                 CREATE TABLE "mediaSources" (
                   "id" TEXT NOT NULL PRIMARY KEY,
+                  "version" TEXT NOT NULL DEFAULT '',
                   "name" TEXT NOT NULL,
                   "url" TEXT NOT NULL,
+                  "configUrl" TEXT,
+                  "autoUpdate" INTEGER NOT NULL DEFAULT 1,
                   "configData" BLOB NOT NULL,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',
                   "isEnabled" INTEGER NOT NULL DEFAULT 1,

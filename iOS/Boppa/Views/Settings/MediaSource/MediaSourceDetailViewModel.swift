@@ -19,6 +19,14 @@ class MediaSourceDetailViewModel {
         }
     }
 
+    var isAutoUpdateEnabled: Bool {
+        get { self.mediaSource.autoUpdate }
+        set {
+            self.mediaSource.autoUpdate = newValue
+            try? MediaSourceStorageManager.shared.setAutoUpdate(id: self.mediaSource.id, autoUpdate: newValue)
+        }
+    }
+
     init(mediaSource: MediaSource) {
         self.mediaSource = mediaSource
     }
