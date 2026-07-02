@@ -3,7 +3,7 @@ import SwiftUI
 struct TracklistListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = TracklistListViewModel()
-    @State private var selectedTracklistId: UUID?
+    @State private var navigationTarget: Tracklist?
     @State private var showActionSheet = false
     @State private var tracklistToDelete: Tracklist?
 
@@ -86,6 +86,9 @@ struct TracklistListView: View {
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
+        .navigationDestination(item: self.$navigationTarget) { tracklist in
+            TracklistView(tracklist: tracklist)
+        }
         .sheet(isPresented: self.$showActionSheet) {
             TracklistListActionSheet(
                 type: self.type,
@@ -210,17 +213,9 @@ struct TracklistListView: View {
                         .onTapGesture {
                             if self.canNavigateToTracklist {
                                 self.onTracklistSelected?(tracklist.mediaSourceId)
-                                self.selectedTracklistId = tracklist.id
+                                self.navigationTarget = tracklist
                             }
                         }
-                        .background(
-                            NavigationLink(
-                                destination: TracklistView(tracklist: tracklist),
-                                tag: tracklist.id,
-                                selection: self.$selectedTracklistId
-                            ) { EmptyView() }
-                                .opacity(0)
-                        )
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.hidden)
