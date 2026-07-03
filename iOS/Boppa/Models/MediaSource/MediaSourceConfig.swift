@@ -14,10 +14,9 @@ struct MediaSourceConfig: Codable {
     let data: DataScripts
     let playback: PlaybackConfig
     let popup: [String: PopupConfig]?
-    let lastUpdated: Date
 
     private enum CodingKeys: String, CodingKey {
-        case id, version, name, url, iconSvg, highlightColor, customUserAgent, context, data, playback, popup, lastUpdated
+        case id, version, name, url, iconSvg, highlightColor, customUserAgent, context, data, playback, popup
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -33,7 +32,6 @@ struct MediaSourceConfig: Codable {
         self.data = try container.decode(DataScripts.self, forKey: .data)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
         self.popup = try container.decodeIfPresent([String: PopupConfig].self, forKey: .popup)
-        self.lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date()
     }
 
     nonisolated func encode(to encoder: Encoder) throws {
@@ -49,7 +47,6 @@ struct MediaSourceConfig: Codable {
         try container.encode(self.data, forKey: .data)
         try container.encode(self.playback, forKey: .playback)
         try container.encodeIfPresent(self.popup, forKey: .popup)
-        try container.encode(self.lastUpdated, forKey: .lastUpdated)
     }
 }
 

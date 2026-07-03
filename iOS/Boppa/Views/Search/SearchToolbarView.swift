@@ -86,7 +86,7 @@ struct SearchToolbarView: View {
             {
                 SVGImageView(svgString: iconSvg, size: 24)
                     .frame(width: 24, height: 24)
-                    .clipShape(Circle())
+                    .clipShape(Rectangle())
             } else {
                 Image(systemName: "music.note")
                     .font(.system(size: 16))
