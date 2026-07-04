@@ -17,9 +17,9 @@ Yes. Boppa is open source under the GPLv3 license.
 No. Boppa has no built-in catalog. Every source of music comes from a media source
 config you add yourself.
 
-## Can I write my own media source?
+## Can I write my own media source config?
 
-Yes, that's the intended way to extend Boppa. See [Media sources](/docs/media-sources)
+Yes, that's the intended way to extend Boppa. See [Media Sources](/docs/media-sources)
 for the shape of a config.
 
 ## Is there an Android or desktop version?
