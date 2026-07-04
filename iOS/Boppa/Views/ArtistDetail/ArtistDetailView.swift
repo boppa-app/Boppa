@@ -126,24 +126,25 @@ struct ArtistDetailView: View {
 
             ForEach(Array(albums.enumerated()), id: \.element.id) { _, tracklist in
                 if self.mediaSource.config.data.list?.album != nil {
-                    NavigationLink(value: Destination.tracklist(Tracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: self.mediaSource.id,
-                        title: tracklist.title,
-                        subtitle: tracklist.subtitle,
-                        artworkUrl: tracklist.artworkUrl,
-                        tracklistType: .album,
-                        storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                            mediaId: tracklist.mediaId,
-                            mediaSourceId: self.mediaSource.id
+                    TracklistRow(tracklist: tracklist, showChevron: true)
+                        .background(
+                            NavigationLink(value: Destination.tracklist(Tracklist(
+                                mediaId: tracklist.mediaId,
+                                mediaSourceId: self.mediaSource.id,
+                                title: tracklist.title,
+                                subtitle: tracklist.subtitle,
+                                artworkUrl: tracklist.artworkUrl,
+                                tracklistType: .album,
+                                storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
+                                    mediaId: tracklist.mediaId,
+                                    mediaSourceId: self.mediaSource.id
+                                )
+                            ))) { EmptyView() }
+                                .opacity(0)
                         )
-                    ))) {
-                        TracklistRow(tracklist: tracklist, showChevron: true)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
                 } else {
                     TracklistRow(tracklist: tracklist)
                         .listRowBackground(Color.black)
@@ -212,24 +213,25 @@ struct ArtistDetailView: View {
 
             ForEach(Array(playlists.enumerated()), id: \.element.id) { _, tracklist in
                 if self.mediaSource.config.data.list?.playlist != nil {
-                    NavigationLink(value: Destination.tracklist(Tracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: self.mediaSource.id,
-                        title: tracklist.title,
-                        subtitle: tracklist.subtitle,
-                        artworkUrl: tracklist.artworkUrl,
-                        tracklistType: .playlist,
-                        storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                            mediaId: tracklist.mediaId,
-                            mediaSourceId: self.mediaSource.id
+                    TracklistRow(tracklist: tracklist, showChevron: true)
+                        .background(
+                            NavigationLink(value: Destination.tracklist(Tracklist(
+                                mediaId: tracklist.mediaId,
+                                mediaSourceId: self.mediaSource.id,
+                                title: tracklist.title,
+                                subtitle: tracklist.subtitle,
+                                artworkUrl: tracklist.artworkUrl,
+                                tracklistType: .playlist,
+                                storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
+                                    mediaId: tracklist.mediaId,
+                                    mediaSourceId: self.mediaSource.id
+                                )
+                            ))) { EmptyView() }
+                                .opacity(0)
                         )
-                    ))) {
-                        TracklistRow(tracklist: tracklist, showChevron: true)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
                 } else {
                     TracklistRow(tracklist: tracklist)
                         .listRowBackground(Color.black)
@@ -249,10 +251,11 @@ struct ArtistDetailView: View {
     }
 
     private func albumsSectionHeader(_ detail: ArtistDetail) -> some View {
-        NavigationLink(value: Destination.albumList) {
-            self.sectionHeaderLabel(title: "Albums", icon: self.albumsIcon)
-        }
-        .buttonStyle(.plain)
+        self.sectionHeaderLabel(title: "Albums", icon: self.albumsIcon)
+            .background(
+                NavigationLink(value: Destination.albumList) { EmptyView() }
+                    .opacity(0)
+            )
     }
 
     private func songsSectionHeader(_ detail: ArtistDetail) -> some View {
@@ -265,10 +268,11 @@ struct ArtistDetailView: View {
             fromArtist: self.artist,
             artistDetail: detail
         )
-        return NavigationLink(value: Destination.tracklist(tracklist)) {
-            self.sectionHeaderLabel(title: "Songs", icon: "music.note")
-        }
-        .buttonStyle(.plain)
+        return self.sectionHeaderLabel(title: "Songs", icon: "music.note")
+            .background(
+                NavigationLink(value: Destination.tracklist(tracklist)) { EmptyView() }
+                    .opacity(0)
+            )
     }
 
     private func videosSectionHeader(_ detail: ArtistDetail) -> some View {
@@ -281,17 +285,19 @@ struct ArtistDetailView: View {
             fromArtist: self.artist,
             artistDetail: detail
         )
-        return NavigationLink(value: Destination.tracklist(tracklist)) {
-            self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
-        }
-        .buttonStyle(.plain)
+        return self.sectionHeaderLabel(title: "Videos", icon: "video.fill")
+            .background(
+                NavigationLink(value: Destination.tracklist(tracklist)) { EmptyView() }
+                    .opacity(0)
+            )
     }
 
     private func playlistsSectionHeader(_ detail: ArtistDetail) -> some View {
-        NavigationLink(value: Destination.playlistList) {
-            self.sectionHeaderLabel(title: "Playlists", icon: "music.note.list")
-        }
-        .buttonStyle(.plain)
+        self.sectionHeaderLabel(title: "Playlists", icon: "music.note.list")
+            .background(
+                NavigationLink(value: Destination.playlistList) { EmptyView() }
+                    .opacity(0)
+            )
     }
 
     private func sectionHeaderLabel(title: String, icon: String) -> some View {
