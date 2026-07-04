@@ -1,0 +1,13 @@
+name = "boppa-website"
+# account_id = "<fill in before deploying>"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+main = "./src/server-entry.ts"
+
+# routes = [
+#   { pattern = "boppa.app", custom_domain = true },
+#   { pattern = "www.boppa.app", custom_domain = true },
+# ]
+
+[observability]
+enabled = true

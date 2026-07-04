@@ -1,0 +1,27 @@
+---
+title: FAQ
+description: Frequently asked questions about Boppa.
+nav: FAQ
+order: 1
+category: Help
+---
+
+# FAQ
+
+## Is Boppa free?
+
+Yes. Boppa is open source under the GPLv3 license.
+
+## Does Boppa host any music itself?
+
+No. Boppa has no built-in catalog. Every source of music comes from a media source
+config you add yourself.
+
+## Can I write my own media source?
+
+Yes, that's the intended way to extend Boppa. See [Media sources](/docs/media-sources)
+for the shape of a config.
+
+## Is there an Android or desktop version?
+
+Not currently. Boppa is iOS-only today.
