@@ -21,9 +21,10 @@ struct SVGImageView: View {
             renderWidth = self.size * aspectRatio
         }
 
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: renderWidth, height: renderHeight))
+        let renderSize = CGSize(width: renderWidth, height: renderHeight)
+        let renderer = UIGraphicsImageRenderer(size: renderSize)
         return renderer.image { ctx in
-            svg.draw(in: ctx.cgContext, size: CGSize(width: renderWidth, height: renderHeight))
+            svg.draw(in: ctx.cgContext, size: renderSize)
         }
     }
 

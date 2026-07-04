@@ -3,6 +3,7 @@ import SwiftUI
 struct MediaSourceIcon: View {
     let mediaSource: MediaSource
     var isSelected: Bool?
+    var size: CGFloat = MediaSourceGridLayout.iconSize
 
     private var isHighlighted: Bool {
         self.isSelected ?? self.mediaSource.isEnabled
@@ -19,16 +20,16 @@ struct MediaSourceIcon: View {
         ZStack {
             Circle()
                 .strokeBorder(self.mediaSource.isEnabled ? self.outlineColor : Color(.systemGray), lineWidth: 2)
-                .frame(width: MediaSourceGridLayout.iconSize, height: MediaSourceGridLayout.iconSize)
 
             if let iconSvg = self.mediaSource.config.iconSvg {
-                SVGImageView(svgString: iconSvg, size: 32)
+                SVGImageView(svgString: iconSvg, size: self.size * 0.5)
             } else {
                 Image(systemName: "music.note")
-                    .font(.system(size: 24))
+                    .font(.system(size: self.size * 0.375))
                     .foregroundColor(Color.purp)
             }
         }
+        .frame(width: self.size, height: self.size)
         .opacity(self.isHighlighted ? 1.0 : 0.35)
         .accessibilityLabel(self.mediaSource.name)
         .accessibilityHint(self.mediaSource.isEnabled ? "Enabled" : "Disabled")
