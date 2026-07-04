@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
   head: () =>
     pageMeta(
       "Boppa - Music for All",
-      "Boppa is an open-source music player that lets you turn any website into a native music player.",
+      "Turn any website into a native music player.",
       "/",
     ),
   component: Home,
