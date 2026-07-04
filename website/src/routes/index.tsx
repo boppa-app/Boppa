@@ -6,8 +6,8 @@ import { pageMeta } from "~/meta";
 export const Route = createFileRoute("/")({
   head: () =>
     pageMeta(
-      "Boppa — a scriptable music player for iOS",
-      "Boppa is an open-source iOS music player that streams from any site you can script, using pluggable media sources.",
+      "Boppa - Music for All",
+      "Boppa is an open-source music player that lets you turn any website into a native music player.",
       "/",
     ),
   component: Home,
@@ -22,7 +22,9 @@ function Home() {
         </nav>
 
         <div className="space-y-6">
-          <h1 className="text-3xl md:text-5xl font-medium tracking-tight">Music for all</h1>
+          <h1 className="text-3xl md:text-5xl font-medium tracking-tight">
+            Music for All
+          </h1>
           <p className="text-white/70 text-lg leading-relaxed max-w-lg">
             Turn any website into a native music player.
           </p>
