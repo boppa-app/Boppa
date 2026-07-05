@@ -61,6 +61,9 @@ struct ContentView: View {
                     self.libraryPendingTracklist = tracklist
                     self.selectedTab = 1
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .deepLinkAddMediaSource)) { _ in
+                    self.selectedTab = 2
+                }
 
                 if self.showMiniPlayer {
                     VStack(spacing: 0) {

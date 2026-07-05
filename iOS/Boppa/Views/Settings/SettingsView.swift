@@ -7,6 +7,7 @@ struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
     @State private var navigationPath = NavigationPath()
     @State private var showingAddSheet = false
+    @State private var addSheetInitialConfigUrl = ""
     @State private var isClearingData = false
     @State private var showDataCleared = false
     @State private var showClearConfirmation = false
@@ -43,6 +44,11 @@ struct SettingsView: View {
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { _ in
                 self.viewModel.loadSources()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .deepLinkAddMediaSource)) { notification in
+                guard let configUrl = notification.object as? String else { return }
+                self.addSheetInitialConfigUrl = configUrl
+                self.showingAddSheet = true
+            }
             .onChange(of: self.navigationPath.count) { _, newCount in
                 self.isAtNavigationRoot = (newCount == 0)
             }
@@ -56,7 +62,7 @@ struct SettingsView: View {
                 }
             }
             .sheet(isPresented: self.$showingAddSheet) {
-                AddMediaSourceView()
+                AddMediaSourceView(initialConfigUrl: self.addSheetInitialConfigUrl)
             }
             .alert("Clear All Web Data?", isPresented: self.$showClearConfirmation) {
                 Button("Cancel", role: .cancel) {}
@@ -97,6 +103,7 @@ struct SettingsView: View {
 
             if self.isEditing {
                 Button {
+                    self.addSheetInitialConfigUrl = ""
                     self.showingAddSheet = true
                 } label: {
                     Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)

@@ -3,10 +3,14 @@ import Foundation
 @MainActor
 @Observable
 class AddMediaSourceViewModel {
-    var configUrl = ""
+    var configUrl: String
     var isLoading = false
     var isGatheringContext = false
     var errorMessage: String?
+
+    init(configUrl: String = "") {
+        self.configUrl = configUrl
+    }
 
     var isAddDisabled: Bool {
         self.configUrl.isEmpty || self.isLoading

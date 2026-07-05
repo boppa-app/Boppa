@@ -71,5 +71,26 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             MediaSourceContextProvider.shared.startMonitoring()
             WebViewPlaybackEngineRegistry.shared.start()
         }
+
+        if let url = connectionOptions.urlContexts.first?.url {
+            DispatchQueue.main.async {
+                self.handleDeepLink(url)
+            }
+        }
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
+        self.handleDeepLink(url)
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "boppa", url.host == "add-media-source",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              let configUrl = components.queryItems?.first(where: { $0.name == "url" })?.value,
+              !configUrl.isEmpty
+        else { return }
+
+        NotificationCenter.default.post(name: .deepLinkAddMediaSource, object: configUrl)
     }
 }

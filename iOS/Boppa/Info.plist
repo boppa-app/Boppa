@@ -8,5 +8,16 @@
 		<string>fetch</string>
 		<string>processing</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>boppa-app.Boppa</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>boppa</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

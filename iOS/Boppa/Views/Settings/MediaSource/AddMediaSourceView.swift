@@ -3,7 +3,13 @@ import SwiftUI
 struct AddMediaSourceView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var viewModel = AddMediaSourceViewModel()
+    @State private var viewModel: AddMediaSourceViewModel
+    private let autoSubmit: Bool
+
+    init(initialConfigUrl: String = "") {
+        self._viewModel = State(initialValue: AddMediaSourceViewModel(configUrl: initialConfigUrl))
+        self.autoSubmit = !initialConfigUrl.isEmpty
+    }
 
     var body: some View {
         NavigationStack {
@@ -38,6 +44,10 @@ struct AddMediaSourceView: View {
                 self.cancelToolbarItem
                 self.addToolbarItem
             }
+        }
+        .task {
+            guard self.autoSubmit, !self.viewModel.isAddDisabled else { return }
+            self.addMediaSource()
         }
     }
 
