@@ -31,9 +31,11 @@ function discoverDocsRoutes(): string[] {
   return [...routes].sort();
 }
 
-const sitemapPages = ["/", "/download", ...discoverDocsRoutes()].map((routePath) => ({
-  path: routePath,
-}));
+const sitemapPages = ["/", "/download", ...discoverDocsRoutes()].map(
+  (routePath) => ({
+    path: routePath,
+  }),
+);
 
 export default defineConfig((): UserConfig => {
   return {

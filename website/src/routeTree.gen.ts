@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from "./routes/__root";
 import { Route as DownloadRouteImport } from "./routes/download";
 import { Route as DocsRouteImport } from "./routes/docs";
+import { Route as AddMediaSourceRouteImport } from "./routes/add-media-source";
 import { Route as IndexRouteImport } from "./routes/index";
 import { Route as DocsIndexRouteImport } from "./routes/docs/index";
 import { Route as DocsSplatRouteImport } from "./routes/docs/$";
@@ -23,6 +24,11 @@ const DownloadRoute = DownloadRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: "/docs",
   path: "/docs",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const AddMediaSourceRoute = AddMediaSourceRouteImport.update({
+  id: "/add-media-source",
+  path: "/add-media-source",
   getParentRoute: () => rootRouteImport,
 } as any);
 const IndexRoute = IndexRouteImport.update({
@@ -43,6 +49,7 @@ const DocsSplatRoute = DocsSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/add-media-source": typeof AddMediaSourceRoute;
   "/docs": typeof DocsRouteWithChildren;
   "/download": typeof DownloadRoute;
   "/docs/$": typeof DocsSplatRoute;
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/add-media-source": typeof AddMediaSourceRoute;
   "/download": typeof DownloadRoute;
   "/docs/$": typeof DocsSplatRoute;
   "/docs": typeof DocsIndexRoute;
@@ -57,6 +65,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
+  "/add-media-source": typeof AddMediaSourceRoute;
   "/docs": typeof DocsRouteWithChildren;
   "/download": typeof DownloadRoute;
   "/docs/$": typeof DocsSplatRoute;
@@ -64,14 +73,23 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/docs" | "/download" | "/docs/$" | "/docs/";
+  fullPaths:
+    "/" | "/add-media-source" | "/docs" | "/download" | "/docs/$" | "/docs/";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/download" | "/docs/$" | "/docs";
-  id: "__root__" | "/" | "/docs" | "/download" | "/docs/$" | "/docs/";
+  to: "/" | "/add-media-source" | "/download" | "/docs/$" | "/docs";
+  id:
+    | "__root__"
+    | "/"
+    | "/add-media-source"
+    | "/docs"
+    | "/download"
+    | "/docs/$"
+    | "/docs/";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  AddMediaSourceRoute: typeof AddMediaSourceRoute;
   DocsRoute: typeof DocsRouteWithChildren;
   DownloadRoute: typeof DownloadRoute;
 }
@@ -90,6 +108,13 @@ declare module "@tanstack/react-router" {
       path: "/docs";
       fullPath: "/docs";
       preLoaderRoute: typeof DocsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/add-media-source": {
+      id: "/add-media-source";
+      path: "/add-media-source";
+      fullPath: "/add-media-source";
+      preLoaderRoute: typeof AddMediaSourceRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/": {
@@ -130,6 +155,7 @@ const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddMediaSourceRoute: AddMediaSourceRoute,
   DocsRoute: DocsRouteWithChildren,
   DownloadRoute: DownloadRoute,
 };
