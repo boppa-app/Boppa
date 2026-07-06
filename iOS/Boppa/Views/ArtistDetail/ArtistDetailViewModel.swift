@@ -43,6 +43,8 @@ class ArtistDetailViewModel {
                 self.detail = result
                 self.isLoading = false
 
+                RecentsStorageManager.shared.recordViewedArtist(artist)
+
                 logger.info("Loaded artist '\(artist.name)': \(result.songs?.count ?? 0) song(s), \(result.albums?.count ?? 0) album(s), \(result.videos?.count ?? 0) video(s), \(result.playlists?.count ?? 0) playlist(s)")
             } catch {
                 guard !Task.isCancelled else { return }

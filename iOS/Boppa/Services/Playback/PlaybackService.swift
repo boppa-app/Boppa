@@ -38,7 +38,7 @@ final class PlaybackService {
         logger.info("PlaybackService initialized")
     }
 
-    func playTrack(_ track: Track) {
+    func playTrack(_ track: Track, notifyRecentsChanged: Bool = true) {
         let mediaSourceId = track.mediaSourceId
         logger.info("playTrack: using mediaSource '\(mediaSourceId)'")
 
@@ -53,6 +53,8 @@ final class PlaybackService {
             self.isLoading = false
             return
         }
+
+        RecentsStorageManager.shared.recordPlayedTrack(track, notify: notifyRecentsChanged)
 
         // Silence old engine's event handler immediately, before any await, so
         // interruption-induced pause/play events from it doesn't pollute our state.

@@ -90,6 +90,10 @@ class TracklistViewModel {
         let stored = self.tracklist.storedTracklist
             ?? TracklistStorageManager.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
+        if self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist, stored?.isSavedToLibrary != true {
+            RecentsStorageManager.shared.recordViewedTracklist(self.tracklist)
+        }
+
         if let stored, stored.isSavedToLibrary {
             self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
             self.isPersisted = true
