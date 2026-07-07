@@ -9,6 +9,7 @@ struct RecentsSectionsView: View {
     let onSelectTracklist: (Tracklist) -> Void
     let onClearRecentlyPlayed: () -> Void
     let onClearRecentlyViewed: () -> Void
+    let animateChanges: Bool
 
     private var isEmpty: Bool {
         self.recentlyPlayed.isEmpty && self.recentlyViewed.isEmpty
@@ -25,7 +26,7 @@ struct RecentsSectionsView: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(.easeInOut(duration: 0.25), value: self.recentlyPlayed.isEmpty)
+                .animation(self.animateChanges ? .easeInOut(duration: 0.25) : nil, value: self.recentlyPlayed.isEmpty)
 
                 if !self.recentlyPlayed.isEmpty, !self.recentlyViewed.isEmpty {
                     self.separator
@@ -37,12 +38,12 @@ struct RecentsSectionsView: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(.easeInOut(duration: 0.25), value: self.recentlyViewed.isEmpty)
+                .animation(self.animateChanges ? .easeInOut(duration: 0.25) : nil, value: self.recentlyViewed.isEmpty)
             }
         }
         .padding(.top, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .animation(.easeInOut(duration: 0.25), value: self.isEmpty)
+        .animation(self.animateChanges ? .easeInOut(duration: 0.25) : nil, value: self.isEmpty)
     }
 
     private var separator: some View {

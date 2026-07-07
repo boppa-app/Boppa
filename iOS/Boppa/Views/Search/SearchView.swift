@@ -266,7 +266,8 @@ struct SearchView: View {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     self.recentsManager.clearRecentlyViewed(mediaSourceId: mediaSourceId)
                 }
-            }
+            },
+            animateChanges: self.recentsManager.hasLoadedOnce
         )
     }
 

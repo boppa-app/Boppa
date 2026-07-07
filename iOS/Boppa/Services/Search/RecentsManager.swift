@@ -11,12 +11,18 @@ private let logger = Logger(
 class RecentsManager {
     var recentlyPlayed: [Track] = []
     var recentlyViewed: [RecentlyViewedItem] = []
+    private(set) var hasLoadedOnce = false
 
     private static let displayLimit = 10
 
     func load(mediaSourceId: String?) {
         self.loadRecentlyPlayed(mediaSourceId: mediaSourceId)
         self.loadRecentlyViewed(mediaSourceId: mediaSourceId)
+        if !self.hasLoadedOnce {
+            DispatchQueue.main.async {
+                self.hasLoadedOnce = true
+            }
+        }
     }
 
     func loadRecentlyPlayed(mediaSourceId: String?) {
@@ -24,7 +30,9 @@ class RecentsManager {
             if !self.recentlyPlayed.isEmpty { self.recentlyPlayed = [] }
             return
         }
-        let played = RecentsStorageManager.shared.fetchRecentlyPlayed(mediaSourceId: mediaSourceId, limit: Self.displayLimit)
+        let played = RecentsStorageManager.shared.fetchRecentlyPlayed(
+            mediaSourceId: mediaSourceId, limit: Self.displayLimit
+        )
         if played != self.recentlyPlayed {
             self.recentlyPlayed = played
         }
@@ -35,7 +43,9 @@ class RecentsManager {
             if !self.recentlyViewed.isEmpty { self.recentlyViewed = [] }
             return
         }
-        let viewed = RecentsStorageManager.shared.fetchRecentlyViewed(mediaSourceId: mediaSourceId, limit: Self.displayLimit)
+        let viewed = RecentsStorageManager.shared.fetchRecentlyViewed(
+            mediaSourceId: mediaSourceId, limit: Self.displayLimit
+        )
         if viewed != self.recentlyViewed {
             self.recentlyViewed = viewed
         }
