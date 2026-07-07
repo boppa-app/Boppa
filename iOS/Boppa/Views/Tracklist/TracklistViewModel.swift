@@ -90,10 +90,6 @@ class TracklistViewModel {
         let stored = self.tracklist.storedTracklist
             ?? TracklistStorageManager.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
 
-        if self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist, stored?.isSavedToLibrary != true {
-            RecentsStorageManager.shared.recordViewedTracklist(self.tracklist)
-        }
-
         if let stored, stored.isSavedToLibrary {
             self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
             self.isPersisted = true
@@ -102,7 +98,9 @@ class TracklistViewModel {
         }
 
         if self.tracks.isEmpty {
-            self.fetchFirstPage()
+            let shouldRecordView = (self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist)
+                && stored?.isSavedToLibrary != true
+            self.fetchFirstPage(shouldRecordView: shouldRecordView)
         }
     }
 
@@ -180,7 +178,7 @@ class TracklistViewModel {
         }
     }
 
-    private func fetchFirstPage() {
+    private func fetchFirstPage(shouldRecordView: Bool = false) {
         self.fetchTask?.cancel()
         self.isLoading = true
         self.errorMessage = nil
@@ -201,6 +199,10 @@ class TracklistViewModel {
 
                 self.isLoading = false
                 self.isRefreshing = false
+
+                if shouldRecordView {
+                    RecentsStorageManager.shared.recordViewedTracklist(self.tracklist)
+                }
 
                 logger.info("Loaded \(self.tracks.count) track(s) for '\(self.tracklist.title)'")
             } catch {
