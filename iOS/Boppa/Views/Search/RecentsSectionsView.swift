@@ -59,7 +59,7 @@ struct RecentsSectionsView: View {
             .resizable()
             .scaledToFit()
             .frame(width: 200, height: 200)
-            .opacity(0.2)
+            .opacity(0.15)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -76,7 +76,8 @@ struct RecentsSectionsView: View {
                     ForEach(self.recentlyPlayed) { track in
                         RecentlyPlayedCard(
                             track: track,
-                            isSelected: PlaybackService.shared.currentTrack?.url == track.url && track.url != nil,
+                            isSelected: PlaybackService.shared.currentTrack?.url == track.url
+                                && track.url != nil,
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying,
                             onTap: { self.onSelectTrack(track) },
