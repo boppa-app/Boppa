@@ -81,6 +81,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "duration" INTEGER,
                   "artworkUrl" TEXT,
                   "url" TEXT,
+                  "type" TEXT NOT NULL CHECK (type IN ('song', 'video')),
                   "lastPlayedTimestamp" REAL,
                   "isRecent" INTEGER NOT NULL DEFAULT 0,
                   PRIMARY KEY ("mediaId", "mediaSourceId")

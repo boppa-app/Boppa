@@ -313,7 +313,8 @@ class TrackStorageManager {
                     subtitle: track.subtitle,
                     duration: track.duration,
                     artworkUrl: track.artworkUrl,
-                    url: track.url
+                    url: track.url,
+                    type: track.type.rawValue
                 )
             }.execute(db)
             let inserted = StoredTrack(
@@ -323,7 +324,8 @@ class TrackStorageManager {
                 subtitle: track.subtitle,
                 duration: track.duration,
                 artworkUrl: track.artworkUrl,
-                url: track.url
+                url: track.url,
+                type: track.type.rawValue
             )
             try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
             try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
@@ -336,6 +338,7 @@ class TrackStorageManager {
             $0.subtitle = track.subtitle
             $0.duration = track.duration
             $0.artworkUrl = track.artworkUrl
+            $0.type = track.type.rawValue
         }
         .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
         .execute(db)

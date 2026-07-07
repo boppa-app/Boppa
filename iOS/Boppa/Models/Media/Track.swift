@@ -9,8 +9,14 @@ struct Track: Identifiable, Equatable {
     let duration: Int?
     let artworkUrl: String?
     let url: String?
+    let type: TrackType
     let artists: [Artist]
     let albums: [Tracklist]
+
+    enum TrackType: String, Equatable, Hashable {
+        case song
+        case video
+    }
 
     var trackKey: String {
         "\(self.mediaId)|\(self.mediaSourceId)"
@@ -24,10 +30,39 @@ struct Track: Identifiable, Equatable {
         duration: Int? = nil,
         artworkUrl: String? = nil,
         url: String? = nil,
+        type: TrackType = .song,
         artists: [Artist] = [],
         albums: [Tracklist] = []
     ) {
-        self.id = UUID()
+        self.init(
+            id: UUID(),
+            mediaId: mediaId,
+            mediaSourceId: mediaSourceId,
+            title: title,
+            subtitle: subtitle,
+            duration: duration,
+            artworkUrl: artworkUrl,
+            url: url,
+            type: type,
+            artists: artists,
+            albums: albums
+        )
+    }
+
+    private init(
+        id: UUID,
+        mediaId: String,
+        mediaSourceId: String,
+        title: String,
+        subtitle: String?,
+        duration: Int?,
+        artworkUrl: String?,
+        url: String?,
+        type: TrackType,
+        artists: [Artist],
+        albums: [Tracklist]
+    ) {
+        self.id = id
         self.mediaId = mediaId
         self.mediaSourceId = mediaSourceId
         self.title = title
@@ -35,8 +70,27 @@ struct Track: Identifiable, Equatable {
         self.duration = duration
         self.artworkUrl = artworkUrl
         self.url = url
+        self.type = type
         self.artists = artists
         self.albums = albums
+    }
+
+    /// Preserves `id` so SwiftUI identity is stable when enriching an
+    /// already-playing track with fuller metadata from a get.song/get.video call.
+    func merging(fetched: Track) -> Track {
+        Track(
+            id: self.id,
+            mediaId: self.mediaId,
+            mediaSourceId: self.mediaSourceId,
+            title: fetched.title,
+            subtitle: fetched.subtitle ?? self.subtitle,
+            duration: fetched.duration ?? self.duration,
+            artworkUrl: fetched.artworkUrl ?? self.artworkUrl,
+            url: fetched.url ?? self.url,
+            type: self.type,
+            artists: fetched.artists.isEmpty ? self.artists : fetched.artists,
+            albums: fetched.albums.isEmpty ? self.albums : fetched.albums
+        )
     }
 
     static func == (lhs: Track, rhs: Track) -> Bool {
@@ -47,6 +101,7 @@ struct Track: Identifiable, Equatable {
             && lhs.artworkUrl == rhs.artworkUrl
             && lhs.url == rhs.url
             && lhs.mediaSourceId == rhs.mediaSourceId
+            && lhs.type == rhs.type
             && lhs.artists == rhs.artists
             && lhs.albums == rhs.albums
     }

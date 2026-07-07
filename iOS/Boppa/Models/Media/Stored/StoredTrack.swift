@@ -10,6 +10,7 @@ nonisolated struct StoredTrack {
     var duration: Int?
     var artworkUrl: String?
     var url: String?
+    var type: String
     var lastPlayedTimestamp: Double? = nil
     var isRecent: Bool = false
 }
@@ -49,6 +50,7 @@ extension StoredTrack {
             duration: self.duration,
             artworkUrl: self.artworkUrl,
             url: self.url,
+            type: Track.TrackType(rawValue: self.type) ?? .song,
             artists: artists,
             albums: albums
         )
@@ -60,6 +62,7 @@ extension StoredTrack {
             && self.subtitle == track.subtitle
             && self.url == track.url
             && self.mediaSourceId == track.mediaSourceId
+            && self.type == track.type.rawValue
     }
 
     func contentMatches(_ track: Track, artists: [StoredArtist] = [], albums: [StoredTracklist] = []) -> Bool {
