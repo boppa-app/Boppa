@@ -68,7 +68,7 @@ class SearchService {
         case .videos:
             let response = SearchVideosResponse(jsResult)
             return SearchResponse(
-                result: .videos(response.items.map { $0.toTrack(mediaSourceId: mediaSourceId) }),
+                result: .videos(response.items.map { $0.toTrack(mediaSourceId: mediaSourceId, type: .video) }),
                 continuation: response.continuation
             )
         case .albums:

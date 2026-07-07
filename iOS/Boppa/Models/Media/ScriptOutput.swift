@@ -319,7 +319,7 @@ struct SearchArtistsResponse {
 // MARK: - Domain Mapping
 
 extension ScriptTrack {
-    func toTrack(mediaSourceId: String) -> Track {
+    func toTrack(mediaSourceId: String, type: Track.TrackType = .song) -> Track {
         Track(
             mediaId: self.id,
             mediaSourceId: mediaSourceId,
@@ -328,6 +328,7 @@ extension ScriptTrack {
             duration: self.duration,
             artworkUrl: self.artworkUrl,
             url: self.url,
+            type: type,
             artists: self.artists.map { Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, artworkUrl: $0.artworkUrl) },
             albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, artworkUrl: $0.artworkUrl, tracklistType: .album) }
         )
