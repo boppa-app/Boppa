@@ -41,6 +41,8 @@ extension DatabaseWriter where Self == DatabasePool {
                   "mediaSourceId" TEXT NOT NULL,
                   "name" TEXT NOT NULL,
                   "artworkUrl" TEXT,
+                  "lastViewedTimestamp" REAL,
+                  "isRecent" INTEGER NOT NULL DEFAULT 0,
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
@@ -59,6 +61,8 @@ extension DatabaseWriter where Self == DatabasePool {
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                   "year" INTEGER,
                   "sortOrder" TEXT NOT NULL DEFAULT 'a0',
+                  "lastViewedTimestamp" REAL,
+                  "isRecent" INTEGER NOT NULL DEFAULT 0,
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
@@ -74,6 +78,8 @@ extension DatabaseWriter where Self == DatabasePool {
                   "duration" INTEGER,
                   "artworkUrl" TEXT,
                   "url" TEXT,
+                  "lastPlayedTimestamp" REAL,
+                  "isRecent" INTEGER NOT NULL DEFAULT 0,
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """
@@ -134,50 +140,6 @@ extension DatabaseWriter where Self == DatabasePool {
                 """
             ).execute(db)
 
-            try #sql(
-                """
-                CREATE TABLE "recentlyViewedArtists" (
-                  "mediaId" TEXT NOT NULL,
-                  "mediaSourceId" TEXT NOT NULL,
-                  "name" TEXT NOT NULL,
-                  "artworkUrl" TEXT,
-                  "viewedAt" REAL NOT NULL,
-                  PRIMARY KEY ("mediaId", "mediaSourceId")
-                ) STRICT
-                """
-            ).execute(db)
-
-            try #sql(
-                """
-                CREATE TABLE "recentlyViewedTracklists" (
-                  "mediaId" TEXT NOT NULL,
-                  "mediaSourceId" TEXT NOT NULL,
-                  "title" TEXT NOT NULL,
-                  "subtitle" TEXT,
-                  "artworkUrl" TEXT,
-                  "tracklistType" TEXT NOT NULL,
-                  "viewedAt" REAL NOT NULL,
-                  PRIMARY KEY ("mediaId", "mediaSourceId")
-                ) STRICT
-                """
-            ).execute(db)
-
-            try #sql(
-                """
-                CREATE TABLE "recentlyPlayedTracks" (
-                  "mediaId" TEXT NOT NULL,
-                  "mediaSourceId" TEXT NOT NULL,
-                  "title" TEXT NOT NULL,
-                  "subtitle" TEXT,
-                  "duration" INTEGER,
-                  "artworkUrl" TEXT,
-                  "url" TEXT,
-                  "playedAt" REAL NOT NULL,
-                  PRIMARY KEY ("mediaId", "mediaSourceId")
-                ) STRICT
-                """
-            ).execute(db)
-
             try #sql("CREATE INDEX idx_tracklists_type_sortOrder ON tracklists (tracklistType, sortOrder)").execute(db)
             try #sql("CREATE INDEX idx_tracklists_isSavedToLibrary ON tracklists (isSavedToLibrary)").execute(db)
             try #sql("CREATE INDEX idx_tracklists_isPinned ON tracklists (isPinned)").execute(db)
@@ -185,9 +147,9 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql("CREATE INDEX idx_tracklistTracks_track ON tracklistTracks (trackMediaId, trackMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)").execute(db)
-            try #sql("CREATE INDEX idx_recentlyViewedArtists_source ON recentlyViewedArtists (mediaSourceId, viewedAt)").execute(db)
-            try #sql("CREATE INDEX idx_recentlyViewedTracklists_source ON recentlyViewedTracklists (mediaSourceId, viewedAt)").execute(db)
-            try #sql("CREATE INDEX idx_recentlyPlayedTracks_source ON recentlyPlayedTracks (mediaSourceId, playedAt)").execute(db)
+            try #sql("CREATE INDEX idx_tracks_recent ON tracks (mediaSourceId, isRecent, lastPlayedTimestamp)").execute(db)
+            try #sql("CREATE INDEX idx_artists_recent ON artists (mediaSourceId, isRecent, lastViewedTimestamp)").execute(db)
+            try #sql("CREATE INDEX idx_tracklists_recent ON tracklists (mediaSourceId, isRecent, lastViewedTimestamp)").execute(db)
         }
         try migrator.migrate(database)
         return database

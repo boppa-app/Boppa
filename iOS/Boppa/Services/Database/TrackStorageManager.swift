@@ -81,6 +81,11 @@ class TrackStorageManager {
             .fetchCount(db)
         guard remaining == 0 else { return }
 
+        let track = try StoredTrack
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+            .fetchOne(db)
+        guard let track, !track.isRecent else { return }
+
         let artistRefs = try StoredTrackArtist
             .where { $0.trackMediaId.eq(mediaId).and($0.trackMediaSourceId.eq(mediaSourceId)) }
             .fetchAll(db)
@@ -102,34 +107,89 @@ class TrackStorageManager {
         }
     }
 
+    // MARK: - Recents
+
+    func markRecentlyPlayed(_ track: Track, playedAt: Double, db: Database) throws {
+        try self.upsertTrack(track, db: db)
+        try StoredTrack.update {
+            $0.isRecent = true
+            $0.lastPlayedTimestamp = #bind(playedAt)
+        }
+        .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
+        .execute(db)
+    }
+
+    func unmarkRecentlyPlayed(mediaId: String, mediaSourceId: String, db: Database) throws {
+        try StoredTrack.update { $0.isRecent = false }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+            .execute(db)
+        try self.deleteIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
+    }
+
+    func markArtistRecentlyViewed(_ artist: Artist, viewedAt: Double, db: Database) throws {
+        try self.upsertArtist(artist, db: db)
+        try StoredArtist.update {
+            $0.isRecent = true
+            $0.lastViewedTimestamp = #bind(viewedAt)
+        }
+        .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
+        .execute(db)
+    }
+
+    func unmarkArtistRecentlyViewed(mediaId: String, mediaSourceId: String, db: Database) throws {
+        try StoredArtist.update { $0.isRecent = false }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+            .execute(db)
+        try self.deleteArtistIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
+    }
+
+    func unmarkTracklistRecentlyViewed(mediaId: String, mediaSourceId: String, db: Database) throws {
+        try StoredTracklist.update { $0.isRecent = false }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+            .execute(db)
+        try self.deleteAlbumStubIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
+    }
+
     // MARK: Private
 
     private func deleteArtistIfOrphaned(_ ref: StoredTrackArtist, db: Database) throws {
+        try self.deleteArtistIfOrphaned(mediaId: ref.artistMediaId, mediaSourceId: ref.artistMediaSourceId, db: db)
+    }
+
+    private func deleteArtistIfOrphaned(mediaId: String, mediaSourceId: String, db: Database) throws {
         let inTracks = try StoredTrackArtist
-            .where { $0.artistMediaId.eq(ref.artistMediaId).and($0.artistMediaSourceId.eq(ref.artistMediaSourceId)) }
+            .where { $0.artistMediaId.eq(mediaId).and($0.artistMediaSourceId.eq(mediaSourceId)) }
             .fetchCount(db)
         guard inTracks == 0 else { return }
+        let artist = try StoredArtist
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+            .fetchOne(db)
+        guard let artist, !artist.isRecent else { return }
         try StoredArtist
-            .where { $0.mediaId.eq(ref.artistMediaId).and($0.mediaSourceId.eq(ref.artistMediaSourceId)) }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
             .delete()
             .execute(db)
-        logger.info("Deleted orphaned artist '\(ref.artistMediaId)'")
+        logger.info("Deleted orphaned artist '\(mediaId)'")
     }
 
     private func deleteAlbumStubIfOrphaned(_ ref: StoredTrackAlbum, db: Database) throws {
+        try self.deleteAlbumStubIfOrphaned(mediaId: ref.tracklistMediaId, mediaSourceId: ref.tracklistMediaSourceId, db: db)
+    }
+
+    private func deleteAlbumStubIfOrphaned(mediaId: String, mediaSourceId: String, db: Database) throws {
         let trackCount = try StoredTrackAlbum
-            .where { $0.tracklistMediaId.eq(ref.tracklistMediaId).and($0.tracklistMediaSourceId.eq(ref.tracklistMediaSourceId)) }
+            .where { $0.tracklistMediaId.eq(mediaId).and($0.tracklistMediaSourceId.eq(mediaSourceId)) }
             .fetchCount(db)
         guard trackCount == 0 else { return }
         let album = try StoredTracklist
-            .where { $0.mediaId.eq(ref.tracklistMediaId).and($0.mediaSourceId.eq(ref.tracklistMediaSourceId)) }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
             .fetchOne(db)
-        guard let album, !album.isSavedToLibrary else { return }
+        guard let album, !album.isSavedToLibrary, !album.isRecent else { return }
         try StoredTracklist
-            .where { $0.mediaId.eq(ref.tracklistMediaId).and($0.mediaSourceId.eq(ref.tracklistMediaSourceId)) }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
             .delete()
             .execute(db)
-        logger.info("Deleted orphaned album stub '\(ref.tracklistMediaId)'")
+        logger.info("Deleted orphaned album stub '\(mediaId)'")
     }
 
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
@@ -280,7 +340,7 @@ class TrackStorageManager {
             .execute(db)
         let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: albums.count)
         for (album, key) in zip(albums, keys) {
-            try TracklistStorageManager.shared.upsertAlbumTracklist(album, db: db)
+            try TracklistStorageManager.shared.upsertTracklistStub(album, db: db)
             try StoredTrackAlbum.insert {
                 StoredTrackAlbum.Draft(
                     trackMediaId: track.mediaId,

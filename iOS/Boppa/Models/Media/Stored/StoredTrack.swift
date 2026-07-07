@@ -10,6 +10,8 @@ nonisolated struct StoredTrack {
     var duration: Int?
     var artworkUrl: String?
     var url: String?
+    var lastPlayedTimestamp: Double? = nil
+    var isRecent: Bool = false
 }
 
 extension StoredTrack: Identifiable {

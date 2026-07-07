@@ -328,22 +328,22 @@ class TracklistStorageManager {
         }
     }
 
-    // MARK: - Album Stubs
+    // MARK: - Tracklist Stubs
 
-    func upsertAlbumTracklist(_ album: Tracklist, db: Database) throws {
+    func upsertTracklistStub(_ tracklist: Tracklist, db: Database) throws {
         let existing = try StoredTracklist
-            .where { $0.mediaId.eq(album.mediaId).and($0.mediaSourceId.eq(album.mediaSourceId)) }
+            .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
             .fetchOne(db)
         if let existing {
             try StoredTracklist.update {
-                if !album.title.isEmpty { $0.title = album.title }
-                if album.subtitle != nil { $0.subtitle = album.subtitle }
-                if album.artworkUrl != nil { $0.artworkUrl = album.artworkUrl }
+                if !tracklist.title.isEmpty { $0.title = tracklist.title }
+                if tracklist.subtitle != nil { $0.subtitle = tracklist.subtitle }
+                if tracklist.artworkUrl != nil { $0.artworkUrl = tracklist.artworkUrl }
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
             .execute(db)
         } else {
-            let typeString = Tracklist.TracklistType.album.rawValue
+            let typeString = tracklist.tracklistType.rawValue
             let maxKey = try StoredTracklist
                 .where { $0.tracklistType.eq(typeString) }
                 .order { $0.sortOrder.desc() }
@@ -352,11 +352,11 @@ class TracklistStorageManager {
             let newSortOrder = FractionalIndex.generateKeyBetween(maxKey, nil)
             try StoredTracklist.insert {
                 StoredTracklist.Draft(
-                    mediaId: album.mediaId,
-                    mediaSourceId: album.mediaSourceId,
-                    title: album.title,
-                    subtitle: album.subtitle,
-                    artworkUrl: album.artworkUrl,
+                    mediaId: tracklist.mediaId,
+                    mediaSourceId: tracklist.mediaSourceId,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
                     tracklistType: typeString,
                     isPinned: false,
                     isSavedToLibrary: false,
@@ -364,5 +364,17 @@ class TracklistStorageManager {
                 )
             }.execute(db)
         }
+    }
+
+    // MARK: - Recents
+
+    func markTracklistRecentlyViewed(_ tracklist: Tracklist, viewedAt: Double, db: Database) throws {
+        try self.upsertTracklistStub(tracklist, db: db)
+        try StoredTracklist.update {
+            $0.isRecent = true
+            $0.lastViewedTimestamp = #bind(viewedAt)
+        }
+        .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
+        .execute(db)
     }
 }

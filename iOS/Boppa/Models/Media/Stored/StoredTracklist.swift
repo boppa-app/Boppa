@@ -13,6 +13,8 @@ nonisolated struct StoredTracklist {
     var isPinned: Bool
     var isSavedToLibrary: Bool
     var sortOrder: String
+    var lastViewedTimestamp: Double? = nil
+    var isRecent: Bool = false
 }
 
 extension StoredTracklist: Identifiable {

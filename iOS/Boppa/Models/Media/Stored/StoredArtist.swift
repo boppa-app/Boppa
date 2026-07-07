@@ -7,6 +7,8 @@ nonisolated struct StoredArtist {
     var mediaSourceId: String
     var name: String
     var artworkUrl: String?
+    var lastViewedTimestamp: Double? = nil
+    var isRecent: Bool = false
 }
 
 extension StoredArtist: Identifiable {

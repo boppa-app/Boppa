@@ -23,15 +23,15 @@ class RecentsStorageManager {
 
     func fetchRecentlyViewed(mediaSourceId: String, limit: Int = 10) -> [RecentlyViewedItem] {
         (try? self.database.read { db -> [RecentlyViewedItem] in
-            let artists = try StoredRecentlyViewedArtist
-                .where { $0.mediaSourceId.eq(mediaSourceId) }
+            let artists = try StoredArtist
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
                 .fetchAll(db)
-                .map { RecentlyViewedItem.artist($0.toArtist(), viewedAt: $0.viewedAt) }
+                .map { RecentlyViewedItem.artist($0.toArtist(), viewedAt: $0.lastViewedTimestamp ?? 0) }
 
-            let tracklists = try StoredRecentlyViewedTracklist
-                .where { $0.mediaSourceId.eq(mediaSourceId) }
+            let tracklists = try StoredTracklist
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
                 .fetchAll(db)
-                .map { RecentlyViewedItem.tracklist($0.toTracklist(), viewedAt: $0.viewedAt) }
+                .map { RecentlyViewedItem.tracklist(Tracklist(storedTracklist: $0), viewedAt: $0.lastViewedTimestamp ?? 0) }
 
             return Array((artists + tracklists).sorted { $0.viewedAt > $1.viewedAt }.prefix(limit))
         }) ?? []
@@ -39,12 +39,16 @@ class RecentsStorageManager {
 
     func fetchRecentlyPlayed(mediaSourceId: String, limit: Int = 10) -> [Track] {
         (try? self.database.read { db in
-            try StoredRecentlyPlayedTrack
-                .where { $0.mediaSourceId.eq(mediaSourceId) }
-                .order { $0.playedAt.desc() }
+            try StoredTrack
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+                .order { $0.lastPlayedTimestamp.desc() }
                 .limit(limit)
                 .fetchAll(db)
-                .map { $0.toTrack() }
+                .map { stored in
+                    let artists = try TrackStorageManager.shared.loadArtistsForTrack(stored, db: db)
+                    let albums = try TrackStorageManager.shared.loadAlbumsForTrack(stored, db: db)
+                    return stored.toTrack(artists: artists, albums: albums)
+                }
         }) ?? []
     }
 
@@ -53,22 +57,8 @@ class RecentsStorageManager {
     func recordViewedArtist(_ artist: Artist) {
         let now = Date().timeIntervalSince1970
         try? self.database.write { db in
-            try StoredRecentlyViewedArtist.insert {
-                StoredRecentlyViewedArtist.Draft(
-                    mediaId: artist.mediaId,
-                    mediaSourceId: artist.mediaSourceId,
-                    name: artist.name,
-                    artworkUrl: artist.artworkUrl,
-                    viewedAt: now
-                )
-            } onConflictDoUpdate: {
-                $0.name = artist.name
-                $0.artworkUrl = artist.artworkUrl
-                $0.viewedAt = now
-            }
-            .execute(db)
-
-            try Self.trimOverflow(StoredRecentlyViewedArtist.self, mediaSourceId: artist.mediaSourceId, db: db)
+            try TrackStorageManager.shared.markArtistRecentlyViewed(artist, viewedAt: now, db: db)
+            try Self.trimOverflowArtists(mediaSourceId: artist.mediaSourceId, db: db)
         }
         logger.info("Recorded viewed artist '\(artist.mediaId)' for source '\(artist.mediaSourceId)'")
         NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
@@ -77,26 +67,8 @@ class RecentsStorageManager {
     func recordViewedTracklist(_ tracklist: Tracklist) {
         let now = Date().timeIntervalSince1970
         try? self.database.write { db in
-            try StoredRecentlyViewedTracklist.insert {
-                StoredRecentlyViewedTracklist.Draft(
-                    mediaId: tracklist.mediaId,
-                    mediaSourceId: tracklist.mediaSourceId,
-                    title: tracklist.title,
-                    subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
-                    tracklistType: tracklist.tracklistType.rawValue,
-                    viewedAt: now
-                )
-            } onConflictDoUpdate: {
-                $0.title = tracklist.title
-                $0.subtitle = tracklist.subtitle
-                $0.artworkUrl = tracklist.artworkUrl
-                $0.tracklistType = tracklist.tracklistType.rawValue
-                $0.viewedAt = now
-            }
-            .execute(db)
-
-            try Self.trimOverflow(StoredRecentlyViewedTracklist.self, mediaSourceId: tracklist.mediaSourceId, db: db)
+            try TracklistStorageManager.shared.markTracklistRecentlyViewed(tracklist, viewedAt: now, db: db)
+            try Self.trimOverflowTracklists(mediaSourceId: tracklist.mediaSourceId, db: db)
         }
         logger.info("Recorded viewed tracklist '\(tracklist.mediaId)' for source '\(tracklist.mediaSourceId)'")
         NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
@@ -105,28 +77,8 @@ class RecentsStorageManager {
     func recordPlayedTrack(_ track: Track, notify: Bool = true) {
         let now = Date().timeIntervalSince1970
         try? self.database.write { db in
-            try StoredRecentlyPlayedTrack.insert {
-                StoredRecentlyPlayedTrack.Draft(
-                    mediaId: track.mediaId,
-                    mediaSourceId: track.mediaSourceId,
-                    title: track.title,
-                    subtitle: track.subtitle,
-                    duration: track.duration,
-                    artworkUrl: track.artworkUrl,
-                    url: track.url,
-                    playedAt: now
-                )
-            } onConflictDoUpdate: {
-                $0.title = track.title
-                $0.subtitle = track.subtitle
-                $0.duration = track.duration
-                $0.artworkUrl = track.artworkUrl
-                $0.url = track.url
-                $0.playedAt = now
-            }
-            .execute(db)
-
-            try Self.trimOverflow(StoredRecentlyPlayedTrack.self, mediaSourceId: track.mediaSourceId, db: db)
+            try TrackStorageManager.shared.markRecentlyPlayed(track, playedAt: now, db: db)
+            try Self.trimOverflowTracks(mediaSourceId: track.mediaSourceId, db: db)
         }
         logger.info("Recorded played track '\(track.mediaId)' for source '\(track.mediaSourceId)'")
         guard notify else { return }
@@ -135,8 +87,19 @@ class RecentsStorageManager {
 
     func clearRecentlyViewed(mediaSourceId: String) {
         try? self.database.write { db in
-            try StoredRecentlyViewedArtist.where { $0.mediaSourceId.eq(mediaSourceId) }.delete().execute(db)
-            try StoredRecentlyViewedTracklist.where { $0.mediaSourceId.eq(mediaSourceId) }.delete().execute(db)
+            let artists = try StoredArtist
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+                .fetchAll(db)
+            for artist in artists {
+                try TrackStorageManager.shared.unmarkArtistRecentlyViewed(mediaId: artist.mediaId, mediaSourceId: artist.mediaSourceId, db: db)
+            }
+
+            let tracklists = try StoredTracklist
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+                .fetchAll(db)
+            for tracklist in tracklists {
+                try TrackStorageManager.shared.unmarkTracklistRecentlyViewed(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, db: db)
+            }
         }
         logger.info("Cleared recently viewed for source '\(mediaSourceId)'")
         NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
@@ -144,7 +107,12 @@ class RecentsStorageManager {
 
     func clearRecentlyPlayed(mediaSourceId: String) {
         try? self.database.write { db in
-            try StoredRecentlyPlayedTrack.where { $0.mediaSourceId.eq(mediaSourceId) }.delete().execute(db)
+            let tracks = try StoredTrack
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+                .fetchAll(db)
+            for track in tracks {
+                try TrackStorageManager.shared.unmarkRecentlyPlayed(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
+            }
         }
         logger.info("Cleared recently played for source '\(mediaSourceId)'")
         NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
@@ -152,54 +120,36 @@ class RecentsStorageManager {
 
     // MARK: - Private
 
-    private static func trimOverflow(
-        _: StoredRecentlyViewedArtist.Type,
-        mediaSourceId: String,
-        db: Database
-    ) throws {
-        let all = try StoredRecentlyViewedArtist
-            .where { $0.mediaSourceId.eq(mediaSourceId) }
-            .order { $0.viewedAt.desc() }
+    private static func trimOverflowArtists(mediaSourceId: String, db: Database) throws {
+        let all = try StoredArtist
+            .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+            .order { $0.lastViewedTimestamp.desc() }
             .fetchAll(db)
         guard all.count > Self.maxItemsPerSource else { return }
-        let overflowIds = all[Self.maxItemsPerSource...].map(\.mediaId)
-        try StoredRecentlyViewedArtist
-            .where { $0.mediaSourceId.eq(mediaSourceId).and($0.mediaId.in(overflowIds)) }
-            .delete()
-            .execute(db)
+        for artist in all[Self.maxItemsPerSource...] {
+            try TrackStorageManager.shared.unmarkArtistRecentlyViewed(mediaId: artist.mediaId, mediaSourceId: artist.mediaSourceId, db: db)
+        }
     }
 
-    private static func trimOverflow(
-        _: StoredRecentlyViewedTracklist.Type,
-        mediaSourceId: String,
-        db: Database
-    ) throws {
-        let all = try StoredRecentlyViewedTracklist
-            .where { $0.mediaSourceId.eq(mediaSourceId) }
-            .order { $0.viewedAt.desc() }
+    private static func trimOverflowTracklists(mediaSourceId: String, db: Database) throws {
+        let all = try StoredTracklist
+            .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+            .order { $0.lastViewedTimestamp.desc() }
             .fetchAll(db)
         guard all.count > Self.maxItemsPerSource else { return }
-        let overflowIds = all[Self.maxItemsPerSource...].map(\.mediaId)
-        try StoredRecentlyViewedTracklist
-            .where { $0.mediaSourceId.eq(mediaSourceId).and($0.mediaId.in(overflowIds)) }
-            .delete()
-            .execute(db)
+        for tracklist in all[Self.maxItemsPerSource...] {
+            try TrackStorageManager.shared.unmarkTracklistRecentlyViewed(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, db: db)
+        }
     }
 
-    private static func trimOverflow(
-        _: StoredRecentlyPlayedTrack.Type,
-        mediaSourceId: String,
-        db: Database
-    ) throws {
-        let all = try StoredRecentlyPlayedTrack
-            .where { $0.mediaSourceId.eq(mediaSourceId) }
-            .order { $0.playedAt.desc() }
+    private static func trimOverflowTracks(mediaSourceId: String, db: Database) throws {
+        let all = try StoredTrack
+            .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
+            .order { $0.lastPlayedTimestamp.desc() }
             .fetchAll(db)
         guard all.count > Self.maxItemsPerSource else { return }
-        let overflowIds = all[Self.maxItemsPerSource...].map(\.mediaId)
-        try StoredRecentlyPlayedTrack
-            .where { $0.mediaSourceId.eq(mediaSourceId).and($0.mediaId.in(overflowIds)) }
-            .delete()
-            .execute(db)
+        for track in all[Self.maxItemsPerSource...] {
+            try TrackStorageManager.shared.unmarkRecentlyPlayed(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
+        }
     }
 }

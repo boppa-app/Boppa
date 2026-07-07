@@ -98,9 +98,7 @@ class TracklistViewModel {
         }
 
         if self.tracks.isEmpty {
-            let shouldRecordView = (self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist)
-                && stored?.isSavedToLibrary != true
-            self.fetchFirstPage(shouldRecordView: shouldRecordView)
+            self.fetchFirstPage()
         }
     }
 
@@ -178,7 +176,7 @@ class TracklistViewModel {
         }
     }
 
-    private func fetchFirstPage(shouldRecordView: Bool = false) {
+    private func fetchFirstPage() {
         self.fetchTask?.cancel()
         self.isLoading = true
         self.errorMessage = nil
@@ -200,7 +198,7 @@ class TracklistViewModel {
                 self.isLoading = false
                 self.isRefreshing = false
 
-                if shouldRecordView {
+                if self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist {
                     RecentsStorageManager.shared.recordViewedTracklist(self.tracklist)
                 }
 
