@@ -5,6 +5,7 @@ import SwiftUI
 struct SearchView: View {
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
+    @State private var recentsManager = RecentsManager()
     @State private var scrollHandler = SearchBarScrollHandler()
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
@@ -67,6 +68,10 @@ struct SearchView: View {
             .onAppear {
                 self.viewModel.loadSources()
                 self.cacheManager.load()
+                self.recentsManager.load(mediaSourceId: self.viewModel.selectedMediaSource?.id)
+            }
+            .onChange(of: self.viewModel.selectedMediaSource?.id) { _, mediaSourceId in
+                self.recentsManager.load(mediaSourceId: mediaSourceId)
             }
             .onChange(of: self.path.count, initial: true) { oldCount, count in
                 self.isAtNavigationRoot = count == 0
@@ -138,6 +143,12 @@ struct SearchView: View {
                 guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
                 self.keyboardTop = frame.origin.y
             }
+            .onReceive(NotificationCenter.default.publisher(for: .recentlyPlayedChanged)) { _ in
+                self.recentsManager.loadRecentlyPlayed(mediaSourceId: self.viewModel.selectedMediaSource?.id)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .recentlyViewedChanged)) { _ in
+                self.recentsManager.loadRecentlyViewed(mediaSourceId: self.viewModel.selectedMediaSource?.id)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
             }
@@ -166,6 +177,19 @@ struct SearchView: View {
                 }
                 self.viewModel.loadSources()
             }
+            .sheet(item: self.$trackForActions) { track in
+                if let mediaSource = self.viewModel.selectedMediaSource {
+                    TrackActionsSheet(
+                        track: track,
+                        mediaSource: mediaSource,
+                        onArtistSelected: { artist in self.pendingArtist = artist },
+                        onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
+                    )
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(Color(.systemGray6))
+                }
+            }
         }
     }
 
@@ -192,6 +216,8 @@ struct SearchView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
+            } else if self.viewModel.lastSearchedQuery.isEmpty {
+                self.recentsSectionsView
             } else if self.viewModel.results.isEmpty, !self.viewModel.isSearching {
                 self.emptyStateView
             } else {
@@ -199,6 +225,49 @@ struct SearchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var recentsSectionsView: some View {
+        RecentsSectionsView(
+            recentlyPlayed: self.recentsManager.recentlyPlayed,
+            recentlyViewed: self.recentsManager.recentlyViewed,
+            onSelectTrack: { track in
+                guard let index = self.recentsManager.recentlyPlayed.firstIndex(where: { $0.id == track.id }) else { return }
+                self.playRecentlyPlayedTrack(track, at: index)
+            },
+            onShowTrackActions: { track in
+                self.trackForActions = track
+            },
+            onSelectArtist: { artist in
+                guard let mediaSource = self.viewModel.selectedMediaSource else { return }
+                self.path.append(SearchDestination.artist(artist, mediaSource))
+            },
+            onSelectTracklist: { tracklist in
+                guard let mediaSource = self.viewModel.selectedMediaSource else { return }
+                self.path.append(SearchDestination.tracklist(Tracklist(
+                    mediaId: tracklist.mediaId,
+                    mediaSourceId: mediaSource.id,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    artworkUrl: tracklist.artworkUrl,
+
+                    tracklistType: tracklist.tracklistType,
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                )))
+            },
+            onClearRecentlyPlayed: {
+                guard let mediaSourceId = self.viewModel.selectedMediaSource?.id else { return }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.recentsManager.clearRecentlyPlayed(mediaSourceId: mediaSourceId)
+                }
+            },
+            onClearRecentlyViewed: {
+                guard let mediaSourceId = self.viewModel.selectedMediaSource?.id else { return }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.recentsManager.clearRecentlyViewed(mediaSourceId: mediaSourceId)
+                }
+            }
+        )
     }
 
     private var recentSearchesView: some View {
@@ -389,24 +458,16 @@ struct SearchView: View {
                 }
             ))
         }
-        .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = self.viewModel.selectedMediaSource {
-                TrackActionsSheet(
-                    track: track,
-                    mediaSource: mediaSource,
-                    onArtistSelected: { artist in self.pendingArtist = artist },
-                    onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
-                )
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(Color(.systemGray6))
-            }
-        }
     }
 
     private func playTrack(_ track: Track, from tracks: [Track], at index: Int) {
         TrackQueueManager.shared.setQueue(tracks, startingAt: index, contextId: self.viewModel.searchContextId)
         PlaybackService.shared.playTrack(track)
+    }
+
+    private func playRecentlyPlayedTrack(_ track: Track, at index: Int) {
+        TrackQueueManager.shared.setQueue(self.recentsManager.recentlyPlayed, startingAt: index, contextId: "recentlyPlayed")
+        PlaybackService.shared.playTrack(track, notifyRecentsChanged: false)
     }
 }
 
