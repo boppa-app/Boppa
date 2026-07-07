@@ -446,6 +446,10 @@ class TrackStorageManager {
                 ? Tracklist.TracklistType.likes.rawValue
                 : Tracklist.TracklistType.playlist.rawValue
         let title = playlistId == "likes" ? "Likes" : playlistId
+        // TODO: sortOrder is hardcoded to "a0" here since only "likes" exists today. Once
+        // users can create their own Boppa-managed playlists, compute a real key past the
+        // current max (the way TracklistStorageManager.upsertTracklistStub does for albums)
+        // so multiple playlists don't collide on the same sortOrder.
         try StoredTracklist.insert {
             StoredTracklist.Draft(
                 mediaId: playlistId,

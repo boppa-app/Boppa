@@ -350,6 +350,11 @@ class TracklistStorageManager {
             .execute(db)
         } else {
             let typeString = tracklist.tracklistType.rawValue
+            // TODO: tracklists.tracklistType has a CHECK constraint allowing only
+            // 'album' | 'playlist' | 'likes', but Tracklist.TracklistType also exposes
+            // .artistSongs/.artistVideos. If one of those ever reaches here (e.g. via a
+            // track's embedded album ref), this insert throws instead of failing gracefully.
+            // Handle/reject that case explicitly rather than letting the DB throw.
             let maxKey = try StoredTracklist
                 .where { $0.tracklistType.eq(typeString) }
                 .order { $0.sortOrder.desc() }
