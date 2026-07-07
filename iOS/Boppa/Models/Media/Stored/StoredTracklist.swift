@@ -9,6 +9,8 @@ nonisolated struct StoredTracklist {
     var subtitle: String?
     var year: Int?
     var artworkUrl: String?
+    var url: String?
+    var trackCount: Int?
     var tracklistType: String
     var isPinned: Bool
     var isSavedToLibrary: Bool
@@ -39,5 +41,25 @@ extension StoredTracklist: FuzzySearchable {
 
     var fuzzySubtitle: String? {
         self.subtitle
+    }
+}
+
+extension StoredTracklist {
+    func contentMatches(_ tracklist: Tracklist) -> Bool {
+        self.mediaId == tracklist.mediaId
+            && self.mediaSourceId == tracklist.mediaSourceId
+            && Self.fieldMatches(stored: self.title, incoming: tracklist.title)
+            && Self.fieldMatches(stored: self.subtitle, incoming: tracklist.subtitle)
+            && Self.fieldMatches(stored: self.artworkUrl, incoming: tracklist.artworkUrl)
+            && Self.fieldMatches(stored: self.url, incoming: tracklist.url)
+            && Self.fieldMatches(stored: self.trackCount, incoming: tracklist.trackCount)
+    }
+
+    private static func fieldMatches(stored: String, incoming: String) -> Bool {
+        incoming.isEmpty || stored == incoming
+    }
+
+    private static func fieldMatches<T: Equatable>(stored: T?, incoming: T?) -> Bool {
+        incoming == nil || stored == incoming
     }
 }

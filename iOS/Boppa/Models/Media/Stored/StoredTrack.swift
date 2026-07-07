@@ -62,11 +62,21 @@ extension StoredTrack {
             && self.mediaSourceId == track.mediaSourceId
     }
 
-    func contentMatches(_ track: Track, artists: [Artist] = [], albums: [Tracklist] = []) -> Bool {
+    func contentMatches(_ track: Track, artists: [StoredArtist] = [], albums: [StoredTracklist] = []) -> Bool {
         self.identityMatches(track)
             && self.duration == track.duration
             && self.artworkUrl == track.artworkUrl
-            && artists == track.artists
-            && albums == track.albums
+            && Self.artistsContentMatch(artists, track.artists)
+            && Self.albumsContentMatch(albums, track.albums)
+    }
+
+    private static func artistsContentMatch(_ stored: [StoredArtist], _ incoming: [Artist]) -> Bool {
+        guard stored.count == incoming.count else { return false }
+        return zip(stored, incoming).allSatisfy { $0.contentMatches($1) }
+    }
+
+    private static func albumsContentMatch(_ stored: [StoredTracklist], _ incoming: [Tracklist]) -> Bool {
+        guard stored.count == incoming.count else { return false }
+        return zip(stored, incoming).allSatisfy { $0.contentMatches($1) }
     }
 }

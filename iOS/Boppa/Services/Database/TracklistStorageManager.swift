@@ -179,6 +179,8 @@ class TracklistStorageManager {
                 $0.subtitle = tracklist.subtitle
                 $0.year = tracklist.year
                 $0.artworkUrl = tracklist.artworkUrl
+                $0.url = tracklist.url
+                $0.trackCount = tracklist.trackCount
                 $0.isSavedToLibrary = true
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
@@ -204,6 +206,8 @@ class TracklistStorageManager {
                 subtitle: tracklist.subtitle,
                 year: tracklist.year,
                 artworkUrl: tracklist.artworkUrl,
+                url: tracklist.url,
+                trackCount: tracklist.trackCount,
                 tracklistType: typeString,
                 isPinned: false,
                 isSavedToLibrary: true,
@@ -259,13 +263,13 @@ class TracklistStorageManager {
         return (joins, tracks)
     }
 
-    private func buildRelationCache(for tracks: [StoredTrack], db: Database) throws -> ([String: [Artist]], [String: [Tracklist]]) {
-        var artistCache: [String: [Artist]] = [:]
-        var albumCache: [String: [Tracklist]] = [:]
+    private func buildRelationCache(for tracks: [StoredTrack], db: Database) throws -> ([String: [StoredArtist]], [String: [StoredTracklist]]) {
+        var artistCache: [String: [StoredArtist]] = [:]
+        var albumCache: [String: [StoredTracklist]] = [:]
         for track in tracks {
             let key = "\(track.mediaId)|\(track.mediaSourceId)"
-            artistCache[key] = try TrackStorageManager.shared.loadArtistsForTrack(track, db: db)
-            albumCache[key] = try TrackStorageManager.shared.loadAlbumsForTrack(track, db: db)
+            artistCache[key] = try TrackStorageManager.shared.loadStoredArtistsForTrack(track, db: db)
+            albumCache[key] = try TrackStorageManager.shared.loadStoredAlbumsForTrack(track, db: db)
         }
         return (artistCache, albumCache)
     }
@@ -275,8 +279,8 @@ class TracklistStorageManager {
         match: StoredTrack,
         newKey: String,
         existingJoins: [StoredTracklistTrack],
-        artistCache: [String: [Artist]],
-        albumCache: [String: [Tracklist]],
+        artistCache: [String: [StoredArtist]],
+        albumCache: [String: [StoredTracklist]],
         db: Database
     ) throws {
         if let join = existingJoins.first(where: { $0.trackMediaId == match.mediaId && $0.trackMediaSourceId == match.mediaSourceId }),
@@ -339,6 +343,8 @@ class TracklistStorageManager {
                 if !tracklist.title.isEmpty { $0.title = tracklist.title }
                 if tracklist.subtitle != nil { $0.subtitle = tracklist.subtitle }
                 if tracklist.artworkUrl != nil { $0.artworkUrl = tracklist.artworkUrl }
+                if tracklist.url != nil { $0.url = tracklist.url }
+                if tracklist.trackCount != nil { $0.trackCount = tracklist.trackCount }
             }
             .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
             .execute(db)
@@ -357,6 +363,8 @@ class TracklistStorageManager {
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
                     artworkUrl: tracklist.artworkUrl,
+                    url: tracklist.url,
+                    trackCount: tracklist.trackCount,
                     tracklistType: typeString,
                     isPinned: false,
                     isSavedToLibrary: false,

@@ -59,9 +59,9 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.title = storedTracklist.title
         self.subtitle = storedTracklist.subtitle
         self.year = storedTracklist.year
-        self.trackCount = nil
+        self.trackCount = storedTracklist.trackCount
         self.artworkUrl = storedTracklist.artworkUrl
-        self.url = nil
+        self.url = storedTracklist.url
         self.tracklistType = TracklistType(rawValue: storedTracklist.tracklistType) ?? .playlist
         self.fromArtist = fromArtist
         self.artistDetail = nil

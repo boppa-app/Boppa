@@ -7,6 +7,7 @@ nonisolated struct StoredArtist {
     var mediaSourceId: String
     var name: String
     var artworkUrl: String?
+    var url: String?
     var lastViewedTimestamp: Double? = nil
     var isRecent: Bool = false
 }
@@ -23,7 +24,24 @@ extension StoredArtist {
             mediaId: self.mediaId,
             mediaSourceId: self.mediaSourceId,
             name: self.name,
-            artworkUrl: self.artworkUrl
+            artworkUrl: self.artworkUrl,
+            url: self.url
         )
+    }
+
+    func contentMatches(_ artist: Artist) -> Bool {
+        self.mediaId == artist.mediaId
+            && self.mediaSourceId == artist.mediaSourceId
+            && Self.fieldMatches(stored: self.name, incoming: artist.name)
+            && Self.fieldMatches(stored: self.artworkUrl, incoming: artist.artworkUrl)
+            && Self.fieldMatches(stored: self.url, incoming: artist.url)
+    }
+
+    private static func fieldMatches(stored: String, incoming: String) -> Bool {
+        incoming.isEmpty || stored == incoming
+    }
+
+    private static func fieldMatches<T: Equatable>(stored: T?, incoming: T?) -> Bool {
+        incoming == nil || stored == incoming
     }
 }

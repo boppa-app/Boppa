@@ -41,6 +41,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "mediaSourceId" TEXT NOT NULL,
                   "name" TEXT NOT NULL,
                   "artworkUrl" TEXT,
+                  "url" TEXT,
                   "lastViewedTimestamp" REAL,
                   "isRecent" INTEGER NOT NULL DEFAULT 0,
                   PRIMARY KEY ("mediaId", "mediaSourceId")
@@ -56,6 +57,8 @@ extension DatabaseWriter where Self == DatabasePool {
                   "title" TEXT NOT NULL,
                   "subtitle" TEXT,
                   "artworkUrl" TEXT,
+                  "url" TEXT,
+                  "trackCount" INTEGER,
                   "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes')),
                   "isPinned" INTEGER NOT NULL DEFAULT 0,
                   "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
