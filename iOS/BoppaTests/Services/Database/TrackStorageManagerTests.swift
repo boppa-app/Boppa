@@ -1,9 +1,8 @@
+@testable import Boppa
 import Dependencies
 internal import Foundation
 import SQLiteData
 import Testing
-
-@testable import Boppa
 
 struct TrackStorageManagerTests {
     // MARK: - Test Infrastructure
@@ -66,6 +65,7 @@ struct TrackStorageManagerTests {
                       "duration" INTEGER,
                       "artworkUrl" TEXT,
                       "url" TEXT,
+                      "type" TEXT NOT NULL CHECK (type IN ('song', 'video')),
                       "lastPlayedTimestamp" REAL,
                       "isRecent" INTEGER NOT NULL DEFAULT 0,
                       PRIMARY KEY ("mediaId", "mediaSourceId")
@@ -304,7 +304,7 @@ struct TrackStorageManagerTests {
         let t1 = self.makeTrack(
             "t1",
             artists: [
-                self.makeArtist("a1", name: "Artist One", url: "https://example.com/artists/a1")
+                self.makeArtist("a1", name: "Artist One", url: "https://example.com/artists/a1"),
             ],
             albums: [self.makeAlbum("al1", url: "https://example.com/albums/al1", trackCount: 12)]
         )
@@ -384,10 +384,10 @@ struct TrackStorageManagerTests {
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
 
         let refs = try ctx.trackArtistRefs("t1")
-        #expect(refs.first?.sortOrder == "sentinel")  // untouched: recognized as no-op
+        #expect(refs.first?.sortOrder == "sentinel") // untouched: recognized as no-op
 
         let artist = try #require(try ctx.artist("a1"))
-        #expect(artist.url == "https://example.com/a1")  // preserved, not wiped by the url-less resync
+        #expect(artist.url == "https://example.com/a1") // preserved, not wiped by the url-less resync
     }
 
     @Test func upsertTrackToleratesMissingAlbumURLAndTrackCountOnResyncWithoutTriggeringReplace()
@@ -411,11 +411,11 @@ struct TrackStorageManagerTests {
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
 
         let refs = try ctx.trackAlbumRefs("t1")
-        #expect(refs.first?.sortOrder == "sentinel")  // untouched: recognized as no-op
+        #expect(refs.first?.sortOrder == "sentinel") // untouched: recognized as no-op
 
         let album = try #require(try ctx.tracklist("al1"))
-        #expect(album.url == "https://example.com/al1")  // preserved, not wiped by the url-less resync
-        #expect(album.trackCount == 12)  // preserved, not wiped by the trackCount-less resync
+        #expect(album.url == "https://example.com/al1") // preserved, not wiped by the url-less resync
+        #expect(album.trackCount == 12) // preserved, not wiped by the trackCount-less resync
     }
 
     @Test func upsertTrackDetectsAndPersistsArtistURLWhenNewlyProvided() throws {
@@ -481,7 +481,7 @@ struct TrackStorageManagerTests {
         let t1Updated = self.makeTrack("t1", artists: [])
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
 
-        #expect(try ctx.artist("a1") != nil)  // still referenced by t2
+        #expect(try ctx.artist("a1") != nil) // still referenced by t2
         #expect(try ctx.trackArtistRefs("t1").isEmpty)
     }
 
@@ -493,7 +493,7 @@ struct TrackStorageManagerTests {
             artists: [
                 self.makeArtist(
                     "a1", name: "Real Name", artworkUrl: "https://x/art.png", url: "https://x/a1"
-                )
+                ),
             ]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
@@ -538,7 +538,7 @@ struct TrackStorageManagerTests {
         let t1Updated = self.makeTrack("t1", albums: [])
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
 
-        #expect(try ctx.tracklist("al1") != nil)  // user-saved album must survive
+        #expect(try ctx.tracklist("al1") != nil) // user-saved album must survive
     }
 
     @Test func upsertTrackNewAlbumStubDefaultsToNotSavedToLibrary() throws {
@@ -555,7 +555,7 @@ struct TrackStorageManagerTests {
         let t1 = self.makeTrack(
             "t1",
             albums: [
-                self.makeAlbum("al1", title: "Real Album", url: "https://x/al1", trackCount: 10)
+                self.makeAlbum("al1", title: "Real Album", url: "https://x/al1", trackCount: 10),
             ]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
@@ -909,7 +909,7 @@ struct TrackStorageManagerTests {
             try TrackStorageManager.shared.removeTrack(t1, fromPlaylist: "likes")
         }
 
-        #expect(try ctx.track("t1") != nil)  // still referenced by "myplaylist"
+        #expect(try ctx.track("t1") != nil) // still referenced by "myplaylist"
         #expect(
             try ctx.withDatabase {
                 TrackStorageManager.shared.isTrack(t1, inPlaylist: "myplaylist")
@@ -1004,14 +1004,14 @@ struct TrackStorageManagerTests {
         }
 
         try ctx.withDatabase { try TrackStorageManager.shared.unlikeTrack(t1) }
-        #expect(try ctx.track("t1") != nil)  // still recent
+        #expect(try ctx.track("t1") != nil) // still recent
 
         try ctx.write { db in
             try TrackStorageManager.shared.unmarkRecentlyPlayed(
                 mediaId: "t1", mediaSourceId: "src", db: db
             )
         }
-        #expect(try ctx.track("t1") == nil)  // now fully orphaned
+        #expect(try ctx.track("t1") == nil) // now fully orphaned
     }
 
     // MARK: - Recents: artists
@@ -1080,7 +1080,7 @@ struct TrackStorageManagerTests {
         try ctx.write { db in
             try TrackStorageManager.shared.replaceTrackAlbums(track: stored, albums: [], db: db)
         }
-        #expect(try ctx.tracklist("al1") != nil)  // survives thanks to isRecent
+        #expect(try ctx.tracklist("al1") != nil) // survives thanks to isRecent
 
         try ctx.write { db in
             try TrackStorageManager.shared.unmarkTracklistRecentlyViewed(
