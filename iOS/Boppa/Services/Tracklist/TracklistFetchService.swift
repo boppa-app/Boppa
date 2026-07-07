@@ -143,6 +143,14 @@ class TracklistFetchService {
         return ArtistDetail(songs: songs, albums: albums, videos: videos, playlists: playlists, sectionOrder: sectionOrder)
     }
 
+    func fetchSong(mediaId: String, mediaSourceId: String) async throws -> Track? {
+        try await self.fetchTrackMetadata(mediaId: mediaId, mediaSourceId: mediaSourceId, script: { $0.song }, scriptName: "get.song")
+    }
+
+    func fetchVideo(mediaId: String, mediaSourceId: String) async throws -> Track? {
+        try await self.fetchTrackMetadata(mediaId: mediaId, mediaSourceId: mediaSourceId, script: { $0.video }, scriptName: "get.video")
+    }
+
     func fetchAlbumsForArtist(artist: Artist, mediaSource: MediaSource) async throws -> [Tracklist] {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
@@ -176,6 +184,27 @@ class TracklistFetchService {
     }
 
     // MARK: - Private
+
+    private func fetchTrackMetadata(mediaId: String, mediaSourceId: String, script: (GetScripts) -> String?, scriptName: String) async throws -> Track? {
+        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: mediaSourceId) else { return nil }
+        let config = mediaSource.config
+        guard let getScripts = config.data.get, let script = script(getScripts) else {
+            logger.warning("No \(scriptName) script for '\(mediaSourceId)'")
+            return nil
+        }
+
+        logger.info("Fetching \(scriptName) '\(mediaId)' for '\(mediaSourceId)'...")
+        let jsResult = try await JSExecutionEngine.shared.execute(
+            script: script,
+            params: ["id": mediaId],
+            customUserAgent: config.customUserAgent,
+            domain: config.url,
+            context: mediaSource.contextValues
+        )
+
+        guard let response = GetTrackResponse(jsResult) else { return nil }
+        return response.track.toTrack(mediaSourceId: mediaSourceId)
+    }
 
     private func fetchAllTrackPages(
         script: String,

@@ -126,7 +126,14 @@ struct ScriptArtist {
 
 // MARK: - Get Responses
 
-// TODO: Add GetTrackResponse
+struct GetTrackResponse {
+    let track: ScriptTrack
+
+    init?(_ dict: [String: Any]) {
+        guard let track = ScriptTrack(dict) else { return nil }
+        self.track = track
+    }
+}
 
 struct GetArtistResponse {
     let songs: [ScriptTrack]?
