@@ -6,7 +6,8 @@ import SQLiteData
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "RecentsStorageManager")
 
 extension Notification.Name {
-    static let recentsChanged = Notification.Name("recentsChanged")
+    static let recentlyPlayedChanged = Notification.Name("recentlyPlayedChanged")
+    static let recentlyViewedChanged = Notification.Name("recentlyViewedChanged")
 }
 
 class RecentsStorageManager {
@@ -70,7 +71,7 @@ class RecentsStorageManager {
             try Self.trimOverflow(StoredRecentlyViewedArtist.self, mediaSourceId: artist.mediaSourceId, db: db)
         }
         logger.info("Recorded viewed artist '\(artist.mediaId)' for source '\(artist.mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentsChanged, object: nil)
+        NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
     }
 
     func recordViewedTracklist(_ tracklist: Tracklist) {
@@ -98,7 +99,7 @@ class RecentsStorageManager {
             try Self.trimOverflow(StoredRecentlyViewedTracklist.self, mediaSourceId: tracklist.mediaSourceId, db: db)
         }
         logger.info("Recorded viewed tracklist '\(tracklist.mediaId)' for source '\(tracklist.mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentsChanged, object: nil)
+        NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
     }
 
     func recordPlayedTrack(_ track: Track, notify: Bool = true) {
@@ -129,7 +130,7 @@ class RecentsStorageManager {
         }
         logger.info("Recorded played track '\(track.mediaId)' for source '\(track.mediaSourceId)'")
         guard notify else { return }
-        NotificationCenter.default.post(name: .recentsChanged, object: nil)
+        NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 
     func clearRecentlyViewed(mediaSourceId: String) {
@@ -138,7 +139,7 @@ class RecentsStorageManager {
             try StoredRecentlyViewedTracklist.where { $0.mediaSourceId.eq(mediaSourceId) }.delete().execute(db)
         }
         logger.info("Cleared recently viewed for source '\(mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentsChanged, object: nil)
+        NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
     }
 
     func clearRecentlyPlayed(mediaSourceId: String) {
@@ -146,7 +147,7 @@ class RecentsStorageManager {
             try StoredRecentlyPlayedTrack.where { $0.mediaSourceId.eq(mediaSourceId) }.delete().execute(db)
         }
         logger.info("Cleared recently played for source '\(mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentsChanged, object: nil)
+        NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 
     // MARK: - Private

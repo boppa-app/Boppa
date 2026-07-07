@@ -1,6 +1,6 @@
 import Foundation
 
-enum RecentlyViewedItem: Identifiable {
+enum RecentlyViewedItem: Identifiable, Equatable {
     case artist(Artist, viewedAt: Double)
     case tracklist(Tracklist, viewedAt: Double)
 

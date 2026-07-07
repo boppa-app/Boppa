@@ -15,13 +15,30 @@ class RecentsManager {
     private static let displayLimit = 10
 
     func load(mediaSourceId: String?) {
+        self.loadRecentlyPlayed(mediaSourceId: mediaSourceId)
+        self.loadRecentlyViewed(mediaSourceId: mediaSourceId)
+    }
+
+    func loadRecentlyPlayed(mediaSourceId: String?) {
         guard let mediaSourceId else {
-            self.recentlyPlayed = []
-            self.recentlyViewed = []
+            if !self.recentlyPlayed.isEmpty { self.recentlyPlayed = [] }
             return
         }
-        self.recentlyPlayed = RecentsStorageManager.shared.fetchRecentlyPlayed(mediaSourceId: mediaSourceId, limit: Self.displayLimit)
-        self.recentlyViewed = RecentsStorageManager.shared.fetchRecentlyViewed(mediaSourceId: mediaSourceId, limit: Self.displayLimit)
+        let played = RecentsStorageManager.shared.fetchRecentlyPlayed(mediaSourceId: mediaSourceId, limit: Self.displayLimit)
+        if played != self.recentlyPlayed {
+            self.recentlyPlayed = played
+        }
+    }
+
+    func loadRecentlyViewed(mediaSourceId: String?) {
+        guard let mediaSourceId else {
+            if !self.recentlyViewed.isEmpty { self.recentlyViewed = [] }
+            return
+        }
+        let viewed = RecentsStorageManager.shared.fetchRecentlyViewed(mediaSourceId: mediaSourceId, limit: Self.displayLimit)
+        if viewed != self.recentlyViewed {
+            self.recentlyViewed = viewed
+        }
     }
 
     func clearRecentlyPlayed(mediaSourceId: String) {
