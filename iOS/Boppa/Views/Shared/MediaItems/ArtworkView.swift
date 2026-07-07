@@ -42,7 +42,9 @@ struct ArtworkView: View {
     var body: some View {
         Group {
             if let url = self.resolvedURL {
-                ArtworkImageContent(url: url, size: self.size, placeholderSystemName: self.resolvedPlaceholder)
+                ArtworkImageContent(
+                    url: url, size: self.size, placeholderSystemName: self.resolvedPlaceholder
+                )
             } else {
                 self.placeholderImage
             }
@@ -66,8 +68,36 @@ private struct ArtworkImageContent: View {
     let size: CGFloat
     let placeholderSystemName: String
 
+    @Environment(\.displayScale) private var displayScale
     @State private var loadedImage: UIImage? = nil
     @State private var failed = false
+
+    // Blur ramps smoothly with how far the source is upscaled past its native resolution
+    private static let upscaleRatioBeforeBlur: CGFloat = 2.0
+    private static let upscaleRatioAtMaxBlur: CGFloat = 5.0
+    private static let maxBlurRadiusFraction: CGFloat = 0.03
+    private static let maxBlurRadiusCap: CGFloat = 5
+
+    private var maxBlurRadius: CGFloat {
+        min(self.size * Self.maxBlurRadiusFraction, Self.maxBlurRadiusCap)
+    }
+
+    private func upscaleBlurRadius(for image: UIImage) -> CGFloat {
+        guard let cgImage = image.cgImage else { return 0 }
+        let nativePixels = CGFloat(min(cgImage.width, cgImage.height))
+        guard nativePixels > 0 else { return 0 }
+
+        let displayPixels = self.size * self.displayScale
+        let upscaleRatio = displayPixels / nativePixels
+        guard upscaleRatio > Self.upscaleRatioBeforeBlur else { return 0 }
+
+        let progress = min(
+            (upscaleRatio - Self.upscaleRatioBeforeBlur)
+                / (Self.upscaleRatioAtMaxBlur - Self.upscaleRatioBeforeBlur),
+            1
+        )
+        return progress * self.maxBlurRadius
+    }
 
     var body: some View {
         Group {
@@ -87,6 +117,7 @@ private struct ArtworkImageContent: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: self.size, height: self.size)
+                        .blur(radius: self.upscaleBlurRadius(for: img))
                 }
             } else if self.failed {
                 Image(systemName: self.placeholderSystemName)
