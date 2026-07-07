@@ -18,6 +18,19 @@ export function SiteHeader() {
           Download
         </Link>
         <a
+          href="https://discord.gg/zk6FhWNnM"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Discord"
+          className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
+        >
+          <span
+            aria-hidden="true"
+            className="icon-mask w-[18px] h-[18px]"
+            style={{ WebkitMaskImage: "url(/icons/discord.svg)", maskImage: "url(/icons/discord.svg)" }}
+          />
+        </a>
+        <a
           href="https://reddit.com/r/BoppaApp"
           target="_blank"
           rel="noopener noreferrer"

@@ -5,7 +5,10 @@ export function SiteFooter() {
         <div className="space-y-3">
           <p className="text-white/60 font-medium">Product</p>
           <div className="space-y-2">
-            <a href="/docs" className="block text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="/docs"
+              className="block text-muted-foreground hover:text-foreground transition-colors"
+            >
               Docs
             </a>
           </div>
@@ -13,6 +16,14 @@ export function SiteFooter() {
         <div className="space-y-3">
           <p className="text-white/60 font-medium">Community</p>
           <div className="space-y-2">
+            <a
+              href="https://github.com/boppa-app/Boppa"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-muted-foreground hover:text-foreground transition-colors"
+            >
+              GitHub
+            </a>
             <a
               href="https://reddit.com/r/BoppaApp"
               target="_blank"
@@ -22,25 +33,34 @@ export function SiteFooter() {
               Reddit
             </a>
             <a
-              href="https://github.com/boppa-app/Boppa"
+              href="https://discord.gg/zk6FhWNnM"
               target="_blank"
               rel="noopener noreferrer"
               className="block text-muted-foreground hover:text-foreground transition-colors"
             >
-              GitHub
+              Discord
             </a>
           </div>
         </div>
         <div className="space-y-3">
           <p className="text-white/60 font-medium">Download</p>
           <div className="space-y-2">
-            <a href="/download" className="block text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="/download"
+              className="block text-muted-foreground hover:text-foreground transition-colors"
+            >
               iOS
             </a>
-            <a href="/download" className="block text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="/download"
+              className="block text-muted-foreground hover:text-foreground transition-colors"
+            >
               Android
             </a>
-            <a href="/download" className="block text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="/download"
+              className="block text-muted-foreground hover:text-foreground transition-colors"
+            >
               Desktop
             </a>
           </div>
