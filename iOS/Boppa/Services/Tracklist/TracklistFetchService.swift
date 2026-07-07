@@ -315,11 +315,11 @@ class TracklistFetchService {
         }
         let config = mediaSource.config
         guard let script = config.data.get?.script(for: type) else {
-            logger.warning("No get.\(type.rawValue) script for '\(mediaSourceId)'")
+            logger.warning("No get \(type.rawValue) script for '\(mediaSourceId)'")
             return nil
         }
 
-        logger.info("Fetching get.\(type.rawValue) '\(mediaId)' for '\(mediaSourceId)'...")
+        logger.info("Fetching get \(type.rawValue) '\(mediaId)' for '\(mediaSourceId)'...")
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: ["id": mediaId],
