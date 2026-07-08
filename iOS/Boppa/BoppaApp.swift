@@ -63,10 +63,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: windowScene)
         window.overrideUserInterfaceStyle = .dark
         window.rootViewController = hostingController
-        window.makeKeyAndVisible()
         self.window = window
 
         Task {
+            await ConfigService.shared.addDefaultMediaSourcesIfNeeded()
+            window.makeKeyAndVisible()
+
             await MediaSourceImportService.shared.updateAllMediaSources()
             MediaSourceContextProvider.shared.startMonitoring()
             WebViewPlaybackEngineRegistry.shared.start()
