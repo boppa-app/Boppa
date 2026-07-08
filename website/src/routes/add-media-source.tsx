@@ -82,7 +82,7 @@ function GenerateLinkForm() {
         inputMode="url"
         autoCapitalize="none"
         autoCorrect="off"
-        placeholder="https://boppa.app/iOS/internet-archive.yaml"
+        placeholder="https://data.boppa.app/iOS/internet-archive.yaml"
         value={configUrl}
         onChange={(event) => setConfigUrl(event.target.value)}
         className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
