@@ -87,8 +87,11 @@ class TracklistViewModel {
     }
 
     func load() {
-        let stored = self.tracklist.storedTracklist
-            ?? TracklistStorageManager.shared.findStoredTracklist(mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId)
+        let stored =
+            self.tracklist.storedTracklist
+                ?? TracklistStorageManager.shared.findStoredTracklist(
+                    mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId
+                )
 
         if let stored, stored.isSavedToLibrary {
             self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
@@ -100,6 +103,40 @@ class TracklistViewModel {
         if self.tracks.isEmpty {
             self.fetchFirstPage()
         }
+
+        self.enrichMetadata()
+    }
+
+    private func enrichMetadata() {
+        guard self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist
+        else { return }
+
+        let tracklist = self.tracklist
+
+        Task { [weak self] in
+            var finalTracklist = tracklist
+            do {
+                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(
+                    tracklist: tracklist
+                ) {
+                    finalTracklist = tracklist.merging(fetched: meta)
+                    logger.info(
+                        "Enriched tracklist '\(tracklist.title)' with get \(tracklist.tracklistType.rawValue) metadata"
+                    )
+                }
+            } catch {
+                logger.warning(
+                    "Failed to fetch get metadata for tracklist '\(tracklist.mediaId)': \(error.localizedDescription)"
+                )
+            }
+
+            if let self, self.tracklist.mediaId == tracklist.mediaId,
+               self.tracklist.mediaSourceId == tracklist.mediaSourceId
+            {
+                self.tracklist = finalTracklist
+            }
+            RecentsStorageManager.shared.recordViewedTracklist(finalTracklist)
+        }
     }
 
     func refresh() {
@@ -108,19 +145,10 @@ class TracklistViewModel {
 
         Task {
             do {
-                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(tracklist: self.tracklist) {
-                    self.tracklist = Tracklist(
-                        mediaId: self.tracklist.mediaId,
-                        mediaSourceId: self.tracklist.mediaSourceId,
-                        title: meta.title.isEmpty ? self.tracklist.title : meta.title,
-                        subtitle: meta.subtitle ?? self.tracklist.subtitle,
-                        year: meta.year ?? self.tracklist.year,
-                        trackCount: meta.trackCount ?? self.tracklist.trackCount,
-                        artworkUrl: meta.artworkUrl ?? self.tracklist.artworkUrl,
-                        url: meta.url ?? self.tracklist.url,
-                        tracklistType: self.tracklist.tracklistType,
-                        storedTracklist: self.tracklist.storedTracklist
-                    )
+                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(
+                    tracklist: self.tracklist
+                ) {
+                    self.tracklist = self.tracklist.merging(fetched: meta)
                 }
 
                 let tracks = try await TracklistFetchService.shared.fetchAllTracks(
@@ -132,15 +160,21 @@ class TracklistViewModel {
                         self.hasMorePages = false
                     }
                 )
-                _ = try await TracklistStorageManager.shared.storeTracklist(self.tracklist, tracks: tracks)
+                _ = try await TracklistStorageManager.shared.storeTracklist(
+                    self.tracklist, tracks: tracks
+                )
 
                 self.isRefreshing = false
 
-                logger.info("Refreshed tracklist '\(self.tracklist.title)' with \(self.tracks.count) track(s)")
+                logger.info(
+                    "Refreshed tracklist '\(self.tracklist.title)' with \(self.tracks.count) track(s)"
+                )
             } catch {
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Refresh failed for '\(self.tracklist.title)': \(error.localizedDescription)")
+                logger.error(
+                    "Refresh failed for '\(self.tracklist.title)': \(error.localizedDescription)"
+                )
             }
         }
     }
@@ -166,13 +200,23 @@ class TracklistViewModel {
         case .reversed:
             return tracks.reversed()
         case .authorAZ:
-            return tracks.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedAscending }
+            return tracks.sorted {
+                ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "")
+                    == .orderedAscending
+            }
         case .authorZA:
-            return tracks.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedDescending }
+            return tracks.sorted {
+                ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "")
+                    == .orderedDescending
+            }
         case .nameAZ:
-            return tracks.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+            return tracks.sorted {
+                $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+            }
         case .nameZA:
-            return tracks.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
+            return tracks.sorted {
+                $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending
+            }
         }
     }
 
@@ -198,10 +242,6 @@ class TracklistViewModel {
                 self.isLoading = false
                 self.isRefreshing = false
 
-                if self.tracklist.tracklistType == .album || self.tracklist.tracklistType == .playlist {
-                    RecentsStorageManager.shared.recordViewedTracklist(self.tracklist)
-                }
-
                 logger.info("Loaded \(self.tracks.count) track(s) for '\(self.tracklist.title)'")
             } catch {
                 guard !Task.isCancelled else { return }
@@ -209,7 +249,9 @@ class TracklistViewModel {
                 self.isLoading = false
                 self.isRefreshing = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch failed for '\(self.tracklist.title)': \(error.localizedDescription)")
+                logger.error(
+                    "Fetch failed for '\(self.tracklist.title)': \(error.localizedDescription)"
+                )
             }
         }
     }
@@ -221,19 +263,10 @@ class TracklistViewModel {
 
         Task {
             do {
-                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(tracklist: self.tracklist) {
-                    self.tracklist = Tracklist(
-                        mediaId: self.tracklist.mediaId,
-                        mediaSourceId: self.tracklist.mediaSourceId,
-                        title: meta.title,
-                        subtitle: meta.subtitle,
-                        year: meta.year,
-                        trackCount: meta.trackCount,
-                        artworkUrl: meta.artworkUrl,
-                        url: meta.url,
-                        tracklistType: self.tracklist.tracklistType,
-                        storedTracklist: self.tracklist.storedTracklist
-                    )
+                if let meta = try await TracklistFetchService.shared.fetchTracklistMetadata(
+                    tracklist: self.tracklist
+                ) {
+                    self.tracklist = self.tracklist.merging(fetched: meta)
                 }
 
                 let tracks = try await TracklistFetchService.shared.fetchAllTracks(
@@ -245,7 +278,9 @@ class TracklistViewModel {
                         self.hasMorePages = false
                     }
                 )
-                let stored = try await TracklistStorageManager.shared.storeTracklist(self.tracklist, tracks: tracks)
+                let stored = try await TracklistStorageManager.shared.storeTracklist(
+                    self.tracklist, tracks: tracks
+                )
 
                 self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
                 self.isPersisted = true
@@ -255,7 +290,9 @@ class TracklistViewModel {
             } catch {
                 self.isSaving = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Failed to save tracklist '\(self.tracklist.title)': \(error.localizedDescription)")
+                logger.error(
+                    "Failed to save tracklist '\(self.tracklist.title)': \(error.localizedDescription)"
+                )
             }
         }
     }
@@ -302,7 +339,9 @@ class TracklistViewModel {
                 self.pageLoadId += 1
                 self.isLoading = false
 
-                logger.info("Loaded next page: \(response.tracks.count) track(s), total: \(self.tracks.count), hasMore: \(self.hasMorePages)")
+                logger.info(
+                    "Loaded next page: \(response.tracks.count) track(s), total: \(self.tracks.count), hasMore: \(self.hasMorePages)"
+                )
             } catch {
                 guard !Task.isCancelled else { return }
 

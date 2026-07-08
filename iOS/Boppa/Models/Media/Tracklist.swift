@@ -98,6 +98,23 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         guard let trackCount else { return nil }
         return "\(trackCount) track\(trackCount == 1 ? "" : "s")"
     }
+
+    func merging(fetched: any TracklistMetadata) -> Tracklist {
+        Tracklist(
+            mediaId: self.mediaId,
+            mediaSourceId: self.mediaSourceId,
+            title: fetched.title.isEmpty ? self.title : fetched.title,
+            subtitle: fetched.subtitle ?? self.subtitle,
+            year: fetched.year ?? self.year,
+            trackCount: fetched.trackCount ?? self.trackCount,
+            artworkUrl: fetched.artworkUrl ?? self.artworkUrl,
+            url: fetched.url ?? self.url,
+            tracklistType: self.tracklistType,
+            fromArtist: self.fromArtist,
+            artistDetail: self.artistDetail,
+            storedTracklist: self.storedTracklist
+        )
+    }
 }
 
 extension Tracklist: FuzzySearchable {
