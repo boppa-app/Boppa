@@ -62,7 +62,7 @@ struct SearchCacheView: View {
                 } label: {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 17))
-                        .foregroundColor(Color(.systemGray))
+                        .foregroundColor(.purp)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Remove Most Recent")

@@ -99,6 +99,7 @@ struct RecentsSectionsView: View {
                 accessibilityHint: "Remove the most recently played track",
                 action: self.onPopRecentlyPlayed
             )
+            .padding(.bottom, 10)
             GeometryReader { outerGeo in
                 HorizontalScrollFadeView {
                     ScrollView(.horizontal) {
@@ -274,7 +275,7 @@ struct RecentsSectionsView: View {
             Button(action: action) {
                 Image(systemName: "trash.fill")
                     .font(.system(size: 17))
-                    .foregroundColor(Color(.systemGray))
+                    .foregroundColor(.purp)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(accessibilityLabel)
