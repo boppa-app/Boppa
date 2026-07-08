@@ -292,11 +292,8 @@ struct SearchView: View {
                         self.isSearchFieldFocused = false
                         self.cacheManager.saveQuery(cached.query)
                     },
-                    onRemove: { cached in
-                        self.cacheManager.removeQuery(cached)
-                    },
-                    onClearAll: {
-                        self.cacheManager.clearAll()
+                    onPopTop: {
+                        self.cacheManager.popTopDisplayedQuery()
                     }
                 )
             }

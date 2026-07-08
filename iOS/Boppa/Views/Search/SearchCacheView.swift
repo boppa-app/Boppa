@@ -4,8 +4,7 @@ struct SearchCacheView: View {
     let cachedQueries: [CachedSearchQuery]
     var keyboardHeight: CGFloat = 0
     let onSelect: (CachedSearchQuery) -> Void
-    let onRemove: (CachedSearchQuery) -> Void
-    let onClearAll: () -> Void
+    let onPopTop: () -> Void
 
     var body: some View {
         if self.cachedQueries.isEmpty {
@@ -29,17 +28,6 @@ struct SearchCacheView: View {
                                             .lineLimit(1)
 
                                         Spacer()
-
-                                        Button {
-                                            self.onRemove(cached)
-                                        } label: {
-                                            Image(systemName: "xmark")
-                                                .font(.system(size: 15))
-                                                .foregroundColor(Color(.systemGray))
-                                        }
-                                        .buttonStyle(.plain)
-                                        .accessibilityLabel("Remove")
-                                        .accessibilityHint("Remove \"\(cached.query)\" from recent searches")
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
@@ -70,15 +58,15 @@ struct SearchCacheView: View {
 
             if !self.cachedQueries.isEmpty {
                 Button {
-                    self.onClearAll()
+                    self.onPopTop()
                 } label: {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 17))
                         .foregroundColor(Color(.systemGray))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Clear All Recent Searches")
-                .accessibilityHint("Remove all recent searches")
+                .accessibilityLabel("Remove Most Recent")
+                .accessibilityHint("Remove the most recent search")
             }
         }
         .padding(.horizontal, 16)

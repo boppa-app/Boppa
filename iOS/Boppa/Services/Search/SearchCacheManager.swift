@@ -30,12 +30,13 @@ class SearchCacheManager {
     private static let maxCachedQueries = 25
 
     func load() {
-        self.cachedQueries = (try? self.database.read { db in
-            try CachedSearchQuery
-                .order { $0.timestamp.desc() }
-                .limit(Self.maxCachedQueries)
-                .fetchAll(db)
-        }) ?? []
+        self.cachedQueries =
+            (try? self.database.read { db in
+                try CachedSearchQuery
+                    .order { $0.timestamp.desc() }
+                    .limit(Self.maxCachedQueries)
+                    .fetchAll(db)
+            }) ?? []
         self.updateFilter(self.currentFilter)
     }
 
@@ -77,9 +78,10 @@ class SearchCacheManager {
                 )
             }.execute(db)
 
-            let allSorted = try CachedSearchQuery
-                .order { $0.timestamp.desc() }
-                .fetchAll(db)
+            let allSorted =
+                try CachedSearchQuery
+                    .order { $0.timestamp.desc() }
+                    .fetchAll(db)
 
             if allSorted.count > Self.maxCachedQueries {
                 let overflowIds = allSorted[Self.maxCachedQueries...].map(\.id)
@@ -94,18 +96,11 @@ class SearchCacheManager {
         logger.info("Cached search query: \"\(trimmed)\"")
     }
 
-    func removeQuery(_ query: CachedSearchQuery) {
+    func popTopDisplayedQuery() {
+        guard let top = self.displayedQueries.first else { return }
         try? self.database.write { db in
-            try CachedSearchQuery.where { $0.id.eq(query.id) }.delete().execute(db)
+            try CachedSearchQuery.where { $0.id.eq(top.id) }.delete().execute(db)
         }
         self.load()
-    }
-
-    func clearAll() {
-        try? self.database.write { db in
-            try CachedSearchQuery.delete().execute(db)
-        }
-        self.cachedQueries = []
-        self.displayedQueries = []
     }
 }
