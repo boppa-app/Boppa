@@ -13,6 +13,7 @@ nonisolated struct MediaSource: Identifiable, Hashable {
     var autoUpdate: Bool
     var sortOrder: String
     var isEnabled: Bool
+    var isDefault: Bool
     var lastUpdatedTimestamp: Double
     var contextValuesJSON: String
     var contextLastGatheredTimestamp: Double?
@@ -42,13 +43,14 @@ extension MediaSource {
         return self.contextLastGatheredTimestamp != nil
     }
 
-    init(id: String, name: String, url: String, config: MediaSourceConfig, configUrl: String? = nil, sortOrder: String = "a0", isEnabled: Bool = true) {
+    init(id: String, name: String, url: String, config: MediaSourceConfig, configUrl: String? = nil, sortOrder: String = "a0", isEnabled: Bool = true, isDefault: Bool = false) {
         self.id = id
         self.name = name
         self.url = url
         self.configData = (try? YAMLEncoder().encode(config)).flatMap { Data($0.utf8) } ?? Data()
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
+        self.isDefault = isDefault
         self.lastUpdatedTimestamp = Date().timeIntervalSince1970
         self.contextValuesJSON = "{}"
         self.contextLastGatheredTimestamp = nil
@@ -57,7 +59,7 @@ extension MediaSource {
         self.version = config.version
     }
 
-    static func fromConfigData(_ data: Data, configUrl: String? = nil) throws -> MediaSource {
+    static func fromConfigData(_ data: Data, configUrl: String? = nil, isDefault: Bool = false) throws -> MediaSource {
         let config: MediaSourceConfig
         do {
             config = try YAMLDecoder().decode(MediaSourceConfig.self, from: data)
@@ -67,7 +69,7 @@ extension MediaSource {
             throw MediaSourceImportError.malformedConfig(detail: error.localizedDescription)
         }
 
-        return MediaSource(id: config.id, name: config.name, url: config.url, config: config, configUrl: configUrl)
+        return MediaSource(id: config.id, name: config.name, url: config.url, config: config, configUrl: configUrl, isDefault: isDefault)
     }
 
     private static func describeDecodingError(_ error: DecodingError) -> String {

@@ -20,6 +20,9 @@ class SettingsViewModel {
         for index in offsets.sorted().reversed() {
             let mediaSource = self.mediaSources[index]
             try? MediaSourceStorageManager.shared.delete(id: mediaSource.id)
+            if mediaSource.isDefault, let configUrl = mediaSource.configUrl {
+                ConfigService.markDefaultConfigUrlDeleted(configUrl)
+            }
             self.mediaSources.remove(at: index)
             NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["id": mediaSource.id])
         }

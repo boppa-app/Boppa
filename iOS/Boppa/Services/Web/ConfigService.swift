@@ -10,6 +10,7 @@ class ConfigService {
     static let shared = ConfigService()
 
     private static let remoteConfigUrl = URL(string: "https://data.boppa.app/iOS/config.yaml")!
+    private static let deletedDefaultConfigUrlsKey = "deletedDefaultMediaSourceConfigUrls"
 
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "ConfigService"
@@ -31,8 +32,14 @@ class ConfigService {
             return
         }
 
+        let deletedConfigUrls = Self.deletedDefaultConfigUrls
+
         await withTaskGroup(of: Void.self) { group in
             for configUrl in config.defaultMediaSourceConfigUrls {
+                guard let normalizedUrl = MediaSourceImportService.normalizeConfigUrl(configUrl)?
+                    .absoluteString,
+                    !deletedConfigUrls.contains(normalizedUrl)
+                else { continue }
                 group.addTask {
                     await self.addDefaultMediaSource(configUrl: configUrl)
                 }
@@ -51,7 +58,8 @@ class ConfigService {
     private func addDefaultMediaSource(configUrl: String) async {
         do {
             let mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(
-                configUrl: configUrl
+                configUrl: configUrl,
+                isDefault: true
             )
             guard MediaSourceStorageManager.shared.fetchOne(id: mediaSource.id) == nil else {
                 self.logger.info("Default media source '\(mediaSource.id)' already added, skipping")
@@ -62,5 +70,15 @@ class ConfigService {
         } catch {
             self.logger.error("Failed to add default media source from '\(configUrl)': \(error)")
         }
+    }
+
+    static func markDefaultConfigUrlDeleted(_ configUrl: String) {
+        var urls = self.deletedDefaultConfigUrls
+        urls.insert(configUrl)
+        UserDefaults.standard.set(Array(urls), forKey: self.deletedDefaultConfigUrlsKey)
+    }
+
+    private static var deletedDefaultConfigUrls: Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: self.deletedDefaultConfigUrlsKey) ?? [])
     }
 }
