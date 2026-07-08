@@ -17,7 +17,7 @@ class RecentsManager {
         RecentlyPlayedEntry.grouping(self.recentlyPlayed)
     }
 
-    private static let displayLimit = 10
+    private static let displayLimit = 100
 
     func load(mediaSourceId: String?) {
         self.loadRecentlyPlayed(mediaSourceId: mediaSourceId)

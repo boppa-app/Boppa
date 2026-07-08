@@ -15,7 +15,7 @@ class RecentsStorageManager {
 
     @Dependency(\.defaultDatabase) var database
 
-    private static let maxItemsPerSource = 25
+    private static let maxItemsPerSource = 100
 
     private init() {}
 
