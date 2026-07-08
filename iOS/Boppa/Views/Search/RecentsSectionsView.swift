@@ -1,5 +1,13 @@
 import SwiftUI
 
+private struct AlbumCardFramePreferenceKey: PreferenceKey {
+    static var defaultValue: CGRect?
+
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        if let next = nextValue() { value = next }
+    }
+}
+
 struct RecentsSectionsView: View {
     let recentlyPlayedEntries: [RecentlyPlayedEntry]
     let recentlyViewed: [RecentlyViewedItem]
@@ -11,8 +19,21 @@ struct RecentsSectionsView: View {
     let onClearRecentlyViewed: () -> Void
     let animateChanges: Bool
 
+    @State private var expandedEntryId: String?
+    @State private var expandedAlbumCardFrame: CGRect?
+
     private var isEmpty: Bool {
         self.recentlyPlayedEntries.isEmpty && self.recentlyViewed.isEmpty
+    }
+
+    private var expandedAlbumGroup: RecentlyPlayedEntry.AlbumGroup? {
+        guard let expandedEntryId else { return nil }
+        for entry in self.recentlyPlayedEntries {
+            if entry.id == expandedEntryId, case let .album(group) = entry {
+                return group
+            }
+        }
+        return nil
     }
 
     var body: some View {
@@ -71,41 +92,126 @@ struct RecentsSectionsView: View {
     }
 
     private var recentlyPlayedSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             self.sectionHeader(
                 title: "Recently Played",
                 accessibilityLabel: "Clear Recently Played",
                 accessibilityHint: "Remove all recently played tracks",
                 action: self.onClearRecentlyPlayed
             )
-            ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 16) {
-                    ForEach(self.recentlyPlayedEntries) { entry in
-                        switch entry {
-                        case let .track(track):
-                            RecentlyPlayedCard(
-                                track: track,
-                                isSelected: PlaybackService.shared.currentTrack?.url == track.url
-                                    && track.url != nil,
-                                isLoading: PlaybackService.shared.isLoading,
-                                isPlaying: PlaybackService.shared.isPlaying,
-                                onTap: { self.onSelectTrack(track) },
-                                onShowActions: { self.onShowTrackActions(track) }
-                            )
-                        case let .album(group):
-                            RecentlyPlayedAlbumCard(
-                                tracklist: group.tracklist,
-                                artworkUrls: group.tracks.map(\.displayArtworkUrl),
-                                onTap: { self.onSelectTracklist(group.tracklist) }
-                            )
+            GeometryReader { outerGeo in
+                ScrollView(.horizontal) {
+                    LazyHStack(alignment: .top, spacing: 16) {
+                        ForEach(self.recentlyPlayedEntries) { entry in
+                            switch entry {
+                            case let .track(track):
+                                RecentlyPlayedCard(
+                                    track: track,
+                                    isSelected: PlaybackService.shared.currentTrack?.url == track.url
+                                        && track.url != nil,
+                                    isLoading: PlaybackService.shared.isLoading,
+                                    isPlaying: PlaybackService.shared.isPlaying,
+                                    onTap: { self.onSelectTrack(track) },
+                                    onShowActions: { self.onShowTrackActions(track) }
+                                )
+                            case let .album(group):
+                                RecentlyPlayedAlbumCard(
+                                    tracklist: group.tracklist,
+                                    artworkUrls: group.tracks.map(\.displayArtworkUrl),
+                                    onTap: {
+                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                            self.expandedEntryId = self.expandedEntryId == entry.id ? nil : entry.id
+                                        }
+                                    }
+                                )
+                                .background(
+                                    GeometryReader { cardGeo in
+                                        Color.clear.preference(
+                                            key: AlbumCardFramePreferenceKey.self,
+                                            value: self.expandedEntryId == entry.id
+                                                ? cardGeo.frame(in: .global)
+                                                : nil
+                                        )
+                                    }
+                                )
+                                .onDisappear {
+                                    if self.expandedEntryId == entry.id {
+                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                            self.expandedEntryId = nil
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
+                .scrollIndicators(.hidden)
+                .onPreferenceChange(AlbumCardFramePreferenceKey.self) { globalFrame in
+                    guard let globalFrame else {
+                        self.expandedAlbumCardFrame = nil
+                        return
+                    }
+                    let viewport = outerGeo.frame(in: .global)
+                    self.expandedAlbumCardFrame = CGRect(
+                        x: globalFrame.minX - viewport.minX,
+                        y: globalFrame.minY - viewport.minY,
+                        width: globalFrame.width,
+                        height: globalFrame.height
+                    )
+                }
             }
             .frame(height: RecentlyPlayedCard.height)
-            .scrollIndicators(.hidden)
+
+            if self.expandedAlbumGroup != nil, let frame = self.expandedAlbumCardFrame {
+                self.chevronToggle
+                    .offset(x: frame.midX - 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity)
+            }
+
+            if let expandedGroup = self.expandedAlbumGroup {
+                self.expandedTracksRow(expandedGroup)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
+    }
+
+    private var chevronToggle: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                self.expandedEntryId = nil
+            }
+        } label: {
+            Image(systemName: "chevron.compact.up")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.purp)
+                .frame(width: 32, height: 20)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Collapse")
+        .accessibilityHint("Hide expanded album tracks")
+    }
+
+    private func expandedTracksRow(_ group: RecentlyPlayedEntry.AlbumGroup) -> some View {
+        ScrollView(.horizontal) {
+            LazyHStack(alignment: .top, spacing: 16) {
+                ForEach(group.tracks) { track in
+                    RecentlyPlayedCard(
+                        track: track,
+                        isSelected: PlaybackService.shared.currentTrack?.url == track.url
+                            && track.url != nil,
+                        isLoading: PlaybackService.shared.isLoading,
+                        isPlaying: PlaybackService.shared.isPlaying,
+                        onTap: { self.onSelectTrack(track) },
+                        onShowActions: { self.onShowTrackActions(track) }
+                    )
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .frame(height: RecentlyPlayedCard.height)
+        .scrollIndicators(.hidden)
     }
 
     private var recentlyViewedSection: some View {
