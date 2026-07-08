@@ -13,6 +13,10 @@ class RecentsManager {
     var recentlyViewed: [RecentlyViewedItem] = []
     private(set) var hasLoadedOnce = false
 
+    var recentlyPlayedEntries: [RecentlyPlayedEntry] {
+        RecentlyPlayedEntry.grouping(self.recentlyPlayed)
+    }
+
     private static let displayLimit = 10
 
     func load(mediaSourceId: String?) {

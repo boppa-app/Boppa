@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RecentsSectionsView: View {
-    let recentlyPlayed: [Track]
+    let recentlyPlayedEntries: [RecentlyPlayedEntry]
     let recentlyViewed: [RecentlyViewedItem]
     let onSelectTrack: (Track) -> Void
     let onShowTrackActions: (Track) -> Void
@@ -12,7 +12,7 @@ struct RecentsSectionsView: View {
     let animateChanges: Bool
 
     private var isEmpty: Bool {
-        self.recentlyPlayed.isEmpty && self.recentlyViewed.isEmpty
+        self.recentlyPlayedEntries.isEmpty && self.recentlyViewed.isEmpty
     }
 
     var body: some View {
@@ -21,14 +21,17 @@ struct RecentsSectionsView: View {
                 self.emptyState
             } else {
                 Group {
-                    if !self.recentlyPlayed.isEmpty {
+                    if !self.recentlyPlayedEntries.isEmpty {
                         self.recentlyPlayedSection
                             .transition(.opacity)
                     }
                 }
-                .animation(self.animateChanges ? .easeInOut(duration: 0.25) : nil, value: self.recentlyPlayed.isEmpty)
+                .animation(
+                    self.animateChanges ? .easeInOut(duration: 0.25) : nil,
+                    value: self.recentlyPlayedEntries.isEmpty
+                )
 
-                if !self.recentlyPlayed.isEmpty, !self.recentlyViewed.isEmpty {
+                if !self.recentlyPlayedEntries.isEmpty, !self.recentlyViewed.isEmpty {
                     self.separator
                 }
 
@@ -38,7 +41,10 @@ struct RecentsSectionsView: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(self.animateChanges ? .easeInOut(duration: 0.25) : nil, value: self.recentlyViewed.isEmpty)
+                .animation(
+                    self.animateChanges ? .easeInOut(duration: 0.25) : nil,
+                    value: self.recentlyViewed.isEmpty
+                )
             }
         }
         .padding(.top, 12)
@@ -74,16 +80,25 @@ struct RecentsSectionsView: View {
             )
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 16) {
-                    ForEach(self.recentlyPlayed) { track in
-                        RecentlyPlayedCard(
-                            track: track,
-                            isSelected: PlaybackService.shared.currentTrack?.url == track.url
-                                && track.url != nil,
-                            isLoading: PlaybackService.shared.isLoading,
-                            isPlaying: PlaybackService.shared.isPlaying,
-                            onTap: { self.onSelectTrack(track) },
-                            onShowActions: { self.onShowTrackActions(track) }
-                        )
+                    ForEach(self.recentlyPlayedEntries) { entry in
+                        switch entry {
+                        case let .track(track):
+                            RecentlyPlayedCard(
+                                track: track,
+                                isSelected: PlaybackService.shared.currentTrack?.url == track.url
+                                    && track.url != nil,
+                                isLoading: PlaybackService.shared.isLoading,
+                                isPlaying: PlaybackService.shared.isPlaying,
+                                onTap: { self.onSelectTrack(track) },
+                                onShowActions: { self.onShowTrackActions(track) }
+                            )
+                        case let .album(group):
+                            RecentlyPlayedAlbumCard(
+                                tracklist: group.tracklist,
+                                artworkUrls: group.tracks.map(\.artworkUrl),
+                                onTap: { self.onSelectTracklist(group.tracklist) }
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, 16)

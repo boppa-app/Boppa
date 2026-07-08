@@ -8,8 +8,8 @@ struct RecentlyPlayedCard: View {
     let onTap: () -> Void
     let onShowActions: () -> Void
 
-    static let artworkSize: CGFloat = 80
-    private static let textBlockHeight: CGFloat = 40
+    static let artworkSize: CGFloat = 100
+    static let textBlockHeight: CGFloat = 40
 
     static let height: CGFloat = Self.artworkSize + 6 + Self.textBlockHeight
 

@@ -229,7 +229,7 @@ struct SearchView: View {
 
     private var recentsSectionsView: some View {
         RecentsSectionsView(
-            recentlyPlayed: self.recentsManager.recentlyPlayed,
+            recentlyPlayedEntries: self.recentsManager.recentlyPlayedEntries,
             recentlyViewed: self.recentsManager.recentlyViewed,
             onSelectTrack: { track in
                 guard let index = self.recentsManager.recentlyPlayed.firstIndex(where: { $0.id == track.id }) else { return }
