@@ -63,7 +63,7 @@ struct NowPlayingView: View {
     private var artworkSection: some View {
         GeometryReader { geometry in
             ArtworkView(
-                url: self.viewModel.currentTrack?.artworkUrl,
+                url: self.viewModel.currentTrack?.displayArtworkUrl,
                 placeholder: "music.note",
                 size: geometry.size.width,
                 cornerRadius: 12

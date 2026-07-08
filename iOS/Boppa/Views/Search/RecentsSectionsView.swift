@@ -95,7 +95,7 @@ struct RecentsSectionsView: View {
                         case let .album(group):
                             RecentlyPlayedAlbumCard(
                                 tracklist: group.tracklist,
-                                artworkUrls: group.tracks.map(\.artworkUrl),
+                                artworkUrls: group.tracks.map(\.displayArtworkUrl),
                                 onTap: { self.onSelectTracklist(group.tracklist) }
                             )
                         }

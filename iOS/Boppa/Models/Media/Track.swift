@@ -113,6 +113,10 @@ struct Track: Identifiable, Equatable {
         return source.isEnabled
     }
 
+    var displayArtworkUrl: String? {
+        self.albums.compactMap(\.artworkUrl).first ?? self.artworkUrl
+    }
+
     var formattedDuration: String? {
         guard let duration else { return nil }
         return Track.formatTime(seconds: Double(duration) / 1000.0)

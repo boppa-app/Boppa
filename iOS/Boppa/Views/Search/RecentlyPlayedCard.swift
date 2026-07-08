@@ -24,7 +24,7 @@ struct RecentlyPlayedCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 ZStack {
                     ArtworkView(
-                        url: self.track.artworkUrl, placeholder: "music.note",
+                        url: self.track.displayArtworkUrl, placeholder: "music.note",
                         size: Self.artworkSize
                     )
                     if self.isSelected {

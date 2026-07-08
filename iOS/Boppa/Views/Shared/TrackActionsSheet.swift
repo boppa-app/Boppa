@@ -110,7 +110,7 @@ struct TrackActionsSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
                 ArtworkView(
-                    url: self.track.artworkUrl,
+                    url: self.track.displayArtworkUrl,
                     size: 56,
                     placeholderBackground: .purp
                 )

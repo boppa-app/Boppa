@@ -41,7 +41,7 @@ struct TrackRow: View {
 
     var body: some View {
         HStack(spacing: self.style == .compact ? 10 : 12) {
-            ArtworkView(url: self.track.artworkUrl, placeholder: "music.note", size: self.artworkSize)
+            ArtworkView(url: self.track.displayArtworkUrl, placeholder: "music.note", size: self.artworkSize)
                 .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             VStack(alignment: .leading, spacing: self.style == .compact ? 2 : 4) {
                 Text(self.track.title)
