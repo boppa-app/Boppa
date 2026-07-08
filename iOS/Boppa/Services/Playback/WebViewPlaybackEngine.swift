@@ -17,7 +17,8 @@ final class WebViewPlaybackEngine: NSObject {
     private let webView: WKWebView
     private let config: MediaSourceConfig
 
-    private var navigationContinuation: CheckedContinuation<Void, Never>?
+    private var isReady = false
+    private var pendingTrack: Track?
 
     init(config: MediaSourceConfig) {
         self.config = config
@@ -30,6 +31,7 @@ final class WebViewPlaybackEngine: NSObject {
         )
         super.init()
         self.webView.configuration.userContentController.add(self, name: Self.messageHandlerName)
+        self.webView.navigationDelegate = self
         self.attachToWindow(self.webView)
         if let playbackUrl = config.playback.url {
             self.webView.load(URLRequest(url: URL(string: playbackUrl)!))
@@ -40,6 +42,15 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func load(track: Track) {
+        guard self.isReady else {
+            logger.info("WebView not ready yet, deferring boppaLoad for '\(track.title)'")
+            self.pendingTrack = track
+            return
+        }
+        self.performLoad(track: track)
+    }
+
+    private func performLoad(track: Track) {
         guard let escapedJSON = self.serializeTrackData(track: track) else {
             logger.error("Failed to serialize track data")
             return
@@ -62,6 +73,16 @@ final class WebViewPlaybackEngine: NSObject {
 
         self.webView.evaluateJavaScript(script) { _, error in
             if let error { logger.error("Load track error: \(error.localizedDescription)") }
+        }
+    }
+
+    private func handleNavigationFinished() {
+        self.isReady = true
+        logger.info("WebView ready for '\(self.config.name)'")
+
+        if let pendingTrack {
+            self.pendingTrack = nil
+            self.performLoad(track: pendingTrack)
         }
     }
 
@@ -126,6 +147,8 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     func stop() {
+        self.pendingTrack = nil
+
         let script = """
         (function() {
             if (window.boppaStop) window.boppaStop();
@@ -195,6 +218,7 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     private func reloadPlayback() {
+        self.isReady = false
         if let url = self.config.playback.url {
             self.webView.load(URLRequest(url: URL(string: url)!))
         } else if let html = self.config.playback.html {
@@ -324,6 +348,32 @@ extension WebViewPlaybackEngine: WKScriptMessageHandler {
 
         Task { @MainActor in
             self.handleMessage(dict)
+        }
+    }
+}
+
+extension WebViewPlaybackEngine: WKNavigationDelegate {
+    nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        Task { @MainActor in
+            self.handleNavigationFinished()
+        }
+    }
+
+    nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        Task { @MainActor in
+            logger.error("WebView navigation failed for '\(self.config.name)': \(error.localizedDescription)")
+            self.handleNavigationFinished()
+        }
+    }
+
+    nonisolated func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        Task { @MainActor in
+            logger.error("WebView provisional navigation failed for '\(self.config.name)': \(error.localizedDescription)")
+            self.handleNavigationFinished()
         }
     }
 }
