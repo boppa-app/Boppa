@@ -15,8 +15,8 @@ struct RecentsSectionsView: View {
     let onShowTrackActions: (Track) -> Void
     let onSelectArtist: (Artist) -> Void
     let onSelectTracklist: (Tracklist) -> Void
-    let onClearRecentlyPlayed: () -> Void
-    let onClearRecentlyViewed: () -> Void
+    let onPopRecentlyPlayed: () -> Void
+    let onPopRecentlyViewed: () -> Void
     let animateChanges: Bool
 
     @State private var expandedEntryId: String?
@@ -95,9 +95,9 @@ struct RecentsSectionsView: View {
         VStack(alignment: .leading, spacing: 8) {
             self.sectionHeader(
                 title: "Recently Played",
-                accessibilityLabel: "Clear Recently Played",
-                accessibilityHint: "Remove all recently played tracks",
-                action: self.onClearRecentlyPlayed
+                accessibilityLabel: "Remove Most Recent",
+                accessibilityHint: "Remove the most recently played track",
+                action: self.onPopRecentlyPlayed
             )
             GeometryReader { outerGeo in
                 ScrollView(.horizontal) {
@@ -218,9 +218,9 @@ struct RecentsSectionsView: View {
         VStack(alignment: .leading, spacing: 0) {
             self.sectionHeader(
                 title: "Recently Viewed",
-                accessibilityLabel: "Clear Recently Viewed",
-                accessibilityHint: "Remove all recently viewed items",
-                action: self.onClearRecentlyViewed
+                accessibilityLabel: "Remove Most Recent",
+                accessibilityHint: "Remove the most recently viewed item",
+                action: self.onPopRecentlyViewed
             )
             .padding(.bottom, 8)
             ScrollFadeView {

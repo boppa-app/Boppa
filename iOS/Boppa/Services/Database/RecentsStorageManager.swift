@@ -85,36 +85,30 @@ class RecentsStorageManager {
         NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 
-    func clearRecentlyViewed(mediaSourceId: String) {
+    func removeRecentlyViewedArtist(mediaId: String, mediaSourceId: String) {
         try? self.database.write { db in
-            let artists = try StoredArtist
-                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
-                .fetchAll(db)
-            for artist in artists {
-                try TrackStorageManager.shared.unmarkArtistRecentlyViewed(mediaId: artist.mediaId, mediaSourceId: artist.mediaSourceId, db: db)
-            }
-
-            let tracklists = try StoredTracklist
-                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
-                .fetchAll(db)
-            for tracklist in tracklists {
-                try TrackStorageManager.shared.unmarkTracklistRecentlyViewed(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId, db: db)
-            }
+            try TrackStorageManager.shared.unmarkArtistRecentlyViewed(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
         }
-        logger.info("Cleared recently viewed for source '\(mediaSourceId)'")
+        logger.info("Removed recently viewed artist '\(mediaId)' for source '\(mediaSourceId)'")
         NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
     }
 
-    func clearRecentlyPlayed(mediaSourceId: String) {
+    func removeRecentlyViewedTracklist(mediaId: String, mediaSourceId: String) {
         try? self.database.write { db in
-            let tracks = try StoredTrack
-                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
-                .fetchAll(db)
-            for track in tracks {
-                try TrackStorageManager.shared.unmarkRecentlyPlayed(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
+            try TrackStorageManager.shared.unmarkTracklistRecentlyViewed(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
+        }
+        logger.info("Removed recently viewed tracklist '\(mediaId)' for source '\(mediaSourceId)'")
+        NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
+    }
+
+    func removeRecentlyPlayed(mediaIds: [String], mediaSourceId: String) {
+        guard !mediaIds.isEmpty else { return }
+        try? self.database.write { db in
+            for mediaId in mediaIds {
+                try TrackStorageManager.shared.unmarkRecentlyPlayed(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
             }
         }
-        logger.info("Cleared recently played for source '\(mediaSourceId)'")
+        logger.info("Removed \(mediaIds.count) recently played track(s) for source '\(mediaSourceId)'")
         NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 

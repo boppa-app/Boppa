@@ -46,4 +46,15 @@ enum RecentlyPlayedEntry: Identifiable {
         }
         return entries
     }
+
+    static func flattenedOrder(_ tracks: [Track]) -> [Track] {
+        self.grouping(tracks).flatMap { entry -> [Track] in
+            switch entry {
+            case let .track(track):
+                [track]
+            case let .album(group):
+                group.tracks
+            }
+        }
+    }
 }

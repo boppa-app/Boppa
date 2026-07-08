@@ -255,16 +255,16 @@ struct SearchView: View {
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
                 )))
             },
-            onClearRecentlyPlayed: {
+            onPopRecentlyPlayed: {
                 guard let mediaSourceId = self.viewModel.selectedMediaSource?.id else { return }
                 withAnimation(.easeInOut(duration: 0.25)) {
-                    self.recentsManager.clearRecentlyPlayed(mediaSourceId: mediaSourceId)
+                    self.recentsManager.popRecentlyPlayed(mediaSourceId: mediaSourceId)
                 }
             },
-            onClearRecentlyViewed: {
+            onPopRecentlyViewed: {
                 guard let mediaSourceId = self.viewModel.selectedMediaSource?.id else { return }
                 withAnimation(.easeInOut(duration: 0.25)) {
-                    self.recentsManager.clearRecentlyViewed(mediaSourceId: mediaSourceId)
+                    self.recentsManager.popRecentlyViewed(mediaSourceId: mediaSourceId)
                 }
             },
             animateChanges: self.recentsManager.hasLoadedOnce

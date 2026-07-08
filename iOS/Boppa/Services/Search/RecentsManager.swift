@@ -37,8 +37,9 @@ class RecentsManager {
         let played = RecentsStorageManager.shared.fetchRecentlyPlayed(
             mediaSourceId: mediaSourceId, limit: Self.displayLimit
         )
-        if played != self.recentlyPlayed {
-            self.recentlyPlayed = played
+        let reordered = RecentlyPlayedEntry.flattenedOrder(played)
+        if reordered != self.recentlyPlayed {
+            self.recentlyPlayed = reordered
         }
     }
 
@@ -55,15 +56,35 @@ class RecentsManager {
         }
     }
 
-    func clearRecentlyPlayed(mediaSourceId: String) {
-        RecentsStorageManager.shared.clearRecentlyPlayed(mediaSourceId: mediaSourceId)
-        self.recentlyPlayed = []
-        logger.info("Cleared recently played")
+    func popRecentlyPlayed(mediaSourceId: String) {
+        guard let entry = self.recentlyPlayedEntries.first else { return }
+        let trackToRemove: Track? =
+            switch entry {
+            case let .track(track): track
+            case let .album(group): group.tracks.first
+            }
+        guard let trackToRemove else { return }
+
+        RecentsStorageManager.shared.removeRecentlyPlayed(
+            mediaIds: [trackToRemove.mediaId], mediaSourceId: mediaSourceId
+        )
+        self.recentlyPlayed.removeAll { $0.trackKey == trackToRemove.trackKey }
+        logger.info("Popped most recently played track")
     }
 
-    func clearRecentlyViewed(mediaSourceId: String) {
-        RecentsStorageManager.shared.clearRecentlyViewed(mediaSourceId: mediaSourceId)
-        self.recentlyViewed = []
-        logger.info("Cleared recently viewed")
+    func popRecentlyViewed(mediaSourceId: String) {
+        guard let item = self.recentlyViewed.first else { return }
+        switch item {
+        case let .artist(artist, _):
+            RecentsStorageManager.shared.removeRecentlyViewedArtist(
+                mediaId: artist.mediaId, mediaSourceId: mediaSourceId
+            )
+        case let .tracklist(tracklist, _):
+            RecentsStorageManager.shared.removeRecentlyViewedTracklist(
+                mediaId: tracklist.mediaId, mediaSourceId: mediaSourceId
+            )
+        }
+        self.recentlyViewed.removeFirst()
+        logger.info("Popped most recently viewed item")
     }
 }
