@@ -32,7 +32,7 @@ struct RecentlyPlayedCard: View {
                     )
                     if self.isSelected {
                         Color.black
-                            .opacity(0.5)
+                            .opacity(0.8)
                             .frame(width: Self.artworkSize, height: Self.artworkSize)
                             .cornerRadius(6)
                         if self.isLoading {
