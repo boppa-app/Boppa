@@ -244,6 +244,8 @@ class TracklistFetchService {
             "Fetched artist '\(artist.name)': \(songs?.count ?? 0) song(s), \(albums?.count ?? 0) album(s), \(videos?.count ?? 0) video(s), \(playlists?.count ?? 0) playlist(s)"
         )
         return ArtistDetail(
+            lowResArtworkUrl: result.lowResArtworkUrl,
+            highResArtworkUrl: result.highResArtworkUrl,
             songs: songs, albums: albums, videos: videos, playlists: playlists,
             sectionOrder: sectionOrder
         )

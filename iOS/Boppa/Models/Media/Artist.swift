@@ -40,17 +40,19 @@ struct Artist: Identifiable, Equatable, Hashable {
     }
 
     func merging(detail: ArtistDetail) -> Artist {
-        guard let artwork = detail.albums?.first(where: {
-            $0.lowResArtworkUrl != nil || $0.highResArtworkUrl != nil
-        })
-        else { return self }
+        let lowResArtworkUrl = detail.lowResArtworkUrl ?? self.lowResArtworkUrl
+        let highResArtworkUrl = detail.highResArtworkUrl ?? self.highResArtworkUrl
+
+        guard lowResArtworkUrl != self.lowResArtworkUrl || highResArtworkUrl != self.highResArtworkUrl else {
+            return self
+        }
 
         return Artist(
             mediaId: self.mediaId,
             mediaSourceId: self.mediaSourceId,
             name: self.name,
-            lowResArtworkUrl: artwork.lowResArtworkUrl ?? self.lowResArtworkUrl,
-            highResArtworkUrl: artwork.highResArtworkUrl ?? self.highResArtworkUrl,
+            lowResArtworkUrl: lowResArtworkUrl,
+            highResArtworkUrl: highResArtworkUrl,
             url: self.url
         )
     }

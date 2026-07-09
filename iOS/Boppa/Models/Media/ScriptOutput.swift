@@ -146,6 +146,8 @@ struct GetTrackResponse {
 }
 
 struct GetArtistResponse {
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let songs: [ScriptTrack]?
     let albums: [ScriptTracklist]?
     let videos: [ScriptTrack]?
@@ -153,6 +155,8 @@ struct GetArtistResponse {
     let sectionOrder: [String]
 
     init(_ dict: [String: Any]) {
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.songs = (dict["songs"] as? [[String: Any]]).map { $0.compactMap { ScriptTrack($0) } }
         self.albums = (dict["albums"] as? [[String: Any]]).map { $0.compactMap { ScriptTracklist($0) } }
         self.videos = (dict["videos"] as? [[String: Any]]).map { $0.compactMap { ScriptTrack($0) } }
