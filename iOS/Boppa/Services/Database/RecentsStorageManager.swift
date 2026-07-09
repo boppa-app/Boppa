@@ -90,7 +90,6 @@ class RecentsStorageManager {
             try TrackStorageManager.shared.unmarkArtistRecentlyViewed(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
         }
         logger.info("Removed recently viewed artist '\(mediaId)' for source '\(mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentlyViewedChanged, object: nil)
     }
 
     func removeRecentlyViewedTracklist(mediaId: String, mediaSourceId: String) {
@@ -109,7 +108,6 @@ class RecentsStorageManager {
             }
         }
         logger.info("Removed \(mediaIds.count) recently played track(s) for source '\(mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 
     // MARK: - Private
