@@ -54,6 +54,8 @@ final class PlaybackService {
             return
         }
 
+        RecentsStorageManager.shared.recordPlayedTrack(track, notify: notifyRecentsChanged)
+
         // Silence old engine's event handler immediately, before any await, so
         // interruption-induced pause/play events from it doesn't pollute our state.
         let previousEngine = self.activeEngine !== engine ? self.activeEngine : nil
@@ -66,12 +68,10 @@ final class PlaybackService {
         engine.load(track: track)
 
         if let previousEngine {
-            logger.info("Engine switch detected, stopping previous engine")
+            logger.info("Engine switch detected — stopping previous engine")
             previousEngine.stop()
         }
         self.activeEngine = engine
-
-        self.enrichAndRecordTrack(track, notifyRecentsChanged: notifyRecentsChanged)
     }
 
     func play() {
@@ -124,40 +124,6 @@ final class PlaybackService {
         self.duration = 0
         self.queueManager.clearQueue()
         logger.info("Playback stopped and cleared")
-    }
-
-    private func enrichAndRecordTrack(_ track: Track, notifyRecentsChanged: Bool) {
-        Task { [weak self] in
-            var finalTrack = track
-            do {
-                let fetched: Track?
-                switch track.type {
-                case .song:
-                    fetched = try await TracklistFetchService.shared.fetchSong(
-                        mediaId: track.mediaId, mediaSourceId: track.mediaSourceId
-                    )
-                case .video:
-                    fetched = try await TracklistFetchService.shared.fetchVideo(
-                        mediaId: track.mediaId, mediaSourceId: track.mediaSourceId
-                    )
-                }
-                if let fetched {
-                    finalTrack = track.merging(fetched: fetched)
-                    logger.info(
-                        "Enriched track '\(track.title)' with get.\(track.type.rawValue) metadata"
-                    )
-                }
-            } catch {
-                logger.warning(
-                    "Failed to fetch get.\(track.type.rawValue) metadata for '\(track.mediaId)': \(error.localizedDescription)"
-                )
-            }
-
-            if let self, self.currentTrack?.trackKey == track.trackKey {
-                self.currentTrack = finalTrack
-            }
-            RecentsStorageManager.shared.recordPlayedTrack(finalTrack, notify: notifyRecentsChanged)
-        }
     }
 
     private func handleEngineEvent(_ event: PlayerEvent) {
