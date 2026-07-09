@@ -69,7 +69,8 @@ struct TracklistActionSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
                 ArtworkView(
-                    url: self.tracklist.artworkUrl,
+                    lowResUrl: self.tracklist.lowResArtworkUrl,
+                    highResUrl: self.tracklist.highResArtworkUrl,
                     tracklistType: self.tracklist.tracklistType,
                     size: 56,
                     placeholderBackground: .purp

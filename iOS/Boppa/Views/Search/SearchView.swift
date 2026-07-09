@@ -101,7 +101,8 @@ struct SearchView: View {
                     mediaSourceId: mediaSource.id,
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
+                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                    highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
@@ -124,7 +125,8 @@ struct SearchView: View {
                     mediaSourceId: mediaSource.id,
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
+                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                    highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
@@ -249,7 +251,8 @@ struct SearchView: View {
                     mediaSourceId: mediaSource.id,
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
+                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                    highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
@@ -356,7 +359,8 @@ struct SearchView: View {
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
                                     year: tracklist.year,
-                                    artworkUrl: tracklist.artworkUrl,
+                                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                                    highResArtworkUrl: tracklist.highResArtworkUrl,
 
                                     tracklistType: .album,
                                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
@@ -407,7 +411,8 @@ struct SearchView: View {
                                     mediaSourceId: mediaSource.id,
                                     title: tracklist.title,
                                     subtitle: tracklist.subtitle,
-                                    artworkUrl: tracklist.artworkUrl,
+                                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                                    highResArtworkUrl: tracklist.highResArtworkUrl,
 
                                     tracklistType: .playlist,
                                     storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)

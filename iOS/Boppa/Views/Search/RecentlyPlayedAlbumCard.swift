@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RecentlyPlayedAlbumCard: View {
     let tracklist: Tracklist
-    let artworkUrls: [String?]
+    let artworkUrls: [(lowRes: String?, highRes: String?)]
     let onTap: () -> Void
 
     var body: some View {
@@ -39,13 +39,13 @@ struct RecentlyPlayedAlbumCard: View {
 }
 
 private struct StackedArtworkView: View {
-    let artworkUrls: [String?]
+    let artworkUrls: [(lowRes: String?, highRes: String?)]
     let size: CGFloat
 
     private static let maxCovers = 3
     private static let step: CGFloat = 10
 
-    private var covers: [String?] {
+    private var covers: [(lowRes: String?, highRes: String?)] {
         Array(self.artworkUrls.prefix(Self.maxCovers).reversed())
     }
 
@@ -55,13 +55,16 @@ private struct StackedArtworkView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ForEach(Array(self.covers.enumerated()), id: \.offset) { index, url in
-                ArtworkView(url: url, tracklistType: .album, size: self.tileSize)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.black, lineWidth: index == 0 ? 0 : 2)
-                    )
-                    .offset(x: CGFloat(index) * Self.step, y: CGFloat(index) * Self.step)
+            ForEach(Array(self.covers.enumerated()), id: \.offset) { index, urls in
+                ArtworkView(
+                    lowResUrl: urls.lowRes, highResUrl: urls.highRes, preferLowRes: false,
+                    tracklistType: .album, size: self.tileSize
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.black, lineWidth: index == 0 ? 0 : 2)
+                )
+                .offset(x: CGFloat(index) * Self.step, y: CGFloat(index) * Self.step)
             }
         }
         .frame(width: self.size, height: self.size, alignment: .topLeading)

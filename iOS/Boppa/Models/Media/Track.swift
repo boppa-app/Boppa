@@ -7,7 +7,8 @@ struct Track: Identifiable, Equatable {
     let title: String
     let subtitle: String?
     let duration: Int?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
     let type: TrackType
     let artists: [Artist]
@@ -28,7 +29,8 @@ struct Track: Identifiable, Equatable {
         title: String,
         subtitle: String? = nil,
         duration: Int? = nil,
-        artworkUrl: String? = nil,
+        lowResArtworkUrl: String? = nil,
+        highResArtworkUrl: String? = nil,
         url: String? = nil,
         type: TrackType = .song,
         artists: [Artist] = [],
@@ -41,7 +43,8 @@ struct Track: Identifiable, Equatable {
             title: title,
             subtitle: subtitle,
             duration: duration,
-            artworkUrl: artworkUrl,
+            lowResArtworkUrl: lowResArtworkUrl,
+            highResArtworkUrl: highResArtworkUrl,
             url: url,
             type: type,
             artists: artists,
@@ -56,7 +59,8 @@ struct Track: Identifiable, Equatable {
         title: String,
         subtitle: String?,
         duration: Int?,
-        artworkUrl: String?,
+        lowResArtworkUrl: String?,
+        highResArtworkUrl: String?,
         url: String?,
         type: TrackType,
         artists: [Artist],
@@ -68,7 +72,8 @@ struct Track: Identifiable, Equatable {
         self.title = title
         self.subtitle = subtitle
         self.duration = duration
-        self.artworkUrl = artworkUrl
+        self.lowResArtworkUrl = lowResArtworkUrl
+        self.highResArtworkUrl = highResArtworkUrl
         self.url = url
         self.type = type
         self.artists = artists
@@ -85,7 +90,8 @@ struct Track: Identifiable, Equatable {
             title: fetched.title,
             subtitle: fetched.subtitle ?? self.subtitle,
             duration: fetched.duration ?? self.duration,
-            artworkUrl: fetched.artworkUrl ?? self.artworkUrl,
+            lowResArtworkUrl: fetched.lowResArtworkUrl ?? self.lowResArtworkUrl,
+            highResArtworkUrl: fetched.highResArtworkUrl ?? self.highResArtworkUrl,
             url: fetched.url ?? self.url,
             type: self.type,
             artists: fetched.artists.isEmpty ? self.artists : fetched.artists,
@@ -98,7 +104,8 @@ struct Track: Identifiable, Equatable {
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
             && lhs.duration == rhs.duration
-            && lhs.artworkUrl == rhs.artworkUrl
+            && lhs.lowResArtworkUrl == rhs.lowResArtworkUrl
+            && lhs.highResArtworkUrl == rhs.highResArtworkUrl
             && lhs.url == rhs.url
             && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.type == rhs.type
@@ -113,8 +120,16 @@ struct Track: Identifiable, Equatable {
         return source.isEnabled
     }
 
-    var displayArtworkUrl: String? {
-        self.albums.compactMap(\.artworkUrl).first ?? self.artworkUrl
+    var resolvedLowResArtworkUrl: String? {
+        self.albums.compactMap(\.lowResArtworkUrl).first ?? self.lowResArtworkUrl
+    }
+
+    var resolvedHighResArtworkUrl: String? {
+        self.albums.compactMap(\.highResArtworkUrl).first ?? self.highResArtworkUrl
+    }
+
+    var displayHighResArtworkUrl: String? {
+        self.resolvedHighResArtworkUrl ?? self.resolvedLowResArtworkUrl
     }
 
     var formattedDuration: String? {

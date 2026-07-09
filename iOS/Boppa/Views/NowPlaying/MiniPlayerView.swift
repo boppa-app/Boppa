@@ -63,7 +63,8 @@ struct MiniPlayerView: View {
 
     private var artwork: some View {
         ArtworkView(
-            url: self.playbackService.currentTrack?.displayArtworkUrl,
+            lowResUrl: self.playbackService.currentTrack?.resolvedLowResArtworkUrl,
+            highResUrl: self.playbackService.currentTrack?.resolvedHighResArtworkUrl,
             placeholder: "music.note"
         )
     }

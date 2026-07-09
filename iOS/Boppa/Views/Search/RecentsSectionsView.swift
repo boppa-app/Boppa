@@ -119,7 +119,9 @@ struct RecentsSectionsView: View {
                                 case let .album(group):
                                     RecentlyPlayedAlbumCard(
                                         tracklist: group.tracklist,
-                                        artworkUrls: group.tracks.map(\.displayArtworkUrl),
+                                        artworkUrls: group.tracks.map {
+                                            ($0.resolvedLowResArtworkUrl, $0.resolvedHighResArtworkUrl)
+                                        },
                                         onTap: {
                                             withAnimation(.easeInOut(duration: 0.25)) {
                                                 self.expandedEntryId = self.expandedEntryId == entry.id ? nil : entry.id
@@ -245,7 +247,8 @@ struct RecentsSectionsView: View {
                                     ArtistRow(artist: artist, showChevron: true)
                                 case let .tracklist(tracklist, _):
                                     TracklistRow(
-                                        tracklist: tracklist, showChevron: true, artworkSize: 48
+                                        tracklist: tracklist, showChevron: true, artworkSize: 48,
+                                        preferLowResArtwork: true
                                     )
                                 }
                             }

@@ -266,8 +266,10 @@ final class TrackQueueManager {
         for i in self.currentIndex ..< entries.count {
             let track = entries[i].track
             guard self.isTrackEnabled(track) else { continue }
-            if let url = track.artworkUrl, !url.isEmpty {
-                desiredBySource[track.mediaSourceId, default: []].insert(url)
+            for url in [track.lowResArtworkUrl, track.highResArtworkUrl] {
+                if let url, !url.isEmpty {
+                    desiredBySource[track.mediaSourceId, default: []].insert(url)
+                }
             }
             count += 1
             if count >= window { break }
@@ -277,8 +279,10 @@ final class TrackQueueManager {
         for i in stride(from: self.currentIndex - 1, through: 0, by: -1) {
             let track = entries[i].track
             guard self.isTrackEnabled(track) else { continue }
-            if let url = track.artworkUrl, !url.isEmpty {
-                desiredBySource[track.mediaSourceId, default: []].insert(url)
+            for url in [track.lowResArtworkUrl, track.highResArtworkUrl] {
+                if let url, !url.isEmpty {
+                    desiredBySource[track.mediaSourceId, default: []].insert(url)
+                }
             }
             count += 1
             if count >= window { break }

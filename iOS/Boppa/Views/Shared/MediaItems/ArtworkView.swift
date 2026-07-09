@@ -2,7 +2,9 @@ import Kingfisher
 import SwiftUI
 
 struct ArtworkView: View {
-    let url: String?
+    let lowResUrl: String?
+    let highResUrl: String?
+    var preferLowRes: Bool = true
     var placeholder: String = "music.note"
     var tracklistType: Tracklist.TracklistType? = nil
     var size: CGFloat = 48
@@ -17,9 +19,13 @@ struct ArtworkView: View {
         return self.cornerRadius ?? 6
     }
 
+    private var resolvedURLString: String? {
+        self.preferLowRes ? (self.lowResUrl ?? self.highResUrl) : (self.highResUrl ?? self.lowResUrl)
+    }
+
     private var resolvedURL: URL? {
         guard self.tracklistType != .likes else { return nil }
-        guard let urlString = self.url, !urlString.isEmpty else { return nil }
+        guard let urlString = self.resolvedURLString, !urlString.isEmpty else { return nil }
         return URL(string: urlString)
     }
 

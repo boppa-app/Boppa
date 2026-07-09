@@ -28,7 +28,8 @@ func scriptParams(_ params: [String: Any], previousResult: [String: Any]? = nil)
 struct ScriptArtistRef {
     let id: String
     let name: String
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
 
     init?(_ dict: [String: Any]) {
         guard let id = scriptString(dict["id"]),
@@ -36,7 +37,8 @@ struct ScriptArtistRef {
         else { return nil }
         self.id = id
         self.name = name
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
     }
 }
 
@@ -44,7 +46,8 @@ struct ScriptAlbumRef {
     let id: String
     let title: String
     let subtitle: String?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
 
     init?(_ dict: [String: Any]) {
         guard let id = scriptString(dict["id"]),
@@ -53,7 +56,8 @@ struct ScriptAlbumRef {
         self.id = id
         self.title = title
         self.subtitle = dict["subtitle"] as? String
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
     }
 }
 
@@ -64,7 +68,8 @@ struct ScriptTrack {
     let title: String
     let subtitle: String?
     let duration: Int?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
     let artists: [ScriptArtistRef]
     let albums: [ScriptAlbumRef]
@@ -77,7 +82,8 @@ struct ScriptTrack {
         self.title = title
         self.subtitle = dict["subtitle"] as? String
         self.duration = scriptInt(dict["duration"])
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
         self.artists = (dict["artists"] as? [[String: Any]] ?? []).compactMap { ScriptArtistRef($0) }
         self.albums = (dict["albums"] as? [[String: Any]] ?? []).compactMap { ScriptAlbumRef($0) }
@@ -90,7 +96,8 @@ struct ScriptTracklist {
     let subtitle: String?
     let year: Int?
     let trackCount: Int?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
 
     init?(_ dict: [String: Any]) {
@@ -102,7 +109,8 @@ struct ScriptTracklist {
         self.subtitle = dict["subtitle"] as? String
         self.year = scriptInt(dict["year"])
         self.trackCount = scriptInt(dict["trackCount"])
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
     }
 }
@@ -110,7 +118,8 @@ struct ScriptTracklist {
 struct ScriptArtist {
     let id: String
     let name: String
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
 
     init?(_ dict: [String: Any]) {
@@ -119,7 +128,8 @@ struct ScriptArtist {
         else { return nil }
         self.id = id
         self.name = name
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
     }
 }
@@ -157,7 +167,8 @@ protocol TracklistMetadata {
     var subtitle: String? { get }
     var year: Int? { get }
     var trackCount: Int? { get }
-    var artworkUrl: String? { get }
+    var lowResArtworkUrl: String? { get }
+    var highResArtworkUrl: String? { get }
     var url: String? { get }
 }
 
@@ -167,7 +178,8 @@ struct GetAlbumResponse: TracklistMetadata {
     let subtitle: String?
     let year: Int?
     let trackCount: Int?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
 
     init?(_ dict: [String: Any]) {
@@ -179,7 +191,8 @@ struct GetAlbumResponse: TracklistMetadata {
         self.subtitle = dict["subtitle"] as? String
         self.year = scriptInt(dict["year"])
         self.trackCount = scriptInt(dict["trackCount"])
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
     }
 }
@@ -190,7 +203,8 @@ struct GetPlaylistResponse: TracklistMetadata {
     let subtitle: String?
     let year: Int? = nil
     let trackCount: Int?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
 
     init?(_ dict: [String: Any]) {
@@ -201,7 +215,8 @@ struct GetPlaylistResponse: TracklistMetadata {
         self.title = title
         self.subtitle = dict["subtitle"] as? String
         self.trackCount = scriptInt(dict["trackCount"])
-        self.artworkUrl = dict["artworkUrl"] as? String
+        self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
+        self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
     }
 }
@@ -326,11 +341,12 @@ extension ScriptTrack {
             title: self.title,
             subtitle: self.subtitle,
             duration: self.duration,
-            artworkUrl: self.artworkUrl,
+            lowResArtworkUrl: self.lowResArtworkUrl,
+            highResArtworkUrl: self.highResArtworkUrl,
             url: self.url,
             type: type,
-            artists: self.artists.map { Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, artworkUrl: $0.artworkUrl) },
-            albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, artworkUrl: $0.artworkUrl, tracklistType: .album) }
+            artists: self.artists.map { Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl) },
+            albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl, tracklistType: .album) }
         )
     }
 }
@@ -344,7 +360,8 @@ extension ScriptTracklist {
             subtitle: self.subtitle,
             year: self.year,
             trackCount: self.trackCount,
-            artworkUrl: self.artworkUrl,
+            lowResArtworkUrl: self.lowResArtworkUrl,
+            highResArtworkUrl: self.highResArtworkUrl,
             url: self.url,
             tracklistType: tracklistType
         )
@@ -357,7 +374,8 @@ extension ScriptArtist {
             mediaId: self.id,
             mediaSourceId: mediaSourceId,
             name: self.name,
-            artworkUrl: self.artworkUrl,
+            lowResArtworkUrl: self.lowResArtworkUrl,
+            highResArtworkUrl: self.highResArtworkUrl,
             url: self.url
         )
     }

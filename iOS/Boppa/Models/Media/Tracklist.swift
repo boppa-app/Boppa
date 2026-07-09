@@ -8,7 +8,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     let subtitle: String?
     let year: Int?
     let trackCount: Int?
-    let artworkUrl: String?
+    let lowResArtworkUrl: String?
+    let highResArtworkUrl: String?
     let url: String?
     let tracklistType: TracklistType
     let fromArtist: Artist?
@@ -30,7 +31,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         subtitle: String? = nil,
         year: Int? = nil,
         trackCount: Int? = nil,
-        artworkUrl: String? = nil,
+        lowResArtworkUrl: String? = nil,
+        highResArtworkUrl: String? = nil,
         url: String? = nil,
         tracklistType: TracklistType,
         fromArtist: Artist? = nil,
@@ -44,7 +46,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.subtitle = subtitle
         self.year = year
         self.trackCount = trackCount
-        self.artworkUrl = artworkUrl
+        self.lowResArtworkUrl = lowResArtworkUrl
+        self.highResArtworkUrl = highResArtworkUrl
         self.url = url
         self.tracklistType = tracklistType
         self.fromArtist = fromArtist
@@ -60,7 +63,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.subtitle = storedTracklist.subtitle
         self.year = storedTracklist.year
         self.trackCount = storedTracklist.trackCount
-        self.artworkUrl = storedTracklist.artworkUrl
+        self.lowResArtworkUrl = storedTracklist.lowResArtworkUrl
+        self.highResArtworkUrl = storedTracklist.highResArtworkUrl
         self.url = storedTracklist.url
         self.tracklistType = TracklistType(rawValue: storedTracklist.tracklistType) ?? .playlist
         self.fromArtist = fromArtist
@@ -74,7 +78,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
             && lhs.trackCount == rhs.trackCount
-            && lhs.artworkUrl == rhs.artworkUrl
+            && lhs.lowResArtworkUrl == rhs.lowResArtworkUrl
+            && lhs.highResArtworkUrl == rhs.highResArtworkUrl
             && lhs.url == rhs.url
             && lhs.tracklistType == rhs.tracklistType
     }
@@ -107,7 +112,8 @@ struct Tracklist: Identifiable, Equatable, Hashable {
             subtitle: fetched.subtitle ?? self.subtitle,
             year: fetched.year ?? self.year,
             trackCount: fetched.trackCount ?? self.trackCount,
-            artworkUrl: fetched.artworkUrl ?? self.artworkUrl,
+            lowResArtworkUrl: fetched.lowResArtworkUrl ?? self.lowResArtworkUrl,
+            highResArtworkUrl: fetched.highResArtworkUrl ?? self.highResArtworkUrl,
             url: fetched.url ?? self.url,
             tracklistType: self.tracklistType,
             fromArtist: self.fromArtist,

@@ -6,6 +6,11 @@ struct TracklistRow: View {
     var showChevron: Bool = false
     var isMediaSourceEnabled: Bool = true
     var artworkSize: CGFloat = 72
+    var preferLowResArtwork: Bool? = nil
+
+    private var resolvedPreferLowResArtwork: Bool {
+        self.preferLowResArtwork ?? (self.tracklist.tracklistType == .album)
+    }
 
     @ViewBuilder
     private var subtitleView: some View {
@@ -34,8 +39,14 @@ struct TracklistRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.tracklist.artworkUrl, tracklistType: self.tracklist.tracklistType, size: self.artworkSize)
-                .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
+            ArtworkView(
+                lowResUrl: self.tracklist.lowResArtworkUrl,
+                highResUrl: self.tracklist.highResArtworkUrl,
+                preferLowRes: self.resolvedPreferLowResArtwork,
+                tracklistType: self.tracklist.tracklistType,
+                size: self.artworkSize
+            )
+            .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(self.tracklist.title)

@@ -178,7 +178,8 @@ class TracklistStorageManager {
                 $0.title = tracklist.title
                 $0.subtitle = tracklist.subtitle
                 $0.year = tracklist.year
-                $0.artworkUrl = tracklist.artworkUrl
+                $0.lowResArtworkUrl = tracklist.lowResArtworkUrl
+                $0.highResArtworkUrl = tracklist.highResArtworkUrl
                 $0.url = tracklist.url
                 $0.trackCount = tracklist.trackCount
                 $0.isSavedToLibrary = true
@@ -205,7 +206,8 @@ class TracklistStorageManager {
                 title: tracklist.title,
                 subtitle: tracklist.subtitle,
                 year: tracklist.year,
-                artworkUrl: tracklist.artworkUrl,
+                lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                highResArtworkUrl: tracklist.highResArtworkUrl,
                 url: tracklist.url,
                 trackCount: tracklist.trackCount,
                 tracklistType: typeString,
@@ -342,7 +344,8 @@ class TracklistStorageManager {
             try StoredTracklist.update {
                 if !tracklist.title.isEmpty { $0.title = tracklist.title }
                 if tracklist.subtitle != nil { $0.subtitle = tracklist.subtitle }
-                if tracklist.artworkUrl != nil { $0.artworkUrl = tracklist.artworkUrl }
+                if tracklist.lowResArtworkUrl != nil { $0.lowResArtworkUrl = tracklist.lowResArtworkUrl }
+                if tracklist.highResArtworkUrl != nil { $0.highResArtworkUrl = tracklist.highResArtworkUrl }
                 if tracklist.url != nil { $0.url = tracklist.url }
                 if tracklist.trackCount != nil { $0.trackCount = tracklist.trackCount }
             }
@@ -367,7 +370,8 @@ class TracklistStorageManager {
                     mediaSourceId: tracklist.mediaSourceId,
                     title: tracklist.title,
                     subtitle: tracklist.subtitle,
-                    artworkUrl: tracklist.artworkUrl,
+                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                    highResArtworkUrl: tracklist.highResArtworkUrl,
                     url: tracklist.url,
                     trackCount: tracklist.trackCount,
                     tracklistType: typeString,

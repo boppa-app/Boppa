@@ -133,7 +133,8 @@ struct ArtistDetailView: View {
                                 mediaSourceId: self.mediaSource.id,
                                 title: tracklist.title,
                                 subtitle: tracklist.subtitle,
-                                artworkUrl: tracklist.artworkUrl,
+                                lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                                highResArtworkUrl: tracklist.highResArtworkUrl,
                                 tracklistType: .album,
                                 storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
                                     mediaId: tracklist.mediaId,
@@ -220,7 +221,8 @@ struct ArtistDetailView: View {
                                 mediaSourceId: self.mediaSource.id,
                                 title: tracklist.title,
                                 subtitle: tracklist.subtitle,
-                                artworkUrl: tracklist.artworkUrl,
+                                lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                                highResArtworkUrl: tracklist.highResArtworkUrl,
                                 tracklistType: .playlist,
                                 storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
                                     mediaId: tracklist.mediaId,
@@ -263,7 +265,8 @@ struct ArtistDetailView: View {
             mediaId: "\(self.artist.mediaId)-songs",
             mediaSourceId: self.mediaSource.id,
             title: "Songs",
-            artworkUrl: self.artist.artworkUrl,
+            lowResArtworkUrl: self.artist.lowResArtworkUrl,
+            highResArtworkUrl: self.artist.highResArtworkUrl,
             tracklistType: .artistSongs,
             fromArtist: self.artist,
             artistDetail: detail
@@ -280,7 +283,8 @@ struct ArtistDetailView: View {
             mediaId: "\(self.artist.mediaId)-videos",
             mediaSourceId: self.mediaSource.id,
             title: "Videos",
-            artworkUrl: self.artist.artworkUrl,
+            lowResArtworkUrl: self.artist.lowResArtworkUrl,
+            highResArtworkUrl: self.artist.highResArtworkUrl,
             tracklistType: .artistVideos,
             fromArtist: self.artist,
             artistDetail: detail

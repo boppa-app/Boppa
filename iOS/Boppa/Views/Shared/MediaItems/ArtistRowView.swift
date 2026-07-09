@@ -6,7 +6,12 @@ struct ArtistRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(url: self.artist.artworkUrl, placeholder: "person", isCircular: true)
+            ArtworkView(
+                lowResUrl: self.artist.lowResArtworkUrl,
+                highResUrl: self.artist.highResArtworkUrl,
+                placeholder: "person",
+                isCircular: true
+            )
             Text(self.artist.name)
                 .font(.body)
                 .foregroundColor(.white)

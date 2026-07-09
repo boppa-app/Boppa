@@ -49,7 +49,7 @@ final class NowPlayingViewModel {
     }
 
     var artworkURL: URL? {
-        guard let artworkUrl = self.currentTrack?.displayArtworkUrl else { return nil }
+        guard let artworkUrl = self.currentTrack?.displayHighResArtworkUrl else { return nil }
         return URL(string: artworkUrl)
     }
 

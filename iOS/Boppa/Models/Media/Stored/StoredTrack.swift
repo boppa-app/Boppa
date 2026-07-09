@@ -8,7 +8,8 @@ nonisolated struct StoredTrack {
     var title: String
     var subtitle: String?
     var duration: Int?
-    var artworkUrl: String?
+    var lowResArtworkUrl: String?
+    var highResArtworkUrl: String?
     var url: String?
     var type: String
     var lastPlayedTimestamp: Double? = nil
@@ -48,7 +49,8 @@ extension StoredTrack {
             title: self.title,
             subtitle: self.subtitle,
             duration: self.duration,
-            artworkUrl: self.artworkUrl,
+            lowResArtworkUrl: self.lowResArtworkUrl,
+            highResArtworkUrl: self.highResArtworkUrl,
             url: self.url,
             type: Track.TrackType(rawValue: self.type) ?? .song,
             artists: artists,
@@ -68,7 +70,8 @@ extension StoredTrack {
     func contentMatches(_ track: Track, artists: [StoredArtist] = [], albums: [StoredTracklist] = []) -> Bool {
         self.identityMatches(track)
             && self.duration == track.duration
-            && self.artworkUrl == track.artworkUrl
+            && self.lowResArtworkUrl == track.lowResArtworkUrl
+            && self.highResArtworkUrl == track.highResArtworkUrl
             && Self.artistsContentMatch(artists, track.artists)
             && Self.albumsContentMatch(albums, track.albums)
     }

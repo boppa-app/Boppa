@@ -8,7 +8,8 @@ nonisolated struct StoredTracklist {
     var title: String
     var subtitle: String?
     var year: Int?
-    var artworkUrl: String?
+    var lowResArtworkUrl: String?
+    var highResArtworkUrl: String?
     var url: String?
     var trackCount: Int?
     var tracklistType: String
@@ -50,7 +51,8 @@ extension StoredTracklist {
             && self.mediaSourceId == tracklist.mediaSourceId
             && Self.fieldMatches(stored: self.title, incoming: tracklist.title)
             && Self.fieldMatches(stored: self.subtitle, incoming: tracklist.subtitle)
-            && Self.fieldMatches(stored: self.artworkUrl, incoming: tracklist.artworkUrl)
+            && Self.fieldMatches(stored: self.lowResArtworkUrl, incoming: tracklist.lowResArtworkUrl)
+            && Self.fieldMatches(stored: self.highResArtworkUrl, incoming: tracklist.highResArtworkUrl)
             && Self.fieldMatches(stored: self.url, incoming: tracklist.url)
             && Self.fieldMatches(stored: self.trackCount, incoming: tracklist.trackCount)
     }

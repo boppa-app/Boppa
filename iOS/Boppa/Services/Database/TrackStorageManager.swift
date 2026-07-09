@@ -312,7 +312,8 @@ class TrackStorageManager {
                     title: track.title,
                     subtitle: track.subtitle,
                     duration: track.duration,
-                    artworkUrl: track.artworkUrl,
+                    lowResArtworkUrl: track.lowResArtworkUrl,
+                    highResArtworkUrl: track.highResArtworkUrl,
                     url: track.url,
                     type: track.type.rawValue
                 )
@@ -323,7 +324,8 @@ class TrackStorageManager {
                 title: track.title,
                 subtitle: track.subtitle,
                 duration: track.duration,
-                artworkUrl: track.artworkUrl,
+                lowResArtworkUrl: track.lowResArtworkUrl,
+                highResArtworkUrl: track.highResArtworkUrl,
                 url: track.url,
                 type: track.type.rawValue
             )
@@ -337,7 +339,8 @@ class TrackStorageManager {
             $0.title = track.title
             $0.subtitle = track.subtitle
             $0.duration = track.duration
-            $0.artworkUrl = track.artworkUrl
+            $0.lowResArtworkUrl = track.lowResArtworkUrl
+            $0.highResArtworkUrl = track.highResArtworkUrl
             $0.type = track.type.rawValue
         }
         .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
@@ -415,7 +418,8 @@ class TrackStorageManager {
         if let existing {
             try StoredArtist.update {
                 if !artist.name.isEmpty { $0.name = artist.name }
-                if artist.artworkUrl != nil { $0.artworkUrl = artist.artworkUrl }
+                if artist.lowResArtworkUrl != nil { $0.lowResArtworkUrl = artist.lowResArtworkUrl }
+                if artist.highResArtworkUrl != nil { $0.highResArtworkUrl = artist.highResArtworkUrl }
                 if artist.url != nil { $0.url = artist.url }
             }
             .where {
@@ -428,7 +432,8 @@ class TrackStorageManager {
                     mediaId: artist.mediaId,
                     mediaSourceId: artist.mediaSourceId,
                     name: artist.name,
-                    artworkUrl: artist.artworkUrl,
+                    lowResArtworkUrl: artist.lowResArtworkUrl,
+                    highResArtworkUrl: artist.highResArtworkUrl,
                     url: artist.url
                 )
             }.execute(db)
@@ -459,7 +464,8 @@ class TrackStorageManager {
                 mediaSourceId: "boppa.app",
                 title: title,
                 subtitle: nil,
-                artworkUrl: nil,
+                lowResArtworkUrl: nil,
+                highResArtworkUrl: nil,
                 tracklistType: tracklistType,
                 isPinned: false,
                 isSavedToLibrary: true,
