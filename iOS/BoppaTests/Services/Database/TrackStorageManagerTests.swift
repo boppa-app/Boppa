@@ -24,7 +24,8 @@ struct TrackStorageManagerTests {
                       "mediaId" TEXT NOT NULL,
                       "mediaSourceId" TEXT NOT NULL,
                       "name" TEXT NOT NULL,
-                      "artworkUrl" TEXT,
+                      "lowResArtworkUrl" TEXT,
+                      "highResArtworkUrl" TEXT,
                       "url" TEXT,
                       "lastViewedTimestamp" REAL,
                       "isRecent" INTEGER NOT NULL DEFAULT 0,
@@ -40,7 +41,8 @@ struct TrackStorageManagerTests {
                       "mediaSourceId" TEXT NOT NULL,
                       "title" TEXT NOT NULL,
                       "subtitle" TEXT,
-                      "artworkUrl" TEXT,
+                      "lowResArtworkUrl" TEXT,
+                      "highResArtworkUrl" TEXT,
                       "url" TEXT,
                       "trackCount" INTEGER,
                       "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes')),
@@ -63,7 +65,8 @@ struct TrackStorageManagerTests {
                       "title" TEXT NOT NULL,
                       "subtitle" TEXT,
                       "duration" INTEGER,
-                      "artworkUrl" TEXT,
+                      "lowResArtworkUrl" TEXT,
+                      "highResArtworkUrl" TEXT,
                       "url" TEXT,
                       "type" TEXT NOT NULL CHECK (type IN ('song', 'video')),
                       "lastPlayedTimestamp" REAL,
@@ -206,7 +209,8 @@ struct TrackStorageManagerTests {
         title: String = "Track Title",
         subtitle: String? = nil,
         duration: Int? = nil,
-        artworkUrl: String? = nil,
+        lowResArtworkUrl: String? = nil,
+        highResArtworkUrl: String? = nil,
         url: String? = nil,
         artists: [Artist] = [],
         albums: [Tracklist] = []
@@ -217,7 +221,8 @@ struct TrackStorageManagerTests {
             title: title,
             subtitle: subtitle,
             duration: duration,
-            artworkUrl: artworkUrl,
+            lowResArtworkUrl: lowResArtworkUrl,
+            highResArtworkUrl: highResArtworkUrl,
             url: url,
             artists: artists,
             albums: albums
@@ -228,11 +233,13 @@ struct TrackStorageManagerTests {
         _ mediaId: String,
         source: String = "src",
         name: String = "Artist Name",
-        artworkUrl: String? = nil,
+        lowResArtworkUrl: String? = nil,
+        highResArtworkUrl: String? = nil,
         url: String? = nil
     ) -> Artist {
         Artist(
-            mediaId: mediaId, mediaSourceId: source, name: name, artworkUrl: artworkUrl, url: url
+            mediaId: mediaId, mediaSourceId: source, name: name,
+            lowResArtworkUrl: lowResArtworkUrl, highResArtworkUrl: highResArtworkUrl, url: url
         )
     }
 
@@ -278,7 +285,7 @@ struct TrackStorageManagerTests {
             title: "Song",
             subtitle: "Sub",
             duration: 200_000,
-            artworkUrl: "https://x/art.png",
+            lowResArtworkUrl: "https://x/art.png",
             url: "https://x/song.mp3",
             artists: [self.makeArtist("a1", name: "Artist One")],
             albums: [self.makeAlbum("al1", title: "Album One")]
@@ -289,7 +296,7 @@ struct TrackStorageManagerTests {
         #expect(stored.title == "Song")
         #expect(stored.subtitle == "Sub")
         #expect(stored.duration == 200_000)
-        #expect(stored.artworkUrl == "https://x/art.png")
+        #expect(stored.lowResArtworkUrl == "https://x/art.png")
         #expect(stored.url == "https://x/song.mp3")
         #expect(stored.isRecent == false)
 
@@ -492,7 +499,8 @@ struct TrackStorageManagerTests {
             title: "Title A",
             artists: [
                 self.makeArtist(
-                    "a1", name: "Real Name", artworkUrl: "https://x/art.png", url: "https://x/a1"
+                    "a1", name: "Real Name", lowResArtworkUrl: "https://x/art.png",
+                    url: "https://x/a1"
                 ),
             ]
         )
@@ -500,13 +508,13 @@ struct TrackStorageManagerTests {
 
         let t1Updated = self.makeTrack(
             "t1", title: "Title B",
-            artists: [self.makeArtist("a1", name: "", artworkUrl: nil, url: nil)]
+            artists: [self.makeArtist("a1", name: "", lowResArtworkUrl: nil, url: nil)]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
 
         let artist = try #require(try ctx.artist("a1"))
         #expect(artist.name == "Real Name")
-        #expect(artist.artworkUrl == "https://x/art.png")
+        #expect(artist.lowResArtworkUrl == "https://x/art.png")
         #expect(artist.url == "https://x/a1")
     }
 
