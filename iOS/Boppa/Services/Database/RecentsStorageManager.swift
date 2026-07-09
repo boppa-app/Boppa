@@ -82,7 +82,6 @@ class RecentsStorageManager {
         }
         logger.info("Recorded played track '\(track.mediaId)' for source '\(track.mediaSourceId)'")
         guard notify else { return }
-        NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 
     func removeRecentlyViewedArtist(mediaId: String, mediaSourceId: String) {
@@ -109,7 +108,6 @@ class RecentsStorageManager {
             }
         }
         logger.info("Removed \(mediaIds.count) recently played track(s) for source '\(mediaSourceId)'")
-        NotificationCenter.default.post(name: .recentlyPlayedChanged, object: nil)
     }
 
     // MARK: - Private
