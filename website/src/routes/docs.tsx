@@ -27,7 +27,7 @@ function DocsLayout() {
       <header className="lg:hidden sticky top-0 z-50 bg-background border-b border-border">
         <div className="flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="Boppa" className="w-6 h-6 rounded-md" />
+            <img src="/logo.png" alt="Boppa" className="w-10 h-10" />
             <span className="text-lg font-medium">Boppa</span>
           </Link>
           <button
@@ -51,7 +51,7 @@ function DocsLayout() {
         {/* Desktop sidebar */}
         <aside className="hidden lg:block sticky top-0 h-screen w-60 shrink-0 border-r border-border p-6 overflow-y-auto">
           <Link to="/" className="flex items-center gap-3 mb-8">
-            <img src="/logo.png" alt="Boppa" className="w-6 h-6 rounded-md" />
+            <img src="/logo.png" alt="Boppa" className="w-8 h-8" />
             <span className="text-lg font-medium">Boppa</span>
           </Link>
           <DocsNav nodes={tree} />

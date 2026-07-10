@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShowcase } from "~/components/app-showcase";
 import { SiteFooter } from "~/components/site-footer";
 import { SiteHeader } from "~/components/site-header";
+import { StoreLink } from "~/components/store-link";
 import { pageMeta } from "~/meta";
 
 export const Route = createFileRoute("/")({
@@ -29,6 +30,10 @@ function Home() {
           <p className="text-white/70 text-lg leading-relaxed max-w-lg">
             Turn any website into a native music player.
           </p>
+        </div>
+
+        <div className="mt-10">
+          <StoreLink />
         </div>
 
         <AppShowcase />

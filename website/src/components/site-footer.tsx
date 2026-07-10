@@ -46,7 +46,7 @@ export function SiteFooter() {
           <p className="text-white/60 font-medium">Download</p>
           <div className="space-y-2">
             <a
-              href="/download"
+              href="https://www.apple.com/app-store"
               className="block text-muted-foreground hover:text-foreground transition-colors"
             >
               iOS

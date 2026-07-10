@@ -30,12 +30,6 @@ const SCREENSHOTS = [
 
 const DEFAULT_INDEX = 2;
 
-// Centers the active slide with pure CSS calc() (slide width % + a fixed
-// 24px gap) driven by the --active-index custom property, instead of a
-// JS measurement pass, so it's already correctly positioned on the very
-// first byte of (server-rendered) HTML, no hydration/measurement delay.
-// Tailwind v4's translate utilities animate the standalone `translate`
-// CSS property, so the transition below targets that (not `transform`).
 const TRACK_TRANSFORM_CLASSES =
   "translate-x-[calc(50%_-_36%_-_var(--active-index)*(72%_+_24px))] " +
   "sm:translate-x-[calc(50%_-_26%_-_var(--active-index)*(52%_+_24px))] " +
@@ -45,15 +39,7 @@ const TRACK_TRANSFORM_CLASSES =
 export function AppShowcase() {
   const [activeIndex, setActiveIndex] = useState(DEFAULT_INDEX);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
-  // Which direction the gesture turned out to be, decided once movement
-  // clears DRAG_THRESHOLD_PX in either axis, whichever axis is further
-  // along wins, so a vertical scroll (even with some horizontal wobble,
-  // which is normal) never gets mistaken for a swipe.
   const dragAxis = useRef<"x" | "y" | null>(null);
-  // Separate from dragAxis (which gets cleared as soon as pointerup is
-  // handled): stays true from a completed horizontal drag until the
-  // click that fires right after pointerup consumes it, so that click
-  // doesn't also navigate to whatever button the pointer landed on.
   const wasHorizontalDrag = useRef(false);
 
   const goTo = (index: number) => {
@@ -94,8 +80,6 @@ export function AppShowcase() {
     }
   };
 
-  // The browser cancels the pointer sequence when it takes over for
-  // native scrolling, reset without treating it as a completed swipe.
   const handlePointerCancel = () => {
     dragStart.current = null;
     dragAxis.current = null;
@@ -116,26 +100,12 @@ export function AppShowcase() {
 
   return (
     <section className="py-4 md:py-8">
-      {/* Dedicated stage sized to just the carousel (not the dots row
-          below), so the glow centers on the phone itself. */}
       <div className="relative">
-        {/* Full-bleed layer: breaks out to the width of the viewport
-            (not the padded stage), so the glow can be as wide as we want
-            without ever pushing the page wider than the viewport. Clips
-            horizontally only (clip-path with a huge vertical inset),
-            plain overflow-hidden would clip vertically too, capping the
-            glow's height right back down to the stage's, which defeated
-            the "let it peek past the phone" sizing below. */}
         <div
           aria-hidden="true"
           className="absolute inset-y-0 left-1/2 w-screen -translate-x-1/2 pointer-events-none"
           style={{ clipPath: "inset(-9999px 0)" }}
         >
-          {/* Width is capped for horizontal safety (see above), but the
-              phone mockup is tall and narrow, a same-size square glow
-              ends up shorter than the phone and mostly hides behind it.
-              Height stretches well past the phone's own height so the
-              glow actually peeks out top and bottom, not just the sides. */}
           <div
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] sm:w-[85%] md:w-[70%] lg:w-[60%] h-[160%]"
             style={{
