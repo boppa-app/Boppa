@@ -1,6 +1,9 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+
+const SWIPE_THRESHOLD_PX = 50;
+const DRAG_THRESHOLD_PX = 10;
 
 const SCREENSHOTS = [
   {
@@ -41,9 +44,42 @@ const TRACK_TRANSFORM_CLASSES =
 
 export function AppShowcase() {
   const [activeIndex, setActiveIndex] = useState(DEFAULT_INDEX);
+  const dragStartX = useRef<number | null>(null);
+  const dragMoved = useRef(false);
 
   const goTo = (index: number) => {
     setActiveIndex(Math.min(SCREENSHOTS.length - 1, Math.max(0, index)));
+  };
+
+  // Suppresses the click a swipe would otherwise also fire on whatever
+  // button ends up under the pointer when it's released.
+  const handleClick = (fn: () => void) => () => {
+    if (dragMoved.current) {
+      dragMoved.current = false;
+      return;
+    }
+    fn();
+  };
+
+  const handlePointerDown = (e: ReactPointerEvent) => {
+    dragStartX.current = e.clientX;
+    dragMoved.current = false;
+  };
+
+  const handlePointerMove = (e: ReactPointerEvent) => {
+    if (dragStartX.current === null) return;
+    if (Math.abs(e.clientX - dragStartX.current) > DRAG_THRESHOLD_PX) {
+      dragMoved.current = true;
+    }
+  };
+
+  const handlePointerUp = (e: ReactPointerEvent) => {
+    if (dragStartX.current === null) return;
+    const deltaX = e.clientX - dragStartX.current;
+    dragStartX.current = null;
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD_PX) {
+      goTo(activeIndex + (deltaX < 0 ? 1 : -1));
+    }
   };
 
   useEffect(() => {
@@ -63,10 +99,13 @@ export function AppShowcase() {
     <section className="py-4 md:py-8">
       {/* Dedicated stage sized to just the carousel (not the dots row
           below), so the glow centers on the phone itself. A radial
-          gradient fades all the way to transparent on its own, unlike a
-          blurred shape, which can look like it stops abruptly once its
-          opacity drops low enough to be imperceptible. */}
-      <div className="relative">
+          gradient fades all the way to transparent on its own, well
+          before the edge of its own box (the "transparent 70%" stop) —
+          so clipping it here to stop it from ever pushing the page wider
+          than the viewport (which was causing horizontal scroll on
+          mobile) doesn't introduce a visible hard edge like a blurred
+          shape would. */}
+      <div className="relative overflow-hidden">
         <div
           aria-hidden="true"
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] sm:w-[100%] md:w-[75%] lg:w-[65%] aspect-square"
@@ -76,7 +115,13 @@ export function AppShowcase() {
           }}
         />
 
-        <div className="relative overflow-hidden">
+        <div
+          className="relative overflow-hidden touch-pan-y"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
           <div
             className={`flex gap-6 ${TRACK_TRANSFORM_CLASSES}`}
             style={
@@ -96,7 +141,7 @@ export function AppShowcase() {
                   type="button"
                   aria-label={`Go to screenshot ${index + 1}`}
                   aria-current={isActive}
-                  onClick={() => goTo(index)}
+                  onClick={handleClick(() => goTo(index))}
                   className="shrink-0 w-[72%] sm:w-[52%] md:w-[36%] lg:w-[30%] appearance-none bg-transparent p-0 border-0 cursor-default transition-all duration-500 ease-out"
                   style={{
                     opacity: isActive ? 1 : distance === 1 ? 0.35 : 0.1,
@@ -106,6 +151,7 @@ export function AppShowcase() {
                   <img
                     src={shot.src}
                     alt={shot.alt}
+                    draggable={false}
                     className="w-full h-auto drop-shadow-2xl"
                   />
                 </button>
@@ -116,7 +162,7 @@ export function AppShowcase() {
           <button
             type="button"
             aria-label="Previous screenshot"
-            onClick={() => goTo(activeIndex - 1)}
+            onClick={handleClick(() => goTo(activeIndex - 1))}
             disabled={activeIndex === 0}
             className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10 rounded-full border border-border bg-card/80 text-foreground backdrop-blur transition-opacity hover:bg-card disabled:opacity-0"
           >
@@ -125,7 +171,7 @@ export function AppShowcase() {
           <button
             type="button"
             aria-label="Next screenshot"
-            onClick={() => goTo(activeIndex + 1)}
+            onClick={handleClick(() => goTo(activeIndex + 1))}
             disabled={activeIndex === SCREENSHOTS.length - 1}
             className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10 rounded-full border border-border bg-card/80 text-foreground backdrop-blur transition-opacity hover:bg-card disabled:opacity-0"
           >
