@@ -20,7 +20,7 @@ class AddMediaSourceViewModel {
         self.isLoading = true
         self.errorMessage = nil
 
-        let formattedUrl = self.configUrl.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let formattedUrl = self.configUrl.trimmingCharacters(in: .whitespacesAndNewlines)
 
         do {
             let mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(configUrl: formattedUrl)
