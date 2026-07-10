@@ -54,7 +54,8 @@ data:
         title: d.title || d.identifier,
         subtitle: d.creator || 'Unknown Artist',
         year: d.date ? parseInt(d.date.substring(0, 4), 10) || null : null,
-        artworkUrl: 'https://archive.org/services/img/' + d.identifier
+        lowResArtworkUrl: 'https://archive.org/services/img/' + d.identifier,
+        highResArtworkUrl: 'https://archive.org/services/img/' + d.identifier
       }));
 
       const result = { items: items };
@@ -86,7 +87,8 @@ data:
         items.push({
           id: name,
           name: name,
-          artworkUrl: 'https://archive.org/services/img/' + d.identifier
+          lowResArtworkUrl: 'https://archive.org/services/img/' + d.identifier,
+          highResArtworkUrl: 'https://archive.org/services/img/' + d.identifier
         });
       }
 
@@ -125,10 +127,11 @@ data:
         title: f.title || f.name.replace(/\.[^.]+$/, '').replace(/^.*\//, ''),
         subtitle: f.artist || albumArtist,
         duration: f.length ? Math.round(parseFloat(f.length) * 1000) : null,
-        artworkUrl: artworkUrl,
+        lowResArtworkUrl: artworkUrl,
+        highResArtworkUrl: artworkUrl,
         url: 'https://archive.org/download/' + identifier + '/' + encodeURIComponent(f.name),
         artists: (f.artist || albumArtist) ? [{ id: f.artist || albumArtist, name: f.artist || albumArtist }] : [],
-        albums: [{ id: identifier, title: albumTitle, artworkUrl: artworkUrl }]
+        albums: [{ id: identifier, title: albumTitle, lowResArtworkUrl: artworkUrl, highResArtworkUrl: artworkUrl }]
       }));
 
       postResult({ items: items });
@@ -163,9 +166,10 @@ data:
             title: f.title || f.name.replace(/\.[^.]+$/, '').replace(/^.*\//, ''),
             subtitle: d.creator || 'Unknown Artist',
             duration: f.length ? Math.round(parseFloat(f.length) * 1000) : null,
-            artworkUrl: artworkUrl,
+            lowResArtworkUrl: artworkUrl,
+            highResArtworkUrl: artworkUrl,
             url: 'https://archive.org/download/' + d.identifier + '/' + encodeURIComponent(f.name),
-            albums: [{ id: d.identifier, title: d.title || d.identifier, artworkUrl: artworkUrl }]
+            albums: [{ id: d.identifier, title: d.title || d.identifier, lowResArtworkUrl: artworkUrl, highResArtworkUrl: artworkUrl }]
           });
         }
         if (allItems.length >= 30) break;
@@ -196,7 +200,8 @@ data:
         title: d.title || d.identifier,
         subtitle: d.creator || 'Unknown Artist',
         year: d.date ? parseInt(d.date.substring(0, 4), 10) || null : null,
-        artworkUrl: 'https://archive.org/services/img/' + d.identifier
+        lowResArtworkUrl: 'https://archive.org/services/img/' + d.identifier,
+        highResArtworkUrl: 'https://archive.org/services/img/' + d.identifier
       }));
 
       const result = { items: items };
@@ -224,7 +229,8 @@ data:
         title: d.title || d.identifier,
         subtitle: d.creator || 'Unknown Artist',
         year: d.date ? parseInt(d.date.substring(0, 4), 10) || null : null,
-        artworkUrl: 'https://archive.org/services/img/' + d.identifier
+        lowResArtworkUrl: 'https://archive.org/services/img/' + d.identifier,
+        highResArtworkUrl: 'https://archive.org/services/img/' + d.identifier
       }));
 
       postResult({ albums: albums });
@@ -248,7 +254,8 @@ data:
         subtitle: meta.creator || 'Unknown Artist',
         year: meta.date ? parseInt(String(meta.date).substring(0, 4), 10) || null : null,
         trackCount: audioCount || null,
-        artworkUrl: 'https://archive.org/services/img/' + identifier
+        lowResArtworkUrl: 'https://archive.org/services/img/' + identifier,
+        highResArtworkUrl: 'https://archive.org/services/img/' + identifier
       });
 playback:
   html: |-
@@ -348,9 +355,10 @@ playback:
                 window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, opts.playbackState);
               }
             }
-            if (opts.title !== undefined || opts.artist !== undefined || opts.artworkUrl !== undefined) {
+            if (opts.title !== undefined || opts.artist !== undefined || opts.highResArtworkUrl !== undefined || opts.lowResArtworkUrl !== undefined) {
               var init = { title: opts.title || '', artist: opts.artist || '' };
-              if (opts.artworkUrl) init.artwork = [{ src: opts.artworkUrl }];
+              var artworkUrl = opts.highResArtworkUrl || opts.lowResArtworkUrl;
+              if (artworkUrl) init.artwork = [{ src: artworkUrl }];
               var newMeta = new MediaMetadata(init);
               if (window.__boppaOriginalMetadataSetter) {
                 window.__boppaOriginalMetadataSetter.call(navigator.mediaSession, newMeta);
@@ -466,7 +474,8 @@ playback:
               window.__boppaSetMediaSession({
                 title: trackData.title,
                 artist: trackData.subtitle,
-                artworkUrl: trackData.artworkUrl,
+                lowResArtworkUrl: trackData.lowResArtworkUrl,
+                highResArtworkUrl: trackData.highResArtworkUrl,
                 duration: trackData.duration ? trackData.duration / 1000 : 0,
                 playbackRate: 0,
                 position: 0,
@@ -491,7 +500,7 @@ playback:
           window.boppaStop = function() {
             boppaKeepaliveAudio.muted = true;
             sendToIframe({type: 'boppaPause'});
-            if (window.__boppaSetMediaSession) window.__boppaSetMediaSession({ title: 'Title', artist: 'Artist', artworkUrl: 'https://boppa.app/placeholder.png', playbackState: 'paused' });
+            if (window.__boppaSetMediaSession) window.__boppaSetMediaSession({ title: 'Title', artist: 'Artist', highResArtworkUrl: 'https://boppa.app/placeholder.png', playbackState: 'paused' });
           };
           window.boppaMute = function() { sendToIframe({type: 'boppaMute'}); };
           window.boppaUnmute = function() { sendToIframe({type: 'boppaUnmute'}); };
