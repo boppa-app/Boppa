@@ -32,7 +32,7 @@ const DEFAULT_INDEX = 2;
 
 // Centers the active slide with pure CSS calc() (slide width % + a fixed
 // 24px gap) driven by the --active-index custom property, instead of a
-// JS measurement pass — so it's already correctly positioned on the very
+// JS measurement pass, so it's already correctly positioned on the very
 // first byte of (server-rendered) HTML, no hydration/measurement delay.
 // Tailwind v4's translate utilities animate the standalone `translate`
 // CSS property, so the transition below targets that (not `transform`).
@@ -44,42 +44,61 @@ const TRACK_TRANSFORM_CLASSES =
 
 export function AppShowcase() {
   const [activeIndex, setActiveIndex] = useState(DEFAULT_INDEX);
-  const dragStartX = useRef<number | null>(null);
-  const dragMoved = useRef(false);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  // Which direction the gesture turned out to be, decided once movement
+  // clears DRAG_THRESHOLD_PX in either axis, whichever axis is further
+  // along wins, so a vertical scroll (even with some horizontal wobble,
+  // which is normal) never gets mistaken for a swipe.
+  const dragAxis = useRef<"x" | "y" | null>(null);
+  // Separate from dragAxis (which gets cleared as soon as pointerup is
+  // handled): stays true from a completed horizontal drag until the
+  // click that fires right after pointerup consumes it, so that click
+  // doesn't also navigate to whatever button the pointer landed on.
+  const wasHorizontalDrag = useRef(false);
 
   const goTo = (index: number) => {
     setActiveIndex(Math.min(SCREENSHOTS.length - 1, Math.max(0, index)));
   };
 
-  // Suppresses the click a swipe would otherwise also fire on whatever
-  // button ends up under the pointer when it's released.
   const handleClick = (fn: () => void) => () => {
-    if (dragMoved.current) {
-      dragMoved.current = false;
+    if (wasHorizontalDrag.current) {
+      wasHorizontalDrag.current = false;
       return;
     }
     fn();
   };
 
   const handlePointerDown = (e: ReactPointerEvent) => {
-    dragStartX.current = e.clientX;
-    dragMoved.current = false;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    dragAxis.current = null;
   };
 
   const handlePointerMove = (e: ReactPointerEvent) => {
-    if (dragStartX.current === null) return;
-    if (Math.abs(e.clientX - dragStartX.current) > DRAG_THRESHOLD_PX) {
-      dragMoved.current = true;
+    if (!dragStart.current || dragAxis.current) return;
+    const deltaX = e.clientX - dragStart.current.x;
+    const deltaY = e.clientY - dragStart.current.y;
+    if (Math.abs(deltaX) > DRAG_THRESHOLD_PX || Math.abs(deltaY) > DRAG_THRESHOLD_PX) {
+      dragAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
     }
   };
 
   const handlePointerUp = (e: ReactPointerEvent) => {
-    if (dragStartX.current === null) return;
-    const deltaX = e.clientX - dragStartX.current;
-    dragStartX.current = null;
-    if (Math.abs(deltaX) > SWIPE_THRESHOLD_PX) {
+    if (!dragStart.current) return;
+    const deltaX = e.clientX - dragStart.current.x;
+    const wasHorizontal = dragAxis.current === "x";
+    dragStart.current = null;
+    dragAxis.current = null;
+    if (wasHorizontal && Math.abs(deltaX) > SWIPE_THRESHOLD_PX) {
+      wasHorizontalDrag.current = true;
       goTo(activeIndex + (deltaX < 0 ? 1 : -1));
     }
+  };
+
+  // The browser cancels the pointer sequence when it takes over for
+  // native scrolling, reset without treating it as a completed swipe.
+  const handlePointerCancel = () => {
+    dragStart.current = null;
+    dragAxis.current = null;
   };
 
   useEffect(() => {
@@ -100,7 +119,7 @@ export function AppShowcase() {
       {/* Dedicated stage sized to just the carousel (not the dots row
           below), so the glow centers on the phone itself. A radial
           gradient fades all the way to transparent on its own, well
-          before the edge of its own box (the "transparent 70%" stop) —
+          before the edge of its own box (the "transparent 70%" stop),
           so clipping it here to stop it from ever pushing the page wider
           than the viewport (which was causing horizontal scroll on
           mobile) doesn't introduce a visible hard edge like a blurred
@@ -120,7 +139,7 @@ export function AppShowcase() {
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
         >
           <div
             className={`flex gap-6 ${TRACK_TRANSFORM_CLASSES}`}

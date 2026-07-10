@@ -6,7 +6,7 @@ The phone mockups used in `src/components/app-showcase.tsx` (served from
 1. Take the raw screenshot on-device.
 2. Drop it into [mockuphone.com](https://mockuphone.com/) and pick the
    **Apple iPhone 15 (Black)** frame. Export the **portrait** variant
-   (transparent background, no perspective tilt) — that's the one that
+   (transparent background, no perspective tilt), that's the one that
    crops tightly and is easiest to lay out with CSS.
 3. Convert the exported PNG to WebP and shrink it to the size actually
    rendered on the page (2x a ~320px-wide card is plenty):
@@ -15,8 +15,8 @@ The phone mockups used in `src/components/app-showcase.tsx` (served from
    cwebp -q 82 -resize 640 0 input-portrait.png -o output.webp
    ```
 
-   - `-q 82` — quality, keeps file size small without visible artifacts.
-   - `-resize 640 0` — scale width to 640px, height auto (keeps aspect ratio).
+   - `-q 82` - quality, keeps file size small without visible artifacts.
+   - `-resize 640 0` - scale width to 640px, height auto (keeps aspect ratio).
    - Source mockups are ~1419×2796; this brings each file down to
      20-45 KB while staying crisp on retina screens.
 
