@@ -27,7 +27,7 @@ function DocsLayout() {
       <header className="lg:hidden sticky top-0 z-50 bg-background border-b border-border">
         <div className="flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="Boppa" className="w-10 h-10" />
+            <img src="/logo.png" alt="Boppa" className="w-8 h-8" />
             <span className="text-lg font-medium">Boppa</span>
           </Link>
           <button

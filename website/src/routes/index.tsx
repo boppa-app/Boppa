@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="bg-background">
+    <div className="bg-background overflow-x-hidden">
       <div className="relative p-6 pb-10 md:px-32 md:pt-20 md:pb-12 max-w-7xl mx-auto">
         <nav className="mb-16">
           <SiteHeader />
@@ -32,7 +32,7 @@ function Home() {
           </p>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-16">
           <StoreLink />
         </div>
 

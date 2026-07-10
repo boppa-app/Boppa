@@ -107,7 +107,7 @@ export function AppShowcase() {
           style={{ clipPath: "inset(-9999px 0)" }}
         >
           <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] sm:w-[85%] md:w-[70%] lg:w-[60%] h-[160%]"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] sm:w-[85%] md:w-[70%] lg:w-[60%] h-[140%] sm:h-[160%]"
             style={{
               background:
                 "radial-gradient(ellipse, color-mix(in srgb, var(--color-primary) 38%, transparent) 0%, transparent 60%)",
