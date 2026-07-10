@@ -8,12 +8,15 @@ export function SiteHeader() {
         <span className="text-lg font-medium">Boppa</span>
       </Link>
       <nav className="flex items-center gap-6">
-        <Link to="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Link
+          to="/docs"
+          className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
           Docs
         </Link>
         <Link
           to="/download"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Download
         </Link>
