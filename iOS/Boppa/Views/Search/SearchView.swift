@@ -306,7 +306,7 @@ struct SearchView: View {
 
     private var emptyStateView: some View {
         VStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
+            Image(systemName: "zzz")
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
         }
