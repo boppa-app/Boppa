@@ -37,7 +37,7 @@ data:
     albums: |
       const query = params.query;
       const page = params.previousResult?.page ? params.previousResult.page + 1 : 1;
-      const pageSize = 7;
+      const pageSize = 12;
 
       const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('mediatype:audio AND (creator:(' + query + ') OR title:(' + query + '))')
         + '&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=date&fl[]=downloads'
