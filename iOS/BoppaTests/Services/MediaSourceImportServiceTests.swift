@@ -300,7 +300,7 @@ struct MediaSourceImportServiceTests {
 
     @Test func missingCustomUserAgentIsNil() throws {
         let source = try MediaSource.fromConfigData(self.yaml())
-        #expect(source.config.customUserAgent == nil)
+        #expect(source.config.playback.customUserAgent == nil)
     }
 
     // MARK: - URL normalization
