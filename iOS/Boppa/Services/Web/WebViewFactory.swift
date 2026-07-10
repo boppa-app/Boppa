@@ -53,6 +53,7 @@ final class WebViewFactory {
         }
 
         configuration.userContentController = userContentController
+        configuration.setURLSchemeHandler(ArtworkSchemeHandler.shared, forURLScheme: ArtworkURLBridge.scheme)
 
         let screenBounds = UIScreen.main.bounds
         let webView = WKWebView(frame: screenBounds, configuration: configuration)

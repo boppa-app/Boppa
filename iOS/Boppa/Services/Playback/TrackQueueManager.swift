@@ -1,4 +1,5 @@
 import Foundation
+import Kingfisher
 
 @Observable
 final class QueueEntry: Identifiable {
@@ -288,18 +289,25 @@ final class TrackQueueManager {
             if count >= window { break }
         }
 
-        for (mediaSourceId, desiredUrls) in desiredBySource {
+        let desiredUrls = Set(desiredBySource.values.joined())
+        let previousUrls = Set(self.preloadedArtworkBySource.values.joined())
+        let toAddGlobal = desiredUrls.subtracting(previousUrls)
+        if !toAddGlobal.isEmpty {
+            ImagePrefetcher(urls: toAddGlobal.compactMap { URL(string: $0) }).start()
+        }
+
+        for (mediaSourceId, desired) in desiredBySource {
             guard let engine = self.registry.engine(for: mediaSourceId) else { continue }
-            let previousUrls = self.preloadedArtworkBySource[mediaSourceId] ?? []
-            let toAdd = desiredUrls.subtracting(previousUrls)
-            let toRemove = previousUrls.subtracting(desiredUrls)
+            let previous = self.preloadedArtworkBySource[mediaSourceId] ?? []
+            let toAdd = desired.subtracting(previous)
+            let toRemove = previous.subtracting(desired)
             if !toAdd.isEmpty { engine.preloadArtwork(urls: Array(toAdd)) }
             if !toRemove.isEmpty { engine.removeArtwork(urls: Array(toRemove)) }
         }
 
-        for (mediaSourceId, previousUrls) in self.preloadedArtworkBySource where desiredBySource[mediaSourceId] == nil {
+        for (mediaSourceId, previous) in self.preloadedArtworkBySource where desiredBySource[mediaSourceId] == nil {
             guard let engine = self.registry.engine(for: mediaSourceId) else { continue }
-            engine.removeArtwork(urls: Array(previousUrls))
+            engine.removeArtwork(urls: Array(previous))
         }
 
         self.preloadedArtworkBySource = desiredBySource

@@ -91,8 +91,8 @@ final class WebViewPlaybackEngine: NSObject {
             "title": track.title,
             "subtitle": track.subtitle ?? "",
             "duration": track.duration ?? 0,
-            "lowResArtworkUrl": track.lowResArtworkUrl ?? "",
-            "highResArtworkUrl": track.highResArtworkUrl ?? "",
+            "lowResArtworkUrl": ArtworkURLBridge.localURLString(for: track.lowResArtworkUrl),
+            "highResArtworkUrl": ArtworkURLBridge.localURLString(for: track.highResArtworkUrl),
             "url": track.url ?? "",
             "mediaSourceId": track.mediaSourceId,
         ]
@@ -165,8 +165,10 @@ final class WebViewPlaybackEngine: NSObject {
         guard !urls.isEmpty else { return }
         let calls = urls.compactMap { url -> String? in
             guard !url.isEmpty else { return nil }
+            let localURLString = ArtworkURLBridge.localURLString(for: url)
+            guard !localURLString.isEmpty else { return nil }
             let id = Self.artworkElementId(for: url)
-            let escapedUrl = url
+            let escapedUrl = localURLString
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "'", with: "\\'")
             return """
