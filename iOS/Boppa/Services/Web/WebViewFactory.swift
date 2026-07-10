@@ -21,7 +21,7 @@ final class WebViewFactory {
     ) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = allowsInlineMediaPlayback
-        configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.mediaTypesRequiringUserActionForPlayback = .all
         configuration.websiteDataStore = customUserAgent != nil
             ? WebDataStore.shared.getDesktopDataStore()
             : WebDataStore.shared.getDataStore()
