@@ -111,7 +111,7 @@ class TracklistFetchService {
                 await JSExecutionEngine.shared.execute(
                     script: script,
                     params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult),
-                    customUserAgent: config.customUserAgent, domain: config.url,
+                    domain: config.url,
                     context: mediaSource.contextValues
                 )
             )
@@ -129,7 +129,7 @@ class TracklistFetchService {
                 await JSExecutionEngine.shared.execute(
                     script: script,
                     params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult),
-                    customUserAgent: config.customUserAgent, domain: config.url,
+                    domain: config.url,
                     context: mediaSource.contextValues
                 )
             )
@@ -149,7 +149,7 @@ class TracklistFetchService {
                     params: scriptParams(
                         ["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult
                     ),
-                    customUserAgent: config.customUserAgent, domain: config.url,
+                    domain: config.url,
                     context: mediaSource.contextValues
                 )
             )
@@ -169,7 +169,7 @@ class TracklistFetchService {
                     params: scriptParams(
                         ["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult
                     ),
-                    customUserAgent: config.customUserAgent, domain: config.url,
+                    domain: config.url,
                     context: mediaSource.contextValues
                 )
             )
@@ -195,7 +195,7 @@ class TracklistFetchService {
             guard let script = config.data.get?.album else { return nil }
             let jsResult = try await JSExecutionEngine.shared.execute(
                 script: script, params: ["id": tracklist.mediaId],
-                customUserAgent: config.customUserAgent, domain: config.url,
+                domain: config.url,
                 context: mediaSource.contextValues
             )
             return GetAlbumResponse(jsResult)
@@ -203,7 +203,7 @@ class TracklistFetchService {
             guard let script = config.data.get?.playlist else { return nil }
             let jsResult = try await JSExecutionEngine.shared.execute(
                 script: script, params: ["id": tracklist.mediaId],
-                customUserAgent: config.customUserAgent, domain: config.url,
+                domain: config.url,
                 context: mediaSource.contextValues
             )
             return GetPlaylistResponse(jsResult)
@@ -224,7 +224,6 @@ class TracklistFetchService {
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: ["id": artist.mediaId],
-            customUserAgent: config.customUserAgent,
             domain: config.url,
             context: mediaSource.contextValues
         )
@@ -274,7 +273,7 @@ class TracklistFetchService {
         let response = try ListArtistAlbumsResponse(
             await JSExecutionEngine.shared.execute(
                 script: script, params: ["id": artist.mediaId],
-                customUserAgent: config.customUserAgent, domain: config.url,
+                domain: config.url,
                 context: mediaSource.contextValues
             )
         )
@@ -297,7 +296,7 @@ class TracklistFetchService {
         let response = try ListArtistPlaylistsResponse(
             await JSExecutionEngine.shared.execute(
                 script: script, params: ["id": artist.mediaId],
-                customUserAgent: config.customUserAgent, domain: config.url,
+                domain: config.url,
                 context: mediaSource.contextValues
             )
         )
@@ -325,7 +324,6 @@ class TracklistFetchService {
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: ["id": mediaId],
-            customUserAgent: config.customUserAgent,
             domain: config.url,
             context: mediaSource.contextValues
         )
@@ -350,7 +348,7 @@ class TracklistFetchService {
         while true {
             let jsResult = try await JSExecutionEngine.shared.execute(
                 script: script, params: scriptParams(params, previousResult: previousResult),
-                customUserAgent: config.customUserAgent, domain: config.url, context: context
+                domain: config.url, context: context
             )
             let (items, continuation) = parseResponse(jsResult)
             let tracks = items.map { $0.toTrack(mediaSourceId: mediaSourceId, type: trackType) }

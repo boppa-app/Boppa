@@ -25,7 +25,7 @@ final class WebViewPlaybackEngine: NSObject {
         self.webView = WebViewFactory.makeWebView(
             scripts: config.playback.userScripts,
             contractScript: Self.contractScript(),
-            customUserAgent: config.customUserAgent,
+            customUserAgent: config.playback.customUserAgent,
             allowsInlineMediaPlayback: true,
             isHidden: true
         )
@@ -292,7 +292,6 @@ final class WebViewPlaybackEngine: NSObject {
             PlaybackService.shared.stop()
             PopupManager.shared.showPopup(
                 config: popupConfig,
-                customUserAgent: self.config.customUserAgent,
                 onDismiss: { [weak self] in self?.reloadPlayback() }
             )
             return

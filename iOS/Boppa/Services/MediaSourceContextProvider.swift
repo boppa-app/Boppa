@@ -153,11 +153,11 @@ final class MediaSourceContextProvider: NSObject {
                 let timerKey = "\(config.id)|\(entry.url)"
 
                 logger.info("Enqueueing immediate refresh for '\(config.id)' -> \(entry.url) with \(entry.userScripts.count) script(s)")
-                self.enqueueRefresh(mediaSourceId: config.id, url: url, scripts: entry.userScripts, customUserAgent: config.customUserAgent)
+                self.enqueueRefresh(mediaSourceId: config.id, url: url, scripts: entry.userScripts, customUserAgent: entry.customUserAgent)
 
                 let interval = TimeInterval(entry.intervalSeconds)
                 let mediaSourceId = config.id
-                let customUserAgent = config.customUserAgent
+                let customUserAgent = entry.customUserAgent
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
                     MainActor.assumeIsolated {
                         logger.info("Timer fired: recurring refresh for '\(mediaSourceId)' -> \(entry.url)")
@@ -263,7 +263,6 @@ final class MediaSourceContextProvider: NSObject {
 
         PopupManager.shared.showPopup(
             config: popupConfig,
-            customUserAgent: mediaSource.config.customUserAgent,
             onDismiss: { [weak self] in
                 guard let self else { return }
                 self.activeWebView?.reload()

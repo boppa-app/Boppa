@@ -26,7 +26,6 @@ class SearchService {
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: ["query": query],
-            customUserAgent: config.customUserAgent,
             domain: config.url,
             context: mediaSource.contextValues
         )
@@ -50,7 +49,6 @@ class SearchService {
         let jsResult = try await JSExecutionEngine.shared.execute(
             script: script,
             params: scriptParams(["query": query], previousResult: continuation),
-            customUserAgent: config.customUserAgent,
             domain: config.url,
             context: mediaSource.contextValues
         )

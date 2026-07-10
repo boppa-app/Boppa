@@ -23,14 +23,12 @@ final class JSExecutionEngine: NSObject {
     func execute(
         script: String,
         params: [String: Any],
-        customUserAgent: String? = nil,
         domain: String? = nil,
         context: [String: String] = [:]
     ) async throws -> [String: Any] {
         var params = params
         if let domain {
-            let useDesktopStore = customUserAgent != nil
-            let cookies = await WebDataStore.shared.getCookies(forDomain: domain, useDesktopStore: useDesktopStore)
+            let cookies = await WebDataStore.shared.getCookies(forDomain: domain, useDesktopStore: false)
             params["cookies"] = cookies
         }
         if !context.isEmpty {

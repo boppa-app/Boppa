@@ -25,7 +25,7 @@ final class PopupManager: NSObject {
     }
 
     @MainActor
-    func showPopup(config: PopupConfig, customUserAgent: String?, onDismiss: @escaping () -> Void) {
+    func showPopup(config: PopupConfig, onDismiss: @escaping () -> Void) {
         guard self.hostingController == nil else {
             logger.warning("Popup already presented, ignoring request for '\(config.title)'")
             return
@@ -39,7 +39,7 @@ final class PopupManager: NSObject {
             contractScript: Self.contractScript(),
             messageHandler: self,
             messageHandlerName: Self.messageHandlerName,
-            customUserAgent: customUserAgent,
+            customUserAgent: config.customUserAgent,
             isHidden: false
         )
         webView.transform = .identity

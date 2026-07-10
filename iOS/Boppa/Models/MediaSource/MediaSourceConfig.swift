@@ -9,14 +9,13 @@ struct MediaSourceConfig: Codable {
     let url: String
     let iconSvg: String?
     let highlightColor: String?
-    let customUserAgent: String?
     let context: [ContextConfig]?
     let data: DataScripts
     let playback: PlaybackConfig
     let popup: [String: PopupConfig]?
 
     private enum CodingKeys: String, CodingKey {
-        case id, version, name, url, iconSvg, highlightColor, customUserAgent, context, data, playback, popup
+        case id, version, name, url, iconSvg, highlightColor, context, data, playback, popup
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -27,7 +26,6 @@ struct MediaSourceConfig: Codable {
         self.url = try container.decode(String.self, forKey: .url)
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
         self.highlightColor = try container.decodeIfPresent(String.self, forKey: .highlightColor)
-        self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
         self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
         self.data = try container.decode(DataScripts.self, forKey: .data)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
@@ -42,7 +40,6 @@ struct MediaSourceConfig: Codable {
         try container.encode(self.url, forKey: .url)
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)
         try container.encodeIfPresent(self.highlightColor, forKey: .highlightColor)
-        try container.encodeIfPresent(self.customUserAgent, forKey: .customUserAgent)
         try container.encodeIfPresent(self.context, forKey: .context)
         try container.encode(self.data, forKey: .data)
         try container.encode(self.playback, forKey: .playback)
@@ -61,24 +58,28 @@ struct ContextConfig: Codable {
     let url: String
     let intervalSeconds: Int
     let userScripts: [Script]
+    let customUserAgent: String?
 }
 
 struct PopupConfig: Codable {
     let title: String
     let url: String
     let userScripts: [Script]
+    let customUserAgent: String?
 }
 
 struct PlaybackConfig: Codable {
     let url: String?
     let html: String?
     let userScripts: [Script]
+    let customUserAgent: String?
 
     nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.url = try container.decodeIfPresent(String.self, forKey: .url)
         self.html = try container.decodeIfPresent(String.self, forKey: .html)
         self.userScripts = try container.decode([Script].self, forKey: .userScripts)
+        self.customUserAgent = try container.decodeIfPresent(String.self, forKey: .customUserAgent)
 
         if self.url == nil, self.html == nil {
             throw DecodingError.dataCorrupted(
