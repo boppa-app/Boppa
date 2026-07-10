@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AppShowcase } from "~/components/app-showcase";
 import { SiteFooter } from "~/components/site-footer";
 import { SiteHeader } from "~/components/site-header";
 import { pageMeta } from "~/meta";
@@ -29,6 +30,8 @@ function Home() {
             Turn any website into a native music player.
           </p>
         </div>
+
+        <AppShowcase />
       </div>
 
       <SiteFooter />
