@@ -117,22 +117,33 @@ export function AppShowcase() {
   return (
     <section className="py-4 md:py-8">
       {/* Dedicated stage sized to just the carousel (not the dots row
-          below), so the glow centers on the phone itself. A radial
-          gradient fades all the way to transparent on its own, well
-          before the edge of its own box (the "transparent 70%" stop),
-          so clipping it here to stop it from ever pushing the page wider
-          than the viewport (which was causing horizontal scroll on
-          mobile) doesn't introduce a visible hard edge like a blurred
-          shape would. */}
-      <div className="relative overflow-hidden">
+          below), so the glow centers on the phone itself. */}
+      <div className="relative">
+        {/* Full-bleed layer: breaks out to the width of the viewport
+            (not the padded stage), so the glow can be as wide as we want
+            without ever pushing the page wider than the viewport. Clips
+            horizontally only (clip-path with a huge vertical inset),
+            plain overflow-hidden would clip vertically too, capping the
+            glow's height right back down to the stage's, which defeated
+            the "let it peek past the phone" sizing below. */}
         <div
           aria-hidden="true"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] sm:w-[100%] md:w-[75%] lg:w-[65%] aspect-square"
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, var(--color-primary) 35%, transparent) 0%, transparent 70%)",
-          }}
-        />
+          className="absolute inset-y-0 left-1/2 w-screen -translate-x-1/2 pointer-events-none"
+          style={{ clipPath: "inset(-9999px 0)" }}
+        >
+          {/* Width is capped for horizontal safety (see above), but the
+              phone mockup is tall and narrow, a same-size square glow
+              ends up shorter than the phone and mostly hides behind it.
+              Height stretches well past the phone's own height so the
+              glow actually peeks out top and bottom, not just the sides. */}
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] sm:w-[85%] md:w-[70%] lg:w-[60%] h-[160%]"
+            style={{
+              background:
+                "radial-gradient(ellipse, color-mix(in srgb, var(--color-primary) 38%, transparent) 0%, transparent 60%)",
+            }}
+          />
+        </div>
 
         <div
           className="relative overflow-hidden touch-pan-y"
