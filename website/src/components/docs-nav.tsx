@@ -7,6 +7,7 @@ interface DocsNavProps {
   nodes: DocsNavNode[];
   mobile?: boolean;
   onNavigate?: () => void;
+  topLevel?: boolean;
 }
 
 const ACTIVE_OPTIONS_EXACT = { exact: true };
@@ -54,10 +55,12 @@ function GroupNode({
   node,
   mobile,
   onNavigate,
+  topLevel,
 }: {
   node: Extract<DocsNavNode, { type: "group" }>;
   mobile?: boolean;
   onNavigate?: () => void;
+  topLevel?: boolean;
 }) {
   const location = useLocation();
   const currentHref = location.pathname;
@@ -70,12 +73,13 @@ function GroupNode({
   }, [containsActive]);
 
   return (
-    <div>
+    <div className={topLevel ? (mobile ? "mt-4 first:mt-0" : "mt-6 first:mt-0") : undefined}>
       <button
         type="button"
         onClick={toggle}
         className={clsx(
-          "w-full flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-md transition-colors",
+          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md transition-colors",
+          topLevel ? "text-xs font-medium" : "text-sm",
           mobile
             ? "text-muted-foreground hover:text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -111,7 +115,7 @@ function CategoryNode({
   );
 }
 
-function NavTree({ nodes, mobile, onNavigate }: DocsNavProps) {
+function NavTree({ nodes, mobile, onNavigate, topLevel }: DocsNavProps) {
   return (
     <div className="space-y-0.5">
       {nodes.map((node) => {
@@ -132,6 +136,7 @@ function NavTree({ nodes, mobile, onNavigate }: DocsNavProps) {
               node={node}
               mobile={mobile}
               onNavigate={onNavigate}
+              topLevel={topLevel}
             />
           );
         }
@@ -146,7 +151,7 @@ function NavTree({ nodes, mobile, onNavigate }: DocsNavProps) {
 export function DocsNav({ nodes, mobile, onNavigate }: DocsNavProps) {
   return (
     <div className={mobile ? undefined : "-ml-3"}>
-      <NavTree nodes={nodes} mobile={mobile} onNavigate={onNavigate} />
+      <NavTree nodes={nodes} mobile={mobile} onNavigate={onNavigate} topLevel />
     </div>
   );
 }
