@@ -10,26 +10,19 @@ private let logger = Logger(
 class WebDataStore {
     static let shared = WebDataStore()
 
-    private let mobileDataStore: WKWebsiteDataStore
-    private let desktopDataStore: WKWebsiteDataStore
+    private let dataStore: WKWebsiteDataStore
     private var observers: [NSObjectProtocol] = []
 
     private init() {
-        self.mobileDataStore = WKWebsiteDataStore.default()
-        self.desktopDataStore = WKWebsiteDataStore.default()
+        self.dataStore = WKWebsiteDataStore.default()
     }
 
     func getDataStore() -> WKWebsiteDataStore {
-        return self.mobileDataStore
+        return self.dataStore
     }
 
-    func getDesktopDataStore() -> WKWebsiteDataStore {
-        return self.desktopDataStore
-    }
-
-    func getCookies(forDomain domain: String, useDesktopStore: Bool) async -> [String: String] {
-        let store = useDesktopStore ? self.desktopDataStore : self.mobileDataStore
-        let cookies = await store.httpCookieStore.allCookies()
+    func getCookies(forDomain domain: String) async -> [String: String] {
+        let cookies = await self.dataStore.httpCookieStore.allCookies()
         var result: [String: String] = [:]
         for cookie in cookies {
             let cookieDomain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
@@ -37,13 +30,12 @@ class WebDataStore {
                 result[cookie.name] = cookie.value
             }
         }
-        logger.debug("getCookies for '\(domain)': \(result.count) cookie(s) (desktop: \(useDesktopStore))")
+        logger.debug("getCookies for '\(domain)': \(result.count) cookie(s)")
         return result
     }
 
-    func checkCookiesExist(named cookieNames: [String], forDomain domain: String? = nil, useDesktopStore: Bool = false, completion: @escaping (Bool) -> Void) {
-        let store = useDesktopStore ? self.desktopDataStore : self.mobileDataStore
-        store.httpCookieStore.getAllCookies { cookies in
+    func checkCookiesExist(named cookieNames: [String], forDomain domain: String? = nil, completion: @escaping (Bool) -> Void) {
+        self.dataStore.httpCookieStore.getAllCookies { cookies in
             let validCookies = cookies.filter { cookie in
                 guard cookie.expiresDate == nil || cookie.expiresDate! > Date() else {
                     return false
@@ -68,12 +60,7 @@ class WebDataStore {
         let since = Date.distantPast
 
         group.enter()
-        self.mobileDataStore.removeData(ofTypes: allDataTypes, modifiedSince: since) {
-            group.leave()
-        }
-
-        group.enter()
-        self.desktopDataStore.removeData(ofTypes: allDataTypes, modifiedSince: since) {
+        self.dataStore.removeData(ofTypes: allDataTypes, modifiedSince: since) {
             group.leave()
         }
 

@@ -28,7 +28,7 @@ final class JSExecutionEngine: NSObject {
     ) async throws -> [String: Any] {
         var params = params
         if let domain {
-            let cookies = await WebDataStore.shared.getCookies(forDomain: domain, useDesktopStore: false)
+            let cookies = await WebDataStore.shared.getCookies(forDomain: domain)
             params["cookies"] = cookies
         }
         if !context.isEmpty {
