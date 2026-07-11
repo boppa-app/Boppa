@@ -8,10 +8,7 @@ category: Media Sources
 
 # Media Sources
 
-A media source is a single YAML file that tells Boppa how to work with one site. This configuration provides instructions for Boppa to search a site's catalog (songs, artists, etc.) and play media. Boppa ships with no catalog of its own. Every result shown in Search or Library was produced by running some media source's JavaScript.
-
-This section documents the configuration format in detail. To use a source someone else has
-written, check out [r/BoppaApp](https://reddit.com/r/BoppaApp).
+A media source config is a single YAML file that tells Boppa how to work with one site. This config provides JavaScript which Boppa executes in order to be able to search a site's catalog (songs, artists, etc.) and play media. This section documents the configuration format at a high level. To use a media source config developed by the community, check out [r/BoppaApp](https://reddit.com/r/BoppaApp).
 
 ## Contents of a configuration
 
