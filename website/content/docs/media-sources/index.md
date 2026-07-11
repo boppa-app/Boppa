@@ -36,7 +36,7 @@ popup: { ... } # optional: named interactive login/verification flows
 - **`version`**: a free-form string (semantic versioning is a reasonable convention). When a configuration is hosted at a stable URL and this value is incremented, Boppa's automatic update mechanism picks up the change. See [Publishing & Sharing](/docs/media-sources/publishing).
 - **`name`**, **`url`**: the display name and the domain the source communicates with. `url` also determines the scope used for cookies in [context](/docs/media-sources/context-popups) gathering and in search, list, and get calls.
 - **`iconSvg`**, **`highlightColor`**: optional branding shown in the source picker and in Settings.
-- **`data`**: the JavaScript that powers search, browsing, and detail fetches. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/browsing).
+- **`data`**: the JavaScript that powers search, browsing, and detail fetches. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/list-get).
 - **`playback`**: the player page and its scripts. See [Playback](/docs/media-sources/playback).
 - **`context`**, **`popup`**: optional, for sources that require a session before they function. See [Context & Popups](/docs/media-sources/context-popups).
 

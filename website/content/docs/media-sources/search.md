@@ -15,15 +15,15 @@ a category with no script is simply not offered as a search tab for that source.
 data:
   search:
     songs: |
-      # JavaScript code
+      // JavaScript code
     videos: |
-      # JavaScript code
+      // JavaScript code
     albums: |
-      # JavaScript code
+      // JavaScript code
     artists: |
-      # JavaScript code
+      // JavaScript code
     playlists: |
-      # JavaScript code
+      // JavaScript code
 ```
 
 ## Invocation

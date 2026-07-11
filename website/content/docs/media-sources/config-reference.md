@@ -15,13 +15,13 @@ A media source config is a single YAML file. This page documents every top-level
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | string | Yes | Stable, unique identifier for the source. Used as the primary key in Boppa's database. |
-| `version` | string | Yes | Free-form version string. Compared on update checks; see [Publishing & Sharing](/docs/media-sources/publishing). |
+| `version` | string | Yes | Free-form version string. Compared on update checks, see [Publishing & Sharing](/docs/media-sources/publishing). |
 | `name` | string | Yes | Display name shown throughout the app. |
 | `url` | string | Yes | The domain the source communicates with, for example `archive.org`. Used to scope cookies for data scripts. |
 | `iconSvg` | string | No | Raw SVG markup shown as the source's icon. |
 | `highlightColor` | string | No | Hex color, for example `"#FFFFFF"`, used for accents associated with the source. |
 | `context` | list | No | Background pages Boppa loads to gather cookies or tokens before the source is usable. See [Context & Popups](/docs/media-sources/context-popups). |
-| `data` | object | Yes | The `search`, `list`, and `get` script groups. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/browsing). |
+| `data` | object | Yes | The `search`, `list`, and `get` script groups. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/list-get). |
 | `playback` | object | Yes | The player page and its bridge scripts. See [Playback](/docs/media-sources/playback). |
 | `popup` | map | No | Named interactive WebView flows, keyed by an id a script can reference. See [Context & Popups](/docs/media-sources/context-popups). |
 
@@ -31,11 +31,11 @@ A short, stable string, it is reccomended to use the media source's FQDN (`archi
 
 ### `version`
 
-An arbitrary string, most commonly a semantic version such as `1.0.0`. Boppa does not interpret its structure; it only compares it for equality against the previously stored value. When a configuration is fetched from its `configUrl` on app launch and the returned `version` differs from what is stored, Boppa applies the update, provided the source's per-source auto-update option is enabled; see [Publishing & Sharing](/docs/media-sources/publishing).
+An arbitrary string, most commonly a semantic version such as `1.0.0`. Boppa does not interpret its structure, it only compares it for equality against the previously stored value. When a configuration is fetched from its `configUrl` on app launch and the returned `version` differs from what is stored, Boppa applies the update, provided the source's per-source auto-update option is enabled, see [Publishing & Sharing](/docs/media-sources/publishing).
 
 ### `data`
 
-A `DataScripts` object with three optional groups, `search`, `list`, and `get`. Each group is itself an object whose fields are either omitted or contain a string of JavaScript source. A capability that is omitted (for example, `search.artists`) is treated by the app as unsupported: the corresponding UI (an artist search tab, a "go to album" action, and so on) is simply not shown. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/browsing) for the full list of script names and their contracts.
+A `DataScripts` object with three optional groups, `search`, `list`, and `get`. Each group is itself an object whose fields are either omitted or contain a string of JavaScript source. A capability that is omitted (for example, `search.artists`) is treated by the app as unsupported: the corresponding UI (an artist search tab, a "go to album" action, and so on) is simply not shown. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/list-get) for the full list of script names and their contracts.
 
 ### `playback`
 
