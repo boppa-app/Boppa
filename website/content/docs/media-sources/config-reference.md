@@ -27,7 +27,7 @@ A media source config is a single YAML file. This page documents every top-level
 
 ### `id`
 
-A short, stable string, typically the source's domain (`archive.org`) or a reasonably specific slug. Boppa stores media sources keyed by `id`. Choose an `id` once and do not change it. It is reccomended to use the resource name of the FQDN as the `id` (example: `archive.org`). 
+A short, stable string, it is reccomended to use the media source's FQDN (`archive.org`). Boppa stores media sources keyed by `id`. Choose an `id` once and do not change it.
 
 ### `version`
 
