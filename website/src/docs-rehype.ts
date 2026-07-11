@@ -16,10 +16,11 @@ export function getDocsHighlighter(): Promise<HighlighterCore> {
     import("shiki/langs/json.mjs"),
     import("shiki/langs/javascript.mjs"),
     import("shiki/langs/swift.mjs"),
-  ]).then(([theme, bash, json, javascript, swift]) =>
+    import("shiki/langs/yaml.mjs"),
+  ]).then(([theme, bash, json, javascript, swift, yaml]) =>
     createHighlighterCore({
       themes: [theme.default],
-      langs: [bash.default, json.default, javascript.default, swift.default],
+      langs: [bash.default, json.default, javascript.default, swift.default, yaml.default],
       engine: createJavaScriptRegexEngine(),
     }),
   );

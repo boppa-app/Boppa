@@ -159,11 +159,15 @@ function formatLabel(segment: string): string {
   return segment.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function insertDocByPath(nodes: DocsNavNode[], doc: Doc): void {
+function insertDocByPath(nodes: DocsNavNode[], doc: Doc, skipLeadingLabel?: string): void {
   const relative = doc.sourcePath.replace(/^content\/docs\//, "");
   const segments = relative.replace(/\.md$/, "").split("/");
   const fileName = segments.pop() ?? "";
-  const directories = segments;
+  let directories = segments;
+
+  if (skipLeadingLabel && directories.length > 0 && formatLabel(directories[0]) === skipLeadingLabel) {
+    directories = directories.slice(1);
+  }
 
   let current = nodes;
   for (const segment of directories) {
@@ -240,7 +244,7 @@ export function buildDocsNavTree(docs: Doc[]): DocsNavNode[] {
   for (const [label, docsInCategory] of byCategory) {
     const children: DocsNavNode[] = [];
     for (const doc of docsInCategory) {
-      insertDocByPath(children, doc);
+      insertDocByPath(children, doc, label);
     }
     root.push({
       type: "category",
