@@ -55,13 +55,7 @@ export function SiteFooter() {
               href="/download"
               className="block text-muted-foreground hover:text-foreground transition-colors"
             >
-              Android
-            </a>
-            <a
-              href="/download"
-              className="block text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Desktop
+              Other
             </a>
           </div>
         </div>
