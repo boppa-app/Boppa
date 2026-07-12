@@ -9,7 +9,7 @@ struct AppConfig: Codable {
 class ConfigService {
     static let shared = ConfigService()
 
-    private static let remoteConfigUrl = URL(string: "https://data.boppa.app/iOS/config.yaml")!
+    private static let remoteConfigUrl = URL(string: "https://config.boppa.app/iOS.yaml")!
     private static let deletedDefaultConfigUrlsKey = "deletedDefaultMediaSourceConfigUrls"
 
     private let logger = Logger(

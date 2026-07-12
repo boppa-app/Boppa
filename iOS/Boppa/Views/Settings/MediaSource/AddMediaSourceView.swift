@@ -15,7 +15,7 @@ struct AddMediaSourceView: View {
         NavigationStack {
             Form {
                 Section("Media Source Config URL") {
-                    TextField("data.boppa.app/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
+                    TextField("config.boppa.app/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
