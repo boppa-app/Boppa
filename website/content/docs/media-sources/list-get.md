@@ -46,6 +46,7 @@ postResult({
       lowResArtworkUrl: "https://...", // optional
       highResArtworkUrl: "https://...", // optional
       url: "https://...", // optional
+      metadata: { any: "JSON object" }, // optional
       artists: [ { id, name, lowResArtworkUrl, highResArtworkUrl } ], // optional
       albums:  [ { id, title, subtitle, lowResArtworkUrl, highResArtworkUrl } ] // optional
     }
@@ -121,7 +122,7 @@ The order in which these four keys appear in the object passed to `postResult` d
 
 ### `get.song`, `get.video`
 
-Called with `params.id` set to a track's media id. Returns a single track object, using the same shape as an item from `search.songs` (`id` and `title` are required, all other fields are optional). Boppa calls this to resolve a track's full metadata.
+Called with `params.id` set to a track's media id. Returns a single track object, using the same shape as an item from `search.songs` (`id` and `title` are required, all other fields are optional). Boppa calls this to resolve a track's full details.
 
 ```js
 postResult({
@@ -132,6 +133,7 @@ postResult({
   lowResArtworkUrl: "https://...", // optional
   highResArtworkUrl: "https://...", // optional
   url: "https://...", // optional
+  metadata: { any: "JSON object" }, // optional
   artists: [ { id, name, lowResArtworkUrl, highResArtworkUrl } ], // optional
   albums:  [ { id, title, subtitle, lowResArtworkUrl, highResArtworkUrl } ] // optional
 });

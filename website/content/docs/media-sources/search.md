@@ -57,6 +57,7 @@ postResult({
       lowResArtworkUrl: "https://...", // optional
       highResArtworkUrl: "https://...", // optional
       url: "https://...", // optional
+      metadata: { any: "JSON object" }, // optional
       artists: [ { id, name, lowResArtworkUrl, highResArtworkUrl } ], // optional
       albums:  [ { id, title, subtitle, lowResArtworkUrl, highResArtworkUrl } ] // optional
     }
@@ -64,7 +65,11 @@ postResult({
 });
 ```
 
-`id` and `title` are the only required fields; every other field may be omitted. `url` is the value later passed to the [playback](/docs/media-sources/playback) page and may be any string the player page understands, such as a direct media URL or a custom identifier the player resolves itself. The nested `artists` and `albums` arrays let a search result carry enough information for Boppa to offer *"Go to Artist"* and *"Go to Album"* actions without an additional lookup.
+`id` and `title` are the only required fields; every other field may be omitted.
+
+`metadata` is opaque to Boppa: it may be any JSON object and is carried through unchanged to the [`boppaLoad`](/docs/media-sources/playback#track-data) call for the player page to interpret.
+
+The nested `artists` and `albums` arrays let a search result carry enough information for Boppa to offer *"Go to Artist"* and *"Go to Album"* actions without an additional lookup.
 
 ### `albums`, `playlists`
 
