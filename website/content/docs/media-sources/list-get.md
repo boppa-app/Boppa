@@ -111,7 +111,7 @@ The order in which these four keys appear in the object passed to `postResult` d
 
 ### `get.song`, `get.video`
 
-Called with `params.id` set to a track's media id. Returns a single track object, using the same shape as an item from `search.songs` (`id` and `title` are required, all other fields are optional). Boppa calls this to resolve a track's full metadata, most commonly to refresh an already-playing track's details.
+Called with `params.id` set to a track's media id. Returns a single track object, using the same shape as an item from `search.songs` (`id` and `title` are required, all other fields are optional). Boppa calls this to resolve a track's full metadata.
 
 ```js
 postResult({
