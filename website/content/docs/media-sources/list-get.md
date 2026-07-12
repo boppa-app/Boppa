@@ -35,14 +35,43 @@ Each script is called with `params.id` set to the relevant media id (an album, p
 
 ```js
 postResult({
-  items: [ /* track objects, same shape as search.songs items */ ],
+  items: [
+    {
+      id: "unique-id", // required
+      title: "Track Title", // required
+      subtitle: "Artist Name", // optional
+      duration: 213000, // optional, milliseconds
+      lowResArtworkUrl: "https://...", // optional
+      highResArtworkUrl: "https://...", // optional
+      url: "https://...", // optional
+      artists: [ { id, name, lowResArtworkUrl, highResArtworkUrl } ], // optional
+      albums:  [ { id, title, subtitle, lowResArtworkUrl, highResArtworkUrl } ] // optional
+    }
+  ]
   // any additional fields become params.previousResult on the next page
 });
 ```
 
-These four scripts support the same pagination contract described in [Search Scripts: Pagination](/docs/media-sources/search#pagination). When a user scrolls to the bottom of an album or playlist page, the script is called again with `params.previousResult` set to whatever non-`items` fields the previous call returned. When Boppa needs the complete track list at once, for example when saving an album to the library, it calls the script repeatedly until no continuation is returned and combines every page.
+`list.artistAlbums` and `list.artistPlaylists` return a page of albums or playlists. They're called when the corresponding section of an artist's page is opened. They use the same item shape as `search.albums` and `search.playlists`.
 
-`list.artistAlbums` and `list.artistPlaylists` return a page of albums or playlists, using the same item shape as `search.albums` and `search.playlists`. These two are called once, when the corresponding section of an artist's page is opened, and are not paginated further in the current version of the app, any continuation field they return is currently unused.
+```js
+postResult({
+  items: [
+    {
+      id: "unique-id", // required
+      title: "Album Title", // required
+      subtitle: "Artist Name", // optional
+      year: 1975, // optional
+      trackCount: 12, // optional
+      lowResArtworkUrl: "https://...", // optional
+      highResArtworkUrl: "https://..." // optional
+    }
+  ]
+  // any additional fields become params.previousResult on the next page
+});
+```
+
+All six of these scripts support the same pagination contract described in [Search Scripts: Pagination](/docs/media-sources/search#pagination). When the user scrolls to the bottom of the current list, the script is called again with `params.previousResult` set to whatever non-`items` fields the previous call returned. When Boppa needs a complete track list at once, for example when saving an album to the library, it calls `list.album`, `list.playlist`, `list.artistSongs`, or `list.artistVideos` repeatedly until no continuation is returned and combines every page.
 
 ## `data.get`
 
@@ -86,9 +115,15 @@ Called with `params.id` set to a track's media id. Returns a single track object
 
 ```js
 postResult({
-  id: "unique-id",
-  title: "Track Title",
-  // ... same optional fields as a search.songs item
+  id: "unique-id", // required
+  title: "Track Title", // required
+  subtitle: "Artist Name", // optional
+  duration: 213000, // optional, milliseconds
+  lowResArtworkUrl: "https://...", // optional
+  highResArtworkUrl: "https://...", // optional
+  url: "https://...", // optional
+  artists: [ { id, name, lowResArtworkUrl, highResArtworkUrl } ], // optional
+  albums:  [ { id, title, subtitle, lowResArtworkUrl, highResArtworkUrl } ] // optional
 });
 ```
 
