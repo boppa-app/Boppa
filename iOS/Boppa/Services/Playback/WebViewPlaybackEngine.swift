@@ -317,7 +317,7 @@ final class WebViewPlaybackEngine: NSObject {
 
         let event: PlayerEvent
         switch type {
-        case "play", "initialPlay":
+        case "play":
             event = .playing
         case "pause":
             event = .paused
