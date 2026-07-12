@@ -258,14 +258,6 @@ final class WebViewPlaybackEngine: NSObject {
         }
 
         switch type {
-        case "playCommand":
-            logger.info("Received playCommand from webview")
-            PlaybackService.shared.play()
-            return
-        case "pauseCommand":
-            logger.info("Received pauseCommand from webview")
-            PlaybackService.shared.pause()
-            return
         case "previoustrackCommand":
             logger.info("Received previoustrackCommand from webview")
             Task { @MainActor in
@@ -277,11 +269,6 @@ final class WebViewPlaybackEngine: NSObject {
             Task { @MainActor in
                 PlaybackService.shared.next(userInitiated: true)
             }
-            return
-        case "seekCommand":
-            let seekTime = self.extractDouble(from: dict, key: "seekTime")
-            logger.info("Received seekCommand from webview: \(seekTime)s")
-            PlaybackService.shared.seek(to: seekTime)
             return
         case "popup":
             let id = dict["id"] as? String ?? ""
