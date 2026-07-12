@@ -224,6 +224,19 @@ struct TracklistListView: View {
                 .onMove { source, destination in
                     self.viewModel.moveTracklist(from: source, to: destination)
                 }
+
+                if self.viewModel.hasMorePages {
+                    ProgressView()
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .id(self.viewModel.pageLoadId)
+                        .onAppear {
+                            self.viewModel.loadNextPage()
+                        }
+                }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)

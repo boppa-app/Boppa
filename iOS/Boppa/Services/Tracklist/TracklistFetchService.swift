@@ -10,6 +10,11 @@ struct TracklistResponse {
     let continuation: [String: Any]?
 }
 
+struct TracklistListResponse {
+    let tracklists: [Tracklist]
+    let continuation: [String: Any]?
+}
+
 class TracklistFetchService {
     static let shared = TracklistFetchService()
 
@@ -262,48 +267,58 @@ class TracklistFetchService {
         )
     }
 
-    func fetchAlbumsForArtist(artist: Artist, mediaSource: MediaSource) async throws -> [Tracklist] {
+    func fetchAlbumsForArtist(
+        artist: Artist, mediaSource: MediaSource, previousResult: [String: Any]? = nil
+    ) async throws -> TracklistListResponse {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
         guard let script = config.data.list?.artistAlbums else {
             logger.warning("No list.artistAlbums script for '\(mediaSourceId)'")
-            return []
+            return TracklistListResponse(tracklists: [], continuation: nil)
         }
-        logger.info("Fetching all albums for artist '\(artist.name)' on '\(mediaSourceId)'...")
+        logger.info("Fetching albums page for artist '\(artist.name)' on '\(mediaSourceId)'...")
         let response = try ListArtistAlbumsResponse(
             await JSExecutionEngine.shared.execute(
-                script: script, params: ["id": artist.mediaId],
+                script: script,
+                params: scriptParams(["id": artist.mediaId], previousResult: previousResult),
                 domain: config.url,
                 context: mediaSource.contextValues
             )
         )
         logger.info("Fetched \(response.items.count) album(s) for artist '\(artist.name)'")
-        return response.items.map {
-            $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .album)
-        }
+        return TracklistListResponse(
+            tracklists: response.items.map {
+                $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .album)
+            },
+            continuation: response.continuation
+        )
     }
 
-    func fetchPlaylistsForArtist(artist: Artist, mediaSource: MediaSource) async throws
-        -> [Tracklist]
-    {
+    func fetchPlaylistsForArtist(
+        artist: Artist, mediaSource: MediaSource, previousResult: [String: Any]? = nil
+    ) async throws -> TracklistListResponse {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
         guard let script = config.data.list?.artistPlaylists else {
             logger.warning("No list.artistPlaylists script for '\(mediaSourceId)'")
-            return []
+            return TracklistListResponse(tracklists: [], continuation: nil)
         }
-        logger.info("Fetching all playlists for artist '\(artist.name)' on '\(mediaSourceId)'...")
+        logger.info("Fetching playlists page for artist '\(artist.name)' on '\(mediaSourceId)'...")
         let response = try ListArtistPlaylistsResponse(
             await JSExecutionEngine.shared.execute(
-                script: script, params: ["id": artist.mediaId],
+                script: script,
+                params: scriptParams(["id": artist.mediaId], previousResult: previousResult),
                 domain: config.url,
                 context: mediaSource.contextValues
             )
         )
         logger.info("Fetched \(response.items.count) playlist(s) for artist '\(artist.name)'")
-        return response.items.map {
-            $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .playlist)
-        }
+        return TracklistListResponse(
+            tracklists: response.items.map {
+                $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .playlist)
+            },
+            continuation: response.continuation
+        )
     }
 
     // MARK: - Private

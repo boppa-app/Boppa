@@ -20,12 +20,18 @@ class TracklistListViewModel {
     var errorMessage: String?
     var sortMode: SortMode = .defaultOrder
     var isEditing = false
+    var hasMorePages = false
+    var pageLoadId = 0
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
     private var libraryType: TracklistListType?
+    private var artistLoadType: TracklistListType?
+    private var artist: Artist?
+    private var mediaSource: MediaSource?
+    private var continuation: [String: Any]?
 
     @ObservationIgnored
     private var observers: [NSObjectProtocol] = []
@@ -172,11 +178,61 @@ class TracklistListViewModel {
     ) {
         guard !self.didLoad else { return }
         self.didLoad = true
+        self.artistLoadType = type
+        self.artist = artist
+        self.mediaSource = mediaSource
         switch type {
         case .albums:
             self.fetchAlbums(artist: artist, mediaSource: mediaSource)
         case .playlists:
             self.fetchPlaylists(artist: artist, mediaSource: mediaSource)
+        }
+    }
+
+    func loadNextPage() {
+        guard let continuation = self.continuation,
+              !self.isLoading,
+              let type = self.artistLoadType,
+              let artist = self.artist,
+              let mediaSource = self.mediaSource
+        else {
+            return
+        }
+
+        self.isLoading = true
+
+        self.fetchTask = Task {
+            do {
+                let response: TracklistListResponse
+                switch type {
+                case .albums:
+                    response = try await TracklistFetchService.shared.fetchAlbumsForArtist(
+                        artist: artist, mediaSource: mediaSource, previousResult: continuation
+                    )
+                case .playlists:
+                    response = try await TracklistFetchService.shared.fetchPlaylistsForArtist(
+                        artist: artist, mediaSource: mediaSource, previousResult: continuation
+                    )
+                }
+
+                guard !Task.isCancelled else { return }
+
+                self.tracklists.append(contentsOf: response.tracklists)
+                self.continuation = response.continuation
+                self.hasMorePages = response.continuation != nil
+                self.pageLoadId += 1
+                self.isLoading = false
+
+                logger.info(
+                    "Loaded next page: \(response.tracklists.count) item(s), total: \(self.tracklists.count), hasMore: \(self.hasMorePages)"
+                )
+            } catch {
+                guard !Task.isCancelled else { return }
+
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+                logger.error("Failed to load next page: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -204,14 +260,16 @@ class TracklistListViewModel {
 
         self.fetchTask = Task {
             do {
-                let result = try await TracklistFetchService.shared.fetchAlbumsForArtist(
+                let response = try await TracklistFetchService.shared.fetchAlbumsForArtist(
                     artist: artist,
                     mediaSource: mediaSource
                 )
 
                 guard !Task.isCancelled else { return }
 
-                self.tracklists = result
+                self.tracklists = response.tracklists
+                self.continuation = response.continuation
+                self.hasMorePages = response.continuation != nil
                 self.isLoading = false
 
                 logger.info("Loaded \(self.tracklists.count) album(s) for artist '\(artist.name)'")
@@ -235,14 +293,16 @@ class TracklistListViewModel {
 
         self.fetchTask = Task {
             do {
-                let result = try await TracklistFetchService.shared.fetchPlaylistsForArtist(
+                let response = try await TracklistFetchService.shared.fetchPlaylistsForArtist(
                     artist: artist,
                     mediaSource: mediaSource
                 )
 
                 guard !Task.isCancelled else { return }
 
-                self.tracklists = result
+                self.tracklists = response.tracklists
+                self.continuation = response.continuation
+                self.hasMorePages = response.continuation != nil
                 self.isLoading = false
 
                 logger.info("Loaded \(self.tracklists.count) playlist(s) for artist '\(artist.name)'")
