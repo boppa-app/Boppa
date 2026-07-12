@@ -261,6 +261,16 @@ struct RecentsSectionsView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0).onChanged { _ in self.collapseExpandedAlbum() }
+        )
+    }
+
+    private func collapseExpandedAlbum() {
+        guard self.expandedEntryId != nil else { return }
+        withAnimation(.easeInOut(duration: 0.25)) {
+            self.expandedEntryId = nil
+        }
     }
 
     private func sectionHeader(
