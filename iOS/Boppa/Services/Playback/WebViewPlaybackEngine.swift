@@ -113,6 +113,7 @@ final class WebViewPlaybackEngine: NSObject {
 
     private func serializeTrackData(track: Track) -> String? {
         let metadata = track.metadata.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+        let context = MediaSourceStorageManager.shared.fetchOne(id: self.config.id)?.contextValues ?? [:]
         let trackData: [String: Any] = [
             "id": track.mediaId,
             "title": track.title,
@@ -122,6 +123,7 @@ final class WebViewPlaybackEngine: NSObject {
             "highResArtworkUrl": ArtworkURLBridge.localURLString(for: track.highResArtworkUrl),
             "url": track.url ?? "",
             "metadata": metadata,
+            "context": context,
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: trackData),
