@@ -31,7 +31,9 @@ data:
 
 Each script is called with `params.id` set to the relevant media id (an album, playlist, or artist id, previously returned as `id` from a search or another list/get script), plus `params.cookies` and, if applicable, `params.context`, exactly as in [Search Scripts](/docs/media-sources/search).
 
-`list.album`, `list.playlist`, `list.artistSongs`, and `list.artistVideos` all return a page of tracks and must call `postResult` with the same shape used by `search.songs`:
+### `list.album`, `list.playlist`
+
+These return a page of tracks and must call `postResult` with the same shape used by `search.songs`:
 
 ```js
 postResult({
@@ -52,7 +54,13 @@ postResult({
 });
 ```
 
-`list.artistAlbums` and `list.artistPlaylists` return a page of albums or playlists. They're called when the corresponding section of an artist's page is opened. They use the same item shape as `search.albums` and `search.playlists`.
+### `list.artistSongs`, `list.artistVideos`
+
+These return a page of tracks, using the same item shape as `list.album` and `list.playlist` above. They're called when the corresponding section of an artist's page is opened.
+
+### `list.artistAlbums`, `list.artistPlaylists`
+
+These return a page of albums or playlists. They're called when the corresponding section of an artist's page is opened. They use the same item shape as `search.albums` and `search.playlists`.
 
 ```js
 postResult({
@@ -70,6 +78,8 @@ postResult({
   // any additional fields become params.previousResult on the next page
 });
 ```
+
+### Pagination
 
 All six of these scripts support the same pagination contract described in [Search Scripts: Pagination](/docs/media-sources/search#pagination). When the user scrolls to the bottom of the current list, the script is called again with `params.previousResult` set to whatever non-`items` fields the previous call returned. When Boppa needs a complete track list at once, for example when saving an album to the library, it calls `list.album`, `list.playlist`, `list.artistSongs`, or `list.artistVideos` repeatedly until no continuation is returned and combines every page.
 
