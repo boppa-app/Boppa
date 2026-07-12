@@ -89,13 +89,13 @@ final class WebViewPlaybackEngine: NSObject {
     private func serializeTrackData(track: Track) -> String? {
         let metadata = track.metadata.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
         let trackData: [String: Any] = [
+            "id": track.id,
             "title": track.title,
             "subtitle": track.subtitle ?? "",
             "duration": track.duration ?? 0,
             "lowResArtworkUrl": ArtworkURLBridge.localURLString(for: track.lowResArtworkUrl),
             "highResArtworkUrl": ArtworkURLBridge.localURLString(for: track.highResArtworkUrl),
             "url": track.url ?? "",
-            "mediaSourceId": track.mediaSourceId,
             "metadata": metadata,
         ]
 
