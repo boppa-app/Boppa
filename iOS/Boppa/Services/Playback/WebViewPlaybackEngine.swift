@@ -19,6 +19,13 @@ final class WebViewPlaybackEngine: NSObject {
 
     private var isReady = false
     private var pendingTrack: Track?
+    private var domReadyAt: Date?
+
+    /// `mediaTypesRequiringUserActionForPlayback = .all` means a player page's autoplay-on-load
+    /// only reliably succeeds once the WebView has been settled for a moment after its DOM
+    /// finished loading; calling `boppaLoad` right as navigation finishes races that and can
+    /// leave playback stuck paused.
+    private static let autoplayWarmupInterval: TimeInterval = 1
 
     init(config: MediaSourceConfig) {
         self.config = config
@@ -47,7 +54,24 @@ final class WebViewPlaybackEngine: NSObject {
             self.pendingTrack = track
             return
         }
-        self.performLoad(track: track)
+
+        let remainingWarmup = self.domReadyAt.map {
+            Self.autoplayWarmupInterval - Date().timeIntervalSince($0)
+        } ?? 0
+        guard remainingWarmup > 0 else {
+            self.performLoad(track: track)
+            return
+        }
+
+        logger.info(
+            "WebView within autoplay warmup window, deferring boppaLoad for '\(track.title)' by \(remainingWarmup)s"
+        )
+        self.pendingTrack = track
+        DispatchQueue.main.asyncAfter(deadline: .now() + remainingWarmup) { [weak self] in
+            guard let self, let pending = self.pendingTrack else { return }
+            self.pendingTrack = nil
+            self.performLoad(track: pending)
+        }
     }
 
     private func performLoad(track: Track) {
@@ -78,11 +102,12 @@ final class WebViewPlaybackEngine: NSObject {
 
     private func handleNavigationFinished() {
         self.isReady = true
+        self.domReadyAt = Date()
         logger.info("WebView ready for '\(self.config.name)'")
 
         if let pendingTrack {
             self.pendingTrack = nil
-            self.performLoad(track: pendingTrack)
+            self.load(track: pendingTrack)
         }
     }
 
