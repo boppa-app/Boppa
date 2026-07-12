@@ -315,7 +315,8 @@ class TrackStorageManager {
                     lowResArtworkUrl: track.lowResArtworkUrl,
                     highResArtworkUrl: track.highResArtworkUrl,
                     url: track.url,
-                    type: track.type.rawValue
+                    type: track.type.rawValue,
+                    metadata: track.metadata
                 )
             }.execute(db)
             let inserted = StoredTrack(
@@ -327,7 +328,8 @@ class TrackStorageManager {
                 lowResArtworkUrl: track.lowResArtworkUrl,
                 highResArtworkUrl: track.highResArtworkUrl,
                 url: track.url,
-                type: track.type.rawValue
+                type: track.type.rawValue,
+                metadata: track.metadata
             )
             try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
             try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
@@ -342,6 +344,7 @@ class TrackStorageManager {
             $0.lowResArtworkUrl = track.lowResArtworkUrl
             $0.highResArtworkUrl = track.highResArtworkUrl
             $0.type = track.type.rawValue
+            $0.metadata = track.metadata
         }
         .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
         .execute(db)

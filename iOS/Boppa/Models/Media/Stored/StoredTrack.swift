@@ -14,6 +14,7 @@ nonisolated struct StoredTrack {
     var type: String
     var lastPlayedTimestamp: Double? = nil
     var isRecent: Bool = false
+    var metadata: Data? = nil
 }
 
 extension StoredTrack: Identifiable {
@@ -54,7 +55,8 @@ extension StoredTrack {
             url: self.url,
             type: Track.TrackType(rawValue: self.type) ?? .song,
             artists: artists,
-            albums: albums
+            albums: albums,
+            metadata: self.metadata
         )
     }
 
@@ -72,6 +74,7 @@ extension StoredTrack {
             && self.duration == track.duration
             && self.lowResArtworkUrl == track.lowResArtworkUrl
             && self.highResArtworkUrl == track.highResArtworkUrl
+            && self.metadata == track.metadata
             && Self.artistsContentMatch(artists, track.artists)
             && Self.albumsContentMatch(albums, track.albums)
     }

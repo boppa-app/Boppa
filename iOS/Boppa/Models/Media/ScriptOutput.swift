@@ -23,6 +23,13 @@ func scriptParams(_ params: [String: Any], previousResult: [String: Any]? = nil)
     return merged
 }
 
+func scriptMetadata(_ value: Any?) -> Data? {
+    guard let dict = value as? [String: Any], JSONSerialization.isValidJSONObject(dict) else {
+        return nil
+    }
+    return try? JSONSerialization.data(withJSONObject: dict)
+}
+
 // MARK: - Embedded Ref Types (Nested Within ScriptTrack)
 
 struct ScriptArtistRef {
@@ -73,6 +80,7 @@ struct ScriptTrack {
     let url: String?
     let artists: [ScriptArtistRef]
     let albums: [ScriptAlbumRef]
+    let metadata: Data?
 
     init?(_ dict: [String: Any]) {
         guard let id = scriptString(dict["id"]),
@@ -87,6 +95,7 @@ struct ScriptTrack {
         self.url = dict["url"] as? String
         self.artists = (dict["artists"] as? [[String: Any]] ?? []).compactMap { ScriptArtistRef($0) }
         self.albums = (dict["albums"] as? [[String: Any]] ?? []).compactMap { ScriptAlbumRef($0) }
+        self.metadata = scriptMetadata(dict["metadata"])
     }
 }
 
@@ -350,7 +359,8 @@ extension ScriptTrack {
             url: self.url,
             type: type,
             artists: self.artists.map { Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl) },
-            albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl, tracklistType: .album) }
+            albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl, tracklistType: .album) },
+            metadata: self.metadata
         )
     }
 }

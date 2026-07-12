@@ -88,6 +88,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "type" TEXT NOT NULL CHECK (type IN ('song', 'video')),
                   "lastPlayedTimestamp" REAL,
                   "isRecent" INTEGER NOT NULL DEFAULT 0,
+                  "metadata" BLOB,
                   PRIMARY KEY ("mediaId", "mediaSourceId")
                 ) STRICT
                 """

@@ -13,6 +13,7 @@ struct Track: Identifiable, Equatable {
     let type: TrackType
     let artists: [Artist]
     let albums: [Tracklist]
+    let metadata: Data?
 
     enum TrackType: String, Equatable, Hashable {
         case song
@@ -34,7 +35,8 @@ struct Track: Identifiable, Equatable {
         url: String? = nil,
         type: TrackType = .song,
         artists: [Artist] = [],
-        albums: [Tracklist] = []
+        albums: [Tracklist] = [],
+        metadata: Data? = nil
     ) {
         self.init(
             id: UUID(),
@@ -48,7 +50,8 @@ struct Track: Identifiable, Equatable {
             url: url,
             type: type,
             artists: artists,
-            albums: albums
+            albums: albums,
+            metadata: metadata
         )
     }
 
@@ -64,7 +67,8 @@ struct Track: Identifiable, Equatable {
         url: String?,
         type: TrackType,
         artists: [Artist],
-        albums: [Tracklist]
+        albums: [Tracklist],
+        metadata: Data?
     ) {
         self.id = id
         self.mediaId = mediaId
@@ -78,6 +82,7 @@ struct Track: Identifiable, Equatable {
         self.type = type
         self.artists = artists
         self.albums = albums
+        self.metadata = metadata
     }
 
     /// Preserves `id` so SwiftUI identity is stable when enriching an
@@ -95,7 +100,8 @@ struct Track: Identifiable, Equatable {
             url: fetched.url ?? self.url,
             type: self.type,
             artists: fetched.artists.isEmpty ? self.artists : fetched.artists,
-            albums: fetched.albums.isEmpty ? self.albums : fetched.albums
+            albums: fetched.albums.isEmpty ? self.albums : fetched.albums,
+            metadata: fetched.metadata ?? self.metadata
         )
     }
 
@@ -111,6 +117,7 @@ struct Track: Identifiable, Equatable {
             && lhs.type == rhs.type
             && lhs.artists == rhs.artists
             && lhs.albums == rhs.albums
+            && lhs.metadata == rhs.metadata
     }
 
     var isMediaSourceEnabled: Bool {
