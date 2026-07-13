@@ -4,6 +4,7 @@ import Foundation
 @Observable
 class AddMediaSourceViewModel {
     var configUrl: String
+    var selectedFileURL: URL?
     var isLoading = false
     var isGatheringContext = false
     var errorMessage: String?
@@ -12,18 +13,32 @@ class AddMediaSourceViewModel {
         self.configUrl = configUrl
     }
 
+    var selectedFileName: String? {
+        self.selectedFileURL?.lastPathComponent
+    }
+
     var isAddDisabled: Bool {
-        self.configUrl.isEmpty || self.isLoading
+        guard !self.isLoading else { return true }
+        if self.selectedFileURL != nil { return false }
+        return self.configUrl.isEmpty
+    }
+
+    func clearSelectedFile() {
+        self.selectedFileURL = nil
     }
 
     func addMediaSource() async -> Bool {
         self.isLoading = true
         self.errorMessage = nil
 
-        let formattedUrl = self.configUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-
         do {
-            let mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(configUrl: formattedUrl)
+            let mediaSource: MediaSource
+            if let fileURL = self.selectedFileURL {
+                mediaSource = try Self.loadMediaSource(fromFile: fileURL)
+            } else {
+                let formattedUrl = self.configUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+                mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(configUrl: formattedUrl)
+            }
 
             try MediaSourceStorageManager.shared.insert([mediaSource])
 
@@ -49,5 +64,16 @@ class AddMediaSourceViewModel {
             self.errorMessage = error.localizedDescription
             return false
         }
+    }
+
+    private static func loadMediaSource(fromFile url: URL) throws -> MediaSource {
+        let didStartAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        let data = try Data(contentsOf: url)
+        return try MediaSource.fromConfigData(data, configUrl: nil)
     }
 }

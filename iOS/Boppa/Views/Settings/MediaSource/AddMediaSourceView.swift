@@ -1,10 +1,18 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct AddMediaSourceView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: AddMediaSourceViewModel
+    @State private var isFileImporterPresented = false
     private let autoSubmit: Bool
+
+    private static let configContentTypes: [UTType] = [
+        UTType(filenameExtension: "yaml"),
+        UTType(filenameExtension: "yml"),
+        .item,
+    ].compactMap { $0 }
 
     init(initialConfigUrl: String = "") {
         self._viewModel = State(initialValue: AddMediaSourceViewModel(configUrl: initialConfigUrl))
@@ -14,15 +22,56 @@ struct AddMediaSourceView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Media Source Config URL") {
-                    TextField("config.boppa.app/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
+                if let fileName = self.viewModel.selectedFileName {
+                    Section("File Selected") {
+                        HStack {
+                            Image(systemName: "doc")
+                                .foregroundColor(Color.purp)
+                            Text(fileName)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer()
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    self.viewModel.clearSelectedFile()
+                                }
+                            }) {
+                                Image(systemName: "xmark")
+                                    .foregroundColor(.red)
+                            }
+                            .disabled(self.viewModel.isLoading)
+                            .accessibilityLabel("Remove Selected File")
+                            .accessibilityHint("Detach the selected config file")
+                        }
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                } else {
+                    Section("Option 1: From URL") {
+                        TextField("config.boppa.app/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .disabled(self.viewModel.isLoading)
+                            .tint(Color.purp)
+                            .accessibilityLabel("Media Source Config URL")
+                            .accessibilityHint("Enter the URL of the media source config")
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+
+                    Section("Option 2: From Files") {
+                        Button(action: { self.isFileImporterPresented = true }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.badge.plus")
+                                    .foregroundColor(.purp)
+                                Text("Choose File")
+                                    .foregroundColor(.purp)
+                            }
+                        }
                         .disabled(self.viewModel.isLoading)
-                        .tint(Color.purp)
-                        .accessibilityLabel("Media Source Config URL")
-                        .accessibilityHint("Enter the URL of the media source config")
+                        .accessibilityLabel("Choose Media Source Config File")
+                        .accessibilityHint("Pick a local config file to import")
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 if let errorMessage = viewModel.errorMessage {
                     Label {
@@ -52,6 +101,20 @@ struct AddMediaSourceView: View {
         .task {
             guard self.autoSubmit, !self.viewModel.isAddDisabled else { return }
             self.addMediaSource()
+        }
+        .fileImporter(
+            isPresented: self.$isFileImporterPresented,
+            allowedContentTypes: Self.configContentTypes
+        ) { result in
+            switch result {
+            case let .success(url):
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.viewModel.selectedFileURL = url
+                }
+                self.viewModel.errorMessage = nil
+            case let .failure(error):
+                self.viewModel.errorMessage = error.localizedDescription
+            }
         }
     }
 
