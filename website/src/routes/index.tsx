@@ -1,17 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShowcase } from "~/components/app-showcase";
+import { AppShowcase, DEFAULT_SCREENSHOT } from "~/components/app-showcase";
 import { SiteFooter } from "~/components/site-footer";
 import { SiteHeader } from "~/components/site-header";
 import { StoreLink } from "~/components/store-link";
 import { pageMeta } from "~/meta";
 
 export const Route = createFileRoute("/")({
-  head: () =>
-    pageMeta(
+  head: () => {
+    const meta = pageMeta(
       "Boppa - Music for All",
       "Turn any website into a native audio player.",
       "/",
-    ),
+    );
+    return {
+      ...meta,
+      links: [
+        ...(meta.links ?? []),
+        {
+          rel: "preload",
+          as: "image",
+          type: "image/webp",
+          href: DEFAULT_SCREENSHOT.src,
+        },
+      ],
+    };
+  },
   component: Home,
 });
 

@@ -5,7 +5,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 const SWIPE_THRESHOLD_PX = 50;
 const DRAG_THRESHOLD_PX = 10;
 
-const SCREENSHOTS = [
+export const SCREENSHOTS = [
   {
     src: "/screenshots/search.webp",
     alt: "Boppa search results for a song",
@@ -29,6 +29,7 @@ const SCREENSHOTS = [
 ] as const;
 
 const DEFAULT_INDEX = 2;
+export const DEFAULT_SCREENSHOT = SCREENSHOTS[DEFAULT_INDEX];
 
 const TRACK_TRANSFORM_CLASSES =
   "translate-x-[calc(50%_-_36%_-_var(--active-index)*(72%_+_24px))] " +
@@ -99,7 +100,7 @@ export function AppShowcase() {
   }, []);
 
   return (
-    <section className="py-4 md:py-8 animate-fade-in-up">
+    <section className="py-4 md:py-8">
       <div className="relative">
         <div
           aria-hidden="true"
@@ -151,6 +152,8 @@ export function AppShowcase() {
                   <img
                     src={shot.src}
                     alt={shot.alt}
+                    width={640}
+                    height={1262}
                     draggable={false}
                     className="w-full h-auto drop-shadow-2xl"
                   />

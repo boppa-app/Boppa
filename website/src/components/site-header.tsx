@@ -4,7 +4,7 @@ export function SiteHeader() {
   return (
     <header className="flex items-center justify-between">
       <Link to="/" className="flex items-center gap-3">
-        <img src="/logo.png" alt="Boppa" className="w-8 h-8" />
+        <img src="/logo.png" alt="Boppa" width={32} height={32} className="w-8 h-8" />
         <span className="text-lg font-medium">Boppa</span>
       </Link>
       <nav className="flex items-center gap-6">
