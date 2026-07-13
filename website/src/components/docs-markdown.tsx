@@ -1,6 +1,6 @@
 import * as React from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
-import { getDocsHighlighter, docsRehypePlugins, docsRemarkPlugins } from "~/docs-rehype";
+import { docsHighlighter, docsRehypePlugins, docsRemarkPlugins } from "~/docs-rehype";
 
 function getCodeText(children: React.ReactNode): string {
   return React.Children.toArray(children).join("");
@@ -21,44 +21,13 @@ function DocsPre({
     : undefined;
   const code = getCodeText(codeProps?.children);
   const language = getLanguage(codeProps?.className);
-  const [highlightedHtml, setHighlightedHtml] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    let cancelled = false;
-
-    setHighlightedHtml(null);
-    if (!language) return;
-    const lang = language;
-
-    async function highlight() {
-      try {
-        const highlighter = await getDocsHighlighter();
-        if (cancelled) return;
-        setHighlightedHtml(
-          highlighter.codeToHtml(code.replace(/\n$/, ""), {
-            lang,
-            theme: "catppuccin-mocha",
-          }),
-        );
-      } catch {
-        if (!cancelled) setHighlightedHtml(null);
-      }
-    }
-
-    void highlight();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [code, language]);
-
-  const highlightedMarkup = React.useMemo(
-    () => (highlightedHtml ? { __html: highlightedHtml } : undefined),
-    [highlightedHtml],
-  );
-
-  if (highlightedMarkup) {
-    return <div dangerouslySetInnerHTML={highlightedMarkup} />;
+  if (language && docsHighlighter.getLoadedLanguages().includes(language)) {
+    const html = docsHighlighter.codeToHtml(code.replace(/\n$/, ""), {
+      lang: language,
+      theme: "catppuccin-mocha",
+    });
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;
   }
 
   return <pre {...props}>{children}</pre>;

@@ -204,6 +204,20 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   color: var(--color-foreground);
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.docs-prose pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.docs-prose pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.docs-prose pre::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
 }
 
 .docs-prose pre code {
