@@ -25,13 +25,17 @@ struct AddMediaSourceView: View {
                         .accessibilityHint("Enter the URL of the media source config")
                 }
                 if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(Color.red)
-                        .font(.callout)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                    Label {
+                        Text(errorMessage)
+                            .multilineTextAlignment(.leading)
+                    } icon: {
+                        Image(systemName: "exclamationmark.circle")
+                    }
+                    .foregroundColor(Color.red)
+                    .font(.callout)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             }
             .scrollDisabled(true)

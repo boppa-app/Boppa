@@ -31,7 +31,13 @@ class AddMediaSourceViewModel {
             if hasContextConfigs {
                 self.isGatheringContext = true
                 MediaSourceContextProvider.shared.refresh()
-                await MediaSourceContextProvider.shared.waitForFirstContextGather(mediaSourceId: mediaSource.id)
+                do {
+                    try await MediaSourceContextProvider.shared.waitForFirstContextGather(mediaSourceId: mediaSource.id)
+                } catch {
+                    self.isGatheringContext = false
+                    try? MediaSourceStorageManager.shared.delete(id: mediaSource.id)
+                    throw error
+                }
                 self.isGatheringContext = false
             }
 

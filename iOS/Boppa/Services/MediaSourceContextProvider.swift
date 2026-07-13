@@ -14,6 +14,17 @@ private let logger = Logger(
     category: "MediaSourceContextProvider"
 )
 
+enum MediaSourceContextError: LocalizedError {
+    case failed(message: String?)
+
+    var errorDescription: String? {
+        switch self {
+        case let .failed(message):
+            return message ?? "Failed to gather context."
+        }
+    }
+}
+
 @Observable
 final class MediaSourceContextProvider: NSObject {
     static let shared = MediaSourceContextProvider()
@@ -31,7 +42,7 @@ final class MediaSourceContextProvider: NSObject {
     private var mediaSourceAddedObserver: NSObjectProtocol?
     private var mediaSourceRemovedObserver: NSObjectProtocol?
     private var pendingContextURLs: [String: Set<String>] = [:]
-    private var contextGatheredContinuations: [String: CheckedContinuation<Void, Never>] = [:]
+    private var contextGatheredContinuations: [String: CheckedContinuation<Void, Error>] = [:]
 
     override private init() {
         super.init()
@@ -105,11 +116,11 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    func waitForFirstContextGather(mediaSourceId: String) async {
+    func waitForFirstContextGather(mediaSourceId: String) async throws {
         if MediaSourceStorageManager.shared.fetchOne(id: mediaSourceId)?.contextLastGatheredTimestamp != nil {
             return
         }
-        await withCheckedContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             self.contextGatheredContinuations[mediaSourceId] = continuation
         }
     }
@@ -280,6 +291,9 @@ final class MediaSourceContextProvider: NSObject {
             window.boppaSetContextValues = function(values) {
                 window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'contextValues', values: values });
             };
+            window.boppaContextFailed = function(message) {
+                window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'contextFailed', message: message });
+            };
             window.boppaPopup = function(id) {
                 window.webkit.messageHandlers.\(Self.messageHandlerName).postMessage({ type: 'popup', id: id });
             };
@@ -310,10 +324,25 @@ final class MediaSourceContextProvider: NSObject {
                 let isFirstGather = (try? MediaSourceStorageManager.shared.setContextLastGatheredTimestamp(id: mediaSourceId)) ?? false
                 if isFirstGather, let continuation = self.contextGatheredContinuations.removeValue(forKey: mediaSourceId) {
                     logger.info("All context gathered for '\(mediaSourceId)' for the first time. Resuming continuation.")
-                    continuation.resume()
+                    continuation.resume(returning: ())
                 } else {
                     logger.info("All context gathered for '\(mediaSourceId)'. Timestamp updated.")
                 }
+            }
+        }
+
+        self.completeCurrentWork()
+    }
+
+    @MainActor
+    private func handleContextFailedMessage(message: String?) {
+        logger.warning("boppaContextFailed signaled: \(message ?? "no message")")
+
+        if let mediaSourceId = self.currentMediaSourceId {
+            self.pendingContextURLs.removeValue(forKey: mediaSourceId)
+
+            if let continuation = self.contextGatheredContinuations.removeValue(forKey: mediaSourceId) {
+                continuation.resume(throwing: MediaSourceContextError.failed(message: message))
             }
         }
 
@@ -358,6 +387,10 @@ extension MediaSourceContextProvider: WKScriptMessageHandler {
                 } else {
                     logger.warning("contextValues message missing 'values' dictionary")
                 }
+
+            case "contextFailed":
+                let message = body["message"] as? String
+                self.handleContextFailedMessage(message: message)
 
             case "popup":
                 let id = body["id"] as? String ?? ""
