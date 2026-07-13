@@ -6,8 +6,6 @@ import Yams
 nonisolated struct MediaSource: Identifiable, Hashable {
     @Column(primaryKey: true)
     var id: String
-    var name: String
-    var url: String
     var configData: Data
     var configUrl: String?
     var autoUpdate: Bool
@@ -17,7 +15,6 @@ nonisolated struct MediaSource: Identifiable, Hashable {
     var lastUpdatedTimestamp: Double
     var contextValuesJSON: String
     var contextLastGatheredTimestamp: Double?
-    var version: String
 }
 
 extension MediaSource {
@@ -43,10 +40,8 @@ extension MediaSource {
         return self.contextLastGatheredTimestamp != nil
     }
 
-    init(id: String, name: String, url: String, config: MediaSourceConfig, configUrl: String? = nil, sortOrder: String = "a0", isEnabled: Bool = true, isDefault: Bool = false) {
+    init(id: String, config: MediaSourceConfig, configUrl: String? = nil, sortOrder: String = "a0", isEnabled: Bool = true, isDefault: Bool = false) {
         self.id = id
-        self.name = name
-        self.url = url
         self.configData = (try? YAMLEncoder().encode(config)).flatMap { Data($0.utf8) } ?? Data()
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
@@ -56,7 +51,6 @@ extension MediaSource {
         self.contextLastGatheredTimestamp = nil
         self.configUrl = configUrl
         self.autoUpdate = true
-        self.version = config.version
     }
 
     static func fromConfigData(_ data: Data, configUrl: String? = nil, isDefault: Bool = false) throws -> MediaSource {
@@ -69,7 +63,7 @@ extension MediaSource {
             throw MediaSourceImportError.malformedConfig(detail: error.localizedDescription)
         }
 
-        return MediaSource(id: config.id, name: config.name, url: config.url, config: config, configUrl: configUrl, isDefault: isDefault)
+        return MediaSource(id: config.id, config: config, configUrl: configUrl, isDefault: isDefault)
     }
 
     private static func describeDecodingError(_ error: DecodingError) -> String {

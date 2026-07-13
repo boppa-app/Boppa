@@ -49,20 +49,17 @@ class MediaSourceStorageManager {
         logger.info("Inserted \(mediaSources.count) media source(s)")
     }
 
-    func updateConfig(id: String, configData: Data, name: String, url: String, version: String) throws {
+    func updateConfig(id: String, configData: Data) throws {
         let now = Date().timeIntervalSince1970
         try self.database.write { db in
             try MediaSource.update {
                 $0.configData = #bind(configData)
-                $0.name = name
-                $0.url = url
-                $0.version = version
                 $0.lastUpdatedTimestamp = #bind(now)
             }
             .where { $0.id.eq(id) }
             .execute(db)
         }
-        logger.info("Updated config for '\(id)' to version '\(version)'")
+        logger.info("Updated config for '\(id)'")
     }
 
     func setAutoUpdate(id: String, autoUpdate: Bool) throws {

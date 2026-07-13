@@ -169,10 +169,10 @@ struct SettingsView: View {
                     .frame(width: 32, height: 32)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(mediaSource.name)
+                Text(mediaSource.config.name)
                     .font(.body)
                     .foregroundColor(mediaSource.isEnabled ? .primary : Color(.systemGray2))
-                Text(mediaSource.url)
+                Text(mediaSource.config.url)
                     .font(.caption)
                     .foregroundColor(mediaSource.isEnabled ? .secondary : Color(.systemGray3))
                     .lineLimit(1)

@@ -84,7 +84,7 @@ final class WebViewPlaybackEngineRegistry {
 
         for mediaSource in mediaSources where self.engines[mediaSource.id] == nil {
             self.createEngine(for: mediaSource)
-            logger.info("Created engine for newly added source '\(mediaSource.name)'")
+            logger.info("Created engine for newly added source '\(mediaSource.config.name)'")
         }
     }
 
@@ -100,7 +100,7 @@ final class WebViewPlaybackEngineRegistry {
             return
         }
         self.createEngine(for: mediaSource)
-        logger.info("Created engine for enabled source '\(mediaSource.name)'")
+        logger.info("Created engine for enabled source '\(mediaSource.config.name)'")
     }
 
     private func createEngine(for mediaSource: MediaSource) {

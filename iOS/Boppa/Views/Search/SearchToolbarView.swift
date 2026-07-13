@@ -94,7 +94,7 @@ struct SearchToolbarView: View {
                     .frame(width: 24, height: 24)
             }
         }
-        .accessibilityLabel(self.viewModel.selectedMediaSource.map { "Selected source: \($0.name)" } ?? "Select Media Source")
+        .accessibilityLabel(self.viewModel.selectedMediaSource.map { "Selected source: \($0.config.name)" } ?? "Select Media Source")
         .accessibilityHint("Choose which media source to search")
         .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {
             MediaSourcePickerSheet(

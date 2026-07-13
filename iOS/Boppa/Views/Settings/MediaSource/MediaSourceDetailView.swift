@@ -20,18 +20,20 @@ struct MediaSourceDetailView: View {
             ScrollFadeView {
                 List {
                     Section("Details") {
-                        LabeledContent("Name", value: self.viewModel.mediaSource.name)
-                        LabeledContent("URL", value: self.viewModel.mediaSource.url)
+                        LabeledContent("Name", value: self.viewModel.mediaSource.config.name)
+                        LabeledContent("URL", value: self.viewModel.mediaSource.config.url)
 
-                        LabeledContent {
-                            VStack(alignment: .trailing, spacing: 4) {
-                                ForEach(self.viewModel.mediaSource.config.effectiveAllowedUrls, id: \.self) { allowedUrl in
-                                    Text(allowedUrl)
+                        if let allowedUrls = self.viewModel.mediaSource.config.allowedUrls, !allowedUrls.isEmpty {
+                            LabeledContent {
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    ForEach(allowedUrls, id: \.self) { allowedUrl in
+                                        Text(allowedUrl)
+                                    }
                                 }
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                            } label: {
+                                Text("Allowed URLs")
                             }
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                        } label: {
-                            Text("Allowed URLs")
                         }
                     }
 
@@ -63,7 +65,7 @@ struct MediaSourceDetailView: View {
                     }
 
                     Section("Status") {
-                        LabeledContent("Version", value: self.viewModel.mediaSource.version)
+                        LabeledContent("Version", value: self.viewModel.mediaSource.config.version)
 
                         LabeledContent {
                             Text(relativeTimeFormatter.localizedString(for: self.viewModel.mediaSource.lastUpdatedDate, relativeTo: Date()))

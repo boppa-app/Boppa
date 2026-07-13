@@ -31,7 +31,7 @@ class MediaSourceImportService {
         }
 
         let mediaSource = try MediaSource.fromConfigData(data, configUrl: urlString, isDefault: isDefault)
-        self.logger.info("Successfully created media source '\(mediaSource.name)' from \(urlString)")
+        self.logger.info("Successfully created media source '\(mediaSource.config.name)' from \(urlString)")
 
         return mediaSource
     }
@@ -52,18 +52,15 @@ class MediaSourceImportService {
                             if updated.id != source.id {
                                 self.logger.warning("Config ID mismatch for '\(source.id)': remote returned '\(updated.id)', skipping")
                             } else {
-                                self.logger.info("Config for '\(source.id)' is up to date (version \(source.version))")
+                                self.logger.info("Config for '\(source.id)' is up to date (version \(source.config.version))")
                             }
                             return
                         }
                         try MediaSourceStorageManager.shared.updateConfig(
                             id: source.id,
-                            configData: updated.configData,
-                            name: updated.name,
-                            url: updated.url,
-                            version: updated.version
+                            configData: updated.configData
                         )
-                        self.logger.info("Updated config for '\(source.id)' to version '\(updated.version)'")
+                        self.logger.info("Updated config for '\(source.id)' to version '\(updated.config.version)'")
                     } catch {
                         self.logger.error("Failed to update config for '\(source.id)': \(error)")
                     }
@@ -88,6 +85,6 @@ class MediaSourceImportService {
 
     static func shouldApplyUpdate(stored: MediaSource, fetched: MediaSource) -> Bool {
         guard fetched.id == stored.id else { return false }
-        return fetched.version != stored.version
+        return fetched.config.version != stored.config.version
     }
 }

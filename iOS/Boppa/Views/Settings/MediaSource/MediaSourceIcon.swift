@@ -31,7 +31,7 @@ struct MediaSourceIcon: View {
         }
         .frame(width: self.size, height: self.size)
         .opacity(self.isHighlighted ? 1.0 : 0.35)
-        .accessibilityLabel(self.mediaSource.name)
+        .accessibilityLabel(self.mediaSource.config.name)
         .accessibilityHint(self.mediaSource.isEnabled ? "Enabled" : "Disabled")
     }
 }

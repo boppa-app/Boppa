@@ -59,17 +59,17 @@ struct MediaSourceImportServiceTests {
 
     @Test func parsesVersionFromConfig() throws {
         let source = try MediaSource.fromConfigData(self.yaml(version: "2.3.1"))
-        #expect(source.version == "2.3.1")
+        #expect(source.config.version == "2.3.1")
     }
 
     @Test func parsesNameFromConfig() throws {
         let source = try MediaSource.fromConfigData(self.yaml(name: "Free Music Archive"))
-        #expect(source.name == "Free Music Archive")
+        #expect(source.config.name == "Free Music Archive")
     }
 
     @Test func parsesUrlFromConfig() throws {
         let source = try MediaSource.fromConfigData(self.yaml(url: "https://freemusicarchive.org"))
-        #expect(source.url == "https://freemusicarchive.org")
+        #expect(source.config.url == "https://freemusicarchive.org")
     }
 
     @Test func storesConfigUrl() throws {
