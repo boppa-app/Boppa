@@ -99,7 +99,7 @@ export function AppShowcase() {
   }, []);
 
   return (
-    <section className="py-4 md:py-8">
+    <section className="py-4 md:py-8 animate-fade-in-up">
       <div className="relative">
         <div
           aria-hidden="true"
