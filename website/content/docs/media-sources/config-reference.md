@@ -18,6 +18,7 @@ A media source config is a single YAML file. This page documents every top-level
 | `version` | string | Yes | Free-form version string. Compared on update checks, see [Publishing & Sharing](/docs/media-sources/publishing). |
 | `name` | string | Yes | Display name shown throughout the app. |
 | `url` | string | Yes | The domain the source communicates with, for example `archive.org`. Used to scope cookies for data scripts. |
+| `author` | string | No | Name or handle of the config's author, shown in the source's details in Boppa. |
 | `iconSvg` | string | No | Raw SVG markup shown as the source's icon. |
 | `highlightColor` | string | No | Hex color, for example `"#FFFFFF"`, used for accents associated with the source. |
 | `allowedUrls` | list of strings | No | Hostnames (or full URLs) the source's scripts are allowed to `fetch()`. Defaults to `[url]` when omitted. See [`allowedUrls`](#allowedurls) below. |

@@ -39,6 +39,10 @@ struct MediaSourceDetailView: View {
                                 Text("Allowed URLs")
                             }
                         }
+
+                        if let author = self.viewModel.mediaSource.config.author, !author.isEmpty {
+                            LabeledContent("Author", value: author)
+                        }
                     }
 
                     Section("Options") {

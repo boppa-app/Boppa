@@ -6,6 +6,7 @@ struct MediaSourceConfig: Codable {
     let version: String
     let name: String
     let url: String
+    let author: String?
     let iconSvg: String?
     let highlightColor: String?
     let allowedUrls: [String]?
@@ -19,7 +20,7 @@ struct MediaSourceConfig: Codable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, version, name, url, iconSvg, highlightColor, allowedUrls, context, data, playback, popup
+        case id, version, name, url, author, iconSvg, highlightColor, allowedUrls, context, data, playback, popup
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -28,6 +29,7 @@ struct MediaSourceConfig: Codable {
         self.version = try container.decode(String.self, forKey: .version)
         self.name = try container.decode(String.self, forKey: .name)
         self.url = try container.decode(String.self, forKey: .url)
+        self.author = try container.decodeIfPresent(String.self, forKey: .author)
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
         self.highlightColor = try container.decodeIfPresent(String.self, forKey: .highlightColor)
         self.allowedUrls = try container.decodeIfPresent([String].self, forKey: .allowedUrls)
@@ -43,6 +45,7 @@ struct MediaSourceConfig: Codable {
         try container.encode(self.version, forKey: .version)
         try container.encode(self.name, forKey: .name)
         try container.encode(self.url, forKey: .url)
+        try container.encodeIfPresent(self.author, forKey: .author)
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)
         try container.encodeIfPresent(self.highlightColor, forKey: .highlightColor)
         try container.encodeIfPresent(self.allowedUrls, forKey: .allowedUrls)
