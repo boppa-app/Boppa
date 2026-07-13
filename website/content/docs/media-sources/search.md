@@ -8,7 +8,7 @@ category: Media Sources
 
 # Search Scripts
 
-The `data.search` object contains up to five scripts, one per search category. Each is optional;
+The `data.search` object contains up to five scripts, one per search category. Each is optional,
 a category with no script is simply not offered as a search tab for that source.
 
 ```yaml
@@ -28,7 +28,7 @@ data:
 
 ## Invocation
 
-When a user types a query and selects a category, Boppa runs the corresponding script once per keystroke pause. Each script receives a global `params` object:
+When a user types a query for a specific category, Boppa runs the corresponding script. Each script receives a global `params` object:
 
 | Property | Type | Present when |
 | --- | --- | --- |
