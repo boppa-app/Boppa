@@ -23,6 +23,10 @@ struct MediaSourceDetailView: View {
                         LabeledContent("Name", value: self.viewModel.mediaSource.config.name)
                         LabeledContent("URL", value: self.viewModel.mediaSource.config.url)
 
+                        if let configUrl = self.viewModel.mediaSource.configUrl {
+                            LabeledContent("Config URL", value: configUrl)
+                        }
+
                         if let allowedUrls = self.viewModel.mediaSource.config.allowedUrls, !allowedUrls.isEmpty {
                             LabeledContent {
                                 VStack(alignment: .trailing, spacing: 4) {
