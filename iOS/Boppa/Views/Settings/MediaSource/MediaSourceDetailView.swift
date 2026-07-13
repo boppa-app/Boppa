@@ -22,6 +22,17 @@ struct MediaSourceDetailView: View {
                     Section("Details") {
                         LabeledContent("Name", value: self.viewModel.mediaSource.name)
                         LabeledContent("URL", value: self.viewModel.mediaSource.url)
+
+                        LabeledContent {
+                            VStack(alignment: .trailing, spacing: 4) {
+                                ForEach(self.viewModel.mediaSource.config.effectiveAllowedUrls, id: \.self) { allowedUrl in
+                                    Text(allowedUrl)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        } label: {
+                            Text("Allowed URLs")
+                        }
                     }
 
                     Section("Options") {

@@ -2,7 +2,6 @@ import Foundation
 import JavaScriptCore
 import os
 
-// TODO: Block fetch only on allowed domains
 // TODO: Add console logging in error message on view if errored out (easier debugging)
 
 private let logger = Logger(
@@ -24,7 +23,8 @@ final class JSExecutionEngine: NSObject {
         script: String,
         params: [String: Any],
         domain: String? = nil,
-        context: [String: String] = [:]
+        context: [String: String] = [:],
+        allowedUrls: [String] = []
     ) async throws -> [String: Any] {
         var params = params
         if let domain {
@@ -68,7 +68,7 @@ final class JSExecutionEngine: NSObject {
             jsContext.setObject(postResult, forKeyedSubscript: "__postResult" as NSString)
             jsContext.setObject(postError, forKeyedSubscript: "__postError" as NSString)
 
-            self.installFetch(in: jsContext)
+            self.installFetch(in: jsContext, allowedUrls: allowedUrls)
             self.installTimers(in: jsContext)
             self.installConsole(in: jsContext)
             self.installParams(in: jsContext, params: params)
@@ -152,11 +152,17 @@ final class JSExecutionEngine: NSObject {
         """)
     }
 
-    private func installFetch(in jsContext: JSContext) {
+    private func installFetch(in jsContext: JSContext, allowedUrls: [String]) {
         let fetchBlock: @convention(block) (String, JSValue?) -> JSValue = { urlString, options in
             Self.createPromise(in: jsContext) { resolve, reject in
                 guard let request = Self.buildRequest(urlString: urlString, options: options) else {
                     reject.call(withArguments: ["Invalid URL or unsupported scheme: \(urlString)"])
+                    return
+                }
+
+                guard Self.isURLAllowed(request.url, allowedUrls: allowedUrls) else {
+                    logger.warning("JS fetch blocked (not in allowedUrls): \(urlString)")
+                    reject.call(withArguments: ["Network request blocked: \(urlString) is not in this media source's allowed URLs"])
                     return
                 }
 
@@ -210,6 +216,15 @@ final class JSExecutionEngine: NSObject {
 
         jsContext.setObject(setTimeoutBlock, forKeyedSubscript: "setTimeout" as NSString)
         jsContext.setObject(clearTimeoutBlock, forKeyedSubscript: "clearTimeout" as NSString)
+    }
+
+    private static func isURLAllowed(_ url: URL?, allowedUrls: [String]) -> Bool {
+        guard let host = url?.host?.lowercased() else { return false }
+
+        return allowedUrls.contains { entry in
+            let allowedHost = (URL(string: entry)?.host ?? entry).lowercased()
+            return host == allowedHost || host.hasSuffix(".\(allowedHost)")
+        }
     }
 
     private static func buildRequest(urlString: String, options: JSValue?) -> URLRequest? {

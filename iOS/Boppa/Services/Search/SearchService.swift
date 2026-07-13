@@ -27,7 +27,8 @@ class SearchService {
             script: script,
             params: ["query": query],
             domain: config.url,
-            context: mediaSource.contextValues
+            context: mediaSource.contextValues,
+            allowedUrls: config.effectiveAllowedUrls
         )
         return self.buildResponse(jsResult: jsResult, category: category, mediaSourceId: config.id)
     }
@@ -50,7 +51,8 @@ class SearchService {
             script: script,
             params: scriptParams(["query": query], previousResult: continuation),
             domain: config.url,
-            context: mediaSource.contextValues
+            context: mediaSource.contextValues,
+            allowedUrls: config.effectiveAllowedUrls
         )
         return self.buildResponse(jsResult: jsResult, category: category, mediaSourceId: config.id)
     }

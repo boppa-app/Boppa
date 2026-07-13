@@ -1,7 +1,6 @@
 import Foundation
 import WebKit
 
-// TODO: Add version, updateUrl (URL to check for config updates), and downloadUrl (URL to download config) fields
 struct MediaSourceConfig: Codable {
     let id: String
     let version: String
@@ -9,13 +8,18 @@ struct MediaSourceConfig: Codable {
     let url: String
     let iconSvg: String?
     let highlightColor: String?
+    let allowedUrls: [String]?
     let context: [ContextConfig]?
     let data: DataScripts
     let playback: PlaybackConfig
     let popup: [String: PopupConfig]?
 
+    var effectiveAllowedUrls: [String] {
+        self.allowedUrls ?? [self.url]
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case id, version, name, url, iconSvg, highlightColor, context, data, playback, popup
+        case id, version, name, url, iconSvg, highlightColor, allowedUrls, context, data, playback, popup
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -26,6 +30,7 @@ struct MediaSourceConfig: Codable {
         self.url = try container.decode(String.self, forKey: .url)
         self.iconSvg = try container.decodeIfPresent(String.self, forKey: .iconSvg)
         self.highlightColor = try container.decodeIfPresent(String.self, forKey: .highlightColor)
+        self.allowedUrls = try container.decodeIfPresent([String].self, forKey: .allowedUrls)
         self.context = try container.decodeIfPresent([ContextConfig].self, forKey: .context)
         self.data = try container.decode(DataScripts.self, forKey: .data)
         self.playback = try container.decode(PlaybackConfig.self, forKey: .playback)
@@ -40,6 +45,7 @@ struct MediaSourceConfig: Codable {
         try container.encode(self.url, forKey: .url)
         try container.encodeIfPresent(self.iconSvg, forKey: .iconSvg)
         try container.encodeIfPresent(self.highlightColor, forKey: .highlightColor)
+        try container.encodeIfPresent(self.allowedUrls, forKey: .allowedUrls)
         try container.encodeIfPresent(self.context, forKey: .context)
         try container.encode(self.data, forKey: .data)
         try container.encode(self.playback, forKey: .playback)

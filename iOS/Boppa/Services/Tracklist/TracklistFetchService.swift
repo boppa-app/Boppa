@@ -117,7 +117,8 @@ class TracklistFetchService {
                     script: script,
                     params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult),
                     domain: config.url,
-                    context: mediaSource.contextValues
+                    context: mediaSource.contextValues,
+                    allowedUrls: config.effectiveAllowedUrls
                 )
             )
             logger.info("Fetched \(response.items.count) track(s) via list.album")
@@ -135,7 +136,8 @@ class TracklistFetchService {
                     script: script,
                     params: scriptParams(["id": tracklist.mediaId], previousResult: previousResult),
                     domain: config.url,
-                    context: mediaSource.contextValues
+                    context: mediaSource.contextValues,
+                    allowedUrls: config.effectiveAllowedUrls
                 )
             )
             logger.info("Fetched \(response.items.count) track(s) via list.playlist")
@@ -155,7 +157,8 @@ class TracklistFetchService {
                         ["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult
                     ),
                     domain: config.url,
-                    context: mediaSource.contextValues
+                    context: mediaSource.contextValues,
+                    allowedUrls: config.effectiveAllowedUrls
                 )
             )
             logger.info("Fetched \(response.items.count) track(s) via list.artistSongs")
@@ -175,7 +178,8 @@ class TracklistFetchService {
                         ["id": tracklist.fromArtist?.mediaId ?? ""], previousResult: previousResult
                     ),
                     domain: config.url,
-                    context: mediaSource.contextValues
+                    context: mediaSource.contextValues,
+                    allowedUrls: config.effectiveAllowedUrls
                 )
             )
             logger.info("Fetched \(response.items.count) track(s) via list.artistVideos")
@@ -201,7 +205,8 @@ class TracklistFetchService {
             let jsResult = try await JSExecutionEngine.shared.execute(
                 script: script, params: ["id": tracklist.mediaId],
                 domain: config.url,
-                context: mediaSource.contextValues
+                context: mediaSource.contextValues,
+                allowedUrls: config.effectiveAllowedUrls
             )
             return GetAlbumResponse(jsResult)
         case .playlist:
@@ -209,7 +214,8 @@ class TracklistFetchService {
             let jsResult = try await JSExecutionEngine.shared.execute(
                 script: script, params: ["id": tracklist.mediaId],
                 domain: config.url,
-                context: mediaSource.contextValues
+                context: mediaSource.contextValues,
+                allowedUrls: config.effectiveAllowedUrls
             )
             return GetPlaylistResponse(jsResult)
         default:
@@ -230,7 +236,8 @@ class TracklistFetchService {
             script: script,
             params: ["id": artist.mediaId],
             domain: config.url,
-            context: mediaSource.contextValues
+            context: mediaSource.contextValues,
+            allowedUrls: config.effectiveAllowedUrls
         )
 
         let result = GetArtistResponse(jsResult)
@@ -282,7 +289,8 @@ class TracklistFetchService {
                 script: script,
                 params: scriptParams(["id": artist.mediaId], previousResult: previousResult),
                 domain: config.url,
-                context: mediaSource.contextValues
+                context: mediaSource.contextValues,
+                allowedUrls: config.effectiveAllowedUrls
             )
         )
         logger.info("Fetched \(response.items.count) album(s) for artist '\(artist.name)'")
@@ -309,7 +317,8 @@ class TracklistFetchService {
                 script: script,
                 params: scriptParams(["id": artist.mediaId], previousResult: previousResult),
                 domain: config.url,
-                context: mediaSource.contextValues
+                context: mediaSource.contextValues,
+                allowedUrls: config.effectiveAllowedUrls
             )
         )
         logger.info("Fetched \(response.items.count) playlist(s) for artist '\(artist.name)'")
@@ -340,7 +349,8 @@ class TracklistFetchService {
             script: script,
             params: ["id": mediaId],
             domain: config.url,
-            context: mediaSource.contextValues
+            context: mediaSource.contextValues,
+            allowedUrls: config.effectiveAllowedUrls
         )
 
         guard let response = GetTrackResponse(jsResult) else { return nil }
@@ -363,7 +373,7 @@ class TracklistFetchService {
         while true {
             let jsResult = try await JSExecutionEngine.shared.execute(
                 script: script, params: scriptParams(params, previousResult: previousResult),
-                domain: config.url, context: context
+                domain: config.url, context: context, allowedUrls: config.effectiveAllowedUrls
             )
             let (items, continuation) = parseResponse(jsResult)
             let tracks = items.map { $0.toTrack(mediaSourceId: mediaSourceId, type: trackType) }

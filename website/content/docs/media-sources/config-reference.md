@@ -20,6 +20,7 @@ A media source config is a single YAML file. This page documents every top-level
 | `url` | string | Yes | The domain the source communicates with, for example `archive.org`. Used to scope cookies for data scripts. |
 | `iconSvg` | string | No | Raw SVG markup shown as the source's icon. |
 | `highlightColor` | string | No | Hex color, for example `"#FFFFFF"`, used for accents associated with the source. |
+| `allowedUrls` | list of strings | No | Hostnames (or full URLs) the source's scripts are allowed to `fetch()`. Defaults to `[url]` when omitted. See [`allowedUrls`](#allowedurls) below. |
 | `context` | list | No | Background pages Boppa loads to gather cookies or tokens before the source is usable. See [Context & Popups](/docs/media-sources/context-popups). |
 | `data` | object | Yes | The `search`, `list`, and `get` script groups. See [Search](/docs/media-sources/search) and [List & Get](/docs/media-sources/list-get). |
 | `playback` | object | Yes | The player page and its bridge scripts. See [Playback](/docs/media-sources/playback). |
@@ -32,6 +33,18 @@ A short, stable string, it is reccomended to use the media source's FQDN (ex: `e
 ### `version`
 
 An arbitrary string, most commonly a semantic version such as `1.0.0`. Boppa does not interpret its structure, it only compares it for equality against the previously stored value. When a configuration is fetched from its `configUrl` on app launch and the returned `version` differs from what is stored, Boppa applies the update, provided the source's per-source auto-update option is enabled, see [Publishing & Sharing](/docs/media-sources/publishing).
+
+### `allowedUrls`
+
+A list of hostnames (or full URLs, from which only the host is used) that this source's scripts are permitted to reach via `fetch()`. Any `fetch()` call whose URL's host does not match, or is not a subdomain of, an entry in this list is rejected before the request is made.
+
+```yaml
+allowedUrls:
+  - example.com
+  - api.example.com
+```
+
+If `allowedUrls` is omitted entirely, Boppa falls back to allowing only the source's own `url`. There is no way to allow every domain, every domain a script talks to must be listed explicitly.
 
 ### `data`
 
