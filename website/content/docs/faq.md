@@ -2,7 +2,7 @@
 title: FAQ
 description: Frequently asked questions about Boppa.
 nav: FAQ
-order: 1
+order: 20
 category: Help
 ---
 
