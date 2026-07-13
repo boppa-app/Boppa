@@ -12,9 +12,9 @@ category: Help
 
 Yes. Boppa is open source under the GPLv3 license.
 
-## Does Boppa host any music itself?
+## Does Boppa host any audio itself?
 
-No. Boppa has no built-in catalog. Every source of music comes from a media source
+No. Boppa has no built-in catalog. Every source of audio comes from a media source
 config you add yourself.
 
 ## Can I write my own media source config?
