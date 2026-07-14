@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 import { DocsBreadcrumbs } from "~/components/docs-breadcrumbs";
 import { DocsNav } from "~/components/docs-nav";
 import { DocsOutline } from "~/components/docs-outline";
-import { BoppaLogo } from "~/components/icons";
 import { buildDocsNavTree, getDoc, getDocs } from "~/docs";
 
 export const Route = createFileRoute("/docs")({
@@ -28,7 +27,7 @@ function DocsLayout() {
       <header className="lg:hidden sticky top-0 z-50 bg-background border-b border-border">
         <div className="flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-3">
-            <BoppaLogo className="w-6 h-6" />
+            <img src="/logo.webp" alt="Boppa" width={32} height={32} className="w-8 h-8" />
             <span className="text-lg font-medium">Boppa</span>
           </Link>
           <button
@@ -52,7 +51,7 @@ function DocsLayout() {
         {/* Desktop sidebar */}
         <aside className="hidden lg:block sticky top-0 h-screen w-60 shrink-0 border-r border-border p-6 overflow-y-auto">
           <Link to="/" className="flex items-center gap-3 mb-8">
-            <BoppaLogo className="w-6 h-6" />
+            <img src="/logo.webp" alt="Boppa" width={32} height={32} className="w-8 h-8" />
             <span className="text-lg font-medium">Boppa</span>
           </Link>
           <DocsNav nodes={tree} />

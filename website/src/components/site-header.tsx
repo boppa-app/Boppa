@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { BoppaLogo, DiscordIcon, GithubIcon, RedditIcon } from "~/components/icons";
+import { DiscordIcon, GithubIcon, RedditIcon } from "~/components/icons";
 
 export function SiteHeader() {
   return (
     <header className="flex items-center justify-between">
       <Link to="/" className="flex items-center gap-3">
-        <BoppaLogo className="w-6 h-6" />
+        <img src="/logo.webp" alt="Boppa" width={32} height={32} className="w-8 h-8" />
         <span className="text-lg font-medium">Boppa</span>
       </Link>
       <nav className="flex items-center gap-6">
