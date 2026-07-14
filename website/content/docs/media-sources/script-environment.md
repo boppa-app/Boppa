@@ -12,7 +12,7 @@ Every data script in a media source config (`search`, `list`, `get`), executes i
 
 ## Lifecycle
 
-Each script invocation runs in a brand-new engine instance. No state, whether a variable, a timer, or a cached value, persists from one call to the next, including between two calls to the same script. Any data a script needs across calls must be re-derived (or passed forward through the [pagination](/docs/media-sources/search#pagination) continuationmechanism).
+Each script invocation runs in a brand-new engine instance. No state, whether a variable, a timer, or a cached value, persists from one call to the next, including between two calls to the same script. Any data a script needs across calls must be re-derived (or passed forward through the [pagination](/docs/media-sources/search#pagination) continuation mechanism).
 
 A script is given 30 seconds to call `postResult` or `postError`. If it does neither within that window, execution is abandoned and a timeout error is surfaced to the app.
 
