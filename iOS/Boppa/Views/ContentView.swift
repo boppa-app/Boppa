@@ -30,7 +30,7 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 ZStack {
-                    SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, isAtNavigationRoot: self.$searchIsAtRoot, externalPendingArtist: self.$searchPendingArtist, externalPendingTracklist: self.$searchPendingTracklist)
+                    SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, selectedTab: self.$selectedTab, isAtNavigationRoot: self.$searchIsAtRoot, externalPendingArtist: self.$searchPendingArtist, externalPendingTracklist: self.$searchPendingTracklist)
                         .opacity(self.selectedTab == 0 ? 1 : 0)
                         .allowsHitTesting(self.selectedTab == 0)
                     LibraryView(

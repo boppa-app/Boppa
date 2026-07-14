@@ -74,17 +74,10 @@ struct AddMediaSourceView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 if let errorMessage = viewModel.errorMessage {
-                    VStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.circle")
-                            .font(.system(size: 32))
-                        Text(errorMessage)
-                            .font(.callout)
-                            .multilineTextAlignment(.center)
-                    }
-                    .foregroundColor(Color.red)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
+                    ErrorMessageView(message: errorMessage)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
             }
             .scrollDisabled(true)

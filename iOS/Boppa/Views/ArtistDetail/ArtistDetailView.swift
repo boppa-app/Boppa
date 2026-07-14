@@ -335,17 +335,9 @@ struct ArtistDetailView: View {
     }
 
     private func errorView(message: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40))
-                .foregroundColor(.red)
-            Text(message)
-                .font(.callout)
-                .foregroundColor(Color(.systemGray))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ErrorMessageView(message: message)
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var songsContextId: String {

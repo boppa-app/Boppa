@@ -16,6 +16,7 @@ struct SearchView: View {
     @FocusState private var isSearchFieldFocused: Bool
     var navigationResetId: Int = 0
     var focusSearchId: Int = 0
+    @Binding var selectedTab: Int
     @Binding var isAtNavigationRoot: Bool
     @Binding var externalPendingArtist: Artist?
     @Binding var externalPendingTracklist: Tracklist?
@@ -31,21 +32,25 @@ struct SearchView: View {
     var body: some View {
         NavigationStack(path: self.$path) {
             VStack(spacing: 0) {
-                SearchToolbarView(
-                    viewModel: self.viewModel,
-                    isSearchFieldFocused: self.$isSearchFieldFocused,
-                    onSearch: {
-                        self.cacheManager.saveQuery(self.viewModel.searchQuery)
-                    }
-                )
-                ZStack(alignment: .top) {
-                    if self.showRecentSearches {
-                        self.recentSearchesView
-                    } else {
-                        self.contentArea
-                    }
-                    if self.showBubbles {
-                        self.categoryBubblesBar
+                if self.viewModel.mediaSources.isEmpty {
+                    self.noMediaSourceView
+                } else {
+                    SearchToolbarView(
+                        viewModel: self.viewModel,
+                        isSearchFieldFocused: self.$isSearchFieldFocused,
+                        onSearch: {
+                            self.cacheManager.saveQuery(self.viewModel.searchQuery)
+                        }
+                    )
+                    ZStack(alignment: .top) {
+                        if self.showRecentSearches {
+                            self.recentSearchesView
+                        } else {
+                            self.contentArea
+                        }
+                        if self.showBubbles {
+                            self.categoryBubblesBar
+                        }
                     }
                 }
             }
@@ -314,17 +319,39 @@ struct SearchView: View {
     }
 
     private func errorView(message: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40))
-                .foregroundColor(self.viewModel.mediaSources.count == 0 ? Color(.systemGray) : .red)
-            Text(message)
-                .font(.callout)
-                .foregroundColor(Color(.systemGray))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+        ErrorMessageView(message: message)
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var goToSettingsLine: AttributedString {
+        var message = AttributedString("Go to ")
+        var settingsLink = AttributedString("Settings")
+        settingsLink.link = URL(string: "boppa://settings")
+        settingsLink.foregroundColor = .purp
+        settingsLink.underlineStyle = .single
+        message += settingsLink
+        message += AttributedString(" to add one.")
+        return message
+    }
+
+    private var noMediaSourceView: some View {
+        VStack(spacing: 8) {
+            Text("No media source added/enabled.")
+            Text(self.goToSettingsLine)
         }
+        .font(.title3)
+        .foregroundColor(Color(.systemGray))
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .environment(\.openURL, OpenURLAction { url in
+            guard url.absoluteString == "boppa://settings" else { return .systemAction }
+            withAnimation(.easeInOut(duration: 0.35)) {
+                self.selectedTab = 2
+            }
+            return .handled
+        })
     }
 
     private var resultsList: some View {
@@ -475,6 +502,6 @@ struct SearchView: View {
 }
 
 #Preview {
-    SearchView(isAtNavigationRoot: .constant(true), externalPendingArtist: .constant(nil), externalPendingTracklist: .constant(nil))
+    SearchView(selectedTab: .constant(0), isAtNavigationRoot: .constant(true), externalPendingArtist: .constant(nil), externalPendingTracklist: .constant(nil))
         .preferredColorScheme(.dark)
 }
