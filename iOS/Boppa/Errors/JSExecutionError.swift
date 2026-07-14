@@ -8,11 +8,11 @@ enum JSExecutionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .timeout:
-            return "JavaScript execution timed out"
+            return "Execution timed out"
         case let .scriptError(detail):
-            return "JavaScript error: \(detail)"
+            return "Error: \(detail)"
         case let .invalidResult(detail):
-            return "Invalid JavaScript result: \(detail)"
+            return "Invalid result: \(detail)"
         }
     }
 }
