@@ -11,7 +11,10 @@ export const Route = createRootRoute({
       { property: "og:site_name", content: "Boppa" },
       { property: "og:type", content: "website" },
     ],
-    links: [{ rel: "icon", href: "/logo.png", type: "image/png" }],
+    links: [
+      { rel: "icon", href: "/logo.png", type: "image/png" },
+      { rel: "preload", href: "/logo.png", as: "image", type: "image/png" },
+    ],
   }),
   component: RootComponent,
 });

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { DiscordIcon, GithubIcon, RedditIcon } from "~/components/icons";
 
 export function SiteHeader() {
   return (
@@ -27,11 +28,7 @@ export function SiteHeader() {
           aria-label="Discord"
           className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
         >
-          <span
-            aria-hidden="true"
-            className="icon-mask w-[18px] h-[18px]"
-            style={{ WebkitMaskImage: "url(/icons/discord.svg)", maskImage: "url(/icons/discord.svg)" }}
-          />
+          <DiscordIcon className="w-[18px] h-[18px]" />
         </a>
         <a
           href="https://reddit.com/r/BoppaApp"
@@ -40,11 +37,7 @@ export function SiteHeader() {
           aria-label="Reddit"
           className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
         >
-          <span
-            aria-hidden="true"
-            className="icon-mask w-[18px] h-[18px]"
-            style={{ WebkitMaskImage: "url(/icons/reddit.svg)", maskImage: "url(/icons/reddit.svg)" }}
-          />
+          <RedditIcon className="w-[18px] h-[18px]" />
         </a>
         <a
           href="https://github.com/boppa-app/Boppa"
@@ -53,11 +46,7 @@ export function SiteHeader() {
           aria-label="GitHub"
           className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
         >
-          <span
-            aria-hidden="true"
-            className="icon-mask w-[18px] h-[18px]"
-            style={{ WebkitMaskImage: "url(/icons/github.svg)", maskImage: "url(/icons/github.svg)" }}
-          />
+          <GithubIcon className="w-[18px] h-[18px]" />
         </a>
       </nav>
     </header>
