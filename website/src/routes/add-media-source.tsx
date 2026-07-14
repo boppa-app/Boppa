@@ -45,7 +45,9 @@ function AddSource() {
       </h1>
 
       {!url ? (
-        <GenerateLinkForm />
+        <div className="mt-10">
+          <GenerateLinkForm />
+        </div>
       ) : (
         <>
           <p className="text-muted-foreground mb-10 break-all">{url}</p>
@@ -58,18 +60,38 @@ function AddSource() {
   );
 }
 
+function isValidUrl(value: string): boolean {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function withScheme(value: string): string {
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(value) ? value : `https://${value}`;
+}
+
 function GenerateLinkForm() {
   const navigate = useNavigate({ from: Route.fullPath });
   const [configUrl, setConfigUrl] = useState("");
+  const [invalid, setInvalid] = useState(false);
 
   return (
     <form
       className="rounded-xl border border-border bg-card/40 p-6 md:p-8 space-y-4"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
         const trimmed = configUrl.trim();
         if (!trimmed) return;
-        navigate({ search: { url: trimmed } });
+        const withUrlScheme = withScheme(trimmed);
+        if (!isValidUrl(withUrlScheme)) {
+          setInvalid(true);
+          return;
+        }
+        navigate({ search: { url: withUrlScheme } });
       }}
     >
       <label htmlFor="config-url" className="block text-sm text-muted-foreground">
@@ -78,19 +100,32 @@ function GenerateLinkForm() {
       </label>
       <input
         id="config-url"
-        type="url"
+        type="text"
         inputMode="url"
         autoCapitalize="none"
         autoCorrect="off"
         placeholder="https://data.boppa.app/iOS/internet-archive.yaml"
         value={configUrl}
-        onChange={(event) => setConfigUrl(event.target.value)}
-        className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+        onChange={(event) => {
+          setConfigUrl(event.target.value);
+          setInvalid(false);
+        }}
+        aria-invalid={invalid}
+        className={`w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 ${
+          invalid
+            ? "border-red-500 focus:ring-red-500"
+            : "border-border focus:ring-primary"
+        }`}
       />
+      {invalid && (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          Please enter a valid URL.
+        </p>
+      )}
       <button
         type="submit"
         disabled={!configUrl.trim()}
-        className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+        className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
       >
         Generate Link
       </button>
@@ -108,7 +143,7 @@ function IosPrompt({ url }: { url: string }) {
       </p>
       <a
         href={appLinkUrl}
-        className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+        className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors"
       >
         Open in Boppa
       </a>
@@ -131,7 +166,7 @@ function AndroidPrompt() {
       </p>
       <Link
         to="/download"
-        className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+        className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors"
       >
         See download status
       </Link>
@@ -144,22 +179,30 @@ function DesktopPrompt({ url }: { url: string }) {
   const canonicalUrl = `https://boppa.app/add-media-source?url=${encodeURIComponent(url)}`;
 
   return (
-    <section className="rounded-xl border border-border bg-card/40 p-6 md:p-8 space-y-4">
-      <p className="text-sm text-muted-foreground">
-        This link is meant to be opened on your phone. Copy it and open it
-        there.
-      </p>
-      <button
-        type="button"
-        onClick={() => {
-          navigator.clipboard.writeText(canonicalUrl);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }}
-        className="inline-flex items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-medium hover:bg-muted transition-colors"
+    <>
+      <section className="rounded-xl border border-border bg-card/40 p-6 md:p-8 space-y-4">
+        <p className="text-sm text-muted-foreground">
+          This link is meant to be opened on your phone. Copy it and open it
+          there.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard.writeText(canonicalUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors"
+        >
+          {copied ? "Copied!" : "Copy link"}
+        </button>
+      </section>
+      <Link
+        to="/add-media-source"
+        className="inline-flex mt-10 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
-        {copied ? "Copied!" : "Copy link"}
-      </button>
-    </section>
+        Generate new link
+      </Link>
+    </>
   );
 }
