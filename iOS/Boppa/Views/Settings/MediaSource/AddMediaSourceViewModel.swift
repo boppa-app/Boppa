@@ -40,6 +40,10 @@ class AddMediaSourceViewModel {
                 mediaSource = try await MediaSourceImportService.shared.fetchMediaSource(configUrl: formattedUrl)
             }
 
+            if MediaSourceStorageManager.shared.fetchOne(id: mediaSource.id) != nil {
+                throw MediaSourceImportError.alreadyExists(id: mediaSource.id)
+            }
+
             try MediaSourceStorageManager.shared.insert([mediaSource])
 
             let hasContextConfigs = !(mediaSource.config.context ?? []).isEmpty

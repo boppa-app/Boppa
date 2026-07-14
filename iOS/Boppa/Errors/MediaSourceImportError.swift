@@ -5,6 +5,7 @@ enum MediaSourceImportError: LocalizedError {
     case invalidResponse
     case serverError(statusCode: Int, mediaSourceUrl: String)
     case malformedConfig(detail: String)
+    case alreadyExists(id: String)
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +20,8 @@ enum MediaSourceImportError: LocalizedError {
             return "The server returned an error (HTTP \(statusCode))"
         case let .malformedConfig(detail):
             return "Malformed config: \(detail)"
+        case let .alreadyExists(id):
+            return "A media source with ID \"\(id)\" has already been added"
         }
     }
 }

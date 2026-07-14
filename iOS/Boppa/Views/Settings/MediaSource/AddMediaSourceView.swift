@@ -74,14 +74,14 @@ struct AddMediaSourceView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 if let errorMessage = viewModel.errorMessage {
-                    Label {
-                        Text(errorMessage)
-                            .multilineTextAlignment(.leading)
-                    } icon: {
+                    VStack(spacing: 6) {
                         Image(systemName: "exclamationmark.circle")
+                            .font(.system(size: 32))
+                        Text(errorMessage)
+                            .font(.callout)
+                            .multilineTextAlignment(.center)
                     }
                     .foregroundColor(Color.red)
-                    .font(.callout)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
