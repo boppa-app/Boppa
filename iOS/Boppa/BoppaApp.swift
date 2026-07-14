@@ -93,6 +93,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
               !configUrl.isEmpty
         else { return }
 
-        NotificationCenter.default.post(name: .deepLinkAddMediaSource, object: configUrl)
+        DeepLinkAddMediaSourceRequest.shared.submit(configUrl: configUrl)
     }
 }

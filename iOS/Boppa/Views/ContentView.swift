@@ -61,8 +61,10 @@ struct ContentView: View {
                     self.libraryPendingTracklist = tracklist
                     self.selectedTab = 1
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .deepLinkAddMediaSource)) { _ in
-                    self.selectedTab = 2
+                .onChange(of: DeepLinkAddMediaSourceRequest.shared.pending) { _, newValue in
+                    if newValue != nil {
+                        self.selectedTab = 2
+                    }
                 }
 
                 if self.showMiniPlayer {
@@ -105,6 +107,17 @@ struct ContentView: View {
             )
             .presentationDragIndicator(.visible)
             .presentationBackground(Color.black)
+        }
+        .sheet(item: Binding(
+            get: { DeepLinkAddMediaSourceRequest.shared.pending },
+            set: { newValue in
+                if newValue == nil {
+                    DeepLinkAddMediaSourceRequest.shared.clear()
+                }
+            }
+        )) { request in
+            AddMediaSourceView(initialConfigUrl: request.configUrl)
+                .id(request.id)
         }
     }
 }
