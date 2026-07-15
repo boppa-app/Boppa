@@ -305,10 +305,12 @@ class TracklistStorageManager {
             try TrackStorageManager.shared.replaceTrackArtists(track: match, artists: track.artists, db: db)
             try TrackStorageManager.shared.replaceTrackAlbums(track: match, albums: track.albums, db: db)
         }
+        try TrackStorageManager.shared.markSavedToLibrary(mediaId: match.mediaId, mediaSourceId: match.mediaSourceId, db: db)
     }
 
     private func insertNewTrackJoin(_ track: Track, newKey: String, into tracklist: StoredTracklist, db: Database) throws {
         try TrackStorageManager.shared.upsertTrack(track, db: db)
+        try TrackStorageManager.shared.markSavedToLibrary(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
         try StoredTracklistTrack.insert {
             StoredTracklistTrack.Draft(
                 tracklistMediaId: tracklist.mediaId,

@@ -18,7 +18,7 @@ class TrackStorageManager {
 
     func fetchLibraryTracks() -> [StoredTrack] {
         (try? self.database.read { db in
-            try StoredTrack.fetchAll(db)
+            try StoredTrack.where(\.isSavedToLibrary).fetchAll(db)
         }) ?? []
     }
 
@@ -81,18 +81,33 @@ class TrackStorageManager {
 
     // MARK: Orphan Cleanup
 
+    // Deletes a track once it has no remaining tracklist joins, unless it's isRecent,
+    // in which case it survives but has isSavedToLibrary set to false.
     func deleteIfOrphaned(mediaId: String, mediaSourceId: String, db: Database) throws {
+
+        // If track is still present in tracklist, exit
         let remaining =
             try StoredTracklistTrack
                 .where { $0.trackMediaId.eq(mediaId).and($0.trackMediaSourceId.eq(mediaSourceId)) }
                 .fetchCount(db)
         guard remaining == 0 else { return }
 
+        // If track does not exist in DB, exit
         let track =
             try StoredTrack
                 .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
                 .fetchOne(db)
-        guard let track, !track.isRecent else { return }
+        guard let track else { return }
+
+        // If track is recent only set isSavedToLibrary to false, exit
+        if track.isRecent {
+            if track.isSavedToLibrary {
+                try StoredTrack.update { $0.isSavedToLibrary = false }
+                    .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+                    .execute(db)
+            }
+            return
+        }
 
         let artistRefs =
             try StoredTrackArtist
@@ -216,6 +231,7 @@ class TrackStorageManager {
 
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
         try self.upsertTrack(track, db: db)
+        try self.markSavedToLibrary(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
         let maxKey = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -334,6 +350,12 @@ class TrackStorageManager {
             try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
             try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
         }
+    }
+
+    func markSavedToLibrary(mediaId: String, mediaSourceId: String, db: Database) throws {
+        try StoredTrack.update { $0.isSavedToLibrary = true }
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+            .execute(db)
     }
 
     func updateTrackScalars(_ track: Track, stored: StoredTrack, db: Database) throws {

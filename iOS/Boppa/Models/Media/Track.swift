@@ -14,6 +14,7 @@ struct Track: Identifiable, Equatable {
     let artists: [Artist]
     let albums: [Tracklist]
     let metadata: Data?
+    let isSavedToLibrary: Bool
 
     enum TrackType: String, Equatable, Hashable {
         case song
@@ -36,7 +37,8 @@ struct Track: Identifiable, Equatable {
         type: TrackType = .song,
         artists: [Artist] = [],
         albums: [Tracklist] = [],
-        metadata: Data? = nil
+        metadata: Data? = nil,
+        isSavedToLibrary: Bool = false
     ) {
         self.init(
             id: UUID(),
@@ -51,7 +53,8 @@ struct Track: Identifiable, Equatable {
             type: type,
             artists: artists,
             albums: albums,
-            metadata: metadata
+            metadata: metadata,
+            isSavedToLibrary: isSavedToLibrary
         )
     }
 
@@ -68,7 +71,8 @@ struct Track: Identifiable, Equatable {
         type: TrackType,
         artists: [Artist],
         albums: [Tracklist],
-        metadata: Data?
+        metadata: Data?,
+        isSavedToLibrary: Bool
     ) {
         self.id = id
         self.mediaId = mediaId
@@ -83,6 +87,7 @@ struct Track: Identifiable, Equatable {
         self.artists = artists
         self.albums = albums
         self.metadata = metadata
+        self.isSavedToLibrary = isSavedToLibrary
     }
 
     /// Preserves `id` so SwiftUI identity is stable when enriching an
@@ -101,7 +106,8 @@ struct Track: Identifiable, Equatable {
             type: self.type,
             artists: fetched.artists.isEmpty ? self.artists : fetched.artists,
             albums: fetched.albums.isEmpty ? self.albums : fetched.albums,
-            metadata: fetched.metadata ?? self.metadata
+            metadata: fetched.metadata ?? self.metadata,
+            isSavedToLibrary: self.isSavedToLibrary
         )
     }
 

@@ -12,6 +12,7 @@ nonisolated struct StoredTrack {
     var highResArtworkUrl: String?
     var url: String?
     var type: String
+    var isSavedToLibrary: Bool = false
     var lastPlayedTimestamp: Double? = nil
     var isRecent: Bool = false
     var metadata: Data? = nil
@@ -56,7 +57,8 @@ extension StoredTrack {
             type: Track.TrackType(rawValue: self.type) ?? .song,
             artists: artists,
             albums: albums,
-            metadata: self.metadata
+            metadata: self.metadata,
+            isSavedToLibrary: self.isSavedToLibrary
         )
     }
 

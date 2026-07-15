@@ -60,22 +60,12 @@ class LibraryViewModel {
         }
     }
 
-    private var songSourceIds: Set<String> {
-        Set(self.mediaSources.filter { $0.config.data.search?.songs != nil }.map(\.id))
-    }
-
-    private var videoSourceIds: Set<String> {
-        Set(self.mediaSources.filter { $0.config.data.search?.videos != nil }.map(\.id))
-    }
-
     var categoryFilteredTracks: [StoredTrack] {
         switch self.selectedLibraryCategory {
         case .songs:
-            let ids = self.songSourceIds
-            return self.allLibraryTracks.filter { ids.contains($0.mediaSourceId) }
+            return self.allLibraryTracks.filter { $0.type == Track.TrackType.song.rawValue }
         case .videos:
-            let ids = self.videoSourceIds
-            return self.allLibraryTracks.filter { ids.contains($0.mediaSourceId) }
+            return self.allLibraryTracks.filter { $0.type == Track.TrackType.video.rawValue }
         default:
             return []
         }
@@ -99,11 +89,8 @@ class LibraryViewModel {
     }
 
     func updateAvailableCategories() {
-        let songIds = self.songSourceIds
-        let videoIds = self.videoSourceIds
-
-        let hasSongs = self.allLibraryTracks.contains { songIds.contains($0.mediaSourceId) }
-        let hasVideos = self.allLibraryTracks.contains { videoIds.contains($0.mediaSourceId) }
+        let hasSongs = self.allLibraryTracks.contains { $0.type == Track.TrackType.song.rawValue }
+        let hasVideos = self.allLibraryTracks.contains { $0.type == Track.TrackType.video.rawValue }
         let hasAlbums = self.allLibraryTracklists.contains { $0.tracklistType == "album" }
         let hasPlaylists = self.allLibraryTracklists.contains { $0.tracklistType == "playlist" }
 

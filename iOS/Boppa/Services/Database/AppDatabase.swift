@@ -83,6 +83,7 @@ extension DatabaseWriter where Self == DatabasePool {
                   "highResArtworkUrl" TEXT,
                   "url" TEXT,
                   "type" TEXT NOT NULL CHECK (type IN ('song', 'video')),
+                  "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                   "lastPlayedTimestamp" REAL,
                   "isRecent" INTEGER NOT NULL DEFAULT 0,
                   "metadata" BLOB,
@@ -154,6 +155,7 @@ extension DatabaseWriter where Self == DatabasePool {
             try #sql("CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)").execute(db)
             try #sql("CREATE INDEX idx_tracks_recent ON tracks (mediaSourceId, isRecent, lastPlayedTimestamp)").execute(db)
+            try #sql("CREATE INDEX idx_tracks_isSavedToLibrary_type ON tracks (isSavedToLibrary, type)").execute(db)
             try #sql("CREATE INDEX idx_artists_recent ON artists (mediaSourceId, isRecent, lastViewedTimestamp)").execute(db)
             try #sql("CREATE INDEX idx_tracklists_recent ON tracklists (mediaSourceId, isRecent, lastViewedTimestamp)").execute(db)
         }

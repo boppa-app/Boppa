@@ -69,6 +69,7 @@ struct TrackStorageManagerTests {
                       "highResArtworkUrl" TEXT,
                       "url" TEXT,
                       "type" TEXT NOT NULL CHECK (type IN ('song', 'video')),
+                      "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                       "lastPlayedTimestamp" REAL,
                       "isRecent" INTEGER NOT NULL DEFAULT 0,
                       "metadata" BLOB,
