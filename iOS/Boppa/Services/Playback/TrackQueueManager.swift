@@ -44,7 +44,7 @@ final class TrackQueueManager {
         self.activeEntries.map(\.track)
     }
 
-    private static let artworkPreloadWindow = 50
+    private static let artworkPreloadWindow = 3
 
     private let registry = WebViewPlaybackEngineRegistry.shared
     private var preloadedArtworkBySource: [String: Set<String>] = [:]
