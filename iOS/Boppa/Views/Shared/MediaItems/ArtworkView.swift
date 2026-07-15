@@ -63,9 +63,19 @@ struct ArtworkView: View {
 
     private var placeholderImage: some View {
         Image(systemName: self.resolvedPlaceholder)
-            .font(.title3)
+            .font(.system(size: Self.placeholderIconSize(for: self.size)))
             .foregroundColor(.white)
             .frame(width: self.size, height: self.size)
+    }
+}
+
+/// title3 renders at ~20pt for the default 48pt artwork size, so scale
+/// proportionally from there instead of a fixed text style
+private let artworkPlaceholderIconRatio: CGFloat = 20.0 / 48.0
+
+private extension ArtworkView {
+    static func placeholderIconSize(for size: CGFloat) -> CGFloat {
+        size * artworkPlaceholderIconRatio
     }
 }
 
@@ -127,12 +137,14 @@ private struct ArtworkImageContent: View {
                 }
             } else if self.failed {
                 Image(systemName: self.placeholderSystemName)
-                    .font(.title3)
+                    .font(.system(size: ArtworkView.placeholderIconSize(for: self.size)))
                     .foregroundColor(.white)
                     .frame(width: self.size, height: self.size)
             } else {
                 KFImage(self.url)
-                    .placeholder { ProgressView().scaleEffect(0.6) }
+                    .placeholder {
+                        ProgressView().scaleEffect(max(self.size / 48 * 0.6, 0.6))
+                    }
                     .onSuccess { result in self.loadedImage = result.image }
                     .onFailure { _ in self.failed = true }
                     .resizable()
