@@ -461,16 +461,15 @@ struct SearchView: View {
                 }
 
                 if self.viewModel.hasMorePages {
-                    ProgressView()
-                        .padding(.vertical, 16)
-                        .frame(maxWidth: .infinity)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                        .id(self.viewModel.results.count)
-                        .onAppear {
-                            self.viewModel.loadNextPage()
-                        }
+                    NextPageSpinnerView {
+                        self.viewModel.loadNextPage()
+                    }
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .id(self.viewModel.results.count)
                 }
             }
             .listStyle(.plain)

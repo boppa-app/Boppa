@@ -171,16 +171,15 @@ struct TracklistView: View {
                 }
 
                 if self.viewModel.hasMorePages {
-                    ProgressView()
-                        .id(self.viewModel.pageLoadId)
-                        .padding(.vertical, 16)
-                        .frame(maxWidth: .infinity)
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                        .onAppear {
-                            self.viewModel.loadNextPage()
-                        }
+                    NextPageSpinnerView {
+                        self.viewModel.loadNextPage()
+                    }
+                    .id(self.viewModel.pageLoadId)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)

@@ -81,10 +81,9 @@ class TrackStorageManager {
 
     // MARK: Orphan Cleanup
 
-    // Deletes a track once it has no remaining tracklist joins, unless it's isRecent,
-    // in which case it survives but has isSavedToLibrary set to false.
+    /// Deletes a track once it has no remaining tracklist joins, unless it's isRecent,
+    /// in which case it survives but has isSavedToLibrary set to false.
     func deleteIfOrphaned(mediaId: String, mediaSourceId: String, db: Database) throws {
-
         // If track is still present in tracklist, exit
         let remaining =
             try StoredTracklistTrack
