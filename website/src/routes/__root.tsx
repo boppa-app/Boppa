@@ -32,7 +32,7 @@ export const Route = createRootRoute({
       { rel: "icon", type: "image/png", href: "/favicon-32x32.png", sizes: "32x32" },
       { rel: "icon", type: "image/png", href: "/favicon-48x48.png", sizes: "48x48" },
       { rel: "icon", type: "image/png", href: "/favicon-96x96.png", sizes: "96x96" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "256x256" },
       { rel: "apple-touch-icon", sizes: "57x57", href: "/apple-icon-57x57.png" },
       { rel: "apple-touch-icon", sizes: "60x60", href: "/apple-icon-60x60.png" },
       { rel: "apple-touch-icon", sizes: "72x72", href: "/apple-icon-72x72.png" },
