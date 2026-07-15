@@ -66,10 +66,13 @@ final class ArtworkSchemeHandler: NSObject, WKURLSchemeHandler {
             }
 
             logger.info("Artwork cache miss, fetching from origin: \(originalURLString)")
-            KingfisherManager.shared.retrieveImage(with: originalURL) { result in
+            KingfisherManager.shared.retrieveImage(
+                with: originalURL,
+                options: [.callbackQueue(.untouch)]
+            ) { result in
                 switch result {
-                case .success:
-                    if let data = try? ImageCache.default.diskStorage.value(forKey: cacheKey) {
+                case let .success(value):
+                    if let data = value.data() {
                         self.respond(urlSchemeTask, taskId: taskId, requestURL: requestURL, data: data)
                     } else {
                         self.fail(urlSchemeTask, taskId: taskId, error: URLError(.cannotDecodeContentData))
