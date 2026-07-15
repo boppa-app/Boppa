@@ -88,8 +88,8 @@ struct TrackRow: View {
                     .accessibilityAddTraits(.isButton)
             } else if self.style == .regular {
                 if self.isSelected && self.isLoading {
-                    ProgressView()
-                        .tint(.purp)
+                    SpinnerView(tint: .purp, lineWidth: 3)
+                        .frame(width: 20, height: 20)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                         .onTapGesture {

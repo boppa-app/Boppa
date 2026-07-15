@@ -130,8 +130,8 @@ struct SettingsView: View {
                         .foregroundColor(.red)
                     if self.isClearingData {
                         Spacer()
-                        ProgressView()
-                            .tint(Color.purp)
+                        SpinnerView(tint: Color.purp, lineWidth: 3)
+                            .frame(width: 20, height: 20)
                             .accessibilityLabel("Clearing data")
                     }
                 }

@@ -36,9 +36,8 @@ struct RecentlyPlayedCard: View {
                             .frame(width: Self.artworkSize, height: Self.artworkSize)
                             .cornerRadius(6)
                         if self.isLoading {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(1.5)
+                            SpinnerView(lineWidth: 3)
+                                .frame(width: 30, height: 30)
                         } else if self.isPlaying {
                             Image(systemName: "waveform")
                                 .foregroundColor(.white)

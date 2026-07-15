@@ -92,8 +92,8 @@ struct MiniPlayerView: View {
     private var playPauseButton: some View {
         Group {
             if self.playbackService.isLoading {
-                ProgressView()
-                    .tint(.white)
+                SpinnerView(lineWidth: 3)
+                    .frame(width: 20, height: 20)
                     .frame(width: 32, height: 32)
                     .accessibilityLabel("Loading")
             } else {

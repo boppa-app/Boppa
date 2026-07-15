@@ -12,8 +12,11 @@ struct LibrarySearchToolbarView: View {
             HStack(spacing: 8) {
                 Group {
                     if self.isFuzzySearching {
-                        ProgressView()
-                            .scaleEffect(0.8)
+                        SpinnerView(
+                            tint: self.isSearchFieldFocused.wrappedValue ? .white : Color(.systemGray),
+                            lineWidth: 2.5
+                        )
+                        .frame(width: 16, height: 16)
                     } else {
                         Image(systemName: self.selectedCategory.icon)
                     }

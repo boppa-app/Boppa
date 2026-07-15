@@ -175,9 +175,7 @@ struct NowPlayingView: View {
                 .accessibilityHint("Play previous track")
 
                 if self.viewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(2.5)
+                    SpinnerView(lineWidth: 4)
                         .frame(width: 48, height: 48)
                         .accessibilityLabel("Loading")
                 } else {

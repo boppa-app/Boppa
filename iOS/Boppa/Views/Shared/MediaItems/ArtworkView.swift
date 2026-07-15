@@ -141,15 +141,19 @@ private struct ArtworkImageContent: View {
                     .foregroundColor(.white)
                     .frame(width: self.size, height: self.size)
             } else {
-                KFImage(self.url)
-                    .placeholder {
-                        ProgressView().scaleEffect(max(self.size / 48 * 0.6, 0.6))
-                    }
-                    .onSuccess { result in self.loadedImage = result.image }
-                    .onFailure { _ in self.failed = true }
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: self.size, height: self.size)
+                ZStack {
+                    SpinnerView(tint: Color(.systemGray), lineWidth: max(self.size * 0.03, 2))
+                        .frame(width: max(self.size * 0.25, 16), height: max(self.size * 0.25, 16))
+
+                    KFImage(self.url)
+                        .onSuccess { result in self.loadedImage = result.image }
+                        .onFailure { _ in self.failed = true }
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: self.size, height: self.size)
+                        .opacity(0)
+                }
+                .frame(width: self.size, height: self.size)
             }
         }
         .onChange(of: self.url) { _ in

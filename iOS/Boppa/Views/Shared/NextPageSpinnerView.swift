@@ -6,7 +6,8 @@ struct NextPageSpinnerView: View {
 
     var body: some View {
         VStack {
-            ProgressView()
+            SpinnerView(lineWidth: 3)
+                .frame(width: 20, height: 20)
                 .id(self.spinnerToken)
         }
         .onAppear {

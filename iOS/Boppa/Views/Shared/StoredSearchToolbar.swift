@@ -41,9 +41,8 @@ struct StoredSearchToolbar: View {
                     .focused(self.isSearchFieldFocused)
 
                     if self.isSearching {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .tint(Color(.systemGray))
+                        SpinnerView(tint: Color(.systemGray), lineWidth: 2)
+                            .frame(width: 14, height: 14)
                     }
 
                     if !self.searchText.isEmpty {

@@ -134,9 +134,8 @@ struct TracklistActionSheet: View {
                 HStack(spacing: 12) {
                     Group {
                         if self.isRefreshing {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .tint(.white)
+                            SpinnerView(lineWidth: 2)
+                                .frame(width: 12, height: 12)
                         } else {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 16))

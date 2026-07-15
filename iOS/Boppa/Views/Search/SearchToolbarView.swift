@@ -10,8 +10,11 @@ struct SearchToolbarView: View {
             HStack(spacing: 8) {
                 Group {
                     if self.viewModel.isSearching {
-                        ProgressView()
-                            .scaleEffect(0.8)
+                        SpinnerView(
+                            tint: self.isSearchFieldFocused.wrappedValue ? .white : Color(.systemGray),
+                            lineWidth: 2.5
+                        )
+                        .frame(width: 16, height: 16)
                     } else if !self.viewModel.results.isEmpty {
                         Image(systemName: self.viewModel.selectedCategory.icon)
                     } else {

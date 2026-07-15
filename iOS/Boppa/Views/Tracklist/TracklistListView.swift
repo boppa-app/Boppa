@@ -143,7 +143,8 @@ struct TracklistListView: View {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
             } else if self.viewModel.tracklists.isEmpty && self.viewModel.isLoading {
-                ProgressView()
+                SpinnerView(tint: Color(.systemGray), lineWidth: 4)
+                    .frame(width: 40, height: 40)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.tracklists.isEmpty {
                 self.emptyState

@@ -75,7 +75,8 @@ struct ArtistDetailView: View {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
             } else if self.viewModel.detail == nil && self.viewModel.isLoading {
-                ProgressView()
+                SpinnerView(lineWidth: 3)
+                    .frame(width: 24, height: 24)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let detail = self.viewModel.detail, detail.isEmpty {
                 self.emptyState

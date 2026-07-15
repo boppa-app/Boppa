@@ -47,9 +47,8 @@ struct TracklistView: View {
                             } else if self.canSave {
                                 Group {
                                     if self.viewModel.isSaving {
-                                        ProgressView()
-                                            .scaleEffect(0.7)
-                                            .tint(.purp)
+                                        SpinnerView(tint: .purp, lineWidth: 2)
+                                            .frame(width: 14, height: 14)
                                             .accessibilityLabel("Saving to Library")
                                     } else {
                                         Image(systemName: "bookmark")
@@ -72,9 +71,8 @@ struct TracklistView: View {
                     },
                     centerTrailing: {
                         if self.viewModel.isRefreshing {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .tint(.white)
+                            SpinnerView(lineWidth: 2)
+                                .frame(width: 14, height: 14)
                         }
                     }
                 )
@@ -137,7 +135,8 @@ struct TracklistView: View {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
             } else if self.viewModel.tracks.isEmpty && self.viewModel.isLoading {
-                ProgressView()
+                SpinnerView(tint: Color(.systemGray), lineWidth: 4)
+                    .frame(width: 40, height: 40)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.displayTracks.isEmpty {
                 self.emptyState
