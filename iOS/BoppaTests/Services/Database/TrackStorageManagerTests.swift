@@ -271,7 +271,9 @@ struct TrackStorageManagerTests {
         let ctx = try Context()
         try ctx.write { db in
             try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1"), db: db)
+            try TrackStorageManager.shared.markSavedToLibrary(mediaId: "t1", mediaSourceId: "src", db: db)
             try TrackStorageManager.shared.upsertTrack(self.makeTrack("t2"), db: db)
+            try TrackStorageManager.shared.markSavedToLibrary(mediaId: "t2", mediaSourceId: "src", db: db)
         }
 
         let tracks = try ctx.withDatabase { TrackStorageManager.shared.fetchLibraryTracks() }
