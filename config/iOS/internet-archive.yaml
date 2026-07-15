@@ -37,10 +37,10 @@ data:
     albums: |
       const query = params.query;
       const page = params.previousResult?.page ? params.previousResult.page + 1 : 1;
-      const pageSize = 12;
+      const pageSize = 15;
 
       const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('mediatype:audio AND (creator:(' + query + ') OR title:(' + query + '))')
-        + '&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=date&fl[]=downloads'
+        + '&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=date&fl[]=downloads&fl[]=format'
         + '&sort[]=downloads+desc'
         + '&rows=' + pageSize
         + '&page=' + page
@@ -50,39 +50,20 @@ data:
       const data = await resp.json();
       const docs = data.response?.docs || [];
 
-      function findRealArtworkFile(files) {
-        const candidates = (files || []).filter(f => {
-          const name = (f.name || '').toLowerCase();
-          if (!/\.(jpe?g|png|gif)$/.test(name)) return false;
-          if (name === '__ia_thumb.jpg') return false;
-          return f.source === 'original';
-        });
-        if (candidates.length === 0) return null;
-        candidates.sort((a, b) => (parseInt(b.size, 10) || 0) - (parseInt(a.size, 10) || 0));
-        return candidates[0].name;
+      // Archive.org auto-derives a waveform PNG + spectrogram + item-tile thumb for every
+      // audio upload, real uploaded cover art is tagged 'JPEG' or 'Item Image' in this list.
+      // Without this check, items with no real art would show the waveform as artwork.
+      function hasRealArtwork(format) {
+        const formats = Array.isArray(format) ? format : (format ? [format] : []);
+        return formats.includes('JPEG') || formats.includes('Item Image');
       }
 
-      const items = await Promise.all(docs.map(async d => {
-        let lowResArtworkUrl;
-        let highResArtworkUrl;
-        try {
-          const metaResp = await fetch('https://archive.org/metadata/' + d.identifier);
-          const metaData = await metaResp.json();
-          const fileName = findRealArtworkFile(metaData.files);
-          if (fileName) {
-            const encodedPath = fileName.split('/').map(encodeURIComponent).join('/');
-            lowResArtworkUrl = 'https://archive.org/services/img/' + d.identifier;
-            highResArtworkUrl = 'https://archive.org/download/' + d.identifier + '/' + encodedPath;
-          }
-        } catch (e) {}
-        return {
-          id: d.identifier,
-          title: d.title || d.identifier,
-          subtitle: d.creator || 'Unknown Artist',
-          year: d.date ? parseInt(d.date.substring(0, 4), 10) || null : null,
-          lowResArtworkUrl: lowResArtworkUrl,
-          highResArtworkUrl: highResArtworkUrl
-        };
+      const items = docs.map(d => ({
+        id: d.identifier,
+        title: d.title || d.identifier,
+        subtitle: d.creator || 'Unknown Artist',
+        year: d.date ? parseInt(d.date.substring(0, 4), 10) || null : null,
+        lowResArtworkUrl: hasRealArtwork(d.format) ? 'https://archive.org/services/img/' + d.identifier : undefined
       }));
 
       const result = { items: items };
