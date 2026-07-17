@@ -586,15 +586,8 @@ playback:
           if (!('mediaSession' in navigator)) return;
 
           var trackDurationSeconds = 0;
-          // <audio> elements fire 'playing' on every resume, not just the first time
-          // playback starts — this flag makes sure boppaMediaPlaying only ever forces
-          // position back to 0 once, right after a fresh boppaLoad. On later resumes,
-          // resetting position here would clobber the real elapsed position that
-          // MediaElementSession's own play/pause auto-sync already tracks correctly.
           var hasReceivedInitialPlaying = false;
 
-          // Bridge to the iframe: messages sent before it's ready would be silently
-          // dropped, so queue until the iframe posts back that its own listener is up.
           var frame = document.getElementById('player-frame');
           var iframeReady = false;
           var pendingCommands = [];
@@ -619,13 +612,17 @@ playback:
               if (msg.duration) trackDurationSeconds = msg.duration;
               if (!hasReceivedInitialPlaying) {
                 hasReceivedInitialPlaying = true;
-                navigator.mediaSession.setPositionState({ duration: trackDurationSeconds, playbackRate: 1.0, position: 0 });
+                navigator.mediaSession.setPositionState({ duration: trackDurationSeconds, playbackRate: 1.0 });
+                navigator.mediaSession.setActionHandler('seekto', function(details) {
+                  if (window.boppaSeek) window.boppaSeek((details && details.seekTime != null ? details.seekTime : 0) * 1000);
+                });
               }
             }
           });
 
           window.boppaLoad = function(trackData) {
             hasReceivedInitialPlaying = false;
+            navigator.mediaSession.setActionHandler('seekto', null);
             var nowplayinginfo = document.getElementById('boppa-nowplayinginfo-audio');
             if (nowplayinginfo) {
               nowplayinginfo.muted = false;
@@ -667,6 +664,9 @@ playback:
           };
 
           window.boppaSeek = function(ms) {
+            if (trackDurationSeconds) {
+              navigator.mediaSession.setPositionState({ duration: trackDurationSeconds, position: Math.max(0, ms / 1000) });
+            }
             sendToIframe({type: 'boppaSeek', data: ms});
           };
         })();
@@ -692,9 +692,6 @@ playback:
           navigator.mediaSession.setActionHandler('seekbackward', null);
           navigator.mediaSession.setActionHandler('seekforward', null);
           navigator.mediaSession.setActionHandler('seekto', null);
-          // navigator.mediaSession.setActionHandler('seekto', function(details) {
-          //   if (window.boppaSeek) window.boppaSeek((details && details.seekTime != null ? details.seekTime : 0) * 1000);
-          // });
         })();
       injectionTime: atDocumentEnd
     - title: Iframe Audio Player
