@@ -383,363 +383,272 @@ playback:
     </body>
     </html>
   userScripts:
+    - title: Silent NowPlayingInfo Audio
+      content: |
+        (function() {
+          if (window !== window.top) return;
+          if (typeof ManagedMediaSource === 'undefined') return;
+
+          // ManagedMediaSource (iOS's MSE variant (plain MediaSource not supported for
+          // iOS WebKit)) lets the element report a long duration (set directly on
+          // the MediaSource, independent of how much audio is actually appended) while
+          // we only ever generate/append a few real seconds ahead of playback at a time.
+          // "twos" (big-endian 16-bit PCM in fMP4) is used instead of WAV/data URIs so a
+          // full, normal sample rate (44100Hz) can be used without the multi-hundred-MB
+          // data URI a WAV of the same duration would require. ManagedMediaSource also
+          // auto-evicts old buffered ranges, so no manual sourceBuffer.remove() is needed.
+          var SAMPLE_RATE = 44100;
+          var CHANNELS = 1;
+          var TRACK_ID = 1;
+          var FAKE_DURATION_SECONDS = 86400;
+          var CHUNK_SECONDS = 2;
+          var BUFFER_AHEAD_SECONDS = 6;
+
+          function strBytes(s) {
+            var b = new Uint8Array(s.length);
+            for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+            return b;
+          }
+          function u32(v) {
+            var b = new Uint8Array(4);
+            new DataView(b.buffer).setUint32(0, v >>> 0);
+            return b;
+          }
+          function u16(v) {
+            var b = new Uint8Array(2);
+            new DataView(b.buffer).setUint16(0, v & 0xFFFF);
+            return b;
+          }
+          function concat(arrays) {
+            var total = 0;
+            for (var i = 0; i < arrays.length; i++) total += arrays[i].byteLength;
+            var out = new Uint8Array(total);
+            var offset = 0;
+            for (var i = 0; i < arrays.length; i++) { out.set(arrays[i], offset); offset += arrays[i].byteLength; }
+            return out;
+          }
+          function box(type, parts) {
+            var payload = concat(parts);
+            return concat([u32(8 + payload.byteLength), strBytes(type), payload]);
+          }
+
+          function buildFtyp() {
+            return box('ftyp', [strBytes('isom'), u32(0), strBytes('isom'), strBytes('iso5'), strBytes('mp42')]);
+          }
+          function buildMvhd() {
+            var parts = [u32(0), u32(0), u32(0), u32(SAMPLE_RATE), u32(0), u32(0x00010000), u16(0x0100), u16(0), u32(0), u32(0)];
+            var matrix = [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000];
+            for (var i = 0; i < 9; i++) parts.push(u32(matrix[i]));
+            for (var i = 0; i < 6; i++) parts.push(u32(0));
+            parts.push(u32(2));
+            return box('mvhd', parts);
+          }
+          function buildTkhd() {
+            var parts = [u32(0x00000007), u32(0), u32(0), u32(TRACK_ID), u32(0), u32(0), u32(0), u32(0), u16(0), u16(0), u16(0x0100), u16(0)];
+            var matrix = [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000];
+            for (var i = 0; i < 9; i++) parts.push(u32(matrix[i]));
+            parts.push(u32(0));
+            parts.push(u32(0));
+            return box('tkhd', parts);
+          }
+          function buildMdhd() {
+            return box('mdhd', [u32(0), u32(0), u32(0), u32(SAMPLE_RATE), u32(0), u16(0x55C4), u16(0)]);
+          }
+          function buildHdlr() {
+            return box('hdlr', [u32(0), u32(0), strBytes('soun'), u32(0), u32(0), u32(0), strBytes('SoundHandler' + String.fromCharCode(0))]);
+          }
+          function buildSmhd() {
+            return box('smhd', [u32(0), u16(0), u16(0)]);
+          }
+          function buildDinf() {
+            var urlBox = box('url ', [u32(0x00000001)]);
+            var dref = box('dref', [u32(0), u32(1), urlBox]);
+            return box('dinf', [dref]);
+          }
+          function buildStsd() {
+            var entry = [new Uint8Array(6), u16(1), u16(0), u16(0), u32(0), u16(CHANNELS), u16(16), u16(0), u16(0), u32(SAMPLE_RATE << 16)];
+            var twos = box('twos', entry);
+            return box('stsd', [u32(0), u32(1), twos]);
+          }
+          function buildStbl() {
+            return box('stbl', [
+              buildStsd(),
+              box('stts', [u32(0), u32(0)]),
+              box('stsc', [u32(0), u32(0)]),
+              box('stsz', [u32(0), u32(0), u32(0)]),
+              box('stco', [u32(0), u32(0)])
+            ]);
+          }
+          function buildMinf() {
+            return box('minf', [buildSmhd(), buildDinf(), buildStbl()]);
+          }
+          function buildMdia() {
+            return box('mdia', [buildMdhd(), buildHdlr(), buildMinf()]);
+          }
+          function buildTrak() {
+            return box('trak', [buildTkhd(), buildMdia()]);
+          }
+          function buildMvex() {
+            return box('mvex', [box('trex', [u32(0), u32(TRACK_ID), u32(1), u32(0), u32(0), u32(0)])]);
+          }
+          function buildMoov() {
+            return box('moov', [buildMvhd(), buildTrak(), buildMvex()]);
+          }
+          function buildInitSegment() {
+            return concat([buildFtyp(), buildMoov()]);
+          }
+
+          var fragmentSequenceNumber = 0;
+          var cumulativeFrames = 0;
+
+          function buildFragment(pcmBytes, frameCount) {
+            fragmentSequenceNumber++;
+            var mfhd = box('mfhd', [u32(0), u32(fragmentSequenceNumber)]);
+            var tfhd = box('tfhd', [u32(0x020000), u32(TRACK_ID)]);
+            var tfdt = box('tfdt', [u32(0), u32(cumulativeFrames)]);
+            var trunFlags = 0x000001 | 0x000100 | 0x000200;
+
+            var sizingMoof = box('moof', [mfhd, box('traf', [tfhd, tfdt, box('trun', [u32(trunFlags), u32(1), u32(0), u32(frameCount), u32(pcmBytes.byteLength)])])]);
+            var dataOffset = sizingMoof.byteLength + 8;
+            var trun = box('trun', [u32(trunFlags), u32(1), u32(dataOffset), u32(frameCount), u32(pcmBytes.byteLength)]);
+            var moof = box('moof', [mfhd, box('traf', [tfhd, tfdt, trun])]);
+            var mdat = box('mdat', [pcmBytes]);
+
+            cumulativeFrames += frameCount;
+            return concat([moof, mdat]);
+          }
+
+          function generatePcmChunk(startFrame, frameCount) {
+            var bytes = new Uint8Array(frameCount * CHANNELS * 2);
+            var view = new DataView(bytes.buffer);
+            for (var i = 0; i < frameCount; i++) {
+              var t = (startFrame + i) / SAMPLE_RATE;
+              // Faint real tone, not true silence — iOS suspends backgrounded audio it
+              // detects as silent.
+              var sample = Math.round(Math.sin(2 * Math.PI * 20 * t) * 3);
+              view.setInt16(i * 2, sample, false);
+            }
+            return bytes;
+          }
+
+          var managedMediaSource = new ManagedMediaSource();
+          var audio = document.createElement('audio');
+          audio.id = 'boppa-nowplayinginfo-audio';
+          audio.muted = true;
+          audio.volume = 0.0001;
+          // On iOS, ManagedMediaSource defers firing sourceopen until AirPlay/wireless
+          // playback is disabled on the element (HTMLMediaElement::deferredMediaSourceOpenCanProgress()
+          // gates on isWirelessPlaybackTargetDisabled() when managedMediaSourceNeedsAirPlay
+          // is set) — without this, sourceopen never fires and play() just aborts forever.
+          audio.disableRemotePlayback = true;
+          // Must be attached to the document before srcObject is assigned — otherwise
+          // the resource-fetch algorithm never stabilizes and sourceopen never fires,
+          // so any later play() request just aborts.
+          document.body.appendChild(audio);
+          audio.srcObject = managedMediaSource;
+
+          var sourceBuffer = null;
+          var nextFrameToGenerate = 0;
+          var pendingAppend = null;
+
+          function appendNext(data) {
+            if (!sourceBuffer || sourceBuffer.updating) { pendingAppend = data; return; }
+            sourceBuffer.appendBuffer(data);
+          }
+
+          function fillBuffer() {
+            if (!sourceBuffer || sourceBuffer.updating) return;
+            if (pendingAppend) { var d = pendingAppend; pendingAppend = null; appendNext(d); return; }
+            var bufferedEnd = 0;
+            if (sourceBuffer.buffered.length > 0) bufferedEnd = sourceBuffer.buffered.end(sourceBuffer.buffered.length - 1);
+            if (bufferedEnd >= audio.currentTime + BUFFER_AHEAD_SECONDS) return;
+
+            var frameCount = CHUNK_SECONDS * SAMPLE_RATE;
+            var pcmBytes = generatePcmChunk(nextFrameToGenerate, frameCount);
+            nextFrameToGenerate += frameCount;
+            appendNext(buildFragment(pcmBytes, frameCount));
+          }
+
+          managedMediaSource.addEventListener('sourceopen', function() {
+            managedMediaSource.duration = FAKE_DURATION_SECONDS;
+            sourceBuffer = managedMediaSource.addSourceBuffer('audio/mp4; codecs="twos"');
+            sourceBuffer.addEventListener('updateend', fillBuffer);
+            appendNext(buildInitSegment());
+          });
+          managedMediaSource.addEventListener('startstreaming', fillBuffer);
+          setInterval(fillBuffer, 500);
+        })();
+      injectionTime: atDocumentEnd
     - title: Media Session Bridge
       content: |
         (function() {
+          if (window !== window.top) return;
           if (!('mediaSession' in navigator)) return;
 
-          var originalSetActionHandler = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
-          var protectedActions = new Set(['play', 'pause', 'previoustrack', 'nexttrack', 'seekbackward', 'seekforward', 'seekto']);
-
-          navigator.mediaSession.setActionHandler = function(action, handler) {
-            if (protectedActions.has(action)) return;
-            originalSetActionHandler(action, handler);
-          };
-
-          originalSetActionHandler('play', function() { if (window.boppaPlay) window.boppaPlay(); });
-          originalSetActionHandler('pause', function() { if (window.boppaPause) window.boppaPause(); });
-          originalSetActionHandler('seekbackward', null);
-          originalSetActionHandler('seekforward', null);
-          originalSetActionHandler('seekto', function(details) {
-            if (window.boppaSeek) window.boppaSeek((details && details.seekTime != null ? details.seekTime : 0) * 1000);
-          });
-          originalSetActionHandler('previoustrack', function() { postEvent({type: 'previoustrackCommand'}); });
-          originalSetActionHandler('nexttrack', function() { postEvent({type: 'nexttrackCommand'}); });
-
-          var playbackStateDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'playbackState')
-            || Object.getOwnPropertyDescriptor(navigator.mediaSession, 'playbackState');
-          window.__boppaOriginalPlaybackStateSetter = playbackStateDescriptor && playbackStateDescriptor.set
-            ? playbackStateDescriptor.set.bind(navigator.mediaSession) : null;
-          window.__boppaPlaybackState = 'paused';
-          if (window.__boppaOriginalPlaybackStateSetter) {
-            window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, 'paused');
-            Object.defineProperty(navigator.mediaSession, 'playbackState', {
-              get: function() { return window.__boppaPlaybackState; },
-              set: function(val) {},
-              configurable: true
-            });
-          }
-
-          window.__boppaOriginalSetPositionState = navigator.mediaSession.setPositionState.bind(navigator.mediaSession);
-          window.__boppaDuration = 0;
-          window.__boppaPlaybackRate = 1.0;
-          window.__boppaPosition = 0;
-          window.__boppaPositionTimestamp = Date.now();
-          window.__boppaGetCurrentPosition = function() {
-            var elapsed = (Date.now() - window.__boppaPositionTimestamp) / 1000.0;
-            var pos = window.__boppaPosition + elapsed * window.__boppaPlaybackRate;
-            return Math.max(0, Math.min(pos, window.__boppaDuration || pos));
-          };
-          navigator.mediaSession.setPositionState = function(state) {};
-
-          setInterval(function() {
-            if (window.__boppaOriginalSetPositionState && window.__boppaDuration > 0) {
-              try {
-                var pos = window.__boppaGetCurrentPosition ? window.__boppaGetCurrentPosition() : window.__boppaPosition;
-                window.__boppaOriginalSetPositionState.call(navigator.mediaSession, {
-                  duration: window.__boppaDuration,
-                  playbackRate: window.__boppaPlaybackRate || 1.0,
-                  position: Math.max(0, Math.min(pos, window.__boppaDuration))
-                });
-              } catch (e) {}
-            }
-          }, 250);
-
-          var metadataDescriptor = Object.getOwnPropertyDescriptor(navigator.mediaSession.__proto__, 'metadata')
-            || Object.getOwnPropertyDescriptor(navigator.mediaSession, 'metadata');
-          var originalMetadataSetter = metadataDescriptor && metadataDescriptor.set;
-          window.__boppaOriginalMetadataSetter = originalMetadataSetter ? originalMetadataSetter.bind(navigator.mediaSession) : null;
-          var boppaMetadata = new MediaMetadata({ title: 'Title', artist: 'Artist' });
-          if (originalMetadataSetter) {
-            originalMetadataSetter.call(navigator.mediaSession, boppaMetadata);
-            Object.defineProperty(navigator.mediaSession, 'metadata', {
-              get: function() { return boppaMetadata; },
-              set: function(val) { originalMetadataSetter.call(navigator.mediaSession, boppaMetadata); },
-              configurable: true
-            });
-          } else {
-            navigator.mediaSession.metadata = boppaMetadata;
-          }
-
-          window.__boppaSetMediaSession = function(opts) {
-            if (opts.playbackState) {
-              window.__boppaPlaybackState = opts.playbackState;
-              if (window.__boppaOriginalPlaybackStateSetter) {
-                window.__boppaOriginalPlaybackStateSetter.call(navigator.mediaSession, opts.playbackState);
-              }
-            }
-            if (opts.title !== undefined || opts.artist !== undefined || opts.highResArtworkUrl !== undefined || opts.lowResArtworkUrl !== undefined) {
-              var init = { title: opts.title || '', artist: opts.artist || '' };
-              var artworkUrl = opts.highResArtworkUrl || opts.lowResArtworkUrl;
-              if (artworkUrl) init.artwork = [{ src: artworkUrl }];
-              var newMeta = new MediaMetadata(init);
-              if (window.__boppaOriginalMetadataSetter) {
-                window.__boppaOriginalMetadataSetter.call(navigator.mediaSession, newMeta);
-                Object.defineProperty(navigator.mediaSession, 'metadata', {
-                  get: function() { return newMeta; },
-                  set: function(val) { window.__boppaOriginalMetadataSetter.call(navigator.mediaSession, newMeta); },
-                  configurable: true
-                });
-              } else {
-                navigator.mediaSession.metadata = newMeta;
-              }
-            }
-            if (opts.duration !== undefined) window.__boppaDuration = opts.duration;
-            if (opts.playbackRate !== undefined) window.__boppaPlaybackRate = opts.playbackRate;
-            if (opts.position !== undefined) {
-              window.__boppaPosition = opts.position;
-              window.__boppaPositionTimestamp = Date.now();
-            }
-            if (window.__boppaOriginalSetPositionState && window.__boppaDuration > 0) {
-              try {
-                var pos = opts.position !== undefined ? opts.position : (window.__boppaGetCurrentPosition ? window.__boppaGetCurrentPosition() : window.__boppaPosition);
-                window.__boppaPosition = Math.max(0, Math.min(pos, window.__boppaDuration));
-                window.__boppaPositionTimestamp = Date.now();
-                window.__boppaOriginalSetPositionState.call(navigator.mediaSession, {
-                  duration: window.__boppaDuration,
-                  playbackRate: window.__boppaPlaybackRate || 1.0,
-                  position: window.__boppaPosition
-                });
-              } catch (e) {}
-            }
-          };
-
-        })();
-      injectionTime: atDocumentStart
-    - title: Keepalive Audio and Player Bridge
-      content: |
-        (function() {
-          'use strict';
-          if (window !== window.top) return;
-
-          var boppaKeepaliveAudio = (function() {
-            var sampleRate = 44100, duration = 1, numSamples = sampleRate * duration;
-            var buffer = new ArrayBuffer(44 + numSamples * 2);
-            var view = new DataView(buffer);
-            var offset = 0;
-            function writeString(s) { for (var i = 0; i < s.length; i++) view.setUint8(offset++, s.charCodeAt(i)); }
-            function writeUint32(v) { view.setUint32(offset, v, true); offset += 4; }
-            function writeUint16(v) { view.setUint16(offset, v, true); offset += 2; }
-            writeString('RIFF');
-            writeUint32(36 + numSamples * 2);
-            writeString('WAVE');
-            writeString('fmt ');
-            writeUint32(16);
-            writeUint16(1);
-            writeUint16(1);
-            writeUint32(sampleRate);
-            writeUint32(sampleRate * 2);
-            writeUint16(2);
-            writeUint16(16);
-            writeString('data');
-            writeUint32(numSamples * 2);
-            for (var i = 0; i < numSamples; i++) {
-              var t = i / sampleRate;
-              var sample = Math.round(Math.sin(2 * Math.PI * 20 * t) * 3);
-              view.setInt16(offset, sample, true); offset += 2;
-            }
-            var binary = '';
-            var bytes = new Uint8Array(buffer);
-            for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-            var dataUri = 'data:audio/wav;base64,' + btoa(binary);
-            var audio = document.createElement('audio');
-            audio.id = 'boppa-keepalive-audio';
-            audio.src = dataUri;
-            audio.muted = true;
-            audio.loop = true;
-            audio.volume = 0.0001;
-            audio.playbackRate = 0.0001;
-            document.body.appendChild(audio);
-            return audio;
-          })();
-
-          var frame = document.getElementById('player-frame');
-          var iframeReady = false;
-          var pendingCommands = [];
-
-          function sendToIframe(msg) {
-            if (frame && frame.contentWindow && iframeReady) {
-              frame.contentWindow.postMessage(msg, '*');
-            } else {
-              pendingCommands.push(msg);
-            }
-          }
-
-          window.addEventListener('message', function(event) {
-            var msg = event.data;
-            if (!msg || !msg.type) return;
-            if (msg.type === 'boppaIframeReady') {
-              iframeReady = true;
-              var cmds = pendingCommands.slice();
-              pendingCommands = [];
-              for (var i = 0; i < cmds.length; i++) sendToIframe(cmds[i]);
-            } else if (msg.type === 'boppaMediaPlaying') {
-              if (window.__boppaSetMediaSession) window.__boppaSetMediaSession({ playbackRate: 1.0, playbackState: 'playing' });
-            } else if (msg.type === 'boppaMediaDuration') {
-              if (window.__boppaSetMediaSession) window.__boppaSetMediaSession({ duration: msg.value });
-            }
-          });
+          var trackDurationSeconds = 0;
 
           window.boppaLoad = function(trackData) {
-            boppaKeepaliveAudio.play();
-            boppaKeepaliveAudio.muted = false;
-            if (window.__boppaSetMediaSession) {
-              window.__boppaSetMediaSession({
-                title: trackData.title,
-                artist: trackData.subtitle,
-                lowResArtworkUrl: trackData.lowResArtworkUrl,
-                highResArtworkUrl: trackData.highResArtworkUrl,
-                duration: trackData.duration ? trackData.duration / 1000 : 0,
-                playbackRate: 0,
-                position: 0,
-                playbackState: 'playing'
-              });
+            var nowplayinginfo = document.getElementById('boppa-nowplayinginfo-audio');
+            if (nowplayinginfo) {
+              nowplayinginfo.muted = false;
+              nowplayinginfo.play();
             }
-            sendToIframe({type: 'boppaLoad', data: trackData});
+            navigator.mediaSession.playbackState = 'playing';
+
+            var artworkUrl = trackData.highResArtworkUrl || trackData.lowResArtworkUrl;
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: trackData.title || '',
+              artist: trackData.subtitle || '',
+              artwork: artworkUrl ? [{ src: artworkUrl }] : []
+            });
+
+            trackDurationSeconds = trackData.duration ? trackData.duration / 1000 : 0;
+            if (trackDurationSeconds) {
+              navigator.mediaSession.setPositionState({ duration: trackDurationSeconds, playbackRate: 0.0001, position: 0 });
+              console.log('boppaLoad: set mediaSession duration to', trackDurationSeconds);
+
+              setTimeout(function() {
+                navigator.mediaSession.setPositionState({ duration: trackDurationSeconds, playbackRate: 1.0, position: 0 });
+              }, 3000);
+            }
           };
+
           window.boppaPlay = function() {
-            boppaKeepaliveAudio.play();
-            boppaKeepaliveAudio.muted = false;
-            sendToIframe({type: 'boppaPlay'});
+            var nowPlayingInfoAudioElement = document.getElementById('boppa-nowplayinginfo-audio');
+            if (nowPlayingInfoAudioElement) {
+              nowPlayingInfoAudioElement.muted = false;
+              nowPlayingInfoAudioElement.play();
+            }
+            navigator.mediaSession.playbackState = 'playing';
           };
+
           window.boppaPause = function() {
-            boppaKeepaliveAudio.pause();
-            sendToIframe({type: 'boppaPause'});
+            var nowPlayingInfoAudioElement = document.getElementById('boppa-nowplayinginfo-audio');
+            if (nowPlayingInfoAudioElement) nowPlayingInfoAudioElement.pause();
+            navigator.mediaSession.playbackState = 'paused';
           };
-          window.boppaSeek = function(ms) {
-            if (window.__boppaSetMediaSession) window.__boppaSetMediaSession({ position: ms / 1000 });
-            sendToIframe({type: 'boppaSeek', data: ms});
-          };
-          window.boppaStop = function() {
-            boppaKeepaliveAudio.muted = true;
-            sendToIframe({type: 'boppaPause'});
-            if (window.__boppaSetMediaSession) window.__boppaSetMediaSession({ title: 'Title', artist: 'Artist', highResArtworkUrl: 'https://boppa.app/placeholder.png', playbackState: 'paused' });
-          };
-          window.boppaMute = function() { sendToIframe({type: 'boppaMute'}); };
-          window.boppaUnmute = function() { sendToIframe({type: 'boppaUnmute'}); };
         })();
       injectionTime: atDocumentEnd
-    - title: Iframe Audio Player
+    - title: Media Session Remote Commands
       content: |
         (function() {
-          'use strict';
-          if (window === window.top) return;
+          if (window !== window.top) return;
+          if (!('mediaSession' in navigator)) return;
 
-          var pendingCommands = [];
-          var ready = false;
-          var audio = null;
-          var hasPlayedInitially = false;
-
-          function pauseAudio(options) {
-            if (!audio) return;
-            audio.pause();
-            if (!options || !options.suppressPausePostEvent) postEvent({type: 'pause'});
-          }
-
-          window.addEventListener('message', function(event) {
-            var msg = event.data;
-            if (!msg || !msg.type || !msg.type.startsWith('boppa')) return;
-            if (!ready) { pendingCommands.push(msg); return; }
-            handleCommand(msg);
+          navigator.mediaSession.setActionHandler('play', function() {
+            if (window.boppaPlay) window.boppaPlay();
           });
-
-          function handleCommand(msg) {
-            switch (msg.type) {
-              case 'boppaLoad': doLoadTrack(msg.data); break;
-              case 'boppaPlay': if (audio) audio.play(); break;
-              case 'boppaPause': pauseAudio(); break;
-              case 'boppaSeek': if (audio) audio.currentTime = msg.data / 1000; break;
-              case 'boppaMute': if (audio) audio.muted = true; break;
-              case 'boppaUnmute': if (audio) audio.muted = false; break;
-            }
-          }
-
-          function resolveUrl(url) {
-            if (!url || !url.startsWith('ia://')) return Promise.resolve(url);
-            var identifier = url.replace('ia://', '');
-            return fetch('https://archive.org/metadata/' + encodeURIComponent(identifier) + '/files')
-              .then(function(r) { return r.json(); })
-              .then(function(data) {
-                var files = data.result || [];
-                var mp3s = files.filter(function(f) { return f.format === 'VBR MP3' || f.format === 'MP3' || f.format === '128Kbps MP3'; });
-                var audioFiles = mp3s.length > 0 ? mp3s : files.filter(function(f) { return f.format === 'Ogg Vorbis'; });
-                if (audioFiles.length === 0) return null;
-                return 'https://archive.org/download/' + identifier + '/' + encodeURIComponent(audioFiles[0].name);
-              })
-              .catch(function() { return null; });
-          }
-
-          function doLoadTrack(trackData) {
-            pauseAudio({suppressPausePostEvent: true});
-            hasPlayedInitially = false;
-            if (!trackData.url) {
-              postEvent({type: 'error', message: 'Missing stream URL'});
-              return;
-            }
-            resolveUrl(trackData.url).then(function(streamUrl) {
-              if (!streamUrl) {
-                postEvent({type: 'error', message: 'Could not resolve audio file'});
-                return;
-              }
-              audio.src = streamUrl;
-              audio.play().catch(function(e) {
-                postEvent({type: 'error', message: 'Playback failed: ' + e.message});
-              });
-            });
-          }
-
-          function flushPendingCommands() {
-            ready = true;
-            var cmds = pendingCommands.slice();
-            pendingCommands = [];
-            for (var i = 0; i < cmds.length; i++) handleCommand(cmds[i]);
-          }
-
-          function setup() {
-            document.documentElement.innerHTML = '<head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;background:#000;"><audio id="boppa-player"></audio></body>';
-            audio = document.getElementById('boppa-player');
-
-            audio.addEventListener('loadedmetadata', function() {
-              postEvent({type: 'duration', value: audio.duration});
-              window.parent.postMessage({type: 'boppaMediaDuration', value: audio.duration}, '*');
-            });
-
-            audio.addEventListener('playing', function() {
-              postEvent({type: 'play'});
-              window.parent.postMessage({type: 'boppaMediaPlaying'}, '*');
-              if (!hasPlayedInitially) {
-                hasPlayedInitially = true;
-                postEvent({type: 'initialPlay'});
-              }
-            });
-
-            audio.addEventListener('timeupdate', function() {
-              postEvent({type: 'progress', currentTime: audio.currentTime, duration: audio.duration});
-            });
-
-            audio.addEventListener('ended', function() {
-              postEvent({type: 'finish'});
-            });
-
-            audio.addEventListener('error', function() {
-              postEvent({type: 'error', message: 'Audio element error: ' + (audio.error?.message || 'unknown')});
-            });
-
-            var placeholder = document.createElement('div');
-            placeholder.id = audio.id;
-            placeholder.className = audio.className;
-            if (audio.parentNode) {
-              audio.parentNode.replaceChild(placeholder, audio);
-            }
-
-            window.parent.postMessage({type: 'boppaIframeReady'}, '*');
-            flushPendingCommands();
-          }
-
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setup);
-          } else {
-            setup();
-          }
+          navigator.mediaSession.setActionHandler('pause', function() {
+            if (window.boppaPause) window.boppaPause();
+          });
+          navigator.mediaSession.setActionHandler('previoustrack', function() {
+            postEvent({type: 'previoustrackCommand'});
+          });
+          navigator.mediaSession.setActionHandler('nexttrack', function() {
+            postEvent({type: 'nexttrackCommand'});
+          });
+          navigator.mediaSession.setActionHandler('seekbackward', null);
+          navigator.mediaSession.setActionHandler('seekforward', null);
+          navigator.mediaSession.setActionHandler('seekto', null);
         })();
       injectionTime: atDocumentEnd
