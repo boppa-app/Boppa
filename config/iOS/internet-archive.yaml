@@ -617,6 +617,8 @@ playback:
                   if (window.boppaSeek) window.boppaSeek((details && details.seekTime != null ? details.seekTime : 0) * 1000);
                 });
               }
+            } else if (msg.type === 'boppaEvent') {
+              postEvent(msg.event);
             }
           });
 
@@ -704,8 +706,28 @@ playback:
           audio.id = 'boppa-player';
           document.body.appendChild(audio);
 
+          function reportEvent(evt) {
+            window.parent.postMessage({type: 'boppaEvent', event: evt}, '*');
+          }
+
           audio.addEventListener('playing', function() {
             window.parent.postMessage({type: 'boppaMediaPlaying', duration: audio.duration}, '*');
+            reportEvent({type: 'play'});
+          });
+          audio.addEventListener('pause', function() {
+            reportEvent({type: 'pause'});
+          });
+          audio.addEventListener('timeupdate', function() {
+            reportEvent({type: 'progress', currentTime: audio.currentTime, duration: audio.duration});
+          });
+          audio.addEventListener('loadedmetadata', function() {
+            reportEvent({type: 'duration', value: audio.duration});
+          });
+          audio.addEventListener('ended', function() {
+            reportEvent({type: 'finish'});
+          });
+          audio.addEventListener('error', function() {
+            reportEvent({type: 'error', message: 'Audio element error: ' + (audio.error && audio.error.message)});
           });
 
           var placeholder = document.createElement('div');
@@ -732,17 +754,17 @@ playback:
 
           function loadTrack(trackData) {
             if (!trackData || !trackData.url) {
-              postEvent({type: 'error', message: 'Missing stream URL'});
+              reportEvent({type: 'error', message: 'Missing stream URL'});
               return;
             }
             resolveUrl(trackData.url).then(function(streamUrl) {
               if (!streamUrl) {
-                postEvent({type: 'error', message: 'Could not resolve audio file'});
+                reportEvent({type: 'error', message: 'Could not resolve audio file'});
                 return;
               }
               audio.src = streamUrl;
               audio.play().catch(function(e) {
-                postEvent({type: 'error', message: 'Playback failed: ' + e.message});
+                reportEvent({type: 'error', message: 'Playback failed: ' + e.message});
               });
             });
           }
