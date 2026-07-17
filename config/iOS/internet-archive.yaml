@@ -588,6 +588,10 @@ playback:
           var trackDurationSeconds = 0;
           var hasReceivedInitialPlaying = false;
 
+          function wrapArtworkUrl(url) {
+            return 'boppa-artwork://cache?url=' + encodeURIComponent(url);
+          }
+
           var frame = document.getElementById('player-frame');
           var iframeReady = false;
           var pendingCommands = [];
@@ -633,11 +637,11 @@ playback:
             sendToIframe({type: 'boppaUnmute'});
             navigator.mediaSession.playbackState = 'playing';
 
-            var artworkUrl = trackData.highResArtworkUrl || trackData.lowResArtworkUrl;
+            var artworkUrl = trackData.highResArtworkUrl || trackData.lowResArtworkUrl || wrapArtworkUrl('https://boppa.app/boppa.png');
             navigator.mediaSession.metadata = new MediaMetadata({
               title: trackData.title || '',
               artist: trackData.subtitle || '',
-              artwork: artworkUrl ? [{ src: artworkUrl }] : []
+              artwork: [{ src: artworkUrl }]
             });
 
             trackDurationSeconds = trackData.duration ? trackData.duration / 1000 : 0;
@@ -680,6 +684,9 @@ playback:
               nowPlayingInfoAudioElement.pause();
             }
             navigator.mediaSession.playbackState = 'paused';
+            if (navigator.mediaSession.metadata) {
+              navigator.mediaSession.metadata.artwork = [{ src: wrapArtworkUrl('https://boppa.app/empty.png') }];
+            }
             sendToIframe({type: 'boppaMute'});
             sendToIframe({type: 'boppaPause'});
           };
