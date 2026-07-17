@@ -523,7 +523,7 @@ playback:
             var view = new DataView(bytes.buffer);
             for (var i = 0; i < frameCount; i++) {
               var t = (startFrame + i) / SAMPLE_RATE;
-              // Faint real tone, not true silence — iOS suspends backgrounded audio it
+              // Faint real tone, not true silence, iOS suspends backgrounded audio it
               // detects as silent.
               var sample = Math.round(Math.sin(2 * Math.PI * 20 * t) * 3);
               view.setInt16(i * 2, sample, false);
@@ -539,9 +539,9 @@ playback:
           // On iOS, ManagedMediaSource defers firing sourceopen until AirPlay/wireless
           // playback is disabled on the element (HTMLMediaElement::deferredMediaSourceOpenCanProgress()
           // gates on isWirelessPlaybackTargetDisabled() when managedMediaSourceNeedsAirPlay
-          // is set) — without this, sourceopen never fires and play() just aborts forever.
+          // is set), without this, sourceopen never fires and play() just aborts forever.
           audio.disableRemotePlayback = true;
-          // Must be attached to the document before srcObject is assigned — otherwise
+          // Must be attached to the document before srcObject is assigned, otherwise
           // the resource-fetch algorithm never stabilizes and sourceopen never fires,
           // so any later play() request just aborts.
           document.body.appendChild(audio);
@@ -694,7 +694,7 @@ playback:
           navigator.mediaSession.setActionHandler('seekto', null);
         })();
       injectionTime: atDocumentEnd
-    - title: Iframe Audio Player
+    - title: Inline Frame Audio Player
       content: |
         (function() {
           'use strict';
@@ -704,46 +704,16 @@ playback:
           audio.id = 'boppa-player';
           document.body.appendChild(audio);
 
-          // Exposed so other iframe-side scripts (e.g. the track loader) can reach the
-          // real element — after the div swap below, getElementById('boppa-player')
-          // no longer finds it, only this reference does.
-          window.__boppaAudioElement = audio;
-
-          // Tell the parent frame once playback has actually begun, with the real
-          // resolved duration — the parent uses this to set the final mediaSession
-          // position state instead of guessing with a timeout.
           audio.addEventListener('playing', function() {
             window.parent.postMessage({type: 'boppaMediaPlaying', duration: audio.duration}, '*');
           });
 
-          // Swap the real <audio> element out for an inert placeholder div once it
-          // exists — playback keeps going via the JS reference above even though the
-          // element is no longer an <audio> tag in the DOM.
           var placeholder = document.createElement('div');
           placeholder.id = audio.id;
           placeholder.className = audio.className;
           if (audio.parentNode) {
             audio.parentNode.replaceChild(placeholder, audio);
           }
-
-          window.addEventListener('message', function(event) {
-            var msg = event.data;
-            if (!msg || !msg.type) return;
-            switch (msg.type) {
-              case 'boppaPlay': audio.play(); break;
-              case 'boppaPause': audio.pause(); break;
-              case 'boppaSeek': audio.currentTime = msg.data / 1000; break;
-            }
-          });
-
-          window.parent.postMessage({type: 'boppaIframeReady'}, '*');
-        })();
-      injectionTime: atDocumentEnd
-    - title: Iframe Track Loader
-      content: |
-        (function() {
-          'use strict';
-          if (window === window.top) return;
 
           function resolveUrl(url) {
             if (!url || url.indexOf('ia://') !== 0) return Promise.resolve(url);
@@ -761,8 +731,6 @@ playback:
           }
 
           function loadTrack(trackData) {
-            var audio = window.__boppaAudioElement;
-            if (!audio) return;
             if (!trackData || !trackData.url) {
               postEvent({type: 'error', message: 'Missing stream URL'});
               return;
@@ -781,118 +749,15 @@ playback:
 
           window.addEventListener('message', function(event) {
             var msg = event.data;
-            if (!msg || msg.type !== 'boppaLoad') return;
-            loadTrack(msg.data);
-          });
-        })();
-      injectionTime: atDocumentEnd
-    - title: MediaSession/Audio Diagnostics
-      content: |
-        (function() {
-          if (window !== window.top) return;
-
-          function snapshot() {
-            var audio = document.getElementById('boppa-nowplayinginfo-audio');
-            var mediaSession = navigator.mediaSession;
-            var metadata = mediaSession && mediaSession.metadata;
-            return {
-              mediaSession: {
-                playbackState: mediaSession && mediaSession.playbackState,
-                title: metadata && metadata.title,
-                artist: metadata && metadata.artist
-              },
-              audio: audio ? {
-                paused: audio.paused,
-                ended: audio.ended,
-                currentTime: audio.currentTime,
-                duration: audio.duration,
-                playbackRate: audio.playbackRate,
-                volume: audio.volume,
-                muted: audio.muted,
-                loop: audio.loop,
-                readyState: audio.readyState,
-                networkState: audio.networkState,
-                error: audio.error && audio.error.message
-              } : null
-            };
-          }
-
-          function log(label) {
-            console.log('[boppa-monitor] ' + label + ':', JSON.stringify(snapshot()));
-          }
-
-          ['boppaLoad', 'boppaPlay', 'boppaPause'].forEach(function(name) {
-            var original = window[name];
-            if (typeof original !== 'function') return;
-            window[name] = function() {
-              log(name + ' ENTER');
-              var result = original.apply(this, arguments);
-              log(name + ' EXIT');
-              return result;
-            };
-          });
-
-          if (typeof window.postEvent === 'function') {
-            var originalPostEvent = window.postEvent;
-            window.postEvent = function(evt) {
-              if (evt && (evt.type === 'previoustrackCommand' || evt.type === 'nexttrackCommand')) {
-                log('postEvent ' + evt.type);
-              }
-              return originalPostEvent.apply(this, arguments);
-            };
-          }
-
-          log('diagnostics installed');
-        })();
-      injectionTime: atDocumentEnd
-    - title: Iframe Audio Diagnostics
-      content: |
-        (function() {
-          if (window === window.top) return;
-
-          function snapshot() {
-            var audio = window.__boppaAudioElement;
-            return audio ? {
-              paused: audio.paused,
-              ended: audio.ended,
-              seeking: audio.seeking,
-              currentTime: audio.currentTime,
-              duration: audio.duration,
-              playbackRate: audio.playbackRate,
-              volume: audio.volume,
-              muted: audio.muted,
-              readyState: audio.readyState,
-              networkState: audio.networkState,
-              src: audio.src,
-              error: audio.error && audio.error.message
-            } : null;
-          }
-
-          function log(label) {
-            console.log('[boppa-iframe-monitor] ' + label + ':', JSON.stringify(snapshot()));
-          }
-
-          window.addEventListener('message', function(event) {
-            var msg = event.data;
             if (!msg || !msg.type) return;
-            if (msg.type === 'boppaPlay' || msg.type === 'boppaPause' || msg.type === 'boppaSeek' || msg.type === 'boppaLoad') {
-              log('message ' + msg.type + ' RECEIVED');
+            switch (msg.type) {
+              case 'boppaPlay': audio.play(); break;
+              case 'boppaPause': audio.pause(); break;
+              case 'boppaSeek': audio.currentTime = msg.data / 1000; break;
+              case 'boppaLoad': loadTrack(msg.data); break;
             }
           });
 
-          // Listeners must be attached directly to the element, not via document-level
-          // delegation — after Iframe Audio Player swaps it out for a placeholder div,
-          // it's no longer in the document tree, so document-level listeners would never
-          // see its events.
-          var audio = window.__boppaAudioElement;
-          if (audio) {
-            ['play', 'playing', 'pause', 'seeking', 'seeked', 'ended', 'error', 'loadedmetadata', 'emptied', 'abort', 'stalled', 'suspend'].forEach(function(eventName) {
-              audio.addEventListener(eventName, function() {
-                log('audio ' + eventName);
-              });
-            });
-          }
-
-          log('diagnostics installed');
+          window.parent.postMessage({type: 'boppaIframeReady'}, '*');
         })();
       injectionTime: atDocumentEnd
