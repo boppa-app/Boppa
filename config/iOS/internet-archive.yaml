@@ -624,12 +624,13 @@ playback:
 
           window.boppaLoad = function(trackData) {
             hasReceivedInitialPlaying = false;
-            navigator.mediaSession.setActionHandler('seekto', null);
             var nowplayinginfo = document.getElementById('boppa-nowplayinginfo-audio');
+            navigator.mediaSession.setActionHandler('seekto', null);
             if (nowplayinginfo) {
               nowplayinginfo.muted = false;
               nowplayinginfo.play();
             }
+            sendToIframe({type: 'boppaUnmute'});
             navigator.mediaSession.playbackState = 'playing';
 
             var artworkUrl = trackData.highResArtworkUrl || trackData.lowResArtworkUrl;
@@ -670,6 +671,17 @@ playback:
               navigator.mediaSession.setPositionState({ duration: trackDurationSeconds, position: Math.max(0, ms / 1000) });
             }
             sendToIframe({type: 'boppaSeek', data: ms});
+          };
+
+          window.boppaStop = function() {
+            var nowPlayingInfoAudioElement = document.getElementById('boppa-nowplayinginfo-audio');
+            if (nowPlayingInfoAudioElement) {
+              nowPlayingInfoAudioElement.muted = true;
+              nowPlayingInfoAudioElement.pause();
+            }
+            navigator.mediaSession.playbackState = 'paused';
+            sendToIframe({type: 'boppaMute'});
+            sendToIframe({type: 'boppaPause'});
           };
         })();
       injectionTime: atDocumentEnd
@@ -777,6 +789,8 @@ playback:
               case 'boppaPause': audio.pause(); break;
               case 'boppaSeek': audio.currentTime = msg.data / 1000; break;
               case 'boppaLoad': loadTrack(msg.data); break;
+              case 'boppaMute': audio.muted = true; break;
+              case 'boppaUnmute': audio.muted = false; break;
             }
           });
 
