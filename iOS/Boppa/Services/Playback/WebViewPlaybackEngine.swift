@@ -117,11 +117,11 @@ final class WebViewPlaybackEngine: NSObject {
         let trackData: [String: Any] = [
             "id": track.mediaId,
             "title": track.title,
-            "subtitle": track.subtitle ?? "",
-            "duration": track.duration ?? 0,
-            "lowResArtworkUrl": ArtworkURLBridge.localURLString(for: track.lowResArtworkUrl),
-            "highResArtworkUrl": ArtworkURLBridge.localURLString(for: track.highResArtworkUrl),
-            "url": track.url ?? "",
+            "subtitle": track.subtitle,
+            "duration": track.duration,
+            "lowResArtworkUrl": track.lowResArtworkUrl,
+            "highResArtworkUrl": track.highResArtworkUrl,
+            "url": track.url,
             "metadata": metadata,
             "context": context,
         ]

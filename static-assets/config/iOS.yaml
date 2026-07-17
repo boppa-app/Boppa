@@ -1,2 +1,2 @@
 defaultMediaSourceConfigUrls:
-  - https://config.boppa.app/iOS/internet-archive.yaml
+  - https://cdn.boppa.app/media-source-config/iOS/internet-archive.yaml

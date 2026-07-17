@@ -637,7 +637,7 @@ playback:
             sendToIframe({type: 'boppaUnmute'});
             navigator.mediaSession.playbackState = 'playing';
 
-            var artworkUrl = trackData.highResArtworkUrl || trackData.lowResArtworkUrl || wrapArtworkUrl('https://boppa.app/boppa.png');
+            var artworkUrl = wrapArtworkUrl(trackData.highResArtworkUrl || trackData.lowResArtworkUrl || 'https://cdn.boppa.app/no-artwork.png');
             navigator.mediaSession.metadata = new MediaMetadata({
               title: trackData.title || '',
               artist: trackData.subtitle || '',
@@ -685,7 +685,7 @@ playback:
             }
             navigator.mediaSession.playbackState = 'paused';
             if (navigator.mediaSession.metadata) {
-              navigator.mediaSession.metadata.artwork = [{ src: wrapArtworkUrl('https://boppa.app/empty.png') }];
+              navigator.mediaSession.metadata.artwork = [{ src: wrapArtworkUrl('https://cdn.boppa.app/empty.png') }];
             }
             sendToIframe({type: 'boppaMute'});
             sendToIframe({type: 'boppaPause'});

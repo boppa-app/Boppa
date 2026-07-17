@@ -47,7 +47,7 @@ struct AddMediaSourceView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 } else {
                     Section("Option 1: From URL") {
-                        TextField("config.boppa.app/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
+                        TextField("cdn.boppa.app/media-source-config/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
                             .textInputAutocapitalization(.never)
                             .keyboardType(.URL)
                             .autocorrectionDisabled()
