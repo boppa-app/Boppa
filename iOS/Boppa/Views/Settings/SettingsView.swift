@@ -11,11 +11,13 @@ struct SettingsView: View {
     @State private var showClearConfirmation = false
     @State private var isEditing = false
     @State private var isEditMode = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack(path: self.$navigationPath) {
             List {
                 self.mediaSourcesSection
+                self.communitySection
                 self.webDataSection
             }
             .environment(\.editMode, self.isEditMode ? .constant(.active) : .constant(.inactive))
@@ -118,6 +120,62 @@ struct SettingsView: View {
                 .accessibilityHint(self.isEditing ? "Exit editing mode" : "Manage and reorder media sources")
             }
         }
+    }
+
+    private var communitySection: some View {
+        Section {
+            VStack(spacing: 0) {
+                self.communityRow(
+                    title: "Reddit",
+                    imageName: "Reddit",
+                    url: URL(string: "https://www.reddit.com/r/BoppaApp/")!
+                )
+                Divider()
+                    .padding(.leading, 44)
+                self.communityRow(
+                    title: "Discord",
+                    imageName: "Discord",
+                    url: URL(string: "https://discord.gg/zk6FhWNnM")!
+                )
+                Divider()
+                    .padding(.leading, 44)
+                self.communityRow(
+                    title: "GitHub",
+                    imageName: "GitHub",
+                    url: URL(string: "https://github.com/boppa-app/Boppa")!
+                )
+            }
+            .listRowBackground(Color(.systemGray6))
+        } header: {
+            Text("Community")
+                .font(.body)
+        }
+    }
+
+    private func communityRow(title: String, imageName: String, url: URL) -> some View {
+        Button {
+            self.openURL(url)
+        } label: {
+            HStack(spacing: 12) {
+                Image(imageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+                    .frame(width: 32, height: 32)
+                Text(title)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                Spacer()
+                Image(systemName: "arrow.up.forward")
+                    .font(.caption)
+                    .foregroundColor(Color(.systemGray2))
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityHint("Opens \(title) in your browser")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var webDataSection: some View {
