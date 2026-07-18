@@ -22,15 +22,6 @@ export function SiteHeader() {
           Download
         </Link>
         <a
-          href="https://discord.gg/zk6FhWNnM"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Discord"
-          className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
-        >
-          <DiscordIcon className="w-[18px] h-[18px]" />
-        </a>
-        <a
           href="https://reddit.com/r/BoppaApp"
           target="_blank"
           rel="noopener noreferrer"
@@ -38,6 +29,15 @@ export function SiteHeader() {
           className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
         >
           <RedditIcon className="w-[18px] h-[18px]" />
+        </a>
+        <a
+          href="https://discord.gg/zk6FhWNnM"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Discord"
+          className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
+        >
+          <DiscordIcon className="w-[18px] h-[18px]" />
         </a>
         <a
           href="https://github.com/boppa-app/Boppa"
