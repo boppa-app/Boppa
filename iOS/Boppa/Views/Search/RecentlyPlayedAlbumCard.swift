@@ -58,7 +58,7 @@ private struct StackedArtworkView: View {
             ForEach(Array(self.covers.enumerated()), id: \.offset) { index, urls in
                 ArtworkView(
                     lowResUrl: urls.lowRes, highResUrl: urls.highRes, preferLowRes: false,
-                    tracklistType: .album, size: self.tileSize
+                    placeholder: "music.note", size: self.tileSize
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
