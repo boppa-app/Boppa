@@ -34,6 +34,7 @@ export type DocsNavNode =
       type: "group";
       segment: string;
       label: string;
+      href?: string;
       children: DocsNavNode[];
       order: number;
     }
@@ -170,6 +171,7 @@ function insertDocByPath(nodes: DocsNavNode[], doc: Doc, skipLeadingLabel?: stri
   }
 
   let current = nodes;
+  let parentGroup: Extract<DocsNavNode, { type: "group" }> | undefined;
   for (const segment of directories) {
     let group = current.find(
       (node): node is Extract<DocsNavNode, { type: "group" }> =>
@@ -187,7 +189,14 @@ function insertDocByPath(nodes: DocsNavNode[], doc: Doc, skipLeadingLabel?: stri
       current.push(group);
     }
 
+    parentGroup = group;
     current = group.children;
+  }
+
+  if (fileName === "index" && parentGroup) {
+    parentGroup.href = doc.href;
+    parentGroup.label = doc.frontmatter.nav;
+    return;
   }
 
   const pageSegment = fileName === "index" ? (directories.at(-1) ?? "") : fileName;
@@ -202,8 +211,7 @@ function insertDocByPath(nodes: DocsNavNode[], doc: Doc, skipLeadingLabel?: stri
 
 function nodeOrder(node: DocsNavNode): number {
   if (node.type === "page") return node.order;
-  if (node.children.length === 0) return Infinity;
-  let min = Infinity;
+  let min = node.order;
   for (const child of node.children) {
     const childOrder = nodeOrder(child);
     if (childOrder < min) min = childOrder;
@@ -265,6 +273,9 @@ function findNodePath(
 ): DocsNavNode[] | null {
   for (const node of nodes) {
     if (node.type === "page" && node.href === href) {
+      return [...path, node];
+    }
+    if (node.type === "group" && node.href === href) {
       return [...path, node];
     }
     if (node.type !== "page") {

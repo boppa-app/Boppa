@@ -1,5 +1,4 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { type DocsNavNode } from "~/docs";
 
@@ -65,33 +64,83 @@ function GroupNode({
   const location = useLocation();
   const currentHref = location.pathname;
   const containsActive = useMemo(() => nodeContainsHref(node, currentHref), [node, currentHref]);
-  const [isOpen, setIsOpen] = useState(containsActive);
-  const toggle = useCallback(() => setIsOpen((open) => !open), []);
+  const isActive = node.href === currentHref;
+  const [isOpen, setIsOpen] = useState(true);
+  const toggle = useCallback(() => {
+    if (containsActive) return;
+    setIsOpen((open) => !open);
+  }, [containsActive]);
+  const expandAndNavigate = useCallback(() => {
+    setIsOpen(true);
+    onNavigate?.();
+  }, [onNavigate]);
 
   useEffect(() => {
-    setIsOpen(containsActive);
+    if (containsActive) setIsOpen(true);
   }, [containsActive]);
 
   return (
     <div className={topLevel ? (mobile ? "mt-4 first:mt-0" : "mt-6 first:mt-0") : undefined}>
-      <button
-        type="button"
-        onClick={toggle}
+      <div
         className={clsx(
-          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md transition-colors",
-          topLevel ? "text-xs font-medium" : "text-sm",
-          mobile
-            ? "text-muted-foreground hover:text-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted",
-          containsActive && "text-foreground",
+          "w-full flex items-center gap-1",
+          (containsActive || isActive) && "text-foreground",
         )}
       >
-        <span>{node.label}</span>
-        {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-      </button>
+        {node.href ? (
+          <Link
+            to={node.href}
+            activeOptions={ACTIVE_OPTIONS_EXACT}
+            onClick={expandAndNavigate}
+            className={clsx(
+              "flex-1 min-w-0 truncate px-3 py-2 rounded-md transition-colors text-left",
+              topLevel ? "text-xs font-medium" : "text-sm",
+              mobile
+                ? "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+              isActive && (mobile ? "text-foreground" : "bg-muted text-foreground"),
+            )}
+          >
+            {node.label}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={expandAndNavigate}
+            className={clsx(
+              "flex-1 min-w-0 truncate px-3 py-2 rounded-md transition-colors text-left",
+              topLevel ? "text-xs font-medium" : "text-sm",
+              mobile
+                ? "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+          >
+            {node.label}
+          </button>
+        )}
+      </div>
       {isOpen && (
-        <div className="ml-3 pl-3 border-l border-border space-y-0.5">
-          <NavTree nodes={node.children} mobile={mobile} onNavigate={onNavigate} />
+        <div className="ml-3 flex">
+          <button
+            type="button"
+            onClick={toggle}
+            disabled={containsActive}
+            aria-label={`Collapse ${node.label}`}
+            className={clsx(
+              "group/rail relative w-3 shrink-0",
+              containsActive ? "cursor-default" : "cursor-pointer",
+            )}
+          >
+            <span
+              className={clsx(
+                "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border transition-colors",
+                !containsActive && "group-hover/rail:bg-foreground/40",
+              )}
+            />
+          </button>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <NavTree nodes={node.children} mobile={mobile} onNavigate={onNavigate} />
+          </div>
         </div>
       )}
     </div>

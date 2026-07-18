@@ -85,7 +85,7 @@ The page reports playback state back to Boppa by calling `window.postEvent(event
 
 ### Commands the page can request
 
-[WebView controls AudioSession and NowPlayingInfo privately in iOS](https://bugs.webkit.org/show_bug.cgi?id=167788). As such, track navigation via NowPlayingInfo depends on Boppa's own queue and playback state, which the page has no visibility into. If you wish to implement track navigation in NowPlayingInfo you can do so by forwarding those requests back to Boppa by calling `window.postEvent` with one of the following types:
+If you wish to implement track navigation within the playback window, you can forward those requests back to Boppa by calling `window.postEvent` with one of the following types:
 
 | `eventObj.type` | Effect | Additional fields |
 | --- | --- | --- |
