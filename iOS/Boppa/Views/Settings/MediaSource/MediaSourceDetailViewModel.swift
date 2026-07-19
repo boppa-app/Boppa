@@ -27,7 +27,17 @@ class MediaSourceDetailViewModel {
         }
     }
 
+    var isClearingWebData = false
+
     init(mediaSource: MediaSource) {
         self.mediaSource = mediaSource
+    }
+
+    func clearWebData(completion: (() -> Void)? = nil) {
+        self.isClearingWebData = true
+        WebDataStore.shared.clearData(forUrls: self.mediaSource.config.effectiveAllowedUrls) { [weak self] in
+            self?.isClearingWebData = false
+            completion?()
+        }
     }
 }

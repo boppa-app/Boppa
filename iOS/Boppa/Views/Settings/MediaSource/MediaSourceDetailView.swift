@@ -9,6 +9,8 @@ private let relativeTimeFormatter: RelativeDateTimeFormatter = {
 struct MediaSourceDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State var viewModel: MediaSourceDetailViewModel
+    @State private var showClearConfirmation = false
+    @State private var showDataCleared = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -135,10 +137,45 @@ struct MediaSourceDetailView: View {
                             }
                         }
                     }
+
+                    Section("Web Data") {
+                        Button {
+                            self.showClearConfirmation = true
+                        } label: {
+                            HStack {
+                                Label("Clear Web Data", systemImage: "trash")
+                                    .foregroundColor(.red)
+                                if self.viewModel.isClearingWebData {
+                                    Spacer()
+                                    SpinnerView(tint: Color.purp, lineWidth: 3)
+                                        .frame(width: 20, height: 20)
+                                        .accessibilityLabel("Clearing data")
+                                }
+                            }
+                        }
+                        .disabled(self.viewModel.isClearingWebData)
+                        .accessibilityLabel("Clear Web Data")
+                        .accessibilityHint("Delete cookies, cache, local storage, and session data for this media source")
+                    }
                 }
             }
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
+        .alert("Clear Web Data?", isPresented: self.$showClearConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) {
+                self.viewModel.clearWebData {
+                    self.showDataCleared = true
+                }
+            }
+        } message: {
+            Text("This will delete all cookies, cache, local storage, and session data for \(self.viewModel.mediaSource.config.name). You will be logged out of this media source.")
+        }
+        .alert("Web Data Cleared", isPresented: self.$showDataCleared) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Web data for \(self.viewModel.mediaSource.config.name) has been cleared.")
+        }
     }
 }

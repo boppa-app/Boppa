@@ -6,9 +6,6 @@ struct SettingsView: View {
     @Binding var isAtNavigationRoot: Bool
     @State private var viewModel = SettingsViewModel()
     @State private var navigationPath = NavigationPath()
-    @State private var isClearingData = false
-    @State private var showDataCleared = false
-    @State private var showClearConfirmation = false
     @State private var isEditing = false
     @State private var isEditMode = false
     @Environment(\.openURL) private var openURL
@@ -18,7 +15,6 @@ struct SettingsView: View {
             List {
                 self.mediaSourcesSection
                 self.communitySection
-                self.webDataSection
             }
             .environment(\.editMode, self.isEditMode ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
@@ -55,23 +51,6 @@ struct SettingsView: View {
                     self.isEditing = false
                     self.isEditMode = false
                 }
-            }
-            .alert("Clear All Web Data?", isPresented: self.$showClearConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Clear", role: .destructive) {
-                    self.isClearingData = true
-                    WebDataStore.shared.clearAllData {
-                        self.isClearingData = false
-                        self.showDataCleared = true
-                    }
-                }
-            } message: {
-                Text("This will delete all cookies, cache, local storage, and session data. You will be logged out of all media sources.")
-            }
-            .alert("Web Data Cleared", isPresented: self.$showDataCleared) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("All web data has been cleared.")
             }
         }
     }
@@ -176,31 +155,6 @@ struct SettingsView: View {
         .accessibilityLabel(title)
         .accessibilityHint("Opens \(title) in your browser")
         .accessibilityAddTraits(.isButton)
-    }
-
-    private var webDataSection: some View {
-        Section {
-            Button {
-                self.showClearConfirmation = true
-            } label: {
-                HStack {
-                    Label("Clear All Web Data", systemImage: "trash")
-                        .foregroundColor(.red)
-                    if self.isClearingData {
-                        Spacer()
-                        SpinnerView(tint: Color.purp, lineWidth: 3)
-                            .frame(width: 20, height: 20)
-                            .accessibilityLabel("Clearing data")
-                    }
-                }
-            }
-            .disabled(self.isClearingData)
-            .accessibilityLabel("Clear All Web Data")
-            .accessibilityHint("Delete all cookies, cache, local storage, and session data")
-        } header: {
-            Text("Web Data")
-                .font(.body)
-        }
     }
 
     private func mediaSourceRow(_ mediaSource: MediaSource) -> some View {
