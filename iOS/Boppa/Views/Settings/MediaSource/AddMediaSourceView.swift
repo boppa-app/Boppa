@@ -79,6 +79,10 @@ struct AddMediaSourceView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 }
+
+                self.helpLinksView
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
             }
             .scrollDisabled(true)
             .navigationTitle("Add Media Source")
@@ -109,6 +113,37 @@ struct AddMediaSourceView: View {
                 self.viewModel.errorMessage = error.localizedDescription
             }
         }
+    }
+
+    private var helpLinksView: some View {
+        VStack(spacing: 36) {
+            Text(self.redditAttributedString)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            VStack(spacing: 6) {
+                Text("How do I make a media source config?")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Link("boppa.app/docs", destination: URL(string: "https://boppa.app/docs")!)
+                    .font(.subheadline)
+                    .foregroundColor(Color.purp)
+                    .accessibilityHint("Opens the media source config documentation in your browser")
+            }
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private var redditAttributedString: AttributedString {
+        var text = AttributedString("Check out media source configs built by the community on ")
+        var link = AttributedString("/r/BoppaApp")
+        link.link = URL(string: "https://www.reddit.com/r/BoppaApp/")
+        link.foregroundColor = Color.purp
+        text += link
+        text += AttributedString(".")
+        return text
     }
 
     @ToolbarContentBuilder
