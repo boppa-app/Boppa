@@ -83,11 +83,11 @@ struct RecentsSectionsView: View {
     }
 
     private var emptyState: some View {
-        Image("Boppa-2")
+        Image("Boppa-dark")
             .resizable()
             .scaledToFit()
-            .frame(width: 200, height: 200)
-            .opacity(0.15)
+            .frame(height: 200)
+            .opacity(0.2)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
