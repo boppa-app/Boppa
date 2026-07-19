@@ -21,7 +21,7 @@ struct ContentView: View {
     }
 
     private var showMiniPlayer: Bool {
-        self.playbackService.hasTrack
+        self.selectedTab != 2 && self.playbackService.hasTrack
     }
 
     var body: some View {
