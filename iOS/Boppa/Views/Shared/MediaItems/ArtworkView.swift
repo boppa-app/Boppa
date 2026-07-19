@@ -19,14 +19,16 @@ struct ArtworkView: View {
         return self.cornerRadius ?? 6
     }
 
-    private var resolvedURLString: String? {
-        self.preferLowRes ? (self.lowResUrl ?? self.highResUrl) : (self.highResUrl ?? self.lowResUrl)
-    }
-
-    private var resolvedURL: URL? {
-        guard self.tracklistType != .likes else { return nil }
-        guard let urlString = self.resolvedURLString, !urlString.isEmpty else { return nil }
-        return URL(string: urlString)
+    private var candidateURLs: [URL] {
+        guard self.tracklistType != .likes else { return [] }
+        let orderedStrings = self.preferLowRes
+            ? [self.lowResUrl, self.highResUrl]
+            : [self.highResUrl, self.lowResUrl]
+        var seen = Set<URL>()
+        return orderedStrings.compactMap { string -> URL? in
+            guard let string, !string.isEmpty, let url = URL(string: string) else { return nil }
+            return url
+        }.filter { seen.insert($0).inserted }
     }
 
     private var resolvedPlaceholder: String {
@@ -47,9 +49,10 @@ struct ArtworkView: View {
 
     var body: some View {
         Group {
-            if let url = self.resolvedURL {
+            if !self.candidateURLs.isEmpty {
                 ArtworkImageContent(
-                    url: url, size: self.size, placeholderSystemName: self.resolvedPlaceholder
+                    urls: self.candidateURLs, size: self.size,
+                    placeholderSystemName: self.resolvedPlaceholder
                 )
             } else {
                 self.placeholderImage
@@ -80,13 +83,18 @@ private extension ArtworkView {
 }
 
 private struct ArtworkImageContent: View {
-    let url: URL
+    let urls: [URL]
     let size: CGFloat
     let placeholderSystemName: String
 
     @Environment(\.displayScale) private var displayScale
     @State private var loadedImage: UIImage? = nil
+    @State private var candidateIndex = 0
     @State private var failed = false
+
+    private var currentURL: URL? {
+        self.urls.indices.contains(self.candidateIndex) ? self.urls[self.candidateIndex] : nil
+    }
 
     // Blur ramps smoothly with how far the source is upscaled past its native resolution
     private static let upscaleRatioBeforeBlur: CGFloat = 2.0
@@ -135,19 +143,19 @@ private struct ArtworkImageContent: View {
                         .frame(width: self.size, height: self.size)
                         .blur(radius: self.upscaleBlurRadius(for: img))
                 }
-            } else if self.failed {
+            } else if self.failed || self.currentURL == nil {
                 Image(systemName: self.placeholderSystemName)
                     .font(.system(size: ArtworkView.placeholderIconSize(for: self.size)))
                     .foregroundColor(.white)
                     .frame(width: self.size, height: self.size)
-            } else {
+            } else if let url = self.currentURL {
                 ZStack {
                     SpinnerView(tint: Color(.systemGray), lineWidth: max(self.size * 0.03, 2))
                         .frame(width: max(self.size * 0.25, 16), height: max(self.size * 0.25, 16))
 
-                    KFImage(self.url)
+                    KFImage(url)
                         .onSuccess { result in self.loadedImage = result.image }
-                        .onFailure { _ in self.failed = true }
+                        .onFailure { _ in self.advanceToNextCandidate() }
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: self.size, height: self.size)
@@ -156,9 +164,19 @@ private struct ArtworkImageContent: View {
                 .frame(width: self.size, height: self.size)
             }
         }
-        .onChange(of: self.url) { _ in
+        .onChange(of: self.urls) { _ in
             self.loadedImage = nil
+            self.candidateIndex = 0
             self.failed = false
+        }
+    }
+
+    private func advanceToNextCandidate() {
+        let nextIndex = self.candidateIndex + 1
+        if self.urls.indices.contains(nextIndex) {
+            self.candidateIndex = nextIndex
+        } else {
+            self.failed = true
         }
     }
 }

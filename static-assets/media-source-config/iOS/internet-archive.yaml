@@ -587,9 +587,37 @@ playback:
 
           var trackDurationSeconds = 0;
           var hasReceivedInitialPlaying = false;
+          var artworkLoadToken = 0;
 
           function wrapArtworkUrl(url) {
             return 'boppa-artwork://cache?url=' + encodeURIComponent(url);
+          }
+
+          function isArtworkUrlReachable(url) {
+            if (!url) return Promise.resolve(false);
+            var wrapped = wrapArtworkUrl(url);
+            return new Promise(function(resolve) {
+              var settled = false;
+              var img = new Image();
+
+              function settle(result) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+                img.onload = null;
+                img.onerror = null;
+                resolve(result);
+              }
+
+              var timeoutId = setTimeout(function() {
+                img.src = '';
+                settle(false);
+              }, 4000);
+
+              img.onload = function() { settle(true); };
+              img.onerror = function() { settle(false); };
+              img.src = wrapped;
+            });
           }
 
           var frame = document.getElementById('player-frame');
@@ -637,12 +665,26 @@ playback:
             sendToIframe({type: 'boppaUnmute'});
             navigator.mediaSession.playbackState = 'playing';
 
-            var artworkUrl = wrapArtworkUrl(trackData.highResArtworkUrl || trackData.lowResArtworkUrl || 'https://cdn.boppa.app/no-artwork.png');
+            var thisLoadToken = ++artworkLoadToken;
             navigator.mediaSession.metadata = new MediaMetadata({
               title: trackData.title || '',
               artist: trackData.subtitle || '',
-              artwork: [{ src: artworkUrl }]
+              artwork: [{
+                src: wrapArtworkUrl(trackData.highResArtworkUrl || trackData.lowResArtworkUrl || 'https://cdn.boppa.app/no-artwork.png')
+              }]
             });
+
+            if (trackData.highResArtworkUrl) {
+              isArtworkUrlReachable(trackData.highResArtworkUrl).then(function(highResOk) {
+                if (thisLoadToken !== artworkLoadToken || highResOk) return;
+                var fallbackUrl = trackData.lowResArtworkUrl || 'https://cdn.boppa.app/no-artwork.png';
+                navigator.mediaSession.metadata = new MediaMetadata({
+                  title: trackData.title || '',
+                  artist: trackData.subtitle || '',
+                  artwork: [{ src: wrapArtworkUrl(fallbackUrl) }]
+                });
+              });
+            }
 
             trackDurationSeconds = trackData.duration ? trackData.duration / 1000 : 0;
             if (trackDurationSeconds) {
