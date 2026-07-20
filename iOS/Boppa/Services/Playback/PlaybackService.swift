@@ -7,8 +7,6 @@ private let logger = Logger(
     category: "PlaybackService"
 )
 
-// TODO: Set seek to 0 when loading next track
-
 @Observable
 @MainActor
 final class PlaybackService {

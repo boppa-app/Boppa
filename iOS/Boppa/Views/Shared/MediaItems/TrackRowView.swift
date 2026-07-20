@@ -5,7 +5,7 @@ enum TrackRowStyle {
     case compact
 }
 
-// TODO: Add custom waveform animation, potentially with FFT
+// TODO: Add custom waveform animation
 
 struct TrackRow: View {
     let track: Track

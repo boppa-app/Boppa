@@ -139,7 +139,6 @@ final class WebViewPlaybackEngine: NSObject {
             .replacingOccurrences(of: "\r", with: "\\r")
     }
 
-    // TODO: See why play to resume via widget is quiet sometimes (after inactivity) and requires sequential play/pause/play taps
     func play() {
         let script = """
         (function() {

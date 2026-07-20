@@ -1,7 +1,5 @@
 import SwiftUI
 
-// TODO: Swiping up in search view should refresh results
-
 struct SearchView: View {
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
