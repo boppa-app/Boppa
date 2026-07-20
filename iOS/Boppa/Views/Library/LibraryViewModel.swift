@@ -4,7 +4,7 @@ import os
 @MainActor
 @Observable
 class LibraryViewModel {
-    var mediaSources: [MediaSource] = []
+    var mediaSources: [StoredMediaSource] = []
     var isPinnedExpanded = false
     private var allPinnedTracklists: [StoredTracklist] = []
     private var hasSetInitialPinnedState = false

@@ -21,7 +21,7 @@ struct LibraryView: View {
         case tracklist(Tracklist)
         case playlists
         case albums
-        case artist(Artist, MediaSource)
+        case artist(Artist, StoredMediaSource)
     }
 
     private var isSearchQueryEmpty: Bool {

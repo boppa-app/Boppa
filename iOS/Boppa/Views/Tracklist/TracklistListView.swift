@@ -8,7 +8,7 @@ struct TracklistListView: View {
     @State private var tracklistToDelete: Tracklist?
 
     let artist: Artist?
-    let mediaSource: MediaSource?
+    let mediaSource: StoredMediaSource?
     let type: TracklistListType
     let title: String
     let isLibraryMode: Bool
@@ -16,7 +16,7 @@ struct TracklistListView: View {
 
     init(
         artist: Artist,
-        mediaSource: MediaSource,
+        mediaSource: StoredMediaSource,
         type: TracklistListType,
         title: String
     ) {

@@ -202,7 +202,7 @@ struct SearchView: View {
 
     private enum SearchDestination: Hashable {
         case tracklist(Tracklist)
-        case artist(Artist, MediaSource)
+        case artist(Artist, StoredMediaSource)
     }
 
     private var categoryBubblesBar: some View {

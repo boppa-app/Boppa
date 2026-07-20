@@ -6,7 +6,7 @@ struct ArtistDetailView: View {
     @State private var trackForActions: Track?
 
     let artist: Artist
-    let mediaSource: MediaSource
+    let mediaSource: StoredMediaSource
 
     private let maxAlbums = 3
     private let maxSongs = 5

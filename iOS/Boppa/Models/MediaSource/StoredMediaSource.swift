@@ -3,7 +3,7 @@ import SQLiteData
 import Yams
 
 @Table("mediaSources")
-nonisolated struct MediaSource: Identifiable, Hashable {
+nonisolated struct StoredMediaSource: Identifiable, Hashable {
     @Column(primaryKey: true)
     var id: String
     var configData: Data
@@ -17,7 +17,7 @@ nonisolated struct MediaSource: Identifiable, Hashable {
     var contextLastGatheredTimestamp: Double?
 }
 
-extension MediaSource {
+extension StoredMediaSource {
     var config: MediaSourceConfig {
         try! YAMLDecoder().decode(MediaSourceConfig.self, from: self.configData)
     }
@@ -53,7 +53,7 @@ extension MediaSource {
         self.autoUpdate = true
     }
 
-    static func fromConfigData(_ data: Data, configUrl: String? = nil, isDefault: Bool = false) throws -> MediaSource {
+    static func fromConfigData(_ data: Data, configUrl: String? = nil, isDefault: Bool = false) throws -> StoredMediaSource {
         let config: MediaSourceConfig
         do {
             config = try YAMLDecoder().decode(MediaSourceConfig.self, from: data)
@@ -63,7 +63,7 @@ extension MediaSource {
             throw MediaSourceImportError.malformedConfig(detail: error.localizedDescription)
         }
 
-        return MediaSource(id: config.id, config: config, configUrl: configUrl, isDefault: isDefault)
+        return StoredMediaSource(id: config.id, config: config, configUrl: configUrl, isDefault: isDefault)
     }
 
     private static func describeDecodingError(_ error: DecodingError) -> String {

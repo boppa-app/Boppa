@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct SearchCacheView: View {
-    let cachedQueries: [CachedSearchQuery]
+    let cachedQueries: [StoredSearchQuery]
     var keyboardHeight: CGFloat = 0
-    let onSelect: (CachedSearchQuery) -> Void
+    let onSelect: (StoredSearchQuery) -> Void
     let onPopTop: () -> Void
 
     var body: some View {

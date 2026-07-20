@@ -17,7 +17,7 @@ class ArtistDetailViewModel {
 
     func load(
         artist: Artist,
-        mediaSource: MediaSource
+        mediaSource: StoredMediaSource
     ) {
         guard self.detail == nil else { return }
         self.fetch(artist: artist, mediaSource: mediaSource)
@@ -25,7 +25,7 @@ class ArtistDetailViewModel {
 
     private func fetch(
         artist: Artist,
-        mediaSource: MediaSource
+        mediaSource: StoredMediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true

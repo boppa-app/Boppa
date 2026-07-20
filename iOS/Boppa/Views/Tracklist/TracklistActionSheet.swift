@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TracklistActionSheet: View {
     let tracklist: Tracklist
-    let mediaSource: MediaSource?
+    let mediaSource: StoredMediaSource?
     var isMediaSourceEnabled: Bool = true
     let isPinned: Bool
     let isRefreshing: Bool

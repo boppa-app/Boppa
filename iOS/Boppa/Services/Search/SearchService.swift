@@ -13,7 +13,7 @@ class SearchService {
     @MainActor
     func search(
         query: String,
-        mediaSource: MediaSource,
+        mediaSource: StoredMediaSource,
         category: SearchCategory
     ) async throws -> SearchResponse {
         let config = mediaSource.config
@@ -36,7 +36,7 @@ class SearchService {
     @MainActor
     func searchNextPage(
         continuation: [String: Any],
-        mediaSource: MediaSource,
+        mediaSource: StoredMediaSource,
         category: SearchCategory,
         query: String
     ) async throws -> SearchResponse {

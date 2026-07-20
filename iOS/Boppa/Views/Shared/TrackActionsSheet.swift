@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TrackActionsSheet: View {
     let track: Track
-    let mediaSource: MediaSource
+    let mediaSource: StoredMediaSource
     var isMediaSourceEnabled: Bool = true
     var onArtistSelected: ((Artist) -> Void)?
     var onAlbumSelected: ((Tracklist) -> Void)?

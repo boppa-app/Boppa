@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 @Observable
 class MediaSourceDetailViewModel {
-    var mediaSource: MediaSource
+    var mediaSource: StoredMediaSource
 
     var isContextGathered: Bool {
         self.mediaSource.isContextGathered
@@ -29,7 +29,7 @@ class MediaSourceDetailViewModel {
 
     var isClearingWebData = false
 
-    init(mediaSource: MediaSource) {
+    init(mediaSource: StoredMediaSource) {
         self.mediaSource = mediaSource
     }
 

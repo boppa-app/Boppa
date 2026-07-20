@@ -30,7 +30,7 @@ class TracklistListViewModel {
     private var libraryType: TracklistListType?
     private var artistLoadType: TracklistListType?
     private var artist: Artist?
-    private var mediaSource: MediaSource?
+    private var mediaSource: StoredMediaSource?
     private var continuation: [String: Any]?
 
     @ObservationIgnored
@@ -174,7 +174,7 @@ class TracklistListViewModel {
     func loadFromArtist(
         type: TracklistListType,
         artist: Artist,
-        mediaSource: MediaSource
+        mediaSource: StoredMediaSource
     ) {
         guard !self.didLoad else { return }
         self.didLoad = true
@@ -252,7 +252,7 @@ class TracklistListViewModel {
 
     private func fetchAlbums(
         artist: Artist,
-        mediaSource: MediaSource
+        mediaSource: StoredMediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true
@@ -285,7 +285,7 @@ class TracklistListViewModel {
 
     private func fetchPlaylists(
         artist: Artist,
-        mediaSource: MediaSource
+        mediaSource: StoredMediaSource
     ) {
         self.fetchTask?.cancel()
         self.isLoading = true

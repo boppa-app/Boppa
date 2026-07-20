@@ -11,8 +11,8 @@ class SearchViewModel {
     var isLoadingNextPage = false
     var hasMorePages = false
     var errorMessage: String?
-    var selectedMediaSource: MediaSource?
-    var mediaSources: [MediaSource] = []
+    var selectedMediaSource: StoredMediaSource?
+    var mediaSources: [StoredMediaSource] = []
     var showMediaSourcePicker = false
     var selectedCategory: SearchCategory = .songs
     var availableCategories: [SearchCategory] = []
@@ -52,7 +52,7 @@ class SearchViewModel {
         self.updateAvailableCategories()
     }
 
-    func selectMediaSource(_ mediaSource: MediaSource) {
+    func selectMediaSource(_ mediaSource: StoredMediaSource) {
         self.selectedMediaSource = mediaSource
         self.showMediaSourcePicker = false
         UserDefaults.standard.set(mediaSource.id, forKey: Self.selectedMediaSourceKey)

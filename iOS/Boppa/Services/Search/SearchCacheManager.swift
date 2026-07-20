@@ -12,8 +12,8 @@ private let logger = Logger(
 @MainActor
 @Observable
 class SearchCacheManager {
-    var cachedQueries: [CachedSearchQuery] = []
-    var displayedQueries: [CachedSearchQuery] = []
+    var cachedQueries: [StoredSearchQuery] = []
+    var displayedQueries: [StoredSearchQuery] = []
 
     @ObservationIgnored
     @Dependency(\.defaultDatabase) var database
@@ -32,7 +32,7 @@ class SearchCacheManager {
     func load() {
         self.cachedQueries =
             (try? self.database.read { db in
-                try CachedSearchQuery
+                try StoredSearchQuery
                     .order { $0.timestamp.desc() }
                     .limit(Self.maxCachedQueries)
                     .fetchAll(db)
@@ -66,26 +66,26 @@ class SearchCacheManager {
         guard !trimmed.isEmpty else { return }
 
         try? self.database.write { db in
-            try CachedSearchQuery
+            try StoredSearchQuery
                 .where { $0.query.eq(trimmed) }
                 .delete()
                 .execute(db)
 
-            try CachedSearchQuery.insert {
-                CachedSearchQuery.Draft(
+            try StoredSearchQuery.insert {
+                StoredSearchQuery.Draft(
                     query: trimmed,
                     timestamp: Date().timeIntervalSince1970
                 )
             }.execute(db)
 
             let allSorted =
-                try CachedSearchQuery
+                try StoredSearchQuery
                     .order { $0.timestamp.desc() }
                     .fetchAll(db)
 
             if allSorted.count > Self.maxCachedQueries {
                 let overflowIds = allSorted[Self.maxCachedQueries...].map(\.id)
-                try CachedSearchQuery
+                try StoredSearchQuery
                     .where { $0.id.in(overflowIds) }
                     .delete()
                     .execute(db)
@@ -99,7 +99,7 @@ class SearchCacheManager {
     func popTopDisplayedQuery() {
         guard let top = self.displayedQueries.first else { return }
         try? self.database.write { db in
-            try CachedSearchQuery.where { $0.id.eq(top.id) }.delete().execute(db)
+            try StoredSearchQuery.where { $0.id.eq(top.id) }.delete().execute(db)
         }
         self.load()
     }

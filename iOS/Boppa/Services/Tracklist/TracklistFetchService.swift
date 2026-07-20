@@ -223,7 +223,7 @@ class TracklistFetchService {
         }
     }
 
-    func fetchArtist(artist: Artist, mediaSource: MediaSource) async throws -> ArtistDetail {
+    func fetchArtist(artist: Artist, mediaSource: StoredMediaSource) async throws -> ArtistDetail {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
         guard let script = config.data.get?.artist else {
@@ -275,7 +275,7 @@ class TracklistFetchService {
     }
 
     func fetchAlbumsForArtist(
-        artist: Artist, mediaSource: MediaSource, previousResult: [String: Any]? = nil
+        artist: Artist, mediaSource: StoredMediaSource, previousResult: [String: Any]? = nil
     ) async throws -> TracklistListResponse {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id
@@ -303,7 +303,7 @@ class TracklistFetchService {
     }
 
     func fetchPlaylistsForArtist(
-        artist: Artist, mediaSource: MediaSource, previousResult: [String: Any]? = nil
+        artist: Artist, mediaSource: StoredMediaSource, previousResult: [String: Any]? = nil
     ) async throws -> TracklistListResponse {
         let config = mediaSource.config
         let mediaSourceId = mediaSource.id

@@ -103,7 +103,7 @@ final class WebViewPlaybackEngineRegistry {
         logger.info("Created engine for enabled source '\(mediaSource.config.name)'")
     }
 
-    private func createEngine(for mediaSource: MediaSource) {
+    private func createEngine(for mediaSource: StoredMediaSource) {
         let engine = WebViewPlaybackEngine(config: mediaSource.config)
         self.engines[mediaSource.id] = engine
     }

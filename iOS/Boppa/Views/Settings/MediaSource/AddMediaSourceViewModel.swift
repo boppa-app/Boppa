@@ -32,7 +32,7 @@ class AddMediaSourceViewModel {
         self.errorMessage = nil
 
         do {
-            let mediaSource: MediaSource
+            let mediaSource: StoredMediaSource
             if let fileURL = self.selectedFileURL {
                 mediaSource = try Self.loadMediaSource(fromFile: fileURL)
             } else {
@@ -70,7 +70,7 @@ class AddMediaSourceViewModel {
         }
     }
 
-    private static func loadMediaSource(fromFile url: URL) throws -> MediaSource {
+    private static func loadMediaSource(fromFile url: URL) throws -> StoredMediaSource {
         let didStartAccessing = url.startAccessingSecurityScopedResource()
         defer {
             if didStartAccessing {
@@ -78,6 +78,6 @@ class AddMediaSourceViewModel {
             }
         }
         let data = try Data(contentsOf: url)
-        return try MediaSource.fromConfigData(data, configUrl: nil)
+        return try StoredMediaSource.fromConfigData(data, configUrl: nil)
     }
 }

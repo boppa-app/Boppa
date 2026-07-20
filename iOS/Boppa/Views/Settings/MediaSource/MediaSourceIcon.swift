@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MediaSourceIcon: View {
-    let mediaSource: MediaSource
+    let mediaSource: StoredMediaSource
     var isSelected: Bool?
     var size: CGFloat = MediaSourceGridLayout.iconSize
 

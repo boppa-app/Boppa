@@ -4,7 +4,7 @@ import SwiftUI
 @MainActor
 @Observable
 class SettingsViewModel {
-    var mediaSources: [MediaSource] = []
+    var mediaSources: [StoredMediaSource] = []
 
     func loadSources() {
         self.mediaSources = MediaSourceStorageManager.shared.fetchAll()

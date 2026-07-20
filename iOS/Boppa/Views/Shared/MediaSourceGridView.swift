@@ -28,8 +28,8 @@ enum MediaSourceGridLayout {
 }
 
 struct MediaSourceGridView<Content: View>: View {
-    let mediaSources: [MediaSource]
-    @ViewBuilder let content: (MediaSource) -> Content
+    let mediaSources: [StoredMediaSource]
+    @ViewBuilder let content: (StoredMediaSource) -> Content
 
     @State private(set) var padding: CGFloat = 0
 

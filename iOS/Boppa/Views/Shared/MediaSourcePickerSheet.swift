@@ -1,14 +1,14 @@
 import SwiftUI
 
 enum MediaSourcePickerMode {
-    case single(selectedID: String?, onSelect: (MediaSource) -> Void)
+    case single(selectedID: String?, onSelect: (StoredMediaSource) -> Void)
     case multi(selectedMediaSourceIds: Binding<Set<String>>)
 }
 
 struct MediaSourcePickerSheet: View {
     let mediaSourcePickerMode: MediaSourcePickerMode
 
-    @State private var mediaSources: [MediaSource] = []
+    @State private var mediaSources: [StoredMediaSource] = []
     @State private var gridPadding: CGFloat = 0
 
     private var title: String {
@@ -43,7 +43,7 @@ struct MediaSourcePickerSheet: View {
         }
     }
 
-    private func isSelected(_ mediaSource: MediaSource) -> Bool {
+    private func isSelected(_ mediaSource: StoredMediaSource) -> Bool {
         switch self.mediaSourcePickerMode {
         case let .single(selectedID, _):
             return mediaSource.id == selectedID
@@ -52,7 +52,7 @@ struct MediaSourcePickerSheet: View {
         }
     }
 
-    private func mediaSourceButton(_ mediaSource: MediaSource) -> some View {
+    private func mediaSourceButton(_ mediaSource: StoredMediaSource) -> some View {
         Button {
             switch self.mediaSourcePickerMode {
             case let .single(_, onSelect):

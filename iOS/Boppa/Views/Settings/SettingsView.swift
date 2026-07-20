@@ -18,7 +18,7 @@ struct SettingsView: View {
             }
             .environment(\.editMode, self.isEditMode ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
-            .navigationDestination(for: MediaSource.self) { mediaSource in
+            .navigationDestination(for: StoredMediaSource.self) { mediaSource in
                 MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource))
             }
             .onAppear {
@@ -157,7 +157,7 @@ struct SettingsView: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    private func mediaSourceRow(_ mediaSource: MediaSource) -> some View {
+    private func mediaSourceRow(_ mediaSource: StoredMediaSource) -> some View {
         HStack(spacing: 12) {
             if let iconSvg = mediaSource.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: 24)

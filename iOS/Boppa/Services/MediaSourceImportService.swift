@@ -13,7 +13,7 @@ class MediaSourceImportService {
         self.session = URLSession(configuration: configuration)
     }
 
-    func fetchMediaSource(configUrl: String, isDefault: Bool = false) async throws -> MediaSource {
+    func fetchMediaSource(configUrl: String, isDefault: Bool = false) async throws -> StoredMediaSource {
         guard let url = Self.normalizeConfigUrl(configUrl) else {
             self.logger.error("Invalid config URL: \(configUrl)")
             throw MediaSourceImportError.invalidURL
@@ -30,7 +30,7 @@ class MediaSourceImportService {
             throw MediaSourceImportError.serverError(statusCode: httpResponse.statusCode, mediaSourceUrl: urlString)
         }
 
-        let mediaSource = try MediaSource.fromConfigData(data, configUrl: urlString, isDefault: isDefault)
+        let mediaSource = try StoredMediaSource.fromConfigData(data, configUrl: urlString, isDefault: isDefault)
         self.logger.info("Successfully created media source '\(mediaSource.config.name)' from \(urlString)")
 
         return mediaSource
@@ -79,11 +79,11 @@ class MediaSourceImportService {
         return url
     }
 
-    static func sourcesToUpdate(_ sources: [MediaSource]) -> [MediaSource] {
+    static func sourcesToUpdate(_ sources: [StoredMediaSource]) -> [StoredMediaSource] {
         sources.filter { $0.configUrl != nil && $0.autoUpdate }
     }
 
-    static func shouldApplyUpdate(stored: MediaSource, fetched: MediaSource) -> Bool {
+    static func shouldApplyUpdate(stored: StoredMediaSource, fetched: StoredMediaSource) -> Bool {
         guard fetched.id == stored.id else { return false }
         return fetched.config.version != stored.config.version
     }

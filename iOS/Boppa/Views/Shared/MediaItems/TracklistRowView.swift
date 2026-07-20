@@ -32,7 +32,7 @@ struct TracklistRow: View {
         }
     }
 
-    private var resolvedMediaSource: MediaSource? {
+    private var resolvedMediaSource: StoredMediaSource? {
         guard self.showMediaSourceIcon else { return nil }
         return MediaSourceStorageManager.shared.fetchOne(id: self.tracklist.mediaSourceId)
     }
@@ -75,7 +75,7 @@ struct TracklistRow: View {
     }
 
     @ViewBuilder
-    private func mediaSourceIcon(_ mediaSource: MediaSource) -> some View {
+    private func mediaSourceIcon(_ mediaSource: StoredMediaSource) -> some View {
         if let iconSvg = mediaSource.config.iconSvg {
             SVGImageView(svgString: iconSvg, size: 28)
                 .frame(width: 28, height: 28)

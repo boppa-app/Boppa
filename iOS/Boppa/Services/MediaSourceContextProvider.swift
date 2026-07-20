@@ -133,7 +133,7 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
-    private func startMonitoring(mediaSources: [MediaSource]) {
+    private func startMonitoring(mediaSources: [StoredMediaSource]) {
         logger.info("startMonitoring called with \(mediaSources.count) mediaSource(s)")
 
         self.timeoutTask?.cancel()

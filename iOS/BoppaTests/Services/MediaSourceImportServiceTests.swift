@@ -33,8 +33,8 @@ struct MediaSourceImportServiceTests {
         configUrl: String? = "https://example.com/config.yaml",
         autoUpdate: Bool = true,
         contextConfigs: String = ""
-    ) throws -> MediaSource {
-        var source = try MediaSource.fromConfigData(self.yaml(id: id, version: version, contextConfigs: contextConfigs), configUrl: configUrl)
+    ) throws -> StoredMediaSource {
+        var source = try StoredMediaSource.fromConfigData(self.yaml(id: id, version: version, contextConfigs: contextConfigs), configUrl: configUrl)
         source.autoUpdate = autoUpdate
         return source
     }
@@ -53,60 +53,60 @@ struct MediaSourceImportServiceTests {
     // MARK: - fromConfigData: valid parsing
 
     @Test func parsesIdFromConfig() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(id: "my-source"))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(id: "my-source"))
         #expect(source.id == "my-source")
     }
 
     @Test func parsesVersionFromConfig() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(version: "2.3.1"))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(version: "2.3.1"))
         #expect(source.config.version == "2.3.1")
     }
 
     @Test func parsesNameFromConfig() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(name: "Free Music Archive"))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(name: "Free Music Archive"))
         #expect(source.config.name == "Free Music Archive")
     }
 
     @Test func parsesUrlFromConfig() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(url: "https://freemusicarchive.org"))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(url: "https://freemusicarchive.org"))
         #expect(source.config.url == "https://freemusicarchive.org")
     }
 
     @Test func storesConfigUrl() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(), configUrl: "https://cdn.example.com/config.yaml")
+        let source = try StoredMediaSource.fromConfigData(self.yaml(), configUrl: "https://cdn.example.com/config.yaml")
         #expect(source.configUrl == "https://cdn.example.com/config.yaml")
     }
 
     @Test func configUrlIsNilWhenNotProvided() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.configUrl == nil)
     }
 
     @Test func parsesContextConfigCount() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
         #expect(source.config.context?.count == 2)
     }
 
     @Test func parsesContextConfigUrls() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
         let urls = source.config.context?.map(\.url)
         #expect(urls == ["https://example.com/auth", "https://example.com/token"])
     }
 
     @Test func parsesContextConfigIntervalSeconds() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
         let intervals = source.config.context?.map(\.intervalSeconds)
         #expect(intervals == [3600, 1800])
     }
 
     @Test func parsesPlaybackUrl() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(playback: "  url: https://player.example.com\n  userScripts: []"))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(playback: "  url: https://player.example.com\n  userScripts: []"))
         #expect(source.config.playback.url == "https://player.example.com")
         #expect(source.config.playback.html == nil)
     }
 
     @Test func parsesPlaybackHtml() throws {
-        let source = try MediaSource.fromConfigData(self.yaml(playback: "  html: \"<html/>\"\n  userScripts: []"))
+        let source = try StoredMediaSource.fromConfigData(self.yaml(playback: "  html: \"<html/>\"\n  userScripts: []"))
         #expect(source.config.playback.html == "<html/>")
         #expect(source.config.playback.url == nil)
     }
@@ -114,28 +114,28 @@ struct MediaSourceImportServiceTests {
     // MARK: - fromConfigData: defaults
 
     @Test func autoUpdateDefaultsToTrue() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.autoUpdate == true)
     }
 
     @Test func isEnabledDefaultsToTrue() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.isEnabled == true)
     }
 
     @Test func contextLastGatheredTimestampDefaultsToNil() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.contextLastGatheredTimestamp == nil)
     }
 
     @Test func contextValuesJSONDefaultsToEmptyObject() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.contextValuesJSON == "{}")
     }
 
     @Test func lastUpdatedTimestampIsRecentOnCreate() throws {
         let before = Date().timeIntervalSince1970
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         let after = Date().timeIntervalSince1970
         #expect(source.lastUpdatedTimestamp >= before)
         #expect(source.lastUpdatedTimestamp <= after)
@@ -154,7 +154,7 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
@@ -169,7 +169,7 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
@@ -184,7 +184,7 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
@@ -197,7 +197,7 @@ struct MediaSourceImportServiceTests {
         data: {}
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
@@ -212,7 +212,7 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
@@ -227,7 +227,7 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         do {
-            _ = try MediaSource.fromConfigData(data)
+            _ = try StoredMediaSource.fromConfigData(data)
             Issue.record("Expected error to be thrown")
         } catch let error as MediaSourceImportError {
             if case let .malformedConfig(detail) = error {
@@ -253,7 +253,7 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
@@ -270,36 +270,36 @@ struct MediaSourceImportServiceTests {
           userScripts: []
         """.utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
     @Test func invalidYamlThrowsMalformedConfig() {
         let data = Data("not: valid: yaml: [[[".utf8)
         #expect(throws: MediaSourceImportError.self) {
-            try MediaSource.fromConfigData(data)
+            try StoredMediaSource.fromConfigData(data)
         }
     }
 
     // MARK: - fromConfigData: optional fields
 
     @Test func missingContextIsNil() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.config.context == nil)
     }
 
     @Test func missingIconSvgIsNil() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.config.iconSvg == nil)
     }
 
     @Test func missingHighlightColorIsNil() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.config.highlightColor == nil)
     }
 
     @Test func missingCustomUserAgentIsNil() throws {
-        let source = try MediaSource.fromConfigData(self.yaml())
+        let source = try StoredMediaSource.fromConfigData(self.yaml())
         #expect(source.config.playback.customUserAgent == nil)
     }
 
@@ -366,7 +366,7 @@ struct MediaSourceImportServiceTests {
           url: https://player.example.com
           userScripts: []
         """.utf8)
-        let source = try MediaSource.fromConfigData(data)
+        let source = try StoredMediaSource.fromConfigData(data)
         #expect(source.isContextGathered == true)
     }
 
