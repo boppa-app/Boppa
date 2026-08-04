@@ -4,11 +4,7 @@
 
 <h1 align="center">Boppa</h1>
 
-<p align="center"><em>Music for All - Turn any website into a native audio player.</em></p>
-
----
-
-Boppa is an app that lets you turn any website into a native audio player. Everything it can search, browse, and play comes from a **media source**, a small config you add yourself.
+Boppa is an app that lets you turn any website into a native audio player. Everything it can search, browse, and play comes from a [**media source**](https://boppa.app/docs/media-sources), a small config you add yourself.
 
 iOS only today.
 
