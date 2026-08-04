@@ -1,5 +1,5 @@
 id: archive.org
-version: 1.0.0
+version: 1.0.1
 name: Internet Archive
 url: archive.org
 iconSvg: |-
@@ -767,8 +767,11 @@ playback:
           audio.id = 'boppa-player';
           document.body.appendChild(audio);
 
-          function reportEvent(evt) {
-            window.parent.postMessage({type: 'boppaEvent', event: evt}, '*');
+          function reportEvent(evt, tokenOverride) {
+            var tagged = {};
+            for (var k in evt) tagged[k] = evt[k];
+            tagged.loadToken = tokenOverride !== undefined ? tokenOverride : currentLoadToken;
+            window.parent.postMessage({type: 'boppaEvent', event: tagged}, '*');
           }
 
           audio.addEventListener('playing', function() {
@@ -814,18 +817,20 @@ playback:
           }
 
           function loadTrack(trackData) {
+            var thisLoadToken = (trackData && trackData.loadToken) || null;
+            currentLoadToken = thisLoadToken;
             if (!trackData || !trackData.url) {
-              reportEvent({type: 'error', message: 'Missing stream URL'});
+              reportEvent({type: 'error', message: 'Missing stream URL'}, thisLoadToken);
               return;
             }
             resolveUrl(trackData.url).then(function(streamUrl) {
               if (!streamUrl) {
-                reportEvent({type: 'error', message: 'Could not resolve audio file'});
+                reportEvent({type: 'error', message: 'Could not resolve audio file'}, thisLoadToken);
                 return;
               }
               audio.src = streamUrl;
               audio.play().catch(function(e) {
-                reportEvent({type: 'error', message: 'Playback failed: ' + e.message});
+                reportEvent({type: 'error', message: 'Playback failed: ' + e.message}, thisLoadToken);
               });
             });
           }

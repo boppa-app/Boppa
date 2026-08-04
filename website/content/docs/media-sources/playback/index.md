@@ -60,11 +60,14 @@ The object passed to `boppaLoad` has the following shape:
   highResArtworkUrl: "boppa-artwork://cache?url=...",
   url: "https://...",
   metadata: { any: "JSON object" },
-  context: { key: "value" } // this source's gathered context values, {} if none
+  context: { key: "value" }, // this source's gathered context values, {} if none
+  loadToken: "00000000-0000-0000-0000-000000000000" // unique per boppaLoad call, see below
 }
 ```
 
 `metadata` is carried through unchanged from whichever search, list, or get script produced the track, see [Result shape](/docs/media-sources/search#result-shape). It defaults to `{}` if the script didn't set it.
+
+`loadToken` identifies this specific `boppaLoad` call. If the page's playback events (below) echo it back, Boppa uses it to ignore events left over from a track it has since moved away from. This matters if the page reuses one `<audio>`/`<video>` element across tracks: tapping a second track before the first one's events (e.g. `"play"`) have fired doesn't guarantee those in-flight events are discarded, since `boppaLoad` itself doesn't cancel anything already in motion. Without the token, such a stale event could be misread as a state change for the newly selected track. For example, a `"play"` event meant for the abandoned track arriving after the new one is already the current selection would make Boppa think the new track started playing before it actually did. Echoing the token is optional, a page that doesn't include it in its events simply doesn't get this protection.
 
 `context` is this media source's stored context values, the same plain object of string key/value pairs passed to search, list, and get scripts as `params.context`, see [Using context values](/docs/media-sources/context-popups#using-context-values). It's included here so a player page can use them directly, for example to attach an auth header or cookie a script gathered, without Boppa needing a separate bridge for it. It's `{}` if the source declares no `context` or none has been gathered yet.
 
@@ -82,6 +85,33 @@ The page reports playback state back to Boppa by calling `window.postEvent(event
 | `"duration"` | The track's duration has been resolved. | `value` (seconds). |
 | `"finish"` | The track has finished playing. Boppa advances to the next track in the queue. | None. |
 | `"error"` | Playback has failed. | `message` (string, shown in logs). |
+
+Every one of these can also carry `loadToken`, echoing the value from the `trackData` the event pertains to (see [Track data](#track-data) above):
+
+```js
+window.postEvent({ type: "play", loadToken: currentLoadToken });
+```
+
+The player page should track `currentLoadToken` in a variable, update it at the top of its `boppaLoad` handler, and read it back whenever it reports one of these events.
+
+Be careful with anything reported from inside an async callback started by that `boppaLoad` handler, for example a `.catch()` on the element's `play()` promise, or a `.then()` following a `fetch()` used to resolve the actual stream URL. By the time that callback runs, a newer `boppaLoad` call may already have overwritten the shared `currentLoadToken` variable, so reading it there tags the event with the wrong (newer) token, which then passes Boppa's staleness check instead of being dropped by it. Capture the token in a local variable at the top of the handler instead, and pass that captured value explicitly wherever an event is reported from one of these callbacks:
+
+```js
+function loadTrack(trackData) {
+  var thisLoadToken = trackData.loadToken;
+  currentLoadToken = thisLoadToken;
+  fetchStreamUrl(trackData.url).then(function(url) {
+    audio.src = url;
+    audio.play().catch(function(e) {
+      // Use thisLoadToken here, not currentLoadToken, a later boppaLoad call
+      // may have already changed it by the time this rejection fires.
+      window.postEvent({ type: "error", message: e.message, loadToken: thisLoadToken });
+    });
+  });
+}
+```
+
+Listeners attached directly to the media element (`playing`, `pause`, `timeupdate`, and so on) don't need this, they only fire for whatever is actually loaded on the element right now, which is exactly what the shared `currentLoadToken` variable tracks by that point.
 
 ### Commands the page can request
 

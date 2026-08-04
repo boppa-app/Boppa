@@ -20,6 +20,7 @@ final class WebViewPlaybackEngine: NSObject {
     private var isReady = false
     private var pendingTrack: Track?
     private var domReadyAt: Date?
+    private var currentLoadToken: String?
 
     /// `mediaTypesRequiringUserActionForPlayback = .all` means a player page's autoplay-on-load
     /// only reliably succeeds once the WebView has been settled for a moment after its DOM
@@ -75,7 +76,10 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     private func performLoad(track: Track) {
-        guard let escapedJSON = self.serializeTrackData(track: track) else {
+        let loadToken = UUID().uuidString
+        self.currentLoadToken = loadToken
+
+        guard let escapedJSON = self.serializeTrackData(track: track, loadToken: loadToken) else {
             logger.error("Failed to serialize track data")
             return
         }
@@ -111,7 +115,7 @@ final class WebViewPlaybackEngine: NSObject {
         }
     }
 
-    private func serializeTrackData(track: Track) -> String? {
+    private func serializeTrackData(track: Track, loadToken: String) -> String? {
         let metadata = track.metadata.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
         let context = MediaSourceStorageManager.shared.fetchOne(id: self.config.id)?.contextValues ?? [:]
         let trackData: [String: Any] = [
@@ -124,6 +128,7 @@ final class WebViewPlaybackEngine: NSObject {
             "url": track.url,
             "metadata": metadata,
             "context": context,
+            "loadToken": loadToken,
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: trackData),
@@ -312,6 +317,14 @@ final class WebViewPlaybackEngine: NSObject {
             return
         default:
             break
+        }
+
+        if let eventLoadToken = dict["loadToken"] as? String,
+           let expectedLoadToken = self.currentLoadToken,
+           eventLoadToken != expectedLoadToken
+        {
+            logger.debug("Dropping '\(type)' event from a superseded load")
+            return
         }
 
         let event: PlayerEvent
