@@ -330,6 +330,32 @@ class TracklistFetchService {
         )
     }
 
+    func fetchTrackRadio(
+        seedMediaId: String, seedType: Track.TrackType, mediaSource: StoredMediaSource,
+        previousResult: [String: Any]? = nil
+    ) async throws -> TracklistResponse {
+        let config = mediaSource.config
+        guard let script = config.data.get?.trackRadio else {
+            return TracklistResponse(tracks: [], continuation: nil)
+        }
+        let response = try GetTrackRadioResponse(
+            await JSExecutionEngine.shared.execute(
+                script: script,
+                params: scriptParams(
+                    ["id": seedMediaId, "type": seedType.rawValue], previousResult: previousResult
+                ),
+                domain: config.url,
+                context: mediaSource.contextValues,
+                allowedUrls: config.effectiveAllowedUrls
+            )
+        )
+        logger.info("Fetched \(response.items.count) track(s) via get.trackRadio")
+        return TracklistResponse(
+            tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSource.id) },
+            continuation: response.continuation
+        )
+    }
+
     // MARK: - Private
 
     private func fetchTrackMetadata(mediaId: String, mediaSourceId: String, type: Track.TrackType)

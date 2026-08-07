@@ -150,6 +150,7 @@ struct GetScripts: Codable {
     let video: String?
     let album: String?
     let playlist: String?
+    let trackRadio: String?
 
     func script(for trackType: Track.TrackType) -> String? {
         switch trackType {
