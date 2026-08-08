@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteShell } from "~/components/site-shell";
+import { StoreLink } from "~/components/store-link";
 import { pageMeta } from "~/meta";
 
 export const Route = createFileRoute("/download")({
@@ -20,11 +21,19 @@ function StatusPill({ label }: { label: string }) {
   );
 }
 
-function PlatformRow({ name, status }: { name: string; status: string }) {
+function PlatformRow({
+  name,
+  status,
+  action,
+}: {
+  name: string;
+  status?: string;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-3 py-5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
       <span className="font-medium">{name}</span>
-      <StatusPill label={status} />
+      {action ?? <StatusPill label={status ?? ""} />}
     </div>
   );
 }
@@ -42,7 +51,7 @@ function Download() {
       <section className="rounded-xl border border-border bg-card/40 p-6 md:p-8 mb-6">
         <h2 className="text-2xl font-semibold mb-8">Mobile</h2>
         <div className="divide-y divide-border">
-          <PlatformRow name="iOS" status="Coming soon..." />
+          <PlatformRow name="iOS" action={<StoreLink />} />
           <PlatformRow name="Android" status="Coming eventually" />
         </div>
       </section>

@@ -1,7 +1,7 @@
 export function SiteFooter() {
   return (
     <footer className="max-w-5xl mx-auto p-6 md:p-20 md:pt-0">
-      <div className="border-t border-border pt-8 pb-4 grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
+      <div className="border-t border-border pt-8 pb-4 grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm justify-items-center">
         <div className="space-y-3">
           <p className="text-white/60 font-medium">Product</p>
           <div className="space-y-2">
@@ -10,6 +10,12 @@ export function SiteFooter() {
               className="block text-muted-foreground hover:text-foreground transition-colors"
             >
               Docs
+            </a>
+            <a
+              href="mailto:contact@boppa.app"
+              className="block text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Contact
             </a>
           </div>
         </div>
@@ -46,7 +52,9 @@ export function SiteFooter() {
           <p className="text-white/60 font-medium">Download</p>
           <div className="space-y-2">
             <a
-              href="https://www.apple.com/app-store"
+              href="https://apps.apple.com/app/boppa/id6792596501"
+              target="_blank"
+              rel="noopener noreferrer"
               className="block text-muted-foreground hover:text-foreground transition-colors"
             >
               iOS
