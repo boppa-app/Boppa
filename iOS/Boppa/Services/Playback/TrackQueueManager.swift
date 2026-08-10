@@ -65,6 +65,13 @@ final class TrackQueueManager {
         }
     }
 
+    // MARK: Selection
+
+    func isTrackSelected(_ track: Track, contextId: String) -> Bool {
+        guard self.contextId == contextId else { return false }
+        return self.currentEntry?.track.trackKey == track.trackKey
+    }
+
     // MARK: Navigation
 
     func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
@@ -165,11 +172,23 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
+    private func insertionIndexAfterCurrent(in array: [QueueEntry]) -> Int {
+        guard !array.isEmpty else { return 0 }
+        guard let currentId = self.currentEntry?.id, let idx = array.firstIndex(where: { $0.id == currentId }) else {
+            return array.count
+        }
+        return idx + 1
+    }
+
     func addToQueue(_ track: Track) {
         let entry = QueueEntry(track: track, userAdded: true)
         self.entries.insert(entry, at: self.insertionIndexAfterLastUserAdded(in: self.entries))
         self.shuffledEntries.insert(entry, at: self.insertionIndexAfterLastUserAdded(in: self.shuffledEntries))
         self.updateArtworkPreloads()
+    }
+
+    private func insertionIndexAfterLastUserAdded(in array: [QueueEntry]) -> Int {
+        array.lastIndex(where: \.userAdded).map { $0 + 1 } ?? self.insertionIndexAfterCurrent(in: array)
     }
 
     func removeFromQueue(_ entry: QueueEntry) {
@@ -249,6 +268,21 @@ final class TrackQueueManager {
         }
 
         self.updateArtworkPreloads()
+    }
+
+    private func rebuildShuffledEntries(anchoredAt anchor: QueueEntry?) {
+        var pool = self.entries
+        if self.repeatMode == .off, let anchor, let anchorIdx = pool.firstIndex(where: { $0.id == anchor.id }) {
+            pool = Array(pool[anchorIdx...])
+        }
+
+        var anchored: [QueueEntry] = []
+        if let anchor, let idx = pool.firstIndex(where: { $0.id == anchor.id }) {
+            anchored.append(pool.remove(at: idx))
+        }
+        let userAdded = pool.filter(\.userAdded)
+        let rest = pool.filter { !$0.userAdded }
+        self.shuffledEntries = anchored + userAdded + rest.shuffled()
     }
 
     private func restorePreRadioQueueTail() {
@@ -344,42 +378,7 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
-    // MARK: Selection
-
-    func isTrackSelected(_ track: Track, contextId: String) -> Bool {
-        guard self.contextId == contextId else { return false }
-        return self.currentEntry?.track.trackKey == track.trackKey
-    }
-
-    // MARK: Private
-    // TODO: Move to appropriate sections  
-
-    private func insertionIndexAfterCurrent(in array: [QueueEntry]) -> Int {
-        guard !array.isEmpty else { return 0 }
-        guard let currentId = self.currentEntry?.id, let idx = array.firstIndex(where: { $0.id == currentId }) else {
-            return array.count
-        }
-        return idx + 1
-    }
-
-    private func insertionIndexAfterLastUserAdded(in array: [QueueEntry]) -> Int {
-        array.lastIndex(where: \.userAdded).map { $0 + 1 } ?? self.insertionIndexAfterCurrent(in: array)
-    }
-
-    private func rebuildShuffledEntries(anchoredAt anchor: QueueEntry?) {
-        var pool = self.entries
-        if self.repeatMode == .off, let anchor, let anchorIdx = pool.firstIndex(where: { $0.id == anchor.id }) {
-            pool = Array(pool[anchorIdx...])
-        }
-
-        var anchored: [QueueEntry] = []
-        if let anchor, let idx = pool.firstIndex(where: { $0.id == anchor.id }) {
-            anchored.append(pool.remove(at: idx))
-        }
-        let userAdded = pool.filter(\.userAdded)
-        let rest = pool.filter { !$0.userAdded }
-        self.shuffledEntries = anchored + userAdded + rest.shuffled()
-    }
+    // MARK: Artwork Preloading
 
     private func updateArtworkPreloads() {
         let entries = self.activeEntries
