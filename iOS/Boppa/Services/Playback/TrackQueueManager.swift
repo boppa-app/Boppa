@@ -384,43 +384,47 @@ final class TrackQueueManager {
         let entries = self.activeEntries
         guard !entries.isEmpty else { return }
 
-        let window = Self.artworkPreloadWindow
+        let desiredBySource = self.desiredArtworkUrlsBySource(in: entries)
 
+        self.prefetchNewArtworkGlobally(desiredBySource)
+        self.syncEngineArtworkPreloads(desiredBySource)
+
+        self.preloadedArtworkBySource = desiredBySource
+    }
+
+    private func desiredArtworkUrlsBySource(in entries: [QueueEntry]) -> [String: Set<String>] {
         var desiredBySource: [String: Set<String>] = [:]
 
-        var count = 0
-        for i in self.currentIndex ..< entries.count {
-            let track = entries[i].track
-            guard self.isTrackEnabled(track) else { continue }
-            for url in [track.lowResArtworkUrl, track.highResArtworkUrl] {
-                if let url, !url.isEmpty {
-                    desiredBySource[track.mediaSourceId, default: []].insert(url)
+        func collect(_ indices: some Sequence<Int>) {
+            var count = 0
+            for i in indices {
+                let track = entries[i].track
+                guard self.isTrackEnabled(track) else { continue }
+                for url in [track.lowResArtworkUrl, track.highResArtworkUrl] {
+                    if let url, !url.isEmpty {
+                        desiredBySource[track.mediaSourceId, default: []].insert(url)
+                    }
                 }
+                count += 1
+                if count >= Self.artworkPreloadWindow { break }
             }
-            count += 1
-            if count >= window { break }
         }
 
-        count = 0
-        for i in stride(from: self.currentIndex - 1, through: 0, by: -1) {
-            let track = entries[i].track
-            guard self.isTrackEnabled(track) else { continue }
-            for url in [track.lowResArtworkUrl, track.highResArtworkUrl] {
-                if let url, !url.isEmpty {
-                    desiredBySource[track.mediaSourceId, default: []].insert(url)
-                }
-            }
-            count += 1
-            if count >= window { break }
-        }
+        collect(self.currentIndex ..< entries.count)
+        collect(stride(from: self.currentIndex - 1, through: 0, by: -1))
 
+        return desiredBySource
+    }
+
+    private func prefetchNewArtworkGlobally(_ desiredBySource: [String: Set<String>]) {
         let desiredUrls = Set(desiredBySource.values.joined())
         let previousUrls = Set(self.preloadedArtworkBySource.values.joined())
         let toAddGlobal = desiredUrls.subtracting(previousUrls)
-        if !toAddGlobal.isEmpty {
-            ImagePrefetcher(urls: toAddGlobal.compactMap { URL(string: $0) }).start()
-        }
+        guard !toAddGlobal.isEmpty else { return }
+        ImagePrefetcher(urls: toAddGlobal.compactMap { URL(string: $0) }).start()
+    }
 
+    private func syncEngineArtworkPreloads(_ desiredBySource: [String: Set<String>]) {
         for (mediaSourceId, desired) in desiredBySource {
             guard let engine = self.registry.engine(for: mediaSourceId) else { continue }
             let previous = self.preloadedArtworkBySource[mediaSourceId] ?? []
@@ -434,7 +438,5 @@ final class TrackQueueManager {
             guard let engine = self.registry.engine(for: mediaSourceId) else { continue }
             engine.removeArtwork(urls: Array(previous))
         }
-
-        self.preloadedArtworkBySource = desiredBySource
     }
 }
