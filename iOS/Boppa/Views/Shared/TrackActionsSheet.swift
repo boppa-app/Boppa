@@ -25,6 +25,24 @@ struct TrackActionsSheet: View {
 
             List {
                 if self.isMediaSourceEnabled {
+                    if self.mediaSource.config.data.get?.trackRadio != nil {
+                        Button {
+                            PlaybackService.shared.startRadio(from: self.track)
+                            self.dismiss()
+                        } label: {
+                            self.actionRowLabel(
+                                name: "Start Radio",
+                                icon: "dot.radiowaves.left.and.right"
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color(.systemGray6))
+                        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                        .listRowSeparator(.hidden)
+                        .accessibilityLabel("Start Radio")
+                        .accessibilityHint("Play a radio queue starting from \(self.track.title)")
+                    }
+
                     Button {
                         TrackQueueManager.shared.playNext(self.track)
                         self.dismiss()

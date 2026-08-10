@@ -44,8 +44,16 @@ final class NowPlayingViewModel {
         self.queueManager.repeatMode
     }
 
-    var shuffleEnabled: Bool {
-        self.queueManager.shuffleEnabled
+    var shuffleMode: ShuffleMode {
+        self.queueManager.shuffleMode
+    }
+
+    var shuffleModeAccessibilityLabel: String {
+        switch self.shuffleMode {
+        case .off: "Shuffle Off"
+        case .shuffle: "Shuffle On"
+        case .radio: "Radio On"
+        }
     }
 
     var artworkURL: URL? {
@@ -127,8 +135,10 @@ final class NowPlayingViewModel {
         self.queueManager.cycleRepeatMode()
     }
 
-    func toggleShuffle() {
-        self.queueManager.toggleShuffle()
+    func cycleShuffleMode() {
+        Task { @MainActor in
+            await self.queueManager.cycleShuffleMode()
+        }
     }
 
     func handleSeekEditingChanged(editing: Bool, newValue: Double) {

@@ -58,11 +58,32 @@ private struct QueueTableView: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: QueueTableViewController, context: Context) {}
 }
 
+private struct QueueRadioStatusRow: View {
+    let isLoading: Bool
+    let errorMessage: String?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if self.isLoading {
+                SpinnerView(tint: .white, lineWidth: 3)
+                    .frame(width: 18, height: 18)
+            } else if let errorMessage {
+                ErrorMessageView(message: errorMessage)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
+    }
+}
+
 @MainActor
 final class QueueTableViewController: UITableViewController {
     private let queueManager = TrackQueueManager.shared
     private let playbackService = PlaybackService.shared
+    private let radioService = RadioService.shared
     private let cellReuseId = "QueueCell"
+    private let statusCellReuseId = "QueueStatusCell"
 
     private var displayedEntries: [QueueEntry] = []
     private var observationTask: Task<Void, Never>?
@@ -77,6 +98,7 @@ final class QueueTableViewController: UITableViewController {
         self.tableView.separatorStyle = .none
         self.tableView.showsVerticalScrollIndicator = false
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: self.cellReuseId)
+        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: self.statusCellReuseId)
         self.tableView.isEditing = true
         self.tableView.allowsSelectionDuringEditing = true
 
@@ -101,6 +123,8 @@ final class QueueTableViewController: UITableViewController {
             var lastRepeatMode = TrackQueueManager.shared.repeatMode
             var lastIsPlaying = PlaybackService.shared.isPlaying
             var lastIsLoading = PlaybackService.shared.isLoading
+            var lastIsFetchingRadio = RadioService.shared.isFetchingRadio
+            var lastRadioError = RadioService.shared.radioError
 
             while !Task.isCancelled {
                 guard let self else { return }
@@ -109,11 +133,13 @@ final class QueueTableViewController: UITableViewController {
                     withObservationTracking {
                         _ = self.queueManager.entries
                         _ = self.queueManager.shuffledEntries
-                        _ = self.queueManager.shuffleEnabled
+                        _ = self.queueManager.shuffleMode
                         _ = self.queueManager.currentIndex
                         _ = self.queueManager.repeatMode
                         _ = self.playbackService.isPlaying
                         _ = self.playbackService.isLoading
+                        _ = self.radioService.isFetchingRadio
+                        _ = self.radioService.radioError
                     } onChange: {
                         continuation.resume()
                     }
@@ -126,18 +152,23 @@ final class QueueTableViewController: UITableViewController {
                 let repeatMode = self.queueManager.repeatMode
                 let isPlaying = self.playbackService.isPlaying
                 let isLoading = self.playbackService.isLoading
+                let isFetchingRadio = self.radioService.isFetchingRadio
+                let radioError = self.radioService.radioError
 
                 let entriesChanged = currentEntryIds != lastEntryIds
                 let indexChanged = currentIndex != lastCurrentIndex
                 let repeatChanged = repeatMode != lastRepeatMode
                 let playStateChanged = isPlaying != lastIsPlaying || isLoading != lastIsLoading
+                let radioStatusChanged = isFetchingRadio != lastIsFetchingRadio || radioError != lastRadioError
 
-                if entriesChanged || repeatChanged {
+                if entriesChanged || repeatChanged || radioStatusChanged {
                     lastEntryIds = currentEntryIds
                     lastRepeatMode = repeatMode
                     lastCurrentIndex = currentIndex
                     lastIsPlaying = isPlaying
                     lastIsLoading = isLoading
+                    lastIsFetchingRadio = isFetchingRadio
+                    lastRadioError = radioError
                     self.reloadData()
                 } else if indexChanged {
                     lastCurrentIndex = currentIndex
@@ -235,8 +266,17 @@ final class QueueTableViewController: UITableViewController {
     private func refreshVisibleCells() {
         for cell in self.tableView.visibleCells {
             guard let indexPath = self.tableView.indexPath(for: cell) else { continue }
-            self.configureCell(cell, at: indexPath)
+            if indexPath.row >= self.displayedEntries.count {
+                self.configureStatusCell(cell)
+            } else {
+                self.configureCell(cell, at: indexPath)
+            }
         }
+    }
+
+    private var isRadioStatusRowVisible: Bool {
+        self.queueManager.shuffleMode == .radio
+            && (self.radioService.isFetchingRadio || self.radioService.radioError != nil)
     }
 
     private func scrollToCurrentTrack(animated: Bool) {
@@ -252,10 +292,15 @@ final class QueueTableViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        self.displayedEntries.count
+        self.displayedEntries.count + (self.isRadioStatusRowVisible ? 1 : 0)
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        if indexPath.row >= self.displayedEntries.count {
+            let cell = tableView.dequeueReusableCell(withIdentifier: self.statusCellReuseId, for: indexPath)
+            self.configureStatusCell(cell)
+            return cell
+        }
         let cell = tableView.dequeueReusableCell(withIdentifier: self.cellReuseId, for: indexPath)
         self.configureCell(cell, at: indexPath)
         return cell
@@ -296,17 +341,32 @@ final class QueueTableViewController: UITableViewController {
         cell.selectionStyle = .none
     }
 
+    private func configureStatusCell(_ cell: UITableViewCell) {
+        let statusRow = QueueRadioStatusRow(
+            isLoading: self.radioService.isFetchingRadio,
+            errorMessage: self.radioService.isFetchingRadio ? nil : self.radioService.radioError
+        )
+        cell.contentConfiguration = UIHostingConfiguration { statusRow }
+            .background(.black)
+            .margins(.all, 0)
+        cell.backgroundColor = .black
+        cell.selectionStyle = .none
+    }
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
     }
 
     override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-        self.queueManager.repeatMode != .one && indexPath.row != 0
+        self.queueManager.repeatMode != .one && indexPath.row != 0 && indexPath.row < self.displayedEntries.count
     }
 
     override func tableView(_ tableView: UITableView, targetIndexPathForMoveFromRowAt sourceIndexPath: IndexPath, toProposedIndexPath proposedDestinationIndexPath: IndexPath) -> IndexPath {
         if proposedDestinationIndexPath.row == 0 {
             return IndexPath(row: 1, section: 0)
+        }
+        if proposedDestinationIndexPath.row >= self.displayedEntries.count {
+            return IndexPath(row: max(self.displayedEntries.count - 1, 0), section: 0)
         }
         return proposedDestinationIndexPath
     }

@@ -70,6 +70,7 @@ final class PlaybackService {
             previousEngine.stop()
         }
         self.activeEngine = engine
+        self.queueManager.topUpRadioIfNeeded()
     }
 
     func play() {
@@ -90,9 +91,19 @@ final class PlaybackService {
 
     func next(userInitiated: Bool = false) {
         if userInitiated { self.queueManager.exitRepeatOneOnUserSkip() }
-        guard let nextTrack = self.queueManager.advanceToNext() else { return }
-        self.currentTime = 0
-        self.playTrack(nextTrack)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if let nextTrack = await self.queueManager.advanceToNext() {
+                self.currentTime = 0
+                self.playTrack(nextTrack)
+            }
+        }
+    }
+
+    func startRadio(from track: Track) {
+        self.queueManager.setQueue([track], startingAt: 0, contextId: "radio:\(track.trackKey)")
+        self.queueManager.setShuffleMode(.radio)
+        self.playTrack(track)
     }
 
     func previous(userInitiated: Bool = false) {

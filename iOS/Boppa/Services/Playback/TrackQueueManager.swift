@@ -20,14 +20,18 @@ final class TrackQueueManager {
 
     private(set) var entries: [QueueEntry] = []
     private(set) var shuffledEntries: [QueueEntry] = []
-    private(set) var shuffleEnabled = false
+    private(set) var shuffleMode: ShuffleMode = .off
     private(set) var currentIndex: Int = 0
 
     private(set) var repeatMode: RepeatMode = .off
     private(set) var contextId: String?
 
+    private var preRadioQueueTail: [QueueEntry]?
+
+    private let radioService = RadioService.shared
+
     var activeEntries: [QueueEntry] {
-        self.shuffleEnabled ? self.shuffledEntries : self.entries
+        self.shuffleMode == .shuffle ? self.shuffledEntries : self.entries
     }
 
     var currentEntry: QueueEntry? {
@@ -61,11 +65,17 @@ final class TrackQueueManager {
         }
     }
 
+    // MARK: Navigation
+
     func setQueue(_ tracks: [Track], startingAt index: Int, contextId: String) {
         self.contextId = contextId
         self.entries = tracks.map { QueueEntry(track: $0) }
+        self.preRadioQueueTail = nil
+        if self.shuffleMode == .radio {
+            self.shuffleMode = .off
+        }
         let clampedIndex = min(max(index, 0), max(self.entries.count - 1, 0))
-        if self.shuffleEnabled {
+        if self.shuffleMode == .shuffle {
             let anchor = self.entries.indices.contains(clampedIndex) ? self.entries[clampedIndex] : nil
             self.rebuildShuffledEntries(anchoredAt: anchor)
             self.currentIndex = 0
@@ -82,7 +92,17 @@ final class TrackQueueManager {
         self.updateArtworkPreloads()
     }
 
-    func advanceToNext() -> Track? {
+    func advanceToNext() async -> Track? {
+        if let nextTrack = self.advanceWithinQueue() {
+            return nextTrack
+        }
+        guard self.shuffleMode == .radio, !self.radioService.isExhausted, let seedTrack = self.currentTrack
+        else { return nil }
+        await self.fetchRadioBatch(seedTrack: seedTrack)
+        return self.advanceWithinQueue()
+    }
+
+    private func advanceWithinQueue() -> Track? {
         let active = self.activeEntries
         guard !active.isEmpty else { return nil }
 
@@ -175,7 +195,7 @@ final class TrackQueueManager {
 
     func applyReorder(_ reorderedEntries: [QueueEntry]) {
         let currentId = self.currentEntry?.id
-        if self.shuffleEnabled {
+        if self.shuffleMode == .shuffle {
             let disabledEntries = self.shuffledEntries.filter { !self.isTrackEnabled($0.track) }
             self.shuffledEntries = reorderedEntries + disabledEntries
         } else {
@@ -187,18 +207,119 @@ final class TrackQueueManager {
         }
     }
 
-    func toggleShuffle() {
+    func cycleShuffleMode() async {
+        let radioAvailable = self.currentTrack.flatMap {
+            MediaSourceStorageManager.shared.fetchOne(id: $0.mediaSourceId)
+        }?.config.data.get?.trackRadio != nil
+
+        switch self.shuffleMode {
+        case .off:
+            self.setShuffleMode(.shuffle)
+        case .shuffle:
+            self.setShuffleMode(radioAvailable ? .radio : .off)
+        case .radio:
+            self.setShuffleMode(.off)
+        }
+        if self.shuffleMode == .radio {
+            await self.primeRadioIfNeeded()
+        }
+    }
+
+    func setShuffleMode(_ mode: ShuffleMode) {
+        guard mode != self.shuffleMode else { return }
         let anchor = self.currentEntry
-        self.shuffleEnabled.toggle()
-        if self.shuffleEnabled {
+        let wasRadio = self.shuffleMode == .radio
+        self.shuffleMode = mode
+
+        if wasRadio, mode != .radio {
+            self.restorePreRadioQueueTail()
+        }
+
+        switch mode {
+        case .shuffle:
             self.rebuildShuffledEntries(anchoredAt: anchor)
             self.currentIndex = 0
-        } else {
-            self.shuffledEntries = []
-            self.currentIndex = anchor.flatMap { entry in self.entries.firstIndex(where: { $0.id == entry.id }) } ?? 0
+        case .off, .radio:
+            self.clearShuffledEntries(reanchoringTo: anchor)
         }
+
+        if mode == .radio {
+            self.truncateQueueForRadio()
+            self.radioService.reset()
+        }
+
         self.updateArtworkPreloads()
     }
+
+    private func restorePreRadioQueueTail() {
+        guard let tail = self.preRadioQueueTail else { return }
+        let keepCount = min(self.currentIndex + 1, self.entries.count)
+        self.entries = Array(self.entries.prefix(keepCount)) + tail
+        self.preRadioQueueTail = nil
+    }
+
+    private func clearShuffledEntries(reanchoringTo anchor: QueueEntry?) {
+        self.shuffledEntries = []
+        self.currentIndex = anchor.flatMap { entry in self.entries.firstIndex(where: { $0.id == entry.id }) } ?? 0
+    }
+
+    private func truncateQueueForRadio() {
+        self.preRadioQueueTail = self.currentIndex + 1 < self.entries.count
+            ? Array(self.entries[(self.currentIndex + 1)...]) : []
+        if self.currentIndex + 1 < self.entries.count {
+            self.entries.removeSubrange((self.currentIndex + 1)...)
+        }
+    }
+
+    func appendTracks(_ tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        self.entries.append(contentsOf: tracks.map { QueueEntry(track: $0) })
+        self.updateArtworkPreloads()
+    }
+
+    // MARK: - Radio
+
+    func primeRadioIfNeeded() async {
+        guard !self.radioService.hasPrimedPages, let seedTrack = self.currentTrack else { return }
+        await self.fetchRadioBatch(seedTrack: seedTrack)
+        guard self.shuffleMode == .radio, !self.radioService.isExhausted else { return }
+        await self.fetchRadioBatch(seedTrack: seedTrack)
+    }
+
+    func topUpRadioIfNeeded() {
+        guard self.shuffleMode == .radio, !self.radioService.isFetchingRadio else { return }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if !self.radioService.hasPrimedPages {
+                await self.primeRadioIfNeeded()
+            } else {
+                await self.topUpRadioWhileOnLastPage()
+            }
+        }
+    }
+
+    private func topUpRadioWhileOnLastPage() async {
+        while self.shuffleMode == .radio,
+              self.radioService.shouldTopUp(currentIndex: self.currentIndex),
+              let seedTrack = self.currentTrack
+        {
+            guard await self.fetchRadioBatch(seedTrack: seedTrack) else { break }
+        }
+    }
+
+    @discardableResult
+    private func fetchRadioBatch(seedTrack: Track) async -> Bool {
+        guard let tracks = await self.radioService.fetchTracks(seedTrack: seedTrack, appendingAt: self.entries.count)
+        else { return false }
+        guard self.shuffleMode == .radio else { return false }
+
+        if !tracks.isEmpty {
+            self.appendTracks(tracks)
+        }
+        return true
+    }
+
+    // MARK: Repeat Mode
 
     func exitRepeatOneOnUserSkip() {
         guard self.repeatMode == .one else { return }
@@ -216,17 +337,22 @@ final class TrackQueueManager {
     }
 
     private func handleRepeatModeChanged() {
-        guard self.shuffleEnabled else { return }
+        guard self.shuffleMode == .shuffle else { return }
         let anchor = self.currentEntry
         self.rebuildShuffledEntries(anchoredAt: anchor)
         self.currentIndex = 0
         self.updateArtworkPreloads()
     }
 
+    // MARK: Selection
+
     func isTrackSelected(_ track: Track, contextId: String) -> Bool {
         guard self.contextId == contextId else { return false }
         return self.currentEntry?.track.trackKey == track.trackKey
     }
+
+    // MARK: Private
+    // TODO: Move to appropriate sections  
 
     private func insertionIndexAfterCurrent(in array: [QueueEntry]) -> Int {
         guard !array.isEmpty else { return 0 }
