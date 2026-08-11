@@ -1,7 +1,5 @@
 import Foundation
 import os
-import SwiftUI
-import UIKit
 import WebKit
 
 private let logger = Logger(
@@ -9,16 +7,20 @@ private let logger = Logger(
     category: "PopupManager"
 )
 
+struct PopupPresentation: Identifiable {
+    let id = UUID()
+    let title: String
+    let webView: WKWebView
+}
+
 @Observable
 final class PopupManager: NSObject {
     static let shared = PopupManager()
 
     static let messageHandlerName = "boppaPopupMessage"
 
-    private var hostingController: UIViewController?
-    private var popupWebView: WKWebView?
+    private(set) var activePopup: PopupPresentation?
     private var onDismiss: (() -> Void)?
-    private var isDismissing = false
 
     override private init() {
         super.init()
@@ -26,13 +28,12 @@ final class PopupManager: NSObject {
 
     @MainActor
     func showPopup(config: PopupConfig, onDismiss: @escaping () -> Void) {
-        guard self.hostingController == nil else {
+        guard self.activePopup == nil else {
             logger.warning("Popup already presented, ignoring request for '\(config.title)'")
             return
         }
 
         self.onDismiss = onDismiss
-        self.isDismissing = false
 
         let webView = WebViewFactory.makeWebView(
             scripts: config.userScripts,
@@ -46,63 +47,29 @@ final class PopupManager: NSObject {
         webView.frame = .zero
         webView.scrollView.isScrollEnabled = true
         webView.allowsBackForwardNavigationGestures = true
-        self.popupWebView = webView
 
         if let url = URL(string: config.url) {
             webView.load(URLRequest(url: url))
         }
 
-        let sheetView = PopupSheetView(title: config.title, webView: webView) { [weak self] in
-            self?.dismissFromButton()
-        } onDisappeared: { [weak self] in
-            self?.onPopupDisappeared()
-        }
-
-        let hostVC = UIHostingController(rootView: sheetView)
-        self.hostingController = hostVC
-
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first
-        else { return }
-
-        var presenter = window.rootViewController
-        while let next = presenter?.presentedViewController {
-            presenter = next
-        }
-        presenter?.present(hostVC, animated: true)
-
+        self.activePopup = PopupPresentation(title: config.title, webView: webView)
         logger.info("Popup presented: '\(config.title)'")
     }
 
     @MainActor
     func dismiss() {
-        guard let hostVC = self.hostingController, !self.isDismissing else { return }
-        self.isDismissing = true
-        hostVC.dismiss(animated: true)
-    }
-
-    @MainActor
-    private func dismissFromButton() {
-        self.dismiss()
-    }
-
-    @MainActor
-    private func onPopupDisappeared() {
-        self.isDismissing = false
-        self.hostingController = nil
-        self.tearDownWebView()
+        guard let popup = self.activePopup else { return }
+        self.tearDownWebView(popup.webView)
+        self.activePopup = nil
         let handler = self.onDismiss
         self.onDismiss = nil
         handler?()
     }
 
     @MainActor
-    private func tearDownWebView() {
-        if let webView = self.popupWebView {
-            webView.stopLoading()
-            webView.configuration.userContentController.removeScriptMessageHandler(forName: Self.messageHandlerName)
-        }
-        self.popupWebView = nil
+    private func tearDownWebView(_ webView: WKWebView) {
+        webView.stopLoading()
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: Self.messageHandlerName)
     }
 
     static func contractScript() -> String {
@@ -136,48 +103,4 @@ extension PopupManager: WKScriptMessageHandler {
             }
         }
     }
-}
-
-private struct PopupSheetView: View {
-    let title: String
-    let webView: WKWebView
-    let onDone: () -> Void
-    let onDisappeared: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            PopupWebViewRepresentable(webView: self.webView)
-                .ignoresSafeArea(edges: .bottom)
-                .navigationTitle(self.title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text(self.title)
-                            .fontWeight(.semibold)
-                    }
-                    .sharedBackgroundVisibilityIfAvailable(.hidden)
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: self.onDone) {
-                            Image(systemName: "door.left.hand.open")
-                                .foregroundColor(Color.purp)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .sharedBackgroundVisibilityIfAvailable(.hidden)
-                }
-        }
-        .onDisappear {
-            self.onDisappeared()
-        }
-    }
-}
-
-private struct PopupWebViewRepresentable: UIViewRepresentable {
-    let webView: WKWebView
-
-    func makeUIView(context: Context) -> WKWebView {
-        self.webView
-    }
-
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
 }

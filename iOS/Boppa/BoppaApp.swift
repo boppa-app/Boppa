@@ -58,6 +58,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         let rootView = ContentView()
             .preferredColorScheme(.dark)
+            .popupPresenter()
 
         let hostingController = UIHostingController(rootView: rootView)
         let window = UIWindow(windowScene: windowScene)
