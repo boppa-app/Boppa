@@ -172,7 +172,7 @@ function GenerateLinkForm() {
           }}
           aria-invalid={isInvalid}
           disabled={status === "loading"}
-          className={`w-full rounded-lg border bg-background px-4 py-3 pr-12 text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 ${
+          className={`w-full rounded-lg border bg-background px-4 py-3 pr-12 text-base sm:text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 ${
             isInvalid
               ? "border-red-500 focus:ring-red-500"
               : "border-border focus:ring-primary"

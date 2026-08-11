@@ -98,7 +98,7 @@ export function WaitlistForm({
               ? ({ width: frozenWidth, fieldSizing: "fixed" } as React.CSSProperties)
               : undefined
           }
-          className={`box-border h-9 rounded-md border bg-transparent pl-3 pr-8 text-sm outline-none [field-sizing:content] ${
+          className={`box-border h-9 rounded-md border bg-transparent pl-3 pr-8 text-base sm:text-sm outline-none [field-sizing:content] ${
             isInvalid
               ? "border-red-500"
               : "border-border focus:ring-2 focus:ring-primary"
