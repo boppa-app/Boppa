@@ -51,6 +51,7 @@ struct SearchToolbarView: View {
                             .font(.system(size: 16))
                             .foregroundColor(Color(.systemGray))
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Clear Search")
                     .accessibilityHint("Clear the current search query")
                 }
@@ -70,6 +71,7 @@ struct SearchToolbarView: View {
                 Button("Cancel") {
                     self.isSearchFieldFocused.wrappedValue = false
                 }
+                .buttonStyle(.plain)
                 .foregroundColor(Color.purp)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .accessibilityLabel("Cancel")
@@ -97,6 +99,7 @@ struct SearchToolbarView: View {
                     .frame(width: 24, height: 24)
             }
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(self.viewModel.selectedMediaSource.map { "Selected source: \($0.config.name)" } ?? "Select Media Source")
         .accessibilityHint("Choose which media source to search")
         .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {

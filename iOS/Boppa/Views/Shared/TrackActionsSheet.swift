@@ -156,6 +156,7 @@ struct TrackActionsSheet: View {
                         .foregroundColor(PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? .purp : Color(.systemGray))
                         .frame(width: 36, height: 36)
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? "Unlike" : "Like")
                 .accessibilityHint(PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? "Remove from Likes" : "Add to Likes")
             }

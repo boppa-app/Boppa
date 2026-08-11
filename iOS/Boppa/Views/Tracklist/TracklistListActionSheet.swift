@@ -114,6 +114,7 @@ struct TracklistListActionSheet: View {
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Back")
                     .accessibilityHint("Return to options")
                     Spacer()

@@ -161,6 +161,7 @@ private struct PopupSheetView: View {
                             Image(systemName: "door.left.hand.open")
                                 .foregroundColor(Color.purp)
                         }
+                        .buttonStyle(.plain)
                     }
                     .sharedBackgroundVisibilityIfAvailable(.hidden)
                 }

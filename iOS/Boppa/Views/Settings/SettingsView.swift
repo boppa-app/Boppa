@@ -78,6 +78,7 @@ struct SettingsView: View {
                 } label: {
                     Label("Add Media Source", systemImage: "plus").foregroundColor(Color.purp)
                 }
+                .buttonStyle(.plain)
             }
         } header: {
             HStack {

@@ -46,6 +46,7 @@ struct LibrarySearchToolbarView: View {
                             .font(.system(size: 16))
                             .foregroundColor(Color(.systemGray))
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Clear Search")
                     .accessibilityHint("Clear search text")
                 }
@@ -59,6 +60,7 @@ struct LibrarySearchToolbarView: View {
                 Button("Done") {
                     self.isSearchFieldFocused.wrappedValue = false
                 }
+                .buttonStyle(.plain)
                 .foregroundColor(Color.purp)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .accessibilityLabel("Done")

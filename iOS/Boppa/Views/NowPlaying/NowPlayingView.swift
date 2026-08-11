@@ -109,6 +109,7 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.isCurrentTrackLiked ? .purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
+            .buttonStyle(.plain)
             .disabled(self.viewModel.currentTrack == nil)
             .accessibilityLabel(self.viewModel.isCurrentTrackLiked ? "Unlike" : "Like")
             .accessibilityHint(self.viewModel.isCurrentTrackLiked ? "Remove from Likes" : "Add to Likes")
@@ -156,6 +157,7 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.shuffleMode == .off ? Color(.systemGray) : Color.purp)
                     .frame(width: 36, height: 36)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(self.viewModel.shuffleModeAccessibilityLabel)
             .accessibilityHint("Cycle between shuffle off, shuffle, and radio")
 
@@ -170,6 +172,7 @@ struct NowPlayingView: View {
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
+                .buttonStyle(.plain)
                 .disabled(!self.viewModel.canGoBack)
                 .accessibilityLabel("Previous")
                 .accessibilityHint("Play previous track")
@@ -187,6 +190,7 @@ struct NowPlayingView: View {
                             .foregroundColor(.white)
                             .frame(width: 48, height: 48)
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel(self.viewModel.isPlaying ? "Pause" : "Play")
                     .accessibilityHint(self.viewModel.isPlaying ? "Pause playback" : "Resume playback")
                 }
@@ -199,6 +203,7 @@ struct NowPlayingView: View {
                         .foregroundColor(.white)
                         .frame(width: 48, height: 48)
                 }
+                .buttonStyle(.plain)
                 .disabled(!self.viewModel.canSkipForward)
                 .accessibilityLabel("Next")
                 .accessibilityHint("Play next track")
@@ -214,6 +219,7 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.isRepeatActive ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(self.viewModel.repeatMode == .one ? "Repeat One" : self.viewModel.repeatMode == .all ? "Repeat All" : "Repeat Off")
             .accessibilityHint("Cycle repeat mode")
         }
@@ -231,6 +237,7 @@ struct NowPlayingView: View {
                     .foregroundColor(self.viewModel.showQueue ? Color.purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(self.viewModel.showQueue ? "Hide Queue" : "Show Queue")
             .accessibilityHint("Toggle the playback queue")
         }

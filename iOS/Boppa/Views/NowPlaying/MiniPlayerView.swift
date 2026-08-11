@@ -104,6 +104,7 @@ struct MiniPlayerView: View {
                         .foregroundColor(.white)
                         .frame(width: 32, height: 32)
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(self.playbackService.isPlaying ? "Pause" : "Play")
                 .accessibilityHint(self.playbackService.isPlaying ? "Pause playback" : "Resume playback")
             }

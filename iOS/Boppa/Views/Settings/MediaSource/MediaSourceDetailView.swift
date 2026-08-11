@@ -153,6 +153,7 @@ struct MediaSourceDetailView: View {
                                 }
                             }
                         }
+                        .buttonStyle(.plain)
                         .disabled(self.viewModel.isClearingWebData)
                         .accessibilityLabel("Clear Web Data")
                         .accessibilityHint("Delete cookies, cache, local storage, and session data for this media source")

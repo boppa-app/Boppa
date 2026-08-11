@@ -226,6 +226,7 @@ struct LibraryView: View {
                         .font(.system(size: 20))
                         .foregroundColor(.purp)
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Search Library")
                 .accessibilityHint("Search your library")
             }
@@ -420,6 +421,7 @@ struct LibraryView: View {
             .background(Color.black)
             .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(self.viewModel.isPinnedExpanded ? "Pinned, expanded" : "Pinned, collapsed")
         .accessibilityHint(self.viewModel.isPinnedExpanded ? "Collapse pinned section" : "Expand pinned section")
     }

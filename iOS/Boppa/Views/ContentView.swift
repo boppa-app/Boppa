@@ -166,6 +166,7 @@ struct ContentTabView: View {
                             .foregroundColor(self.selectedTab == tab.num ? .purp : Color(.systemGray))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel(tab.name)
                     .accessibilityHint(self.selectedTab == tab.num ? "Currently selected" : "Switch to \(tab.name)")
                 }

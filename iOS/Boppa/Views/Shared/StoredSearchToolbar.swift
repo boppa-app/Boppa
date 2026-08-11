@@ -53,6 +53,7 @@ struct StoredSearchToolbar: View {
                                 .font(.system(size: 16))
                                 .foregroundColor(Color(.systemGray))
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -71,6 +72,7 @@ struct StoredSearchToolbar: View {
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.purp)
                         }
+                        .buttonStyle(.plain)
                         .padding(.horizontal, 12)
                     }
                     .transition(.opacity)

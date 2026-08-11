@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct AddMediaSourceView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     @State private var viewModel: AddMediaSourceViewModel
     @State private var isFileImporterPresented = false
@@ -39,6 +40,7 @@ struct AddMediaSourceView: View {
                                 Image(systemName: "xmark")
                                     .foregroundColor(.red)
                             }
+                            .buttonStyle(.plain)
                             .disabled(self.viewModel.isLoading)
                             .accessibilityLabel("Remove Selected File")
                             .accessibilityHint("Detach the selected config file")
@@ -67,6 +69,7 @@ struct AddMediaSourceView: View {
                                     .foregroundColor(.purp)
                             }
                         }
+                        .buttonStyle(.plain)
                         .disabled(self.viewModel.isLoading)
                         .accessibilityLabel("Choose Media Source Config File")
                         .accessibilityHint("Pick a local config file to import")
@@ -126,10 +129,13 @@ struct AddMediaSourceView: View {
                 Text("How do I make a media source config?")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                Link("boppa.app/docs", destination: URL(string: "https://boppa.app/docs")!)
-                    .font(.subheadline)
-                    .foregroundColor(Color.purp)
-                    .accessibilityHint("Opens the media source config documentation in your browser")
+                Button("boppa.app/docs") {
+                    self.openURL(URL(string: "https://boppa.app/docs")!)
+                }
+                .buttonStyle(.plain)
+                .font(.subheadline)
+                .foregroundColor(Color.purp)
+                .accessibilityHint("Opens the media source config documentation in your browser")
             }
         }
         .multilineTextAlignment(.center)
@@ -152,6 +158,7 @@ struct AddMediaSourceView: View {
             Button(action: { self.dismiss() }) {
                 Image(systemName: "xmark").font(.title3).foregroundColor(Color.red)
             }
+            .buttonStyle(.plain)
             .disabled(self.viewModel.isLoading)
             .accessibilityLabel("Cancel")
             .accessibilityHint("Dismiss without adding a media source")
@@ -171,6 +178,7 @@ struct AddMediaSourceView: View {
                     Image(systemName: "checkmark").font(.title3)
                         .foregroundColor(self.viewModel.isAddDisabled ? Color(.systemGray) : Color.purp)
                 }
+                .buttonStyle(.plain)
                 .disabled(self.viewModel.isAddDisabled)
                 .accessibilityLabel("Add Media Source")
                 .accessibilityHint("Confirm and add the media source")
