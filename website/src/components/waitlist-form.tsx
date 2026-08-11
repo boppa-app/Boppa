@@ -62,7 +62,7 @@ export function WaitlistForm({
   return (
     <form
       ref={formRef}
-      className="self-start sm:self-auto"
+      className="w-fit"
       noValidate
       onSubmit={async (e) => {
         e.preventDefault();
@@ -101,7 +101,7 @@ export function WaitlistForm({
           className={`box-border h-9 rounded-md border bg-transparent pl-3 pr-8 text-sm outline-none [field-sizing:content] ${
             isInvalid
               ? "border-red-500"
-              : "border-border focus:border-foreground/40"
+              : "border-border focus:ring-2 focus:ring-primary"
           }`}
         />
         {isInvalid ? (

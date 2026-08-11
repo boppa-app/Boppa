@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CornerDownLeft } from "lucide-react";
 import { SiteShell } from "~/components/site-shell";
+import { WaitlistForm } from "~/components/waitlist-form";
 import { pageMeta } from "~/meta";
 
 type Platform = "ios" | "android" | "other";
@@ -77,9 +79,23 @@ function GenerateLinkForm() {
   const navigate = useNavigate({ from: Route.fullPath });
   const [configUrl, setConfigUrl] = useState("");
   const [invalid, setInvalid] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!invalid) return;
+    const clearIfOutside = (e: PointerEvent) => {
+      if (!formRef.current?.contains(e.target as Node)) {
+        setInvalid(false);
+      }
+    };
+    document.addEventListener("pointerdown", clearIfOutside);
+    return () => document.removeEventListener("pointerdown", clearIfOutside);
+  }, [invalid]);
 
   return (
     <form
+      ref={formRef}
       className="rounded-xl border border-border bg-card/40 p-6 md:p-8 space-y-4"
       noValidate
       onSubmit={(event) => {
@@ -94,41 +110,58 @@ function GenerateLinkForm() {
         navigate({ search: { url: withUrlScheme } });
       }}
     >
-      <label htmlFor="config-url" className="block text-sm text-muted-foreground">
+      <label
+        htmlFor="config-url"
+        className="block text-sm text-muted-foreground"
+        onMouseDown={(event) => {
+          event.preventDefault();
+          if (document.activeElement === inputRef.current) {
+            inputRef.current?.blur();
+          }
+        }}
+        onClick={(event) => event.preventDefault()}
+      >
         Paste a media source config URL to generate a link that adds it to
         Boppa.
       </label>
-      <input
-        id="config-url"
-        type="text"
-        inputMode="url"
-        autoCapitalize="none"
-        autoCorrect="off"
-        placeholder="https://data.boppa.app/iOS/internet-archive.yaml"
-        value={configUrl}
-        onChange={(event) => {
-          setConfigUrl(event.target.value);
-          setInvalid(false);
-        }}
-        aria-invalid={invalid}
-        className={`w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 ${
-          invalid
-            ? "border-red-500 focus:ring-red-500"
-            : "border-border focus:ring-primary"
-        }`}
-      />
+      <div className="relative flex items-center">
+        <input
+          ref={inputRef}
+          id="config-url"
+          type="text"
+          inputMode="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="https://data.boppa.app/iOS/internet-archive.yaml"
+          value={configUrl}
+          onChange={(event) => {
+            setConfigUrl(event.target.value);
+            setInvalid(false);
+          }}
+          onBlur={() => {
+            if (invalid) setInvalid(false);
+          }}
+          aria-invalid={invalid}
+          className={`w-full rounded-lg border bg-background px-4 py-3 pr-12 text-sm text-foreground focus:outline-none focus:ring-2 ${
+            invalid
+              ? "border-red-500 focus:ring-red-500"
+              : "border-border focus:ring-primary"
+          }`}
+        />
+        <button
+          type="submit"
+          aria-label="Generate link"
+          disabled={!configUrl.trim()}
+          className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <CornerDownLeft className="w-4 h-4" />
+        </button>
+      </div>
       {invalid && (
         <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           Please enter a valid URL.
         </p>
       )}
-      <button
-        type="submit"
-        disabled={!configUrl.trim()}
-        className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-      >
-        Generate Link
-      </button>
     </form>
   );
 }
@@ -143,7 +176,7 @@ function IosPrompt({ url }: { url: string }) {
       </p>
       <a
         href={appLinkUrl}
-        className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors"
+        className="inline-flex items-center justify-center cursor-pointer rounded-lg border-2 border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-primary/30"
       >
         Open in Boppa
       </a>
@@ -158,18 +191,15 @@ function IosPrompt({ url }: { url: string }) {
 }
 
 function AndroidPrompt() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <section className="rounded-xl border border-border bg-card/40 p-6 md:p-8 space-y-4">
       <p className="text-sm text-muted-foreground">
         The Boppa Android app isn&apos;t out yet, so this link can&apos;t open
-        it directly. Check back once it&apos;s available.
+        it directly.
       </p>
-      <Link
-        to="/download"
-        className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors"
-      >
-        See download status
-      </Link>
+      <WaitlistForm platform="android" isOpen={isOpen} onOpen={() => setIsOpen(true)} />
     </section>
   );
 }
@@ -190,11 +220,11 @@ function DesktopPrompt({ url }: { url: string }) {
           onClick={() => {
             navigator.clipboard.writeText(canonicalUrl);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            setTimeout(() => setCopied(false), 1000);
           }}
-          className="inline-flex items-center justify-center rounded-lg border-2 border-foreground/20 px-4 py-2 text-sm font-medium text-foreground hover:bg-foreground/10 transition-colors"
+          className="inline-flex items-center justify-center cursor-pointer rounded-lg border-2 border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-primary/30"
         >
-          {copied ? "Copied!" : "Copy link"}
+          {copied ? "Copied!" : "Copy Link"}
         </button>
       </section>
       <Link
