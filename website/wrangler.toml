@@ -11,3 +11,8 @@ main = "./src/server-entry.ts"
 
 [observability]
 enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "boppa-waitlist"
+database_id = "42944f7c-bfeb-40bb-8e2a-db5727a69353"
