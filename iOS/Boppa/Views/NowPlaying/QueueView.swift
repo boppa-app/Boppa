@@ -2,11 +2,15 @@ import Observation
 import SwiftUI
 import UIKit
 
-/// UIKit UITableView is used instead of SwiftUI List for two reasons:
+/// UIKit UITableView is used instead of SwiftUI List for three reasons:
 /// 1. List exhibits a black row rendering bug when a drag-reorder and track advance happen in quick succession.
-/// 2. performBatchUpdates gives full control over row animations — on "previous", the incoming
+/// 2. performBatchUpdates gives full control over row animations. On "previous", the incoming
 ///    track slides in horizontally rather than flying up from the bottom of the list as SwiftUI
 ///    would animate a rotation of the underlying array.
+/// 3. Jumping straight to a tapped track needs direct control over contentOffset/contentInset.
+///    This requires scrolling the still-intact list to the tapped row, then trimming the skipped prefix once
+///    it settles, and padding the scrollable range so a row near the end of the queue can still
+///    reach the top. SwiftUI's List/ScrollView does not expose this functionality.
 struct QueueView: View {
     @State private var topFade: CGFloat = 0
     @State private var bottomFade: CGFloat = 1
@@ -47,10 +51,9 @@ private struct QueueTableView: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> QueueTableViewController {
         let controller = QueueTableViewController()
-        controller.onScroll = { [self] offset, contentHeight, containerHeight in
-            self.topFade = min(offset / self.fadeHeight, 1)
-            let bottomOffset = contentHeight - containerHeight - offset
-            self.bottomFade = min(max(bottomOffset, 0) / self.fadeHeight, 1)
+        controller.onScroll = { [self] topDistance, bottomDistance in
+            self.topFade = min(topDistance / self.fadeHeight, 1)
+            self.bottomFade = min(bottomDistance / self.fadeHeight, 1)
         }
         return controller
     }
@@ -88,8 +91,11 @@ final class QueueTableViewController: UITableViewController {
     private var displayedEntries: [QueueEntry] = []
     private var observationTask: Task<Void, Never>?
     private var directTapPending = false
+    private var pendingPrefixTrim: Int?
+    private var pendingTrimTargetOffset: CGFloat?
+    private var cachedTrackRowHeight: CGFloat?
 
-    var onScroll: ((CGFloat, CGFloat, CGFloat) -> Void)?
+    var onScroll: ((CGFloat, CGFloat) -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -208,23 +214,62 @@ final class QueueTableViewController: UITableViewController {
     }
 
     private func handleCurrentIndexChange() {
+        self.abandonPendingPrefixTrim()
+
         let oldEntries = self.displayedEntries
         let newEntries = self.computeDisplayEntries()
-        self.displayedEntries = newEntries
+
+        let wasDirect = self.directTapPending
+        self.directTapPending = false
 
         guard !oldEntries.isEmpty, !newEntries.isEmpty else {
+            self.displayedEntries = newEntries
             self.tableView.reloadData()
             return
         }
 
         let oldIndexById = Dictionary(uniqueKeysWithValues: oldEntries.enumerated().map { ($1.id, $0) })
+        let oldPositionOfNewTop = newEntries.first.flatMap { oldIndexById[$0.id] }
+
+        if wasDirect, self.beginDirectTapJump(from: oldEntries, to: newEntries, prefixCount: oldPositionOfNewTop) {
+            return
+        }
+
+        self.applyReorderDiff(from: oldEntries, to: newEntries, wasDirect: wasDirect, oldPositionOfNewTop: oldPositionOfNewTop)
+    }
+
+    private func beginDirectTapJump(from oldEntries: [QueueEntry], to newEntries: [QueueEntry], prefixCount: Int?) -> Bool {
+        let trackRowHeight = self.cachedTrackRowHeight ?? 0
+
+        guard let prefixCount, prefixCount > 0, trackRowHeight > 0,
+              oldEntries[prefixCount...].map(\.id) == newEntries.map(\.id)
+        else { return false }
+
+        let targetOffset = trackRowHeight * CGFloat(prefixCount)
+        self.tableView.contentInset.bottom = self.bottomInsetNeeded(forOffsetToReachTop: targetOffset)
+
+        self.refreshVisibleCells()
+        self.pendingPrefixTrim = prefixCount
+        self.pendingTrimTargetOffset = targetOffset
+        self.tableView.setContentOffset(
+            CGPoint(x: 0, y: targetOffset - self.tableView.adjustedContentInset.top),
+            animated: true
+        )
+        return true
+    }
+
+    private func bottomInsetNeeded(forOffsetToReachTop offset: CGFloat) -> CGFloat {
+        let naturalMaxOffset = max(self.tableView.contentSize.height - self.tableView.bounds.height, 0)
+        return max(offset - naturalMaxOffset, 0)
+    }
+
+    private func applyReorderDiff(from oldEntries: [QueueEntry], to newEntries: [QueueEntry], wasDirect: Bool, oldPositionOfNewTop: Int?) {
+        self.displayedEntries = newEntries
+
         let newIndexById = Dictionary(uniqueKeysWithValues: newEntries.enumerated().map { ($1.id, $0) })
         let oldIdsSet = Set(oldEntries.map(\.id))
         let newIdsSet = Set(newEntries.map(\.id))
 
-        let oldPositionOfNewTop = newEntries.first.flatMap { oldIndexById[$0.id] }
-        let wasDirect = self.directTapPending
-        self.directTapPending = false
         let snapTopToHead = !wasDirect && (oldPositionOfNewTop ?? 0) > 1
 
         let deletes = oldEntries.enumerated()
@@ -263,6 +308,37 @@ final class QueueTableViewController: UITableViewController {
         CATransaction.commit()
     }
 
+    override func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        guard let prefixCount = self.pendingPrefixTrim else { return }
+        self.pendingPrefixTrim = nil
+        self.pendingTrimTargetOffset = nil
+        self.trimPrefixAndSettleAtomically(prefixCount)
+    }
+
+    private func abandonPendingPrefixTrim() {
+        self.pendingPrefixTrim = nil
+        self.pendingTrimTargetOffset = nil
+        self.tableView.contentInset.bottom = 0
+    }
+
+    private func trimPrefixAndSettleAtomically(_ prefixCount: Int) {
+        self.displayedEntries = self.computeDisplayEntries()
+        let deletes = (0 ..< prefixCount).map { IndexPath(row: $0, section: 0) }
+
+        UIView.performWithoutAnimation {
+            self.tableView.performBatchUpdates({
+                self.tableView.deleteRows(at: deletes, with: .none)
+            }, completion: nil)
+            self.tableView.layoutIfNeeded()
+            self.tableView.contentInset.bottom = 0
+            self.tableView.setContentOffset(CGPoint(x: 0, y: -self.tableView.adjustedContentInset.top), animated: false)
+        }
+
+        self.refreshVisibleCells()
+        let bottomDistance = max(self.tableView.contentSize.height - self.tableView.bounds.height, 0)
+        self.onScroll?(0, bottomDistance)
+    }
+
     private func refreshVisibleCells() {
         for cell in self.tableView.visibleCells {
             guard let indexPath = self.tableView.indexPath(for: cell) else { continue }
@@ -288,11 +364,32 @@ final class QueueTableViewController: UITableViewController {
         let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
         let contentHeight = scrollView.contentSize.height
         let containerHeight = scrollView.bounds.height
-        self.onScroll?(offset, contentHeight, containerHeight)
+        let bottomDistance = max(contentHeight - containerHeight - offset, 0)
+        self.onScroll?(self.topFadeDistance(fromOffset: offset), bottomDistance)
+    }
+
+    private func topFadeDistance(fromOffset offset: CGFloat) -> CGFloat {
+        guard let pendingTrimTargetOffset else { return max(offset, 0) }
+        return max(pendingTrimTargetOffset - offset, 0)
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         self.displayedEntries.count + (self.isRadioStatusRowVisible ? 1 : 0)
+    }
+
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        guard indexPath.row < self.displayedEntries.count else { return UITableView.automaticDimension }
+        return self.cachedTrackRowHeight ?? UITableView.automaticDimension
+    }
+
+    override func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
+        guard indexPath.row < self.displayedEntries.count else { return tableView.estimatedRowHeight }
+        return self.cachedTrackRowHeight ?? tableView.estimatedRowHeight
+    }
+
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        guard indexPath.row < self.displayedEntries.count, self.cachedTrackRowHeight == nil else { return }
+        self.cachedTrackRowHeight = cell.bounds.height
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
