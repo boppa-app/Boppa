@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { useEffect, useRef, useState } from "react";
-import { CornerDownLeft } from "lucide-react";
+import { useRef, useState } from "react";
+import { AlertCircle, CornerDownLeft, Loader2 } from "lucide-react";
+import { load as loadYaml } from "js-yaml";
 import { SiteShell } from "~/components/site-shell";
 import { WaitlistForm } from "~/components/waitlist-form";
 import { pageMeta } from "~/meta";
@@ -21,8 +22,9 @@ const detectPlatform = createIsomorphicFn()
   .client(() => platformFromUserAgent(navigator.userAgent));
 
 export const Route = createFileRoute("/add-media-source")({
-  validateSearch: (search: Record<string, unknown>): { url?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { url?: string; name?: string } => ({
     url: typeof search.url === "string" ? search.url : undefined,
+    name: typeof search.name === "string" ? search.name : undefined,
   }),
   loader: () => ({
     platform: detectPlatform(),
@@ -37,13 +39,13 @@ export const Route = createFileRoute("/add-media-source")({
 });
 
 function AddSource() {
-  const { url } = Route.useSearch();
+  const { url, name } = Route.useSearch();
   const { platform } = Route.useLoaderData();
 
   return (
     <SiteShell>
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-2">
-        Add Media Source
+        {url && name ? `Add "${name}" Media Source?` : "Add Media Source?"}
       </h1>
 
       {!url ? (
@@ -64,8 +66,8 @@ function AddSource() {
 
 function isValidUrl(value: string): boolean {
   try {
-    new URL(value);
-    return true;
+    const url = new URL(value);
+    return url.hostname === "localhost" || url.hostname.includes(".");
   } catch {
     return false;
   }
@@ -75,39 +77,69 @@ function withScheme(value: string): string {
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(value) ? value : `https://${value}`;
 }
 
+async function validateConfigUrl(
+  rawUrl: string,
+): Promise<{ ok: true; url: string; name?: string } | { ok: false; message: string }> {
+  const withUrlScheme = withScheme(rawUrl);
+  if (!isValidUrl(withUrlScheme)) {
+    return { ok: false, message: "Please enter a valid URL." };
+  }
+  if (!new URL(withUrlScheme).pathname.toLowerCase().endsWith(".yaml")) {
+    return { ok: false, message: "The URL must point to a .yaml file." };
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(withUrlScheme);
+  } catch {
+    return { ok: false, message: "Couldn't download this file. Make sure the URL is publicly accessible." };
+  }
+  if (!response.ok) {
+    return { ok: false, message: "Couldn't download this file. Make sure the URL is publicly accessible." };
+  }
+
+  const text = await response.text();
+  let parsed: unknown;
+  try {
+    parsed = loadYaml(text);
+  } catch {
+    return { ok: false, message: "This file isn't valid YAML." };
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed) || !("name" in parsed)) {
+    return { ok: false, message: "This YAML file is missing a top-level name key." };
+  }
+
+  const name = (parsed as Record<string, unknown>).name;
+  return { ok: true, url: withUrlScheme, name: typeof name === "string" ? name : undefined };
+}
+
 function GenerateLinkForm() {
   const navigate = useNavigate({ from: Route.fullPath });
   const [configUrl, setConfigUrl] = useState("");
-  const [invalid, setInvalid] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "invalid">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!invalid) return;
-    const clearIfOutside = (e: PointerEvent) => {
-      if (!formRef.current?.contains(e.target as Node)) {
-        setInvalid(false);
-      }
-    };
-    document.addEventListener("pointerdown", clearIfOutside);
-    return () => document.removeEventListener("pointerdown", clearIfOutside);
-  }, [invalid]);
+  const isInvalid = status === "invalid";
 
   return (
     <form
       ref={formRef}
       className="rounded-xl border border-border bg-card/40 p-6 md:p-8 space-y-4"
       noValidate
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         const trimmed = configUrl.trim();
         if (!trimmed) return;
-        const withUrlScheme = withScheme(trimmed);
-        if (!isValidUrl(withUrlScheme)) {
-          setInvalid(true);
+        setStatus("loading");
+        const result = await validateConfigUrl(trimmed);
+        if (!result.ok) {
+          setErrorMessage(result.message);
+          setStatus("invalid");
           return;
         }
-        navigate({ search: { url: withUrlScheme } });
+        navigate({ search: { url: result.url, name: result.name } });
       }}
     >
       <label
@@ -136,32 +168,34 @@ function GenerateLinkForm() {
           value={configUrl}
           onChange={(event) => {
             setConfigUrl(event.target.value);
-            setInvalid(false);
+            if (isInvalid) setStatus("idle");
           }}
-          onBlur={() => {
-            if (invalid) setInvalid(false);
-          }}
-          aria-invalid={invalid}
-          className={`w-full rounded-lg border bg-background px-4 py-3 pr-12 text-sm text-foreground focus:outline-none focus:ring-2 ${
-            invalid
+          aria-invalid={isInvalid}
+          disabled={status === "loading"}
+          className={`w-full rounded-lg border bg-background px-4 py-3 pr-12 text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 ${
+            isInvalid
               ? "border-red-500 focus:ring-red-500"
               : "border-border focus:ring-primary"
           }`}
         />
-        <button
-          type="submit"
-          aria-label="Generate link"
-          disabled={!configUrl.trim()}
-          className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:pointer-events-none"
-        >
-          <CornerDownLeft className="w-4 h-4" />
-        </button>
+        {isInvalid ? (
+          <AlertCircle className="absolute right-3 w-4 h-4 text-red-500 pointer-events-none" />
+        ) : (
+          <button
+            type="submit"
+            aria-label="Generate link"
+            disabled={!configUrl.trim() || status === "loading"}
+            className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {status === "loading" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CornerDownLeft className="w-4 h-4" />
+            )}
+          </button>
+        )}
       </div>
-      {invalid && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          Please enter a valid URL.
-        </p>
-      )}
+      {isInvalid && <p className="text-sm text-red-400">{errorMessage}</p>}
     </form>
   );
 }
