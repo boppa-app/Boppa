@@ -211,6 +211,8 @@ final class QueueTableViewController: UITableViewController {
     private func reloadData() {
         self.displayedEntries = self.computeDisplayEntries()
         self.tableView.reloadData()
+        self.tableView.layoutIfNeeded()
+        self.syncFadeState()
     }
 
     private func handleCurrentIndexChange() {
@@ -225,6 +227,8 @@ final class QueueTableViewController: UITableViewController {
         guard !oldEntries.isEmpty, !newEntries.isEmpty else {
             self.displayedEntries = newEntries
             self.tableView.reloadData()
+            self.tableView.layoutIfNeeded()
+            self.syncFadeState()
             return
         }
 
@@ -305,6 +309,7 @@ final class QueueTableViewController: UITableViewController {
             }
         }, completion: nil)
         self.refreshVisibleCells()
+        self.syncFadeState()
         CATransaction.commit()
     }
 
@@ -335,8 +340,7 @@ final class QueueTableViewController: UITableViewController {
         }
 
         self.refreshVisibleCells()
-        let bottomDistance = max(self.tableView.contentSize.height - self.tableView.bounds.height, 0)
-        self.onScroll?(0, bottomDistance)
+        self.syncFadeState()
     }
 
     private func refreshVisibleCells() {
@@ -361,9 +365,13 @@ final class QueueTableViewController: UITableViewController {
     }
 
     override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
-        let contentHeight = scrollView.contentSize.height
-        let containerHeight = scrollView.bounds.height
+        self.syncFadeState()
+    }
+
+    private func syncFadeState() {
+        let offset = self.tableView.contentOffset.y + self.tableView.adjustedContentInset.top
+        let contentHeight = self.tableView.contentSize.height
+        let containerHeight = self.tableView.bounds.height
         let bottomDistance = max(contentHeight - containerHeight - offset, 0)
         self.onScroll?(self.topFadeDistance(fromOffset: offset), bottomDistance)
     }
