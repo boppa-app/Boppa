@@ -1,6 +1,6 @@
 ---
 title: List & Get Scripts
-description: The data.list and data.get scripts that back album, playlist, and artist pages.
+description: The data.list and data.get scripts that back album, playlist, artist, and track radio.
 nav: List & Get
 order: 13
 category: Media Sources
@@ -27,9 +27,11 @@ data:
       // JavaScript code
     artistPlaylists: |
       // JavaScript code
+    trackRadio: |
+      // JavaScript code
 ```
 
-Each script is called with `params.id` set to the relevant media id (an album, playlist, or artist id, previously returned as `id` from a search or another list/get script), plus `params.cookies` and, if applicable, `params.context`, exactly as in [Search Scripts](/docs/media-sources/search).
+Each script is called with `params.id` set to the relevant media id (an album, playlist, or artist id, previously returned as `id` from a search or another list/get script), plus `params.cookies` and, if applicable, `params.context`, exactly as in [Search Scripts](/docs/media-sources/search). `list.trackRadio` additionally receives `params.type`, see below.
 
 ### `list.album`, `list.playlist`
 
@@ -80,9 +82,15 @@ postResult({
 });
 ```
 
+### `list.trackRadio`
+
+Optional. When present, songs and videos from this source get a "Start Radio" action that plays an endless queue of tracks related to a seed track. Called with `params.id` set to the seed track's media id and `params.type` set to `"song"` or `"video"`, first when radio is started and again automatically as the listener plays through the queue, to keep it topped up.
+
+Returns a page of tracks, using the same item shape as `list.album` and `list.playlist` above. The seed track itself should not be included, only related tracks. Radio stops automatically once a call returns no continuation fields, or if the listener turns radio off.
+
 ### Pagination
 
-All six of these scripts support the same pagination contract described in [Search Scripts: Pagination](/docs/media-sources/search#pagination). When the user scrolls to the bottom of the current list, the script is called again with `params.previousResult` set to whatever non-`items` fields the previous call returned. When Boppa needs a complete track list at once, for example when saving an album to the library, it calls `list.album`, `list.playlist`, `list.artistSongs`, or `list.artistVideos` repeatedly until no continuation is returned and combines every page.
+All seven of these scripts support the same pagination contract described in [Search Scripts: Pagination](/docs/media-sources/search#pagination). When the user scrolls to the bottom of the current list (or, for `list.trackRadio`, when the radio queue needs topping up), the script is called again with `params.previousResult` set to whatever non-`items` fields the previous call returned. When Boppa needs a complete track list at once, for example when saving an album to the library, it calls `list.album`, `list.playlist`, `list.artistSongs`, or `list.artistVideos` repeatedly until no continuation is returned and combines every page.
 
 ## `data.get`
 

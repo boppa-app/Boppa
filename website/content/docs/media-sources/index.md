@@ -23,7 +23,7 @@ highlightColor: "#FFFFFF"
 context: [ ... ] # optional: background WebView context gathering
 data:
   search: { ... } # search.songs / .videos / .albums / .artists / .playlists
-  list:   { ... } # list.album / .playlist / .artistSongs / .artistVideos / ...
+  list:   { ... } # list.album / .playlist / .artistSongs / .artistVideos / ... / .trackRadio
   get:    { ... } # get.artist / .song / .video / .album / .playlist
 playback:
   url: "https://..." # or html: "<!doctype html>..."
