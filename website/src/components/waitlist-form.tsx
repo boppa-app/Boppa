@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, CornerDownLeft, Loader2, Mail } from "lucide-react";
 import { joinWaitlist, type WaitlistPlatform } from "~/server/waitlist";
 
@@ -17,13 +17,6 @@ export function WaitlistForm({
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "invalid">("idle");
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const [frozenWidth, setFrozenWidth] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    if (isOpen && inputRef.current && frozenWidth === null) {
-      setFrozenWidth(Math.ceil(inputRef.current.getBoundingClientRect().width));
-    }
-  }, [isOpen, frozenWidth]);
 
   useEffect(() => {
     if (status !== "invalid") return;
@@ -62,7 +55,7 @@ export function WaitlistForm({
   return (
     <form
       ref={formRef}
-      className="w-fit"
+      className="w-fit max-w-full"
       noValidate
       onSubmit={async (e) => {
         e.preventDefault();
@@ -84,7 +77,7 @@ export function WaitlistForm({
           ref={inputRef}
           type="email"
           autoFocus
-          placeholder="Enter your email here"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -93,12 +86,7 @@ export function WaitlistForm({
           onBlur={() => {
             if (isInvalid) setStatus("idle");
           }}
-          style={
-            frozenWidth
-              ? ({ width: frozenWidth, fieldSizing: "fixed" } as React.CSSProperties)
-              : undefined
-          }
-          className={`box-border h-9 rounded-md border bg-transparent pl-3 pr-8 text-base sm:text-sm outline-none [field-sizing:content] ${
+          className={`box-border h-9 w-64 max-w-full rounded-md border bg-transparent pl-3 pr-8 text-base sm:text-sm outline-none ${
             isInvalid
               ? "border-red-500"
               : "border-border focus:ring-2 focus:ring-primary"

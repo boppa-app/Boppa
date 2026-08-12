@@ -45,7 +45,7 @@ function AddSource() {
   return (
     <SiteShell>
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-2">
-        {url && name ? `Add "${name}" Media Source?` : "Add Media Source?"}
+        {url ? (name ? `Add "${name}" Media Source?` : "Add Media Source?") : "Add Media Source"}
       </h1>
 
       {!url ? (
