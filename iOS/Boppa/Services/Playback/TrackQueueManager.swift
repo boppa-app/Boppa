@@ -229,7 +229,7 @@ final class TrackQueueManager {
     func cycleShuffleMode() async {
         let radioAvailable = self.currentTrack.flatMap {
             MediaSourceStorageManager.shared.fetchOne(id: $0.mediaSourceId)
-        }?.config.data.get?.trackRadio != nil
+        }?.config.data.list?.trackRadio != nil
 
         switch self.shuffleMode {
         case .off:

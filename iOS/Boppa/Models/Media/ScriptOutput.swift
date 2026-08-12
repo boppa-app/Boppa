@@ -234,15 +234,6 @@ struct GetPlaylistResponse: TracklistMetadata {
     }
 }
 
-struct GetTrackRadioResponse {
-    let items: [ScriptTrack]
-    let continuation: [String: Any]?
-    init(_ dict: [String: Any]) {
-        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
-        self.continuation = extractContinuation(dict)
-    }
-}
-
 // MARK: - List Responses
 
 private func extractContinuation(_ dict: [String: Any]) -> [String: Any]? {
@@ -262,6 +253,15 @@ struct ListAlbumResponse {
 }
 
 struct ListPlaylistResponse {
+    let items: [ScriptTrack]
+    let continuation: [String: Any]?
+    init(_ dict: [String: Any]) {
+        self.items = (dict["items"] as? [[String: Any]] ?? []).compactMap { ScriptTrack($0) }
+        self.continuation = extractContinuation(dict)
+    }
+}
+
+struct ListTrackRadioResponse {
     let items: [ScriptTrack]
     let continuation: [String: Any]?
     init(_ dict: [String: Any]) {

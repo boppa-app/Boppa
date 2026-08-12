@@ -25,7 +25,7 @@ struct TrackActionsSheet: View {
 
             List {
                 if self.isMediaSourceEnabled {
-                    if self.mediaSource.config.data.get?.trackRadio != nil {
+                    if self.mediaSource.config.data.list?.trackRadio != nil {
                         Button {
                             PlaybackService.shared.startRadio(from: self.track)
                             self.dismiss()

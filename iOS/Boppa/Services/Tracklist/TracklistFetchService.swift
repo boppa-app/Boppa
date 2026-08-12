@@ -335,10 +335,10 @@ class TracklistFetchService {
         previousResult: [String: Any]? = nil
     ) async throws -> TracklistResponse {
         let config = mediaSource.config
-        guard let script = config.data.get?.trackRadio else {
+        guard let script = config.data.list?.trackRadio else {
             return TracklistResponse(tracks: [], continuation: nil)
         }
-        let response = try GetTrackRadioResponse(
+        let response = try ListTrackRadioResponse(
             await JSExecutionEngine.shared.execute(
                 script: script,
                 params: scriptParams(
@@ -349,7 +349,7 @@ class TracklistFetchService {
                 allowedUrls: config.effectiveAllowedUrls
             )
         )
-        logger.info("Fetched \(response.items.count) track(s) via get.trackRadio")
+        logger.info("Fetched \(response.items.count) track(s) via list.trackRadio")
         return TracklistResponse(
             tracks: response.items.map { $0.toTrack(mediaSourceId: mediaSource.id) },
             continuation: response.continuation
