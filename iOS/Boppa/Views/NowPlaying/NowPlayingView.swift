@@ -22,7 +22,7 @@ struct NowPlayingView: View {
         }
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(Color.charcoal)
         .preferredColorScheme(.dark)
         .sheet(item: self.$trackForActions) { track in
             if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: track.mediaSourceId) {
@@ -72,7 +72,7 @@ struct NowPlayingView: View {
             )
         }
         .aspectRatio(1, contentMode: .fit)
-        .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+        .shadow(color: .black.opacity(self.viewModel.showQueue ? 0 : 0.6), radius: 30, y: 16)
     }
 
     private var trackInfoSection: some View {

@@ -64,7 +64,7 @@ struct MiniPlayerView: View {
             lowResUrl: self.playbackService.currentTrack?.resolvedLowResArtworkUrl,
             highResUrl: self.playbackService.currentTrack?.resolvedHighResArtworkUrl,
             placeholder: "music.note",
-            placeholderBackground: .purp
+            placeholderBackground: .charcoal
         )
     }
 

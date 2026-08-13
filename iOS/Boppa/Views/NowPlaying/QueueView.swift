@@ -38,9 +38,8 @@ struct QueueView: View {
                     .frame(height: self.fadeHeight)
                 }
             )
-            .background(Color.black)
+            .background(Color.charcoal)
             .cornerRadius(12)
-            .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
     }
 }
 
@@ -100,7 +99,7 @@ final class QueueTableViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.tableView.backgroundColor = .black
+        self.tableView.backgroundColor = .charcoal
         self.tableView.separatorStyle = .none
         self.tableView.showsVerticalScrollIndicator = false
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: self.cellReuseId)
@@ -440,9 +439,9 @@ final class QueueTableViewController: UITableViewController {
         )
 
         cell.contentConfiguration = UIHostingConfiguration { trackRow }
-            .background(.black)
+            .background(Color.charcoal)
             .margins(.all, 0)
-        cell.backgroundColor = .black
+        cell.backgroundColor = .charcoal
         cell.selectionStyle = .none
     }
 
@@ -452,9 +451,9 @@ final class QueueTableViewController: UITableViewController {
             errorMessage: self.radioService.isFetchingRadio ? nil : self.radioService.radioError
         )
         cell.contentConfiguration = UIHostingConfiguration { statusRow }
-            .background(.black)
+            .background(Color.charcoal)
             .margins(.all, 0)
-        cell.backgroundColor = .black
+        cell.backgroundColor = .charcoal
         cell.selectionStyle = .none
     }
 
