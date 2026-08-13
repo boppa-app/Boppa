@@ -181,6 +181,7 @@ struct AddMediaSourceView: View {
                 Button(action: { self.addMediaSource() }) {
                     Image(systemName: "checkmark").font(.title3)
                         .foregroundColor(self.viewModel.isAddDisabled ? Color(.systemGray) : Color.purp)
+                        .frame(width: 20, height: 20)
                 }
                 .buttonStyle(.plain)
                 .disabled(self.viewModel.isAddDisabled)
