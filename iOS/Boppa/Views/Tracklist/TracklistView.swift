@@ -5,6 +5,7 @@ struct TracklistView: View {
     @State private var viewModel: TracklistViewModel
     @State private var showActionSheet = false
     @State private var trackForActions: Track?
+    @State private var scrollHandler = SearchBarScrollHandler()
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
     }
@@ -78,6 +79,17 @@ struct TracklistView: View {
                 )
 
                 self.content
+            }
+
+            if self.isSaved {
+                DetailHeaderOverlayButton(
+                    systemImage: "shuffle",
+                    accessibilityLabel: "Shuffle",
+                    accessibilityHint: "Play this tracklist in shuffled order",
+                    scrollHandler: self.scrollHandler,
+                    action: { self.shuffleAndPlay() }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
         }
         .navigationBarHidden(true)
@@ -183,6 +195,12 @@ struct TracklistView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .modifier(ScrollDirectionTracker(
+                isEnabled: true,
+                onScrollChange: { oldInfo, newInfo in
+                    self.scrollHandler.handleScrollChange(oldInfo: oldInfo, newInfo: newInfo, isSearchFieldFocused: false)
+                }
+            ))
         }
     }
 
@@ -208,5 +226,16 @@ struct TracklistView: View {
     private func playTrack(_ track: Track, at index: Int) {
         TrackQueueManager.shared.setQueue(self.viewModel.displayTracks, startingAt: index, contextId: self.contextId)
         PlaybackService.shared.playTrack(track)
+    }
+
+    private func shuffleAndPlay() {
+        let tracks = self.viewModel.displayTracks
+        guard !tracks.isEmpty else { return }
+
+        TrackQueueManager.shared.setQueue(tracks, startingAt: Int.random(in: tracks.indices), contextId: self.contextId)
+        TrackQueueManager.shared.setShuffleMode(.shuffle)
+        if let currentTrack = TrackQueueManager.shared.currentTrack {
+            PlaybackService.shared.playTrack(currentTrack)
+        }
     }
 }

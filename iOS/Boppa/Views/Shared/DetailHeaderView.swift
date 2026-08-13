@@ -1,5 +1,9 @@
 import SwiftUI
 
+enum DetailHeaderMetrics {
+    static let height: CGFloat = 44
+}
+
 struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, CenterContent: View>: View {
     let title: String
     let highlightedTitle: String?
@@ -76,7 +80,7 @@ struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, Cente
                     .padding(.horizontal, 4)
                 }
             }
-            .frame(height: 44)
+            .frame(height: DetailHeaderMetrics.height)
             .background(Color.black)
         }
     }
