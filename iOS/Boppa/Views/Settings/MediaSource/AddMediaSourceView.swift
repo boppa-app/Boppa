@@ -7,6 +7,7 @@ struct AddMediaSourceView: View {
 
     @State private var viewModel: AddMediaSourceViewModel
     @State private var isFileImporterPresented = false
+    @State private var addTask: Task<Void, Never>?
     private let autoSubmit: Bool
 
     private static let configContentTypes: [UTType] = [
@@ -155,13 +156,16 @@ struct AddMediaSourceView: View {
     @ToolbarContentBuilder
     private var cancelToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button(action: { self.dismiss() }) {
+            Button(action: { self.cancelAdd() }) {
                 Image(systemName: "xmark").font(.title3).foregroundColor(Color.red)
             }
             .buttonStyle(.plain)
-            .disabled(self.viewModel.isLoading)
             .accessibilityLabel("Cancel")
-            .accessibilityHint("Dismiss without adding a media source")
+            .accessibilityHint(
+                self.viewModel.isLoading
+                    ? "Stop adding this media source"
+                    : "Dismiss without adding a media source"
+            )
         }
         .sharedBackgroundVisibilityIfAvailable(.hidden)
     }
@@ -188,11 +192,20 @@ struct AddMediaSourceView: View {
     }
 
     private func addMediaSource() {
-        Task {
+        self.addTask = Task {
             let success = await viewModel.addMediaSource()
             if success {
                 self.dismiss()
             }
+            self.addTask = nil
         }
+    }
+
+    private func cancelAdd() {
+        if self.viewModel.isLoading {
+            self.viewModel.cancelAdd()
+            self.addTask?.cancel()
+        }
+        self.dismiss()
     }
 }

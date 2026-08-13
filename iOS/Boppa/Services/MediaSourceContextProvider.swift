@@ -126,6 +126,26 @@ final class MediaSourceContextProvider: NSObject {
     }
 
     @MainActor
+    func cancelWaiting(mediaSourceId: String) {
+        if let continuation = self.contextGatheredContinuations.removeValue(forKey: mediaSourceId) {
+            logger.info("Cancelling context gather wait for '\(mediaSourceId)'")
+            continuation.resume(throwing: CancellationError())
+        }
+
+        self.pendingWork.removeAll { $0.mediaSourceId == mediaSourceId }
+        self.pendingContextURLs.removeValue(forKey: mediaSourceId)
+
+        for (key, timer) in self.refreshTimers where key.hasPrefix("\(mediaSourceId)|") {
+            timer.invalidate()
+            self.refreshTimers.removeValue(forKey: key)
+        }
+
+        if self.currentMediaSourceId == mediaSourceId {
+            self.completeCurrentWork()
+        }
+    }
+
+    @MainActor
     private func refreshFromDatabase() {
         let mediaSources = MediaSourceStorageManager.shared.fetchAll()
         logger.info("Fetched \(mediaSources.count) media source(s) from database")
