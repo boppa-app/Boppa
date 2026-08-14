@@ -81,7 +81,7 @@ struct TracklistView: View {
                 self.content
             }
 
-            if self.isSaved {
+            if self.isSaved && !self.viewModel.tracks.isEmpty {
                 DetailHeaderOverlayButton(
                     systemImage: "shuffle",
                     accessibilityLabel: "Shuffle",
