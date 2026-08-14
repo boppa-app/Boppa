@@ -4,7 +4,7 @@ struct SearchView: View {
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
     @State private var recentsManager = RecentsManager()
-    @State private var scrollHandler = SearchBarScrollHandler()
+    @State private var scrollHandler = ScrollAwareVisibilityHandler()
     @State private var trackForActions: Track?
     @State private var pendingArtist: Artist?
     @State private var pendingTracklist: Tracklist?
@@ -56,7 +56,7 @@ struct SearchView: View {
                 if !focused {
                     self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
                 } else {
-                    self.scrollHandler.showSearchBar = true
+                    self.scrollHandler.isHeaderVisible = true
                     self.cacheManager.updateFilter(self.viewModel.searchQuery)
                 }
             }
@@ -66,7 +66,7 @@ struct SearchView: View {
                 }
             }
             .onChange(of: self.viewModel.lastSearchedQuery) { _, _ in
-                self.scrollHandler.showSearchBar = true
+                self.scrollHandler.isHeaderVisible = true
             }
             .onAppear {
                 self.viewModel.loadSources()

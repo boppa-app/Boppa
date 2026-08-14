@@ -5,7 +5,7 @@ struct TracklistView: View {
     @State private var viewModel: TracklistViewModel
     @State private var showActionSheet = false
     @State private var trackForActions: Track?
-    @State private var scrollHandler = SearchBarScrollHandler()
+    @State private var scrollHandler = ScrollAwareVisibilityHandler()
     init(tracklist: Tracklist) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
     }

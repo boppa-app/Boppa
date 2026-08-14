@@ -4,13 +4,13 @@ struct DetailHeaderOverlayButton: View {
     let systemImage: String
     let accessibilityLabel: String
     let accessibilityHint: String
-    let scrollHandler: SearchBarScrollHandler
+    let scrollHandler: ScrollAwareVisibilityHandler
     let action: () -> Void
 
     static let diameter: CGFloat = 44
 
     private var isVisible: Bool {
-        self.scrollHandler.showSearchBar
+        self.scrollHandler.isHeaderVisible
     }
 
     var body: some View {

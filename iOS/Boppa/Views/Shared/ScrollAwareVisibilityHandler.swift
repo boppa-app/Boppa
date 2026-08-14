@@ -35,9 +35,9 @@ struct ScrollDirectionTracker: ViewModifier {
 
 @MainActor
 @Observable
-class SearchBarScrollHandler {
-    var showSearchBar = true
-    var searchBarTopFade: CGFloat = 0
+class ScrollAwareVisibilityHandler {
+    var isHeaderVisible = true
+    var headerTopFade: CGFloat = 0
     var bubblesBarHeight: CGFloat = 0
 
     let fadeHeight: CGFloat = 40
@@ -47,7 +47,7 @@ class SearchBarScrollHandler {
 
     func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo, isSearchFieldFocused: Bool) {
         // Update fade based on scroll offset
-        self.searchBarTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
+        self.headerTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
 
         let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
         guard isScrollable, !isSearchFieldFocused else { return }
@@ -65,9 +65,9 @@ class SearchBarScrollHandler {
 
             // Hide when accumulated scroll down exceeds threshold
             if self.accumulatedScrollDown > scrollDownThreshold {
-                if self.showSearchBar {
+                if self.isHeaderVisible {
                     withAnimation(.easeInOut(duration: 1.0)) {
-                        self.showSearchBar = false
+                        self.isHeaderVisible = false
                     }
                     self.accumulatedScrollDown = 0
                 }
@@ -84,7 +84,7 @@ class SearchBarScrollHandler {
                 self.accumulatedScrollUp += abs(delta)
 
                 // Show when both velocity and distance thresholds are met
-                if self.accumulatedScrollUp > scrollUpThreshold || spacerAboutToShow, !self.showSearchBar {
+                if self.accumulatedScrollUp > scrollUpThreshold || spacerAboutToShow, !self.isHeaderVisible {
                     // Dynamically calculate animation duration based on how quickly the scroll will reach the top.
                     // This ensures the search bar finishes appearing before the spacer is fully exposed.
                     let maxFPS = CGFloat(UIScreen.main.maximumFramesPerSecond)
@@ -93,7 +93,7 @@ class SearchBarScrollHandler {
                     let duration = min(2 * secondsUntilTop, 1.0)
 
                     withAnimation(.easeInOut(duration: duration)) {
-                        self.showSearchBar = true
+                        self.isHeaderVisible = true
                     }
                     self.accumulatedScrollUp = 0
                 }

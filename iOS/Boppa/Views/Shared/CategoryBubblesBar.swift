@@ -8,7 +8,7 @@ protocol CategoryBarItem: Hashable {
 struct CategoryBubblesBar<Category: CategoryBarItem>: View {
     let categories: [Category]
     let selectedCategory: Category
-    let scrollHandler: SearchBarScrollHandler
+    let scrollHandler: ScrollAwareVisibilityHandler
     var isFocused: Bool = false
     var highlightSelectedWhenFocused: Bool = false
     let onSelect: (Category) -> Void
@@ -53,16 +53,16 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
             )
 
             LinearGradient(
-                colors: [.black.opacity(self.scrollHandler.searchBarTopFade), .clear],
+                colors: [.black.opacity(self.scrollHandler.headerTopFade), .clear],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .frame(height: fadeHeight)
             .allowsHitTesting(false)
         }
-        .frame(maxWidth: .infinity, maxHeight: self.scrollHandler.showSearchBar ? .infinity : 0, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: self.scrollHandler.isHeaderVisible ? .infinity : 0, alignment: .top)
         .clipped()
-        .allowsHitTesting(self.scrollHandler.showSearchBar)
+        .allowsHitTesting(self.scrollHandler.isHeaderVisible)
     }
 
     private func bubbleLabel(for category: Category) -> some View {

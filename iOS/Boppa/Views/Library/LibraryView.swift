@@ -4,7 +4,7 @@ struct LibraryView: View {
     @State private var viewModel = LibraryViewModel()
     @State private var isSearchVisible = false
     @FocusState private var isSearchFieldFocused: Bool
-    @State private var scrollHandler = SearchBarScrollHandler()
+    @State private var scrollHandler = ScrollAwareVisibilityHandler()
     @State private var trackFuzzyHandler = FuzzySearchHandler<StoredTrack>()
     @State private var tracklistFuzzyHandler = FuzzySearchHandler<StoredTracklist>()
     @State private var trackForActions: Track?
@@ -51,7 +51,7 @@ struct LibraryView: View {
             }
             .onChange(of: self.isSearchFieldFocused) { _, focused in
                 if focused {
-                    self.scrollHandler.showSearchBar = true
+                    self.scrollHandler.isHeaderVisible = true
                 } else if self.isSearchQueryEmpty {
                     self.viewModel.searchQuery = ""
                     withAnimation(.easeInOut(duration: 0.25)) { self.isSearchVisible = false }
