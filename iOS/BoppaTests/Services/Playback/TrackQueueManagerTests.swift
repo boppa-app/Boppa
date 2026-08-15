@@ -207,6 +207,31 @@ struct TrackQueueManagerTests {
         #expect(await manager.advanceToNext()?.trackKey == tracks[1].trackKey)
     }
 
+    // MARK: - Radio + repeat interaction
+
+    @Test func enablingRadioTurnsOffRepeatAll() {
+        let manager = self.makeManager()
+        let tracks = [self.track("a"), self.track("b"), self.track("c")]
+        manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
+        manager.cycleRepeatMode() // off -> all
+        #expect(manager.repeatMode == .all)
+
+        manager.setShuffleMode(.radio)
+        #expect(manager.repeatMode == .off)
+    }
+
+    @Test func cycleRepeatModeWhileRadioActiveSkipsRepeatAll() {
+        let manager = self.makeManager()
+        let tracks = [self.track("a"), self.track("b"), self.track("c")]
+        manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
+        manager.setShuffleMode(.radio)
+
+        manager.cycleRepeatMode() // off -> one (skips all)
+        #expect(manager.repeatMode == .one)
+        manager.cycleRepeatMode() // one -> off
+        #expect(manager.repeatMode == .off)
+    }
+
     // MARK: - playNext / addToQueue
 
     @Test func playNextInsertsRightAfterCurrentTrack() {

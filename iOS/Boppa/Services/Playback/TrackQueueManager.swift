@@ -265,6 +265,7 @@ final class TrackQueueManager {
         if mode == .radio {
             self.truncateQueueForRadio()
             self.radioService.reset()
+            self.repeatMode = .off
         }
 
         self.updateArtworkPreloads()
@@ -362,10 +363,14 @@ final class TrackQueueManager {
     }
 
     func cycleRepeatMode() {
-        switch self.repeatMode {
-        case .off: self.repeatMode = .all
-        case .all: self.repeatMode = .one
-        case .one: self.repeatMode = .off
+        if self.shuffleMode == .radio {
+            self.repeatMode = self.repeatMode == .off ? .one : .off
+        } else {
+            switch self.repeatMode {
+            case .off: self.repeatMode = .all
+            case .all: self.repeatMode = .one
+            case .one: self.repeatMode = .off
+            }
         }
         self.handleRepeatModeChanged()
     }
