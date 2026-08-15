@@ -151,6 +151,9 @@ struct MarqueeText: View {
             .onDisappear {
                 self.animationTask?.cancel()
                 self.animationTask = nil
+                self.scrollOffset = 0
+                self.leadingFade = 0
+                self.trailingFade = 1
             }
     }
 

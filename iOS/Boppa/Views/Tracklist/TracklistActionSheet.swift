@@ -79,13 +79,15 @@ struct TracklistActionSheet: View {
                     MarqueeText(
                         self.tracklist.title,
                         font: .title3,
-                        fontWeight: .semibold
+                        fontWeight: .semibold,
+                        uniqueId: self.tracklist.id.uuidString
                     )
                     if let subtitle = self.tracklist.subtitle {
                         MarqueeText(
                             subtitle,
                             font: .subheadline,
-                            foregroundColor: Color(.systemGray)
+                            foregroundColor: Color(.systemGray),
+                            uniqueId: self.tracklist.id.uuidString
                         )
                     }
                 }

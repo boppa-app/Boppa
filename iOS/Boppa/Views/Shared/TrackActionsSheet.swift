@@ -137,13 +137,15 @@ struct TrackActionsSheet: View {
                     MarqueeText(
                         self.track.title,
                         font: .title3,
-                        fontWeight: .semibold
+                        fontWeight: .semibold,
+                        uniqueId: self.track.id.uuidString
                     )
                     if let subtitle = self.track.subtitle {
                         MarqueeText(
                             subtitle,
                             font: .subheadline,
-                            foregroundColor: Color(.systemGray)
+                            foregroundColor: Color(.systemGray),
+                            uniqueId: self.track.id.uuidString
                         )
                     }
                 }
