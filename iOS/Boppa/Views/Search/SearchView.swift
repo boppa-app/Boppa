@@ -139,9 +139,9 @@ struct SearchView: View {
             .navigationDestination(for: SearchDestination.self) { destination in
                 switch destination {
                 case let .tracklist(tracklist):
-                    TracklistView(tracklist: tracklist)
+                    TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
                 case let .artist(artist, mediaSource):
-                    ArtistDetailView(artist: artist, mediaSource: mediaSource)
+                    ArtistDetailView(artist: artist, mediaSource: mediaSource, navigationResetId: self.navigationResetId)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in

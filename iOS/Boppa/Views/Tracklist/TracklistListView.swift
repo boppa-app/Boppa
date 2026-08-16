@@ -13,26 +13,30 @@ struct TracklistListView: View {
     let title: String
     let isLibraryMode: Bool
     var onTracklistSelected: ((String) -> Void)?
+    var navigationResetId: Int = 0
 
     init(
         artist: Artist,
         mediaSource: StoredMediaSource,
         type: TracklistListType,
-        title: String
+        title: String,
+        navigationResetId: Int = 0
     ) {
         self.artist = artist
         self.mediaSource = mediaSource
         self.type = type
         self.title = title
         self.isLibraryMode = false
+        self.navigationResetId = navigationResetId
     }
 
-    init(type: TracklistListType, title: String, onTracklistSelected: ((String) -> Void)? = nil) {
+    init(type: TracklistListType, title: String, navigationResetId: Int = 0, onTracklistSelected: ((String) -> Void)? = nil) {
         self.artist = nil
         self.mediaSource = nil
         self.type = type
         self.title = title
         self.isLibraryMode = true
+        self.navigationResetId = navigationResetId
         self.onTracklistSelected = onTracklistSelected
     }
 
@@ -87,7 +91,7 @@ struct TracklistListView: View {
         .navigationBarHidden(true)
         .enableSwipeBack()
         .navigationDestination(item: self.$navigationTarget) { tracklist in
-            TracklistView(tracklist: tracklist)
+            TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
         }
         .sheet(isPresented: self.$showActionSheet) {
             TracklistListActionSheet(

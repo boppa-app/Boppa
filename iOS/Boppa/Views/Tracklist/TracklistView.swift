@@ -6,8 +6,11 @@ struct TracklistView: View {
     @State private var showActionSheet = false
     @State private var trackForActions: Track?
     @State private var scrollHandler = ScrollAwareVisibilityHandler()
-    init(tracklist: Tracklist) {
+    @State private var isNavigatingAway = false
+    var navigationResetId: Int = 0
+    init(tracklist: Tracklist, navigationResetId: Int = 0) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
+        self.navigationResetId = navigationResetId
     }
 
     private var isSaved: Bool {
@@ -87,6 +90,7 @@ struct TracklistView: View {
                     accessibilityLabel: "Shuffle",
                     accessibilityHint: "Play this tracklist in shuffled order",
                     scrollHandler: self.scrollHandler,
+                    isNavigatingAway: self.isNavigatingAway,
                     action: { self.shuffleAndPlay() }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
@@ -94,6 +98,9 @@ struct TracklistView: View {
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
+        .onChange(of: self.navigationResetId) { _, _ in
+            self.isNavigatingAway = true
+        }
         .onAppear {
             self.viewModel.load()
         }

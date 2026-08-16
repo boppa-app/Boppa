@@ -120,17 +120,17 @@ struct LibraryView: View {
             .navigationDestination(for: LibraryDestination.self) { destination in
                 switch destination {
                 case let .tracklist(tracklist):
-                    TracklistView(tracklist: tracklist)
+                    TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
                 case .playlists:
-                    TracklistListView(type: .playlists, title: "Playlists") { sourceId in
+                    TracklistListView(type: .playlists, title: "Playlists", navigationResetId: self.navigationResetId) { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
                 case .albums:
-                    TracklistListView(type: .albums, title: "Albums") { sourceId in
+                    TracklistListView(type: .albums, title: "Albums", navigationResetId: self.navigationResetId) { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
                 case let .artist(artist, mediaSource):
-                    ArtistDetailView(artist: artist, mediaSource: mediaSource)
+                    ArtistDetailView(artist: artist, mediaSource: mediaSource, navigationResetId: self.navigationResetId)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
