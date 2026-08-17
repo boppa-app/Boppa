@@ -39,7 +39,7 @@ class TrackStorageManager {
 
     func addTrack(_ track: Track, toPlaylist playlistId: String) throws {
         try self.database.write { db in
-            let tracklist = try findOrCreatePlaylist(playlistId: playlistId, db: db)
+            let tracklist = try TracklistStorageManager.shared.findOrCreatePlaylist(playlistId: playlistId, db: db)
             let alreadyPresent =
                 try StoredTracklistTrack
                     .where {
@@ -463,41 +463,5 @@ class TrackStorageManager {
             }.execute(db)
         }
         return artist.mediaId
-    }
-
-    // MARK: - Private
-
-    private func findOrCreatePlaylist(playlistId: String, db: Database) throws -> StoredTracklist {
-        let existing =
-            try StoredTracklist
-                .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
-                .fetchOne(db)
-        if let existing { return existing }
-        let tracklistType =
-            playlistId == "likes"
-                ? Tracklist.TracklistType.likes.rawValue
-                : Tracklist.TracklistType.playlist.rawValue
-        let title = playlistId == "likes" ? "Likes" : playlistId
-        // TODO: sortOrder is hardcoded to "a0" here since only "likes" exists today. Once
-        // users can create their own Boppa-managed playlists, compute a real key past the
-        // current max (the way TracklistStorageManager.upsertTracklistStub does for albums)
-        // so multiple playlists don't collide on the same sortOrder.
-        try StoredTracklist.insert {
-            StoredTracklist.Draft(
-                mediaId: playlistId,
-                mediaSourceId: "boppa.app",
-                title: title,
-                subtitle: nil,
-                lowResArtworkUrl: nil,
-                highResArtworkUrl: nil,
-                tracklistType: tracklistType,
-                isPinned: false,
-                isSavedToLibrary: true,
-                sortOrder: "a0"
-            )
-        }.execute(db)
-        return try StoredTracklist
-            .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
-            .fetchOne(db)!
     }
 }

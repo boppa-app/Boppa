@@ -945,6 +945,105 @@ struct TrackStorageManagerTests {
         #expect(custom.tracklistType == Tracklist.TracklistType.playlist.rawValue)
     }
 
+    @Test func createPlaylistInsertsEmptyPlaylistWithGeneratedId() throws {
+        let ctx = try Context()
+        let created = try ctx.withDatabase {
+            try TracklistStorageManager.shared.createPlaylist(title: "Road Trip")
+        }
+
+        #expect(created.title == "Road Trip")
+        #expect(created.mediaSourceId == "boppa.app")
+        #expect(created.tracklistType == Tracklist.TracklistType.playlist.rawValue)
+        #expect(created.isSavedToLibrary == true)
+        #expect(UUID(uuidString: created.mediaId) != nil)
+
+        let stored = try #require(try ctx.tracklist(created.mediaId, "boppa.app"))
+        #expect(stored.title == "Road Trip")
+        #expect(try ctx.tracklistTrackRefs(playlist: created.mediaId).isEmpty)
+    }
+
+    @Test func createPlaylistTwiceAssignsDistinctIncreasingSortOrder() throws {
+        let ctx = try Context()
+        let first = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "First") }
+        let second = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Second") }
+
+        #expect(first.mediaId != second.mediaId)
+        #expect(first.sortOrder < second.sortOrder)
+    }
+
+    @Test func canAddTracksToACreatedPlaylist() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(self.makeTrack("t1"), toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(self.makeTrack("t2"), toPlaylist: playlist.mediaId)
+        }
+
+        let refs = try ctx.tracklistTrackRefs(playlist: playlist.mediaId)
+        #expect(refs.map(\.trackMediaId) == ["t1", "t2"])
+    }
+
+    @Test func fetchPlaylistsReturnsOnlyBoppaPlaylistsOrderedBySortOrder() throws {
+        let ctx = try Context()
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.createPlaylist(title: "First")
+            try TracklistStorageManager.shared.createPlaylist(title: "Second")
+            // Likes is a boppa.app tracklist too, but not of type "playlist".
+            try TrackStorageManager.shared.addTrack(self.makeTrack("t1"), toPlaylist: "likes")
+        }
+
+        let playlists = try ctx.withDatabase { TracklistStorageManager.shared.fetchPlaylists() }
+        #expect(playlists.map(\.title) == ["First", "Second"])
+    }
+
+    @Test func reorderTracksAppliesNewOrderToBoppaPlaylist() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let t1 = self.makeTrack("t1")
+        let t2 = self.makeTrack("t2")
+        let t3 = self.makeTrack("t3")
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(t1, toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(t2, toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(t3, toPlaylist: playlist.mediaId)
+        }
+
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.reorderTracks([t3, t1, t2], inPlaylist: playlist.mediaId)
+        }
+
+        let refs = try ctx.tracklistTrackRefs(playlist: playlist.mediaId)
+        #expect(refs.map(\.trackMediaId) == ["t3", "t1", "t2"])
+    }
+
+    @Test func reorderTracksIsNoOpForNonexistentPlaylist() throws {
+        let ctx = try Context()
+        let t1 = self.makeTrack("t1")
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.reorderTracks([t1], inPlaylist: "ghost-playlist")
+        }
+        // Must not throw or crash.
+    }
+
+    @Test func reorderTracksIsNoOpForLikes() throws {
+        let ctx = try Context()
+        let t1 = self.makeTrack("t1")
+        let t2 = self.makeTrack("t2")
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(t1, toPlaylist: "likes")
+            try TrackStorageManager.shared.addTrack(t2, toPlaylist: "likes")
+        }
+        let before = try ctx.tracklistTrackRefs(playlist: "likes")
+
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.reorderTracks([t2, t1], inPlaylist: "likes")
+        }
+
+        let after = try ctx.tracklistTrackRefs(playlist: "likes")
+        #expect(after.map(\.sortOrder) == before.map(\.sortOrder))
+    }
+
     // MARK: - Recents: tracks
 
     @Test func markRecentlyPlayedInsertsTrackAndSetsFlagAndTimestamp() throws {

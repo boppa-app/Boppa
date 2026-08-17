@@ -26,6 +26,15 @@ class TracklistStorageManager {
         }) ?? []
     }
 
+    func fetchPlaylists() -> [StoredTracklist] {
+        (try? self.database.read { db in
+            try StoredTracklist
+                .where { $0.mediaSourceId.eq("boppa.app").and($0.tracklistType.eq(Tracklist.TracklistType.playlist.rawValue)) }
+                .order { $0.sortOrder }
+                .fetchAll(db)
+        }) ?? []
+    }
+
     func findStoredTracklist(mediaId: String, mediaSourceId: String) -> StoredTracklist? {
         try? self.database.read { db in
             try StoredTracklist
@@ -86,6 +95,15 @@ class TracklistStorageManager {
         return stored
     }
 
+    @discardableResult
+    func createPlaylist(title: String) throws -> StoredTracklist {
+        let stored = try self.database.write { db in
+            try self.createPlaylistStub(mediaId: UUID().uuidString, title: title, tracklistType: .playlist, db: db)
+        }
+        logger.info("Created playlist '\(title)'")
+        return stored
+    }
+
     func setPin(_ storedTracklist: StoredTracklist, isPinned: Bool) throws {
         try self.database.write { db in
             try StoredTracklist.update { $0.isPinned = isPinned }
@@ -102,6 +120,30 @@ class TracklistStorageManager {
                 guard let stored = tracklist.storedTracklist else { continue }
                 try StoredTracklist.update { $0.sortOrder = key }
                     .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                    .execute(db)
+            }
+        }
+    }
+
+    func reorderTracks(_ tracks: [Track], inPlaylist playlistId: String) throws {
+        try self.database.write { db in
+            let tracklist = try StoredTracklist
+                .where {
+                    $0.mediaId.eq(playlistId)
+                        .and($0.mediaSourceId.eq("boppa.app"))
+                        .and($0.tracklistType.eq(Tracklist.TracklistType.playlist.rawValue))
+                }
+                .fetchOne(db)
+            guard tracklist != nil else { return }
+            let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
+            for (track, key) in zip(tracks, keys) {
+                try StoredTracklistTrack.update { $0.sortOrder = key }
+                    .where {
+                        $0.tracklistMediaId.eq(playlistId)
+                            .and($0.tracklistMediaSourceId.eq("boppa.app"))
+                            .and($0.trackMediaId.eq(track.mediaId))
+                            .and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                    }
                     .execute(db)
             }
         }
@@ -337,6 +379,47 @@ class TracklistStorageManager {
     }
 
     // MARK: - Tracklist Stubs
+
+    @discardableResult
+    func createPlaylistStub(
+        mediaId: String, title: String, tracklistType: Tracklist.TracklistType, db: Database
+    ) throws -> StoredTracklist {
+        let typeString = tracklistType.rawValue
+        let maxKey = try StoredTracklist
+            .where { $0.tracklistType.eq(typeString) }
+            .order { $0.sortOrder.desc() }
+            .fetchOne(db)?
+            .sortOrder
+        let newSortOrder = FractionalIndex.generateKeyBetween(maxKey, nil)
+        try StoredTracklist.insert {
+            StoredTracklist.Draft(
+                mediaId: mediaId,
+                mediaSourceId: "boppa.app",
+                title: title,
+                subtitle: nil,
+                lowResArtworkUrl: nil,
+                highResArtworkUrl: nil,
+                tracklistType: typeString,
+                isPinned: false,
+                isSavedToLibrary: true,
+                sortOrder: newSortOrder
+            )
+        }.execute(db)
+        return try StoredTracklist
+            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq("boppa.app")) }
+            .fetchOne(db)!
+    }
+
+    func findOrCreatePlaylist(playlistId: String, db: Database) throws -> StoredTracklist {
+        let existing =
+            try StoredTracklist
+                .where { $0.mediaId.eq(playlistId).and($0.mediaSourceId.eq("boppa.app")) }
+                .fetchOne(db)
+        if let existing { return existing }
+        let tracklistType: Tracklist.TracklistType = playlistId == "likes" ? .likes : .playlist
+        let title = playlistId == "likes" ? "Likes" : playlistId
+        return try self.createPlaylistStub(mediaId: playlistId, title: title, tracklistType: tracklistType, db: db)
+    }
 
     func upsertTracklistStub(_ tracklist: Tracklist, db: Database) throws {
         let existing = try StoredTracklist
