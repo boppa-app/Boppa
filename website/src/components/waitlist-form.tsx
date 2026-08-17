@@ -89,7 +89,7 @@ export function WaitlistForm({
           className={`box-border h-9 w-64 max-w-full rounded-md border bg-transparent pl-3 pr-8 text-base sm:text-sm outline-none ${
             isInvalid
               ? "border-red-500"
-              : "border-border focus:ring-2 focus:ring-primary"
+              : "border-border focus:border-primary"
           }`}
         />
         {isInvalid ? (
