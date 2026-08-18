@@ -67,9 +67,6 @@ struct ArtistDetailView: View {
                 },
                 onAlbumSelected: { tracklist in postTracklistNavigation(tracklist) }
             )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(.systemGray6))
         }
     }
 

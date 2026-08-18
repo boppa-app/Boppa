@@ -6,6 +6,10 @@ struct TracklistListView: View {
     @State private var navigationTarget: Tracklist?
     @State private var showActionSheet = false
     @State private var tracklistToDelete: Tracklist?
+    @State private var scrollHandler = ScrollAwareVisibilityHandler()
+    @State private var isNavigatingAway = false
+    @State private var showNewPlaylistAlert = false
+    @State private var newPlaylistName = ""
 
     let artist: Artist?
     let mediaSource: StoredMediaSource?
@@ -87,11 +91,38 @@ struct TracklistListView: View {
 
                 self.content
             }
+
+            if self.canCreatePlaylist && !self.viewModel.isEditing {
+                DetailHeaderOverlayButton(
+                    systemImage: "plus",
+                    accessibilityLabel: "New Playlist",
+                    accessibilityHint: "Create a new playlist",
+                    scrollHandler: self.scrollHandler,
+                    isNavigatingAway: self.isNavigatingAway,
+                    action: {
+                        self.newPlaylistName = ""
+                        self.showNewPlaylistAlert = true
+                    }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
+        .onChange(of: self.navigationResetId) { _, _ in
+            self.isNavigatingAway = true
+        }
         .navigationDestination(item: self.$navigationTarget) { tracklist in
             TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
+        }
+        .alert("New Playlist", isPresented: self.$showNewPlaylistAlert) {
+            TextField("Playlist Name", text: self.$newPlaylistName)
+            Button("Cancel", role: .cancel) {}
+            Button("Create") {
+                self.viewModel.createPlaylist(title: self.newPlaylistName)
+            }
+            .tint(.purp)
+            .disabled(self.newPlaylistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .sheet(isPresented: self.$showActionSheet) {
             TracklistListActionSheet(
@@ -157,6 +188,10 @@ struct TracklistListView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var canCreatePlaylist: Bool {
+        self.isLibraryMode && self.type == .playlists
     }
 
     private var canNavigateToTracklist: Bool {

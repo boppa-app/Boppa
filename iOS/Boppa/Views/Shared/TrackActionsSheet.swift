@@ -8,6 +8,9 @@ struct TrackActionsSheet: View {
     var onAlbumSelected: ((Tracklist) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
+    @State private var isShowingAddToPlaylist = false
+    @State private var selectedDetent: PresentationDetent = .medium
+    @State private var allowsMediumDetent = true
 
     private var albumIcon: String {
         if #available(iOS 26.0, *) {
@@ -18,6 +21,44 @@ struct TrackActionsSheet: View {
     }
 
     var body: some View {
+        Group {
+            if self.isShowingAddToPlaylist {
+                AddToPlaylistSheet(
+                    track: self.track,
+                    onBack: { self.showActions() }
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            } else {
+                self.actionsContent
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+        }
+        .presentationDetents(self.allowsMediumDetent ? [.medium, .large] : [.large], selection: self.$selectedDetent)
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color(.systemGray6))
+    }
+
+    private let transitionDuration: TimeInterval = 0.1
+
+    private func showAddToPlaylist() {
+        withAnimation(.easeInOut(duration: self.transitionDuration)) {
+            self.isShowingAddToPlaylist = true
+            self.selectedDetent = .large
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + self.transitionDuration) {
+            self.allowsMediumDetent = false
+        }
+    }
+
+    private func showActions() {
+        self.allowsMediumDetent = true
+        withAnimation(.easeInOut(duration: self.transitionDuration)) {
+            self.isShowingAddToPlaylist = false
+            self.selectedDetent = .medium
+        }
+    }
+
+    private var actionsContent: some View {
         VStack(spacing: 0) {
             self.header
                 .padding(.top, 20)
@@ -150,6 +191,18 @@ struct TrackActionsSheet: View {
                     }
                 }
                 Spacer()
+                Button {
+                    self.showAddToPlaylist()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 22))
+                        .foregroundColor(.purp)
+                        .frame(width: 36, height: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add to Playlist")
+                .accessibilityHint("Add this track to a playlist")
+
                 Button {
                     PlaylistManager.shared.togglePlaylist(self.track, playlistId: "likes")
                 } label: {

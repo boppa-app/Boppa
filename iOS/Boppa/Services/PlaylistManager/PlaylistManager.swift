@@ -49,4 +49,16 @@ class PlaylistManager {
             self.addToPlaylist(track, playlistId: playlistId)
         }
     }
+
+    @discardableResult
+    func createPlaylist(title: String) -> StoredTracklist? {
+        do {
+            let stored = try TracklistStorageManager.shared.createPlaylist(title: title)
+            NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
+            return stored
+        } catch {
+            logger.error("Failed to create playlist '\(title)': \(error)")
+            return nil
+        }
+    }
 }

@@ -7,6 +7,8 @@ struct TracklistRow: View {
     var isMediaSourceEnabled: Bool = true
     var artworkSize: CGFloat = 72
     var preferLowResArtwork: Bool? = nil
+    var placeholderBackground: Color? = nil
+    var isSelected: Bool = false
 
     private var resolvedPreferLowResArtwork: Bool {
         self.preferLowResArtwork ?? (self.tracklist.tracklistType == .album)
@@ -44,14 +46,16 @@ struct TracklistRow: View {
                 highResUrl: self.tracklist.highResArtworkUrl,
                 preferLowRes: self.resolvedPreferLowResArtwork,
                 tracklistType: self.tracklist.tracklistType,
-                size: self.artworkSize
+                size: self.artworkSize,
+                placeholderBackground: self.placeholderBackground
             )
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(self.tracklist.title)
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .fontWeight(self.isSelected ? .bold : .regular)
+                        .foregroundColor(self.isSelected ? .purp : .white)
                         .lineLimit(1)
                 }
                 self.subtitleView

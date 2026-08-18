@@ -3,6 +3,7 @@ import SwiftUI
 struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var trackForActions: Track?
+    @State private var trackForAddToPlaylist: Track?
 
     var viewModel: NowPlayingViewModel
     var onArtistSelected: ((Artist) -> Void)?
@@ -39,10 +40,12 @@ struct NowPlayingView: View {
                         self.onAlbumSelected?(tracklist)
                     }
                 )
-                .presentationDetents([.medium])
+            }
+        }
+        .sheet(item: self.$trackForAddToPlaylist) { track in
+            AddToPlaylistSheet(track: track)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(.systemGray6))
-            }
         }
     }
 
@@ -100,6 +103,19 @@ struct NowPlayingView: View {
             }
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("View actions for this track")
+
+            Button {
+                self.trackForAddToPlaylist = self.viewModel.currentTrack
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 22))
+                    .foregroundColor(.purp)
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(.plain)
+            .disabled(self.viewModel.currentTrack == nil)
+            .accessibilityLabel("Add to Playlist")
+            .accessibilityHint("Add this track to a playlist")
 
             Button {
                 self.viewModel.toggleLike()

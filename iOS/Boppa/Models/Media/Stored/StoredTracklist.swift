@@ -28,6 +28,7 @@ extension StoredTracklist: Identifiable {
 
 extension StoredTracklist {
     var isMediaSourceEnabled: Bool {
+        guard self.mediaSourceId != "boppa.app" else { return true }
         guard let source = MediaSourceStorageManager.shared.fetchOne(id: self.mediaSourceId) else {
             return false
         }

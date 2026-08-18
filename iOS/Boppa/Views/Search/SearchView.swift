@@ -190,9 +190,6 @@ struct SearchView: View {
                         onArtistSelected: { artist in self.pendingArtist = artist },
                         onAlbumSelected: { tracklist in self.pendingTracklist = tracklist }
                     )
-                    .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
-                    .presentationBackground(Color(.systemGray6))
                 }
             }
         }

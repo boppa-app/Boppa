@@ -133,6 +133,12 @@ class TracklistListViewModel {
         self.isEditing = false
     }
 
+    func createPlaylist(title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        PlaylistManager.shared.createPlaylist(title: trimmed)
+    }
+
     func deleteTracklistById(_ id: UUID) {
         guard let index = self.tracklists.firstIndex(where: { $0.id == id }) else { return }
         let tracklist = self.tracklists[index]
