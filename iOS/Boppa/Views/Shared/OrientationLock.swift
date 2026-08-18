@@ -11,7 +11,8 @@ final class OrientationLock {
     func setAllowsLandscape(_ allowsLandscape: Bool) {
         self.mask = allowsLandscape ? .allButUpsideDown : .portrait
 
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+        else { return }
         for window in windowScene.windows {
             window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
         }

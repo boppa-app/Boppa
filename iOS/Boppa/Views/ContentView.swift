@@ -30,9 +30,16 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 ZStack {
-                    SearchView(navigationResetId: self.searchResetId, focusSearchId: self.searchFocusId, selectedTab: self.$selectedTab, isAtNavigationRoot: self.$searchIsAtRoot, externalPendingArtist: self.$searchPendingArtist, externalPendingTracklist: self.$searchPendingTracklist)
-                        .opacity(self.selectedTab == 0 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 0)
+                    SearchView(
+                        navigationResetId: self.searchResetId,
+                        focusSearchId: self.searchFocusId,
+                        selectedTab: self.$selectedTab,
+                        isAtNavigationRoot: self.$searchIsAtRoot,
+                        externalPendingArtist: self.$searchPendingArtist,
+                        externalPendingTracklist: self.$searchPendingTracklist
+                    )
+                    .opacity(self.selectedTab == 0 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 0)
                     LibraryView(
                         navigationResetId: self.libraryResetId,
                         isAtNavigationRoot: self.$libraryIsAtRoot,
@@ -41,22 +48,32 @@ struct ContentView: View {
                     )
                     .opacity(self.selectedTab == 1 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 1)
-                    SettingsView(selectedTab: self.$selectedTab, navigationResetId: self.settingsResetId, isAtNavigationRoot: self.$settingsIsAtRoot)
-                        .opacity(self.selectedTab == 2 ? 1 : 0)
-                        .allowsHitTesting(self.selectedTab == 2)
+                    SettingsView(
+                        selectedTab: self.$selectedTab,
+                        navigationResetId: self.settingsResetId,
+                        isAtNavigationRoot: self.$settingsIsAtRoot
+                    )
+                    .opacity(self.selectedTab == 2 ? 1 : 0)
+                    .allowsHitTesting(self.selectedTab == 2)
                 }
                 .frame(maxHeight: .infinity)
-                .onReceive(NotificationCenter.default.publisher(for: .navigateToArtistInSearch)) { notification in
+                .onReceive(NotificationCenter.default
+                    .publisher(for: .navigateToArtistInSearch))
+                { notification in
                     guard let artist = notification.object as? Artist else { return }
                     self.searchPendingArtist = artist
                     self.selectedTab = 0
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .navigateToTracklistInSearch)) { notification in
+                .onReceive(NotificationCenter.default
+                    .publisher(for: .navigateToTracklistInSearch))
+                { notification in
                     guard let tracklist = notification.object as? Tracklist else { return }
                     self.searchPendingTracklist = tracklist
                     self.selectedTab = 0
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .navigateToTracklistInLibrary)) { notification in
+                .onReceive(NotificationCenter.default
+                    .publisher(for: .navigateToTracklistInLibrary))
+                { notification in
                     guard let tracklist = notification.object as? Tracklist else { return }
                     self.libraryPendingTracklist = tracklist
                     self.selectedTab = 1
@@ -163,12 +180,14 @@ struct ContentTabView: View {
                     }) {
                         Image(systemName: tab.icon)
                             .font(.system(size: 24))
-                            .foregroundColor(self.selectedTab == tab.num ? .purp : Color(.systemGray))
+                            .foregroundColor(self.selectedTab == tab
+                                .num ? .purp : Color(.systemGray))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(tab.name)
-                    .accessibilityHint(self.selectedTab == tab.num ? "Currently selected" : "Switch to \(tab.name)")
+                    .accessibilityHint(self.selectedTab == tab
+                        .num ? "Currently selected" : "Switch to \(tab.name)")
                 }
             }
             .frame(height: 60)

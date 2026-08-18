@@ -23,7 +23,8 @@ class TracklistFetchService {
     func fetchAllTracks(for tracklist: Tracklist, onPageFetched: (([Track]) -> Void)? = nil)
         async throws -> [Track]
     {
-        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId)
+        guard let mediaSource = MediaSourceStorageManager.shared
+            .fetchOne(id: tracklist.mediaSourceId)
         else {
             throw NSError(
                 domain: "TracklistFetchService", code: 3,
@@ -100,7 +101,8 @@ class TracklistFetchService {
     func fetchTracklist(tracklist: Tracklist, previousResult: [String: Any]? = nil) async throws
         -> TracklistResponse
     {
-        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId)
+        guard let mediaSource = MediaSourceStorageManager.shared
+            .fetchOne(id: tracklist.mediaSourceId)
         else {
             return TracklistResponse(tracks: [], continuation: nil)
         }
@@ -195,7 +197,8 @@ class TracklistFetchService {
     }
 
     func fetchTracklistMetadata(tracklist: Tracklist) async throws -> (any TracklistMetadata)? {
-        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId)
+        guard let mediaSource = MediaSourceStorageManager.shared
+            .fetchOne(id: tracklist.mediaSourceId)
         else { return nil }
         let config = mediaSource.config
         logger.info("Fetching metadata for '\(tracklist.title)' on '\(tracklist.mediaSourceId)'...")

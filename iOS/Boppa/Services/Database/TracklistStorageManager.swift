@@ -3,7 +3,10 @@ import Foundation
 import os
 import SQLiteData
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "TracklistStorageManager")
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
+    category: "TracklistStorageManager"
+)
 
 class TracklistStorageManager {
     static let shared = TracklistStorageManager()
@@ -29,7 +32,10 @@ class TracklistStorageManager {
     func fetchPlaylists() -> [StoredTracklist] {
         (try? self.database.read { db in
             try StoredTracklist
-                .where { $0.mediaSourceId.eq("boppa.app").and($0.tracklistType.eq(Tracklist.TracklistType.playlist.rawValue)) }
+                .where {
+                    $0.mediaSourceId.eq("boppa.app")
+                        .and($0.tracklistType.eq(Tracklist.TracklistType.playlist.rawValue))
+                }
                 .order { $0.sortOrder }
                 .fetchAll(db)
         }) ?? []
@@ -50,7 +56,11 @@ class TracklistStorageManager {
         }) ?? []
     }
 
-    private func fetchStoredTracks(for tracklist: StoredTracklist, isLikes: Bool, db: Database) throws -> [Track] {
+    private func fetchStoredTracks(
+        for tracklist: StoredTracklist,
+        isLikes: Bool,
+        db: Database
+    ) throws -> [Track] {
         let query = StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -61,9 +71,11 @@ class TracklistStorageManager {
             }
         let storedTracks: [StoredTrack]
         if isLikes {
-            storedTracks = try query.order { tt, _ in tt.sortOrder.desc() }.select { _, t in t }.fetchAll(db)
+            storedTracks = try query.order { tt, _ in tt.sortOrder.desc() }.select { _, t in t }
+                .fetchAll(db)
         } else {
-            storedTracks = try query.order { tt, _ in tt.sortOrder }.select { _, t in t }.fetchAll(db)
+            storedTracks = try query.order { tt, _ in tt.sortOrder }.select { _, t in t }
+                .fetchAll(db)
         }
         return try storedTracks.map { stored in
             let artists = try TrackStorageManager.shared.loadArtistsForTrack(stored, db: db)
@@ -97,7 +109,8 @@ class TracklistStorageManager {
             let batch: [StoredTrack] = (try? self.database.read { db in
                 try StoredTracklistTrack
                     .where {
-                        $0.tracklistMediaId.eq(mediaId).and($0.tracklistMediaSourceId.eq(mediaSourceId))
+                        $0.tracklistMediaId.eq(mediaId)
+                            .and($0.tracklistMediaSourceId.eq(mediaSourceId))
                     }
                     .join(StoredTrack.all) { tt, t in
                         tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
@@ -111,12 +124,17 @@ class TracklistStorageManager {
             guard !batch.isEmpty else { break }
 
             for track in batch {
-                guard let key = track.highResArtworkUrl ?? track.lowResArtworkUrl, !key.isEmpty else {
+                guard let key = track.highResArtworkUrl ?? track.lowResArtworkUrl,
+                      !key.isEmpty
+                else {
                     continue
                 }
                 guard seenKeys.insert(key).inserted else { continue }
                 collected.append(
-                    TrackArtworkURLs(lowResUrl: track.lowResArtworkUrl, highResUrl: track.highResArtworkUrl)
+                    TrackArtworkURLs(
+                        lowResUrl: track.lowResArtworkUrl,
+                        highResUrl: track.highResArtworkUrl
+                    )
                 )
                 if collected.count >= Self.composedArtworkTargetCount { break }
             }
@@ -136,17 +154,25 @@ class TracklistStorageManager {
             let stored = try self.upsertStoredTracklist(tracklist: tracklist, db: db)
             try self.persistTracks(tracks, into: stored, db: db, pruneStale: true)
             return try StoredTracklist
-                .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                .where {
+                    $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId))
+                }
                 .fetchOne(db) ?? stored
         }
-        logger.info("Stored tracklist '\(tracklist.title)' with \(tracks.count) track(s) to library")
+        logger
+            .info("Stored tracklist '\(tracklist.title)' with \(tracks.count) track(s) to library")
         return stored
     }
 
     @discardableResult
     func createPlaylist(title: String) throws -> StoredTracklist {
         let stored = try self.database.write { db in
-            try self.createPlaylistStub(mediaId: UUID().uuidString, title: title, tracklistType: .playlist, db: db)
+            try self.createPlaylistStub(
+                mediaId: UUID().uuidString,
+                title: title,
+                tracklistType: .playlist,
+                db: db
+            )
         }
         logger.info("Created playlist '\(title)'")
         return stored
@@ -155,7 +181,10 @@ class TracklistStorageManager {
     func setPin(_ storedTracklist: StoredTracklist, isPinned: Bool) throws {
         try self.database.write { db in
             try StoredTracklist.update { $0.isPinned = isPinned }
-                .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
+                .where {
+                    $0.mediaId.eq(storedTracklist.mediaId)
+                        .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
+                }
                 .execute(db)
         }
     }
@@ -167,7 +196,10 @@ class TracklistStorageManager {
             for (tracklist, key) in zip(tracklists, keys) {
                 guard let stored = tracklist.storedTracklist else { continue }
                 try StoredTracklist.update { $0.sortOrder = key }
-                    .where { $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId)) }
+                    .where {
+                        $0.mediaId.eq(stored.mediaId)
+                            .and($0.mediaSourceId.eq(stored.mediaSourceId))
+                    }
                     .execute(db)
             }
         }
@@ -231,7 +263,10 @@ class TracklistStorageManager {
 
             if albumRefCount > 0 {
                 try StoredTracklist.update { $0.isSavedToLibrary = false }
-                    .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
+                    .where {
+                        $0.mediaId.eq(storedTracklist.mediaId)
+                            .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
+                    }
                     .execute(db)
                 try StoredTracklistTrack
                     .where {
@@ -242,13 +277,20 @@ class TracklistStorageManager {
                     .execute(db)
             } else {
                 try StoredTracklist
-                    .where { $0.mediaId.eq(storedTracklist.mediaId).and($0.mediaSourceId.eq(storedTracklist.mediaSourceId)) }
+                    .where {
+                        $0.mediaId.eq(storedTracklist.mediaId)
+                            .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
+                    }
                     .delete()
                     .execute(db)
             }
 
             for join in joins {
-                try TrackStorageManager.shared.deleteIfOrphaned(mediaId: join.trackMediaId, mediaSourceId: join.trackMediaSourceId, db: db)
+                try TrackStorageManager.shared.deleteIfOrphaned(
+                    mediaId: join.trackMediaId,
+                    mediaSourceId: join.trackMediaSourceId,
+                    db: db
+                )
             }
         }
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
@@ -264,9 +306,14 @@ class TracklistStorageManager {
 
     // MARK: - Private: Tracklist Persistence
 
-    private func upsertStoredTracklist(tracklist: Tracklist, db: Database) throws -> StoredTracklist {
+    private func upsertStoredTracklist(
+        tracklist: Tracklist,
+        db: Database
+    ) throws -> StoredTracklist {
         let existing = try StoredTracklist
-            .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
+            .where {
+                $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId))
+            }
             .fetchOne(db)
         if let existing {
             try StoredTracklist.update {
@@ -279,10 +326,15 @@ class TracklistStorageManager {
                 $0.trackCount = tracklist.trackCount
                 $0.isSavedToLibrary = true
             }
-            .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
+            .where {
+                $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
+            }
             .execute(db)
             return try StoredTracklist
-                .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
+                .where {
+                    $0.mediaId.eq(existing.mediaId)
+                        .and($0.mediaSourceId.eq(existing.mediaSourceId))
+                }
                 .fetchOne(db) ?? existing
         }
 
@@ -313,11 +365,18 @@ class TracklistStorageManager {
         }.execute(db)
 
         return try StoredTracklist
-            .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
+            .where {
+                $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId))
+            }
             .fetchOne(db)!
     }
 
-    private func persistTracks(_ tracks: [Track], into tracklist: StoredTracklist, db: Database, pruneStale: Bool) throws {
+    private func persistTracks(
+        _ tracks: [Track],
+        into tracklist: StoredTracklist,
+        db: Database,
+        pruneStale: Bool
+    ) throws {
         let newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
         let (existingJoins, existingTracks) = try fetchExistingTrackData(for: tracklist, db: db)
         let (artistCache, albumCache) = try buildRelationCache(for: existingTracks, db: db)
@@ -325,18 +384,34 @@ class TracklistStorageManager {
         for (index, track) in tracks.enumerated() {
             let newKey = newKeys[index]
             if let match = existingTracks.first(where: { $0.identityMatches(track) }) {
-                try self.syncExistingTrack(track, match: match, newKey: newKey, existingJoins: existingJoins, artistCache: artistCache, albumCache: albumCache, db: db)
+                try self.syncExistingTrack(
+                    track,
+                    match: match,
+                    newKey: newKey,
+                    existingJoins: existingJoins,
+                    artistCache: artistCache,
+                    albumCache: albumCache,
+                    db: db
+                )
             } else {
                 try self.insertNewTrackJoin(track, newKey: newKey, into: tracklist, db: db)
             }
         }
 
         if pruneStale {
-            try self.pruneStaleJoins(existingTracks: existingTracks, newTracks: tracks, from: tracklist, db: db)
+            try self.pruneStaleJoins(
+                existingTracks: existingTracks,
+                newTracks: tracks,
+                from: tracklist,
+                db: db
+            )
         }
     }
 
-    private func fetchExistingTrackData(for tracklist: StoredTracklist, db: Database) throws -> ([StoredTracklistTrack], [StoredTrack]) {
+    private func fetchExistingTrackData(
+        for tracklist: StoredTracklist,
+        db: Database
+    ) throws -> ([StoredTracklistTrack], [StoredTrack]) {
         let joins = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -360,12 +435,18 @@ class TracklistStorageManager {
         return (joins, tracks)
     }
 
-    private func buildRelationCache(for tracks: [StoredTrack], db: Database) throws -> ([String: [StoredArtist]], [String: [StoredTracklist]]) {
+    private func buildRelationCache(
+        for tracks: [StoredTrack],
+        db: Database
+    ) throws -> ([String: [StoredArtist]], [String: [StoredTracklist]]) {
         var artistCache: [String: [StoredArtist]] = [:]
         var albumCache: [String: [StoredTracklist]] = [:]
         for track in tracks {
             let key = "\(track.mediaId)|\(track.mediaSourceId)"
-            artistCache[key] = try TrackStorageManager.shared.loadStoredArtistsForTrack(track, db: db)
+            artistCache[key] = try TrackStorageManager.shared.loadStoredArtistsForTrack(
+                track,
+                db: db
+            )
             albumCache[key] = try TrackStorageManager.shared.loadStoredAlbumsForTrack(track, db: db)
         }
         return (artistCache, albumCache)
@@ -380,8 +461,11 @@ class TracklistStorageManager {
         albumCache: [String: [StoredTracklist]],
         db: Database
     ) throws {
-        if let join = existingJoins.first(where: { $0.trackMediaId == match.mediaId && $0.trackMediaSourceId == match.mediaSourceId }),
-           join.sortOrder != newKey
+        if let join = existingJoins
+            .first(where: {
+                $0.trackMediaId == match.mediaId && $0.trackMediaSourceId == match.mediaSourceId
+            }),
+            join.sortOrder != newKey
         {
             try StoredTracklistTrack.update { $0.sortOrder = newKey }
                 .where {
@@ -397,15 +481,36 @@ class TracklistStorageManager {
         let existingAlbums = albumCache[cacheKey] ?? []
         if !match.contentMatches(track, artists: existingArtists, albums: existingAlbums) {
             try TrackStorageManager.shared.updateTrackScalars(track, stored: match, db: db)
-            try TrackStorageManager.shared.replaceTrackArtists(track: match, artists: track.artists, db: db)
-            try TrackStorageManager.shared.replaceTrackAlbums(track: match, albums: track.albums, db: db)
+            try TrackStorageManager.shared.replaceTrackArtists(
+                track: match,
+                artists: track.artists,
+                db: db
+            )
+            try TrackStorageManager.shared.replaceTrackAlbums(
+                track: match,
+                albums: track.albums,
+                db: db
+            )
         }
-        try TrackStorageManager.shared.markSavedToLibrary(mediaId: match.mediaId, mediaSourceId: match.mediaSourceId, db: db)
+        try TrackStorageManager.shared.markSavedToLibrary(
+            mediaId: match.mediaId,
+            mediaSourceId: match.mediaSourceId,
+            db: db
+        )
     }
 
-    private func insertNewTrackJoin(_ track: Track, newKey: String, into tracklist: StoredTracklist, db: Database) throws {
+    private func insertNewTrackJoin(
+        _ track: Track,
+        newKey: String,
+        into tracklist: StoredTracklist,
+        db: Database
+    ) throws {
         try TrackStorageManager.shared.upsertTrack(track, db: db)
-        try TrackStorageManager.shared.markSavedToLibrary(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
+        try TrackStorageManager.shared.markSavedToLibrary(
+            mediaId: track.mediaId,
+            mediaSourceId: track.mediaSourceId,
+            db: db
+        )
         try StoredTracklistTrack.insert {
             StoredTracklistTrack.Draft(
                 tracklistMediaId: tracklist.mediaId,
@@ -418,8 +523,15 @@ class TracklistStorageManager {
             .execute(db)
     }
 
-    private func pruneStaleJoins(existingTracks: [StoredTrack], newTracks: [Track], from tracklist: StoredTracklist, db: Database) throws {
-        for existing in existingTracks where !newTracks.contains(where: { existing.identityMatches($0) }) {
+    private func pruneStaleJoins(
+        existingTracks: [StoredTrack],
+        newTracks: [Track],
+        from tracklist: StoredTracklist,
+        db: Database
+    ) throws {
+        for existing in existingTracks
+            where !newTracks.contains(where: { existing.identityMatches($0) })
+        {
             try StoredTracklistTrack.where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
                     .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
@@ -427,7 +539,11 @@ class TracklistStorageManager {
                     .and($0.trackMediaSourceId.eq(existing.mediaSourceId))
             }.delete().execute(db)
 
-            try TrackStorageManager.shared.deleteIfOrphaned(mediaId: existing.mediaId, mediaSourceId: existing.mediaSourceId, db: db)
+            try TrackStorageManager.shared.deleteIfOrphaned(
+                mediaId: existing.mediaId,
+                mediaSourceId: existing.mediaSourceId,
+                db: db
+            )
         }
     }
 
@@ -471,23 +587,34 @@ class TracklistStorageManager {
         if let existing { return existing }
         let tracklistType: Tracklist.TracklistType = playlistId == "likes" ? .likes : .playlist
         let title = playlistId == "likes" ? "Likes" : playlistId
-        return try self.createPlaylistStub(mediaId: playlistId, title: title, tracklistType: tracklistType, db: db)
+        return try self.createPlaylistStub(
+            mediaId: playlistId,
+            title: title,
+            tracklistType: tracklistType,
+            db: db
+        )
     }
 
     func upsertTracklistStub(_ tracklist: Tracklist, db: Database) throws {
         let existing = try StoredTracklist
-            .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
+            .where {
+                $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId))
+            }
             .fetchOne(db)
         if let existing {
             try StoredTracklist.update {
                 if !tracklist.title.isEmpty { $0.title = tracklist.title }
                 if tracklist.subtitle != nil { $0.subtitle = tracklist.subtitle }
-                if tracklist.lowResArtworkUrl != nil { $0.lowResArtworkUrl = tracklist.lowResArtworkUrl }
-                if tracklist.highResArtworkUrl != nil { $0.highResArtworkUrl = tracklist.highResArtworkUrl }
+                if tracklist
+                    .lowResArtworkUrl != nil { $0.lowResArtworkUrl = tracklist.lowResArtworkUrl }
+                if tracklist
+                    .highResArtworkUrl != nil { $0.highResArtworkUrl = tracklist.highResArtworkUrl }
                 if tracklist.url != nil { $0.url = tracklist.url }
                 if tracklist.trackCount != nil { $0.trackCount = tracklist.trackCount }
             }
-            .where { $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId)) }
+            .where {
+                $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
+            }
             .execute(db)
         } else {
             let typeString = tracklist.tracklistType.rawValue
@@ -523,13 +650,18 @@ class TracklistStorageManager {
 
     // MARK: - Recents
 
-    func markTracklistRecentlyViewed(_ tracklist: Tracklist, viewedAt: Double, db: Database) throws {
+    func markTracklistRecentlyViewed(
+        _ tracklist: Tracklist,
+        viewedAt: Double,
+        db: Database
+    ) throws {
         try self.upsertTracklistStub(tracklist, db: db)
         try StoredTracklist.update {
             $0.isRecent = true
             $0.lastViewedTimestamp = #bind(viewedAt)
         }
-        .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId)) }
+        .where { $0.mediaId.eq(tracklist.mediaId).and($0.mediaSourceId.eq(tracklist.mediaSourceId))
+        }
         .execute(db)
     }
 }

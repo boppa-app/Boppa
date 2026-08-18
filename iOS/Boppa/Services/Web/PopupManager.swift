@@ -69,14 +69,16 @@ final class PopupManager: NSObject {
     @MainActor
     private func tearDownWebView(_ webView: WKWebView) {
         webView.stopLoading()
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: Self.messageHandlerName)
+        webView.configuration.userContentController
+            .removeScriptMessageHandler(forName: Self.messageHandlerName)
     }
 
     static func contractScript() -> String {
         """
         (function() {
             window.boppaPopupDismiss = function() {
-                window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({ type: 'dismiss' });
+                window.webkit.messageHandlers.\(self
+            .messageHandlerName).postMessage({ type: 'dismiss' });
             };
         })();
         """

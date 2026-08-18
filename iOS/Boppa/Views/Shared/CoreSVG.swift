@@ -8,11 +8,15 @@ import UIKit
 @objc
 class CGSVGDocument: NSObject {}
 
-var CGSVGDocumentRetain: (@convention(c) (CGSVGDocument?) -> Unmanaged<CGSVGDocument>?) = load("CGSVGDocumentRetain")
+var CGSVGDocumentRetain: (@convention(c) (CGSVGDocument?) -> Unmanaged<CGSVGDocument>?) =
+    load("CGSVGDocumentRetain")
 var CGSVGDocumentRelease: (@convention(c) (CGSVGDocument?) -> Void) = load("CGSVGDocumentRelease")
-var CGSVGDocumentCreateFromData: (@convention(c) (CFData?, CFDictionary?) -> Unmanaged<CGSVGDocument>?) = load("CGSVGDocumentCreateFromData")
-var CGContextDrawSVGDocument: (@convention(c) (CGContext?, CGSVGDocument?) -> Void) = load("CGContextDrawSVGDocument")
-var CGSVGDocumentGetCanvasSize: (@convention(c) (CGSVGDocument?) -> CGSize) = load("CGSVGDocumentGetCanvasSize")
+var CGSVGDocumentCreateFromData: (@convention(c) (CFData?, CFDictionary?)
+    -> Unmanaged<CGSVGDocument>?) = load("CGSVGDocumentCreateFromData")
+var CGContextDrawSVGDocument: (@convention(c) (CGContext?, CGSVGDocument?) -> Void) =
+    load("CGContextDrawSVGDocument")
+var CGSVGDocumentGetCanvasSize: (@convention(c) (CGSVGDocument?) -> CGSize) =
+    load("CGSVGDocumentGetCanvasSize")
 
 typealias ImageWithCGSVGDocument = @convention(c) (AnyObject, Selector, CGSVGDocument) -> UIImage
 var ImageWithCGSVGDocumentSEL: Selector = NSSelectorFromString("_imageWithCGSVGDocument:")
@@ -34,7 +38,8 @@ class SVG {
     }
 
     init?(_ data: Data) {
-        guard let document = CGSVGDocumentCreateFromData(data as CFData, nil)?.takeUnretainedValue() else { return nil }
+        guard let document = CGSVGDocumentCreateFromData(data as CFData, nil)?
+            .takeUnretainedValue() else { return nil }
         guard CGSVGDocumentGetCanvasSize(document) != .zero else { return nil }
         self.document = document
     }
@@ -44,7 +49,10 @@ class SVG {
     }
 
     func image() -> UIImage? {
-        let imageWithCGSVGDocument = unsafeBitCast(UIImage.self.method(for: ImageWithCGSVGDocumentSEL), to: ImageWithCGSVGDocument.self)
+        let imageWithCGSVGDocument = unsafeBitCast(
+            UIImage.self.method(for: ImageWithCGSVGDocumentSEL),
+            to: ImageWithCGSVGDocument.self
+        )
         return imageWithCGSVGDocument(UIImage.self, ImageWithCGSVGDocumentSEL, self.document)
     }
 
@@ -81,7 +89,10 @@ class SVG {
 
         let transform = (
             scale: CGAffineTransform(scaleX: scale.x, y: scale.y),
-            aspect: CGAffineTransform(translationX: (target.width / scale.x - rect.document.width) / 2, y: (target.height / scale.y - rect.document.height) / 2)
+            aspect: CGAffineTransform(
+                translationX: (target.width / scale.x - rect.document.width) / 2,
+                y: (target.height / scale.y - rect.document.height) / 2
+            )
         )
 
         context.translateBy(x: 0, y: target.height)

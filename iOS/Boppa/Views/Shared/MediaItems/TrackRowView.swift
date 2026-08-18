@@ -54,14 +54,17 @@ struct TrackRow: View {
                 Text(self.track.title)
                     .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
-                    .foregroundColor(!self.isMediaSourceEnabled ? Color(.systemGray3) : (self.isSelected ? .purp : .white))
+                    .foregroundColor(!self
+                        .isMediaSourceEnabled ? Color(.systemGray3) :
+                        (self.isSelected ? .purp : .white))
                     .lineLimit(1)
                     .opacity(!self.isMediaSourceEnabled ? 0.7 : 1.0)
                 if let subtitle = self.track.subtitle {
                     Text(subtitle)
                         .font(.caption2)
                         .fontWeight(self.isSelected ? .bold : .regular)
-                        .foregroundColor(!self.isMediaSourceEnabled ? Color(.systemGray4) : Color(.systemGray))
+                        .foregroundColor(!self
+                            .isMediaSourceEnabled ? Color(.systemGray4) : Color(.systemGray))
                         .lineLimit(1)
                         .opacity(!self.isMediaSourceEnabled ? 0.7 : 1.0)
                 }
@@ -144,8 +147,10 @@ struct TrackRow: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel([self.track.title, self.track.subtitle].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityHint(!self.isMediaSourceEnabled ? "Source unavailable" : "Play \(self.track.title)")
+        .accessibilityLabel([self.track.title, self.track.subtitle].compactMap { $0 }
+            .joined(separator: ", "))
+        .accessibilityHint(!self
+            .isMediaSourceEnabled ? "Source unavailable" : "Play \(self.track.title)")
         .accessibilityAddTraits(.isButton)
     }
 }

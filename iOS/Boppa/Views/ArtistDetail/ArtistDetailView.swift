@@ -168,10 +168,18 @@ struct ArtistDetailView: View {
             ForEach(Array(songs.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    isSelected: TrackQueueManager.shared.isTrackSelected(track, contextId: self.songsContextId),
+                    isSelected: TrackQueueManager.shared.isTrackSelected(
+                        track,
+                        contextId: self.songsContextId
+                    ),
                     isLoading: PlaybackService.shared.isLoading,
                     isPlaying: PlaybackService.shared.isPlaying,
-                    onTap: { self.playTrack(track, from: songs, at: index, contextId: self.songsContextId) },
+                    onTap: { self.playTrack(
+                        track,
+                        from: songs,
+                        at: index,
+                        contextId: self.songsContextId
+                    ) },
                     onEllipsisTap: { self.trackForActions = track }
                 )
                 .listRowBackground(Color.black)
@@ -192,10 +200,18 @@ struct ArtistDetailView: View {
             ForEach(Array(videos.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    isSelected: TrackQueueManager.shared.isTrackSelected(track, contextId: self.videosContextId),
+                    isSelected: TrackQueueManager.shared.isTrackSelected(
+                        track,
+                        contextId: self.videosContextId
+                    ),
                     isLoading: PlaybackService.shared.isLoading,
                     isPlaying: PlaybackService.shared.isPlaying,
-                    onTap: { self.playTrack(track, from: videos, at: index, contextId: self.videosContextId) },
+                    onTap: { self.playTrack(
+                        track,
+                        from: videos,
+                        at: index,
+                        contextId: self.videosContextId
+                    ) },
                     onEllipsisTap: { self.trackForActions = track }
                 )
                 .listRowBackground(Color.black)

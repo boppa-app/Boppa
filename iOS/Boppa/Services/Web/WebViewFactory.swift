@@ -51,7 +51,10 @@ final class WebViewFactory {
         }
 
         configuration.userContentController = userContentController
-        configuration.setURLSchemeHandler(ArtworkSchemeHandler.shared, forURLScheme: ArtworkURLBridge.scheme)
+        configuration.setURLSchemeHandler(
+            ArtworkSchemeHandler.shared,
+            forURLScheme: ArtworkURLBridge.scheme
+        )
 
         let screenBounds = UIScreen.main.bounds
         let webView = WKWebView(frame: screenBounds, configuration: configuration)
@@ -82,7 +85,10 @@ final class WebViewFactory {
         } else {
             contentSize = screenBounds.size
             targetHeight = screenBounds.height / 2.0
-            logger.debug("Applying mobile content size: \(contentSize.debugDescription), maxHeight: \(targetHeight)")
+            logger
+                .debug(
+                    "Applying mobile content size: \(contentSize.debugDescription), maxHeight: \(targetHeight)"
+                )
         }
 
         let scale = min(screenBounds.width / contentSize.width, targetHeight / contentSize.height)

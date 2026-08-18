@@ -38,7 +38,10 @@ struct ConfigPlaybackView: View {
 
                     if !self.playback.userScripts.isEmpty {
                         Section("Scripts") {
-                            ForEach(Array(self.playback.userScripts.enumerated()), id: \.offset) { (_: Int, script: Script) in
+                            ForEach(Array(self.playback.userScripts.enumerated()), id: \.offset) { (
+                                _: Int,
+                                script: Script
+                            ) in
                                 NavigationLink(destination: CodeView(
                                     title: script.title,
                                     code: script.content

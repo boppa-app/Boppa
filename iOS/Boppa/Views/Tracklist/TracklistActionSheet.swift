@@ -189,7 +189,8 @@ struct TracklistActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
-        .accessibilityLabel(self.sortMode == .defaultOrder ? "Sort Tracks" : "Sort Tracks: \(self.sortMode.label)")
+        .accessibilityLabel(self
+            .sortMode == .defaultOrder ? "Sort Tracks" : "Sort Tracks: \(self.sortMode.label)")
         .accessibilityHint("Choose how tracks are sorted")
     }
 
@@ -212,8 +213,11 @@ struct TracklistActionSheet: View {
             .listRowBackground(Color(.systemGray6))
             .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
             .listRowSeparator(.hidden)
-            .accessibilityLabel(self.isLocalPlaylist ? "Delete from Library" : "Remove from Library")
-            .accessibilityHint("\(self.isLocalPlaylist ? "Delete" : "Remove") \(self.tracklist.title) from your library")
+            .accessibilityLabel(self
+                .isLocalPlaylist ? "Delete from Library" : "Remove from Library")
+            .accessibilityHint(
+                "\(self.isLocalPlaylist ? "Delete" : "Remove") \(self.tracklist.title) from your library"
+            )
         }
     }
 
@@ -299,7 +303,8 @@ struct TracklistActionSheet: View {
                     .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                     .listRowSeparator(.hidden)
                     .accessibilityLabel(mode.label)
-                    .accessibilityHint(self.sortMode == mode ? "Currently selected" : "Sort by \(mode.label)")
+                    .accessibilityHint(self
+                        .sortMode == mode ? "Currently selected" : "Sort by \(mode.label)")
                 }
             }
             .listStyle(.plain)

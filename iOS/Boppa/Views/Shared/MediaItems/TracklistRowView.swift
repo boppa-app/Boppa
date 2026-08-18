@@ -73,7 +73,8 @@ struct TracklistRow: View {
         .padding(.vertical, 12)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel([self.tracklist.title, self.tracklist.subtitle].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([self.tracklist.title, self.tracklist.subtitle].compactMap { $0 }
+            .joined(separator: ", "))
     }
 
     @ViewBuilder

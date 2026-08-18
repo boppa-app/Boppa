@@ -9,12 +9,18 @@ struct HorizontalFadeModifier: ViewModifier {
         if #available(iOS 18.0, *) {
             content
                 .onScrollGeometryChange(for: CGPoint.self) { geometry in
-                    CGPoint(x: geometry.contentOffset.x, y: geometry.contentSize.width - geometry.visibleRect.width)
+                    CGPoint(
+                        x: geometry.contentOffset.x,
+                        y: geometry.contentSize.width - geometry.visibleRect.width
+                    )
                 } action: { _, new in
                     let offsetX = new.x
                     let overflow = new.y
                     self.leftFade = min(offsetX / self.fadeWidth, 1)
-                    self.rightFade = overflow > 0 ? min(max(overflow - offsetX, 0) / self.fadeWidth, 1) : 0
+                    self.rightFade = overflow > 0 ? min(
+                        max(overflow - offsetX, 0) / self.fadeWidth,
+                        1
+                    ) : 0
                 }
         } else {
             content

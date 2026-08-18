@@ -19,7 +19,10 @@ struct MediaSourceIcon: View {
     var body: some View {
         ZStack {
             Circle()
-                .strokeBorder(self.mediaSource.isEnabled ? self.outlineColor : Color(.systemGray), lineWidth: 2)
+                .strokeBorder(
+                    self.mediaSource.isEnabled ? self.outlineColor : Color(.systemGray),
+                    lineWidth: 2
+                )
 
             if let iconSvg = self.mediaSource.config.iconSvg {
                 SVGImageView(svgString: iconSvg, size: self.size * 0.5)

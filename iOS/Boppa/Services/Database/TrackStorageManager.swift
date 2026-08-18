@@ -39,7 +39,10 @@ class TrackStorageManager {
 
     func addTrack(_ track: Track, toPlaylist playlistId: String) throws {
         try self.database.write { db in
-            let tracklist = try TracklistStorageManager.shared.findOrCreatePlaylist(playlistId: playlistId, db: db)
+            let tracklist = try TracklistStorageManager.shared.findOrCreatePlaylist(
+                playlistId: playlistId,
+                db: db
+            )
             let alreadyPresent =
                 try StoredTracklistTrack
                     .where {
@@ -167,7 +170,11 @@ class TrackStorageManager {
         try self.deleteArtistIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
     }
 
-    func unmarkTracklistRecentlyViewed(mediaId: String, mediaSourceId: String, db: Database) throws {
+    func unmarkTracklistRecentlyViewed(
+        mediaId: String,
+        mediaSourceId: String,
+        db: Database
+    ) throws {
         try StoredTracklist.update { $0.isRecent = false }
             .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
             .execute(db)
@@ -182,10 +189,15 @@ class TrackStorageManager {
         )
     }
 
-    private func deleteArtistIfOrphaned(mediaId: String, mediaSourceId: String, db: Database) throws {
+    private func deleteArtistIfOrphaned(
+        mediaId: String,
+        mediaSourceId: String,
+        db: Database
+    ) throws {
         let inTracks =
             try StoredTrackArtist
-                .where { $0.artistMediaId.eq(mediaId).and($0.artistMediaSourceId.eq(mediaSourceId)) }
+                .where { $0.artistMediaId.eq(mediaId).and($0.artistMediaSourceId.eq(mediaSourceId))
+                }
                 .fetchCount(db)
         guard inTracks == 0 else { return }
         let artist =
@@ -230,7 +242,11 @@ class TrackStorageManager {
 
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
         try self.upsertTrack(track, db: db)
-        try self.markSavedToLibrary(mediaId: track.mediaId, mediaSourceId: track.mediaSourceId, db: db)
+        try self.markSavedToLibrary(
+            mediaId: track.mediaId,
+            mediaSourceId: track.mediaSourceId,
+            db: db
+        )
         let maxKey = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -309,7 +325,8 @@ class TrackStorageManager {
     func upsertTrack(_ track: Track, db: Database) throws {
         let existing =
             try StoredTrack
-                .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId)) }
+                .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId))
+                }
                 .fetchOne(db)
         if let existing {
             let existingArtists = try loadStoredArtistsForTrack(existing, db: db)
@@ -375,7 +392,8 @@ class TrackStorageManager {
         let oldRefs =
             try StoredTrackArtist
                 .where {
-                    $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                    $0.trackMediaId.eq(track.mediaId)
+                        .and($0.trackMediaSourceId.eq(track.mediaSourceId))
                 }
                 .fetchAll(db)
         try StoredTrackArtist
@@ -406,7 +424,8 @@ class TrackStorageManager {
         let oldRefs =
             try StoredTrackAlbum
                 .where {
-                    $0.trackMediaId.eq(track.mediaId).and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                    $0.trackMediaId.eq(track.mediaId)
+                        .and($0.trackMediaSourceId.eq(track.mediaSourceId))
                 }
                 .fetchAll(db)
         try StoredTrackAlbum
@@ -437,13 +456,16 @@ class TrackStorageManager {
     private func upsertArtist(_ artist: Artist, db: Database) throws -> String {
         let existing =
             try StoredArtist
-                .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
+                .where {
+                    $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId))
+                }
                 .fetchOne(db)
         if let existing {
             try StoredArtist.update {
                 if !artist.name.isEmpty { $0.name = artist.name }
                 if artist.lowResArtworkUrl != nil { $0.lowResArtworkUrl = artist.lowResArtworkUrl }
-                if artist.highResArtworkUrl != nil { $0.highResArtworkUrl = artist.highResArtworkUrl }
+                if artist
+                    .highResArtworkUrl != nil { $0.highResArtworkUrl = artist.highResArtworkUrl }
                 if artist.url != nil { $0.url = artist.url }
             }
             .where {

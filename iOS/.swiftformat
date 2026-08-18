@@ -17,7 +17,7 @@
 --nospaceoperators
 --ranges spaced
 --stripunusedargs closure-only
---maxwidth none
+--maxwidth 100
 --emptybraces no-space
 --ifdef no-indent
 --xcodeindentation disabled

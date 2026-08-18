@@ -93,7 +93,8 @@ struct ScriptTrack {
         self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
         self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
-        self.artists = (dict["artists"] as? [[String: Any]] ?? []).compactMap { ScriptArtistRef($0) }
+        self.artists = (dict["artists"] as? [[String: Any]] ?? [])
+            .compactMap { ScriptArtistRef($0) }
         self.albums = (dict["albums"] as? [[String: Any]] ?? []).compactMap { ScriptAlbumRef($0) }
         self.metadata = scriptMetadata(dict["metadata"])
     }
@@ -167,9 +168,11 @@ struct GetArtistResponse {
         self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
         self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.songs = (dict["songs"] as? [[String: Any]]).map { $0.compactMap { ScriptTrack($0) } }
-        self.albums = (dict["albums"] as? [[String: Any]]).map { $0.compactMap { ScriptTracklist($0) } }
+        self.albums = (dict["albums"] as? [[String: Any]])
+            .map { $0.compactMap { ScriptTracklist($0) } }
         self.videos = (dict["videos"] as? [[String: Any]]).map { $0.compactMap { ScriptTrack($0) } }
-        self.playlists = (dict["playlists"] as? [[String: Any]]).map { $0.compactMap { ScriptTracklist($0) } }
+        self.playlists = (dict["playlists"] as? [[String: Any]])
+            .map { $0.compactMap { ScriptTracklist($0) } }
         self.sectionOrder = dict["__keyOrder"] as? [String] ?? []
     }
 }
@@ -367,8 +370,22 @@ extension ScriptTrack {
             highResArtworkUrl: self.highResArtworkUrl,
             url: self.url,
             type: type,
-            artists: self.artists.map { Artist(mediaId: $0.id, mediaSourceId: mediaSourceId, name: $0.name, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl) },
-            albums: self.albums.map { Tracklist(mediaId: $0.id, mediaSourceId: mediaSourceId, title: $0.title, subtitle: $0.subtitle, lowResArtworkUrl: $0.lowResArtworkUrl, highResArtworkUrl: $0.highResArtworkUrl, tracklistType: .album) },
+            artists: self.artists.map { Artist(
+                mediaId: $0.id,
+                mediaSourceId: mediaSourceId,
+                name: $0.name,
+                lowResArtworkUrl: $0.lowResArtworkUrl,
+                highResArtworkUrl: $0.highResArtworkUrl
+            ) },
+            albums: self.albums.map { Tracklist(
+                mediaId: $0.id,
+                mediaSourceId: mediaSourceId,
+                title: $0.title,
+                subtitle: $0.subtitle,
+                lowResArtworkUrl: $0.lowResArtworkUrl,
+                highResArtworkUrl: $0.highResArtworkUrl,
+                tracklistType: .album
+            ) },
             metadata: self.metadata
         )
     }

@@ -5,7 +5,12 @@ extension DatabaseWriter where Self == DatabasePool {
     static func appDatabase() throws -> Self {
         let fileManager = FileManager.default
         let folder = try fileManager
-            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            .url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
             .appendingPathComponent("Boppa", isDirectory: true)
         try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appendingPathComponent("app.db")

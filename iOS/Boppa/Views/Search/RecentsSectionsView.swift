@@ -109,7 +109,8 @@ struct RecentsSectionsView: View {
                                 case let .track(track):
                                     RecentlyPlayedCard(
                                         track: track,
-                                        isSelected: PlaybackService.shared.currentTrack?.url == track.url
+                                        isSelected: PlaybackService.shared.currentTrack?
+                                            .url == track.url
                                             && track.url != nil,
                                         isLoading: PlaybackService.shared.isLoading,
                                         isPlaying: PlaybackService.shared.isPlaying,
@@ -120,11 +121,15 @@ struct RecentsSectionsView: View {
                                     RecentlyPlayedAlbumCard(
                                         tracklist: group.tracklist,
                                         artworkUrls: group.tracks.map {
-                                            ($0.resolvedLowResArtworkUrl, $0.resolvedHighResArtworkUrl)
+                                            (
+                                                $0.resolvedLowResArtworkUrl,
+                                                $0.resolvedHighResArtworkUrl
+                                            )
                                         },
                                         onTap: {
                                             withAnimation(.easeInOut(duration: 0.25)) {
-                                                self.expandedEntryId = self.expandedEntryId == entry.id ? nil : entry.id
+                                                self.expandedEntryId = self.expandedEntryId == entry
+                                                    .id ? nil : entry.id
                                             }
                                         }
                                     )

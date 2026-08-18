@@ -62,9 +62,16 @@ struct HighlightedTextView: UIViewRepresentable {
         uiView.invalidateIntrinsicContentSize()
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+    func sizeThatFits(
+        _ proposal: ProposedViewSize,
+        uiView: UITextView,
+        context: Context
+    ) -> CGSize? {
         let width = proposal.width ?? self.width
-        let size = uiView.sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
+        let size = uiView.sizeThatFits(CGSize(
+            width: width,
+            height: CGFloat.greatestFiniteMagnitude
+        ))
         return CGSize(width: width, height: size.height)
     }
 }

@@ -49,7 +49,9 @@ final class JSExecutionEngine: NSObject {
                 let keyOrder = Self.extractKeyOrder(from: value, in: jsContext)
 
                 guard let dict = value.toDictionary() as? [String: Any] else {
-                    continuation.resume(throwing: JSExecutionError.invalidResult(detail: "postResult argument is not a valid dictionary"))
+                    continuation
+                        .resume(throwing: JSExecutionError
+                            .invalidResult(detail: "postResult argument is not a valid dictionary"))
                     return
                 }
                 var result = dict
@@ -162,7 +164,12 @@ final class JSExecutionEngine: NSObject {
 
                 guard Self.isURLAllowed(request.url, allowedUrls: allowedUrls) else {
                     logger.warning("JS fetch blocked (not in allowedUrls): \(urlString)")
-                    reject.call(withArguments: ["Network request blocked: \(urlString) is not in this media source's allowed URLs"])
+                    reject
+                        .call(
+                            withArguments: [
+                                "Network request blocked: \(urlString) is not in this media source's allowed URLs",
+                            ]
+                        )
                     return
                 }
 
@@ -174,7 +181,11 @@ final class JSExecutionEngine: NSObject {
                         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                         logger.info("JS fetch response: \(statusCode) (\(data.count) bytes)")
 
-                        let responseObj = Self.buildResponseObject(in: jsContext, data: data, statusCode: statusCode)
+                        let responseObj = Self.buildResponseObject(
+                            in: jsContext,
+                            data: data,
+                            statusCode: statusCode
+                        )
                         resolve.call(withArguments: [responseObj])
                     } catch {
                         logger.error("JS fetch error: \(error.localizedDescription)")
@@ -191,22 +202,23 @@ final class JSExecutionEngine: NSObject {
         var nextTimerId: Int32 = 1
         var activeTimers: [Int32: Task<Void, Never>] = [:]
 
-        let setTimeoutBlock: @convention(block) (JSValue, JSValue) -> JSValue = { callback, delayMs in
-            let timerId = nextTimerId
-            nextTimerId += 1
+        let setTimeoutBlock: @convention(block) (JSValue, JSValue)
+            -> JSValue = { callback, delayMs in
+                let timerId = nextTimerId
+                nextTimerId += 1
 
-            let delay = delayMs.isUndefined || delayMs.isNull ? 0.0 : delayMs.toDouble()
-            let delaySeconds = max(delay / 1000.0, 0)
+                let delay = delayMs.isUndefined || delayMs.isNull ? 0.0 : delayMs.toDouble()
+                let delaySeconds = max(delay / 1000.0, 0)
 
-            let task = Task {
-                try? await Task.sleep(for: .seconds(delaySeconds))
-                guard !Task.isCancelled else { return }
-                callback.call(withArguments: [])
+                let task = Task {
+                    try? await Task.sleep(for: .seconds(delaySeconds))
+                    guard !Task.isCancelled else { return }
+                    callback.call(withArguments: [])
+                }
+
+                activeTimers[timerId] = task
+                return JSValue(int32: timerId, in: jsContext)
             }
-
-            activeTimers[timerId] = task
-            return JSValue(int32: timerId, in: jsContext)
-        }
 
         let clearTimeoutBlock: @convention(block) (JSValue) -> Void = { timerIdValue in
             let timerId = timerIdValue.toInt32()
@@ -253,10 +265,17 @@ final class JSExecutionEngine: NSObject {
         return request
     }
 
-    private static func buildResponseObject(in jsContext: JSContext, data: Data, statusCode: Int) -> JSValue {
+    private static func buildResponseObject(
+        in jsContext: JSContext,
+        data: Data,
+        statusCode: Int
+    ) -> JSValue {
         let responseObj = JSValue(newObjectIn: jsContext)!
         responseObj.setObject(statusCode, forKeyedSubscript: "status" as NSString)
-        responseObj.setObject(statusCode >= 200 && statusCode < 300, forKeyedSubscript: "ok" as NSString)
+        responseObj.setObject(
+            statusCode >= 200 && statusCode < 300,
+            forKeyedSubscript: "ok" as NSString
+        )
 
         let jsonBlock: @convention(block) () -> JSValue = {
             Self.createPromise(in: jsContext) { resolve, reject in
@@ -283,17 +302,26 @@ final class JSExecutionEngine: NSObject {
         return responseObj
     }
 
-    private static func createPromise(in jsContext: JSContext, executor: @escaping (JSValue, JSValue) -> Void) -> JSValue {
+    private static func createPromise(
+        in jsContext: JSContext,
+        executor: @escaping (JSValue, JSValue) -> Void
+    ) -> JSValue {
         let promiseConstructor = jsContext.objectForKeyedSubscript("Promise")!
         let executorBlock: @convention(block) (JSValue, JSValue) -> Void = { resolve, reject in
             executor(resolve, reject)
         }
-        return promiseConstructor.construct(withArguments: [unsafeBitCast(executorBlock, to: AnyObject.self)])
+        return promiseConstructor.construct(withArguments: [unsafeBitCast(
+            executorBlock,
+            to: AnyObject.self
+        )])
     }
 
     private static func extractKeyOrder(from value: JSValue, in jsContext: JSContext) -> [String] {
-        guard let objectKeys = jsContext.objectForKeyedSubscript("Object")?.invokeMethod("keys", withArguments: [value]),
-              let keys = objectKeys.toArray() as? [String]
+        guard let objectKeys = jsContext.objectForKeyedSubscript("Object")?.invokeMethod(
+            "keys",
+            withArguments: [value]
+        ),
+            let keys = objectKeys.toArray() as? [String]
         else {
             return []
         }

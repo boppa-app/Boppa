@@ -45,13 +45,19 @@ class ArtistDetailViewModel {
 
                 RecentsStorageManager.shared.recordViewedArtist(artist.merging(detail: result))
 
-                logger.info("Loaded artist '\(artist.name)': \(result.songs?.count ?? 0) song(s), \(result.albums?.count ?? 0) album(s), \(result.videos?.count ?? 0) video(s), \(result.playlists?.count ?? 0) playlist(s)")
+                logger
+                    .info(
+                        "Loaded artist '\(artist.name)': \(result.songs?.count ?? 0) song(s), \(result.albums?.count ?? 0) album(s), \(result.videos?.count ?? 0) video(s), \(result.playlists?.count ?? 0) playlist(s)"
+                    )
             } catch {
                 guard !Task.isCancelled else { return }
 
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch failed for artist '\(artist.name)': \(error.localizedDescription)")
+                logger
+                    .error(
+                        "Fetch failed for artist '\(artist.name)': \(error.localizedDescription)"
+                    )
             }
         }
     }

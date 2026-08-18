@@ -20,7 +20,8 @@ struct MediaSourceConfig: Codable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, version, name, url, author, iconSvg, highlightColor, allowedUrls, context, data, playback, popup
+        case id, version, name, url, author, iconSvg, highlightColor, allowedUrls, context, data,
+             playback, popup
     }
 
     nonisolated init(from decoder: Decoder) throws {

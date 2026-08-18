@@ -52,8 +52,14 @@ extension StoredTracklist {
             && self.mediaSourceId == tracklist.mediaSourceId
             && Self.fieldMatches(stored: self.title, incoming: tracklist.title)
             && Self.fieldMatches(stored: self.subtitle, incoming: tracklist.subtitle)
-            && Self.fieldMatches(stored: self.lowResArtworkUrl, incoming: tracklist.lowResArtworkUrl)
-            && Self.fieldMatches(stored: self.highResArtworkUrl, incoming: tracklist.highResArtworkUrl)
+            && Self.fieldMatches(
+                stored: self.lowResArtworkUrl,
+                incoming: tracklist.lowResArtworkUrl
+            )
+            && Self.fieldMatches(
+                stored: self.highResArtworkUrl,
+                incoming: tracklist.highResArtworkUrl
+            )
             && Self.fieldMatches(stored: self.url, incoming: tracklist.url)
             && Self.fieldMatches(stored: self.trackCount, incoming: tracklist.trackCount)
     }

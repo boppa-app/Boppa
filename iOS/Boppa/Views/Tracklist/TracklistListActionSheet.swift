@@ -64,7 +64,8 @@ struct TracklistListActionSheet: View {
         .listRowBackground(Color(.systemGray6))
         .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
         .listRowSeparator(.hidden)
-        .accessibilityLabel(self.sortMode == .defaultOrder ? self.sortLabel : "\(self.sortLabel): \(self.sortMode.label)")
+        .accessibilityLabel(self.sortMode == .defaultOrder ? self
+            .sortLabel : "\(self.sortLabel): \(self.sortMode.label)")
         .accessibilityHint("Choose sort order")
     }
 
@@ -154,7 +155,8 @@ struct TracklistListActionSheet: View {
                     .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
                     .listRowSeparator(.hidden)
                     .accessibilityLabel(mode.label)
-                    .accessibilityHint(self.sortMode == mode ? "Currently selected" : "Sort by \(mode.label)")
+                    .accessibilityHint(self
+                        .sortMode == mode ? "Currently selected" : "Sort by \(mode.label)")
                 }
             }
             .listStyle(.plain)

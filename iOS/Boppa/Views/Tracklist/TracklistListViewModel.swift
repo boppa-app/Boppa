@@ -47,7 +47,12 @@ class TracklistListViewModel {
                 self.reloadFromLibrary(type: type)
             }
         )
-        for name: Notification.Name in [.mediaSourceDisabled, .mediaSourceRemoved, .mediaSourceEnabled, .mediaSourceAdded] {
+        for name: Notification.Name in [
+            .mediaSourceDisabled,
+            .mediaSourceRemoved,
+            .mediaSourceEnabled,
+            .mediaSourceAdded,
+        ] {
             self.observers.append(
                 NotificationCenter.default.addObserver(
                     forName: name,
@@ -113,19 +118,32 @@ class TracklistListViewModel {
         case .reversed:
             return tracklists.reversed()
         case .nameAZ:
-            return tracklists.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+            return tracklists
+                .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         case .nameZA:
-            return tracklists.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
+            return tracklists
+                .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
         case .authorAZ:
-            return tracklists.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedAscending }
+            return tracklists
+                .sorted {
+                    ($0.subtitle ?? "")
+                        .localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedAscending
+                }
         case .authorZA:
-            return tracklists.sorted { ($0.subtitle ?? "").localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedDescending }
+            return tracklists
+                .sorted {
+                    ($0.subtitle ?? "")
+                        .localizedCaseInsensitiveCompare($1.subtitle ?? "") == .orderedDescending
+                }
         }
     }
 
     func enterEditMode(type: TracklistListType) {
         self.sortMode = .defaultOrder
-        UserDefaults.standard.set(SortMode.defaultOrder.rawValue, forKey: Self.sortModeKey(for: type))
+        UserDefaults.standard.set(
+            SortMode.defaultOrder.rawValue,
+            forKey: Self.sortModeKey(for: type)
+        )
         self.isEditing = true
     }
 
@@ -284,7 +302,10 @@ class TracklistListViewModel {
 
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch albums failed for artist '\(artist.name)': \(error.localizedDescription)")
+                logger
+                    .error(
+                        "Fetch albums failed for artist '\(artist.name)': \(error.localizedDescription)"
+                    )
             }
         }
     }
@@ -311,13 +332,17 @@ class TracklistListViewModel {
                 self.hasMorePages = response.continuation != nil
                 self.isLoading = false
 
-                logger.info("Loaded \(self.tracklists.count) playlist(s) for artist '\(artist.name)'")
+                logger
+                    .info("Loaded \(self.tracklists.count) playlist(s) for artist '\(artist.name)'")
             } catch {
                 guard !Task.isCancelled else { return }
 
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription
-                logger.error("Fetch playlists failed for artist '\(artist.name)': \(error.localizedDescription)")
+                logger
+                    .error(
+                        "Fetch playlists failed for artist '\(artist.name)': \(error.localizedDescription)"
+                    )
             }
         }
     }

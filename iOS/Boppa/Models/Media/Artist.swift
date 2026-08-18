@@ -43,7 +43,9 @@ struct Artist: Identifiable, Equatable, Hashable {
         let lowResArtworkUrl = detail.lowResArtworkUrl ?? self.lowResArtworkUrl
         let highResArtworkUrl = detail.highResArtworkUrl ?? self.highResArtworkUrl
 
-        guard lowResArtworkUrl != self.lowResArtworkUrl || highResArtworkUrl != self.highResArtworkUrl else {
+        guard lowResArtworkUrl != self.lowResArtworkUrl || highResArtworkUrl != self
+            .highResArtworkUrl
+        else {
             return self
         }
 

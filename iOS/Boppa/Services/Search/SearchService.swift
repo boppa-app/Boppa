@@ -54,7 +54,11 @@ class SearchService {
         return self.buildResponse(jsResult: jsResult, category: category, mediaSourceId: config.id)
     }
 
-    private func buildResponse(jsResult: [String: Any], category: SearchCategory, mediaSourceId: String) -> SearchResponse {
+    private func buildResponse(
+        jsResult: [String: Any],
+        category: SearchCategory,
+        mediaSourceId: String
+    ) -> SearchResponse {
         switch category {
         case .songs:
             let response = SearchSongsResponse(jsResult)
@@ -65,13 +69,19 @@ class SearchService {
         case .videos:
             let response = SearchVideosResponse(jsResult)
             return SearchResponse(
-                result: .videos(response.items.map { $0.toTrack(mediaSourceId: mediaSourceId, type: .video) }),
+                result: .videos(response.items.map { $0.toTrack(
+                    mediaSourceId: mediaSourceId,
+                    type: .video
+                ) }),
                 continuation: response.continuation
             )
         case .albums:
             let response = SearchAlbumsResponse(jsResult)
             return SearchResponse(
-                result: .albums(response.items.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .album) }),
+                result: .albums(response.items.map { $0.toTracklist(
+                    mediaSourceId: mediaSourceId,
+                    tracklistType: .album
+                ) }),
                 continuation: response.continuation
             )
         case .artists:
@@ -83,7 +93,10 @@ class SearchService {
         case .playlists:
             let response = SearchPlaylistsResponse(jsResult)
             return SearchResponse(
-                result: .playlists(response.items.map { $0.toTracklist(mediaSourceId: mediaSourceId, tracklistType: .playlist) }),
+                result: .playlists(response.items.map { $0.toTracklist(
+                    mediaSourceId: mediaSourceId,
+                    tracklistType: .playlist
+                ) }),
                 continuation: response.continuation
             )
         }

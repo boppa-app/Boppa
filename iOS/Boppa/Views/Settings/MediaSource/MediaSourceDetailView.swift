@@ -29,7 +29,9 @@ struct MediaSourceDetailView: View {
                             LabeledContent("Config URL", value: configUrl)
                         }
 
-                        if let allowedUrls = self.viewModel.mediaSource.config.allowedUrls, !allowedUrls.isEmpty {
+                        if let allowedUrls = self.viewModel.mediaSource.config.allowedUrls,
+                           !allowedUrls.isEmpty
+                        {
                             LabeledContent {
                                 VStack(alignment: .trailing, spacing: 4) {
                                     ForEach(allowedUrls, id: \.self) { allowedUrl in
@@ -50,14 +52,18 @@ struct MediaSourceDetailView: View {
                     Section("Options") {
                         HStack {
                             Text("Enabled")
-                                .foregroundColor(self.viewModel.isContextGathered ? .white : .secondary)
+                                .foregroundColor(self.viewModel
+                                    .isContextGathered ? .white : .secondary)
                             Spacer()
                             SolidToggle(isOn: self.$viewModel.isSourceEnabled)
                                 .fixedSize()
                                 .disabled(!self.viewModel.isContextGathered)
                                 .accessibilityLabel("Enable Media Source")
                                 .accessibilityValue(self.viewModel.isSourceEnabled ? "On" : "Off")
-                                .accessibilityHint(self.viewModel.isContextGathered ? "Toggle to enable or disable this media source" : "Available after context is gathered")
+                                .accessibilityHint(self.viewModel
+                                    .isContextGathered ?
+                                    "Toggle to enable or disable this media source" :
+                                    "Available after context is gathered")
                                 .accessibilityAddTraits(.isButton)
                         }
 
@@ -68,7 +74,8 @@ struct MediaSourceDetailView: View {
                                 SolidToggle(isOn: self.$viewModel.isAutoUpdateEnabled)
                                     .fixedSize()
                                     .accessibilityLabel("Auto-Update Config")
-                                    .accessibilityValue(self.viewModel.isAutoUpdateEnabled ? "On" : "Off")
+                                    .accessibilityValue(self.viewModel
+                                        .isAutoUpdateEnabled ? "On" : "Off")
                                     .accessibilityAddTraits(.isButton)
                             }
                         }
@@ -78,18 +85,25 @@ struct MediaSourceDetailView: View {
                         LabeledContent("Version", value: self.viewModel.mediaSource.config.version)
 
                         LabeledContent {
-                            Text(relativeTimeFormatter.localizedString(for: self.viewModel.mediaSource.lastUpdatedDate, relativeTo: Date()))
-                                .frame(maxWidth: .infinity, alignment: .trailing)
+                            Text(relativeTimeFormatter.localizedString(
+                                for: self.viewModel.mediaSource.lastUpdatedDate,
+                                relativeTo: Date()
+                            ))
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                         } label: {
                             Text("Last Updated")
                         }
 
-                        if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty,
+                        if let contexts = self.viewModel.mediaSource.config.context,
+                           !contexts.isEmpty,
                            let gatheredDate = self.viewModel.mediaSource.contextLastGatheredDate
                         {
                             LabeledContent {
-                                Text(relativeTimeFormatter.localizedString(for: gatheredDate, relativeTo: Date()))
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                Text(relativeTimeFormatter.localizedString(
+                                    for: gatheredDate,
+                                    relativeTo: Date()
+                                ))
+                                .frame(maxWidth: .infinity, alignment: .trailing)
                             } label: {
                                 Text("Context Gathered")
                             }
@@ -97,7 +111,9 @@ struct MediaSourceDetailView: View {
                     }
 
                     Section("Config") {
-                        if let contexts = self.viewModel.mediaSource.config.context, !contexts.isEmpty {
+                        if let contexts = self.viewModel.mediaSource.config.context,
+                           !contexts.isEmpty
+                        {
                             NavigationLink(destination: ConfigContextView(contexts: contexts)) {
                                 HStack(spacing: 8) {
                                     Image(systemName: "safari")
@@ -108,7 +124,9 @@ struct MediaSourceDetailView: View {
                             }
                         }
 
-                        NavigationLink(destination: ConfigDataView(data: self.viewModel.mediaSource.config.data)) {
+                        NavigationLink(destination: ConfigDataView(data: self.viewModel.mediaSource
+                                .config.data))
+                        {
                             HStack(spacing: 8) {
                                 Image(systemName: "doc")
                                     .foregroundColor(.purp)
@@ -117,7 +135,9 @@ struct MediaSourceDetailView: View {
                             }
                         }
 
-                        NavigationLink(destination: ConfigPlaybackView(playback: self.viewModel.mediaSource.config.playback)) {
+                        NavigationLink(destination: ConfigPlaybackView(playback: self.viewModel
+                                .mediaSource.config.playback))
+                        {
                             HStack(spacing: 8) {
                                 Image(systemName: "play")
                                     .foregroundColor(.purp)
@@ -156,7 +176,9 @@ struct MediaSourceDetailView: View {
                         .buttonStyle(.plain)
                         .disabled(self.viewModel.isClearingWebData)
                         .accessibilityLabel("Clear Web Data")
-                        .accessibilityHint("Delete cookies, cache, local storage, and session data for this media source")
+                        .accessibilityHint(
+                            "Delete cookies, cache, local storage, and session data for this media source"
+                        )
                     }
                 }
             }
@@ -171,7 +193,9 @@ struct MediaSourceDetailView: View {
                 }
             }
         } message: {
-            Text("This will delete all cookies, cache, local storage, and session data for \(self.viewModel.mediaSource.config.name). You will be logged out of this media source.")
+            Text(
+                "This will delete all cookies, cache, local storage, and session data for \(self.viewModel.mediaSource.config.name). You will be logged out of this media source."
+            )
         }
         .alert("Web Data Cleared", isPresented: self.$showDataCleared) {
             Button("OK", role: .cancel) {}

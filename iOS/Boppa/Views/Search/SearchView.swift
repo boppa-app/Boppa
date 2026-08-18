@@ -20,7 +20,8 @@ struct SearchView: View {
     @Binding var externalPendingTracklist: Tracklist?
 
     private var showBubbles: Bool {
-        (self.isSearchFieldFocused || self.viewModel.isQueryActive) && !self.viewModel.availableCategories.isEmpty
+        (self.isSearchFieldFocused || self.viewModel.isQueryActive) && !self.viewModel
+            .availableCategories.isEmpty
     }
 
     private var showRecentSearches: Bool {
@@ -93,12 +94,14 @@ struct SearchView: View {
                 self.isSearchFieldFocused = true
             }
             .onChange(of: self.pendingArtist) { _, artist in
-                guard let artist, let mediaSource = self.viewModel.selectedMediaSource else { return }
+                guard let artist,
+                      let mediaSource = self.viewModel.selectedMediaSource else { return }
                 self.path.append(SearchDestination.artist(artist, mediaSource))
                 self.pendingArtist = nil
             }
             .onChange(of: self.pendingTracklist) { _, tracklist in
-                guard let tracklist, let mediaSource = self.viewModel.selectedMediaSource else { return }
+                guard let tracklist,
+                      let mediaSource = self.viewModel.selectedMediaSource else { return }
                 self.path.append(SearchDestination.tracklist(Tracklist(
                     mediaId: tracklist.mediaId,
                     mediaSourceId: mediaSource.id,
@@ -108,20 +111,25 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
+                        mediaId: tracklist.mediaId,
+                        mediaSourceId: tracklist.mediaSourceId
+                    )
                 )))
                 self.pendingTracklist = nil
             }
             .onChange(of: self.externalPendingArtist) { _, artist in
                 guard let artist,
-                      let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: artist.mediaSourceId)
+                      let mediaSource = MediaSourceStorageManager.shared
+                      .fetchOne(id: artist.mediaSourceId)
                 else { return }
                 self.path.append(SearchDestination.artist(artist, mediaSource))
                 self.externalPendingArtist = nil
             }
             .onChange(of: self.externalPendingTracklist) { _, tracklist in
                 guard let tracklist,
-                      let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: tracklist.mediaSourceId)
+                      let mediaSource = MediaSourceStorageManager.shared
+                      .fetchOne(id: tracklist.mediaSourceId)
                 else { return }
                 self.path.append(SearchDestination.tracklist(Tracklist(
                     mediaId: tracklist.mediaId,
@@ -132,7 +140,10 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
+                        mediaId: tracklist.mediaId,
+                        mediaSourceId: tracklist.mediaSourceId
+                    )
                 )))
                 self.externalPendingTracklist = nil
             }
@@ -141,23 +152,35 @@ struct SearchView: View {
                 case let .tracklist(tracklist):
                     TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
                 case let .artist(artist, mediaSource):
-                    ArtistDetailView(artist: artist, mediaSource: mediaSource, navigationResetId: self.navigationResetId)
+                    ArtistDetailView(
+                        artist: artist,
+                        mediaSource: mediaSource,
+                        navigationResetId: self.navigationResetId
+                    )
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-                guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            .onReceive(NotificationCenter.default
+                .publisher(for: UIResponder.keyboardWillChangeFrameNotification))
+            { notification in
+                guard let frame = notification
+                    .userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+                else { return }
                 self.keyboardTop = frame.origin.y
             }
             .onReceive(NotificationCenter.default.publisher(for: .recentlyPlayedChanged)) { _ in
-                self.recentsManager.loadRecentlyPlayed(mediaSourceId: self.viewModel.selectedMediaSource?.id)
+                self.recentsManager
+                    .loadRecentlyPlayed(mediaSourceId: self.viewModel.selectedMediaSource?.id)
             }
             .onReceive(NotificationCenter.default.publisher(for: .recentlyViewedChanged)) { _ in
-                self.recentsManager.loadRecentlyViewed(mediaSourceId: self.viewModel.selectedMediaSource?.id)
+                self.recentsManager
+                    .loadRecentlyViewed(mediaSourceId: self.viewModel.selectedMediaSource?.id)
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
+            .onReceive(NotificationCenter.default
+                .publisher(for: .mediaSourceRemoved))
+            { notification in
                 let removedId = notification.userInfo?["id"] as? String
                 if let selected = self.viewModel.selectedMediaSource, selected.id == removedId {
                     self.viewModel.clearSearch()
@@ -171,7 +194,9 @@ struct SearchView: View {
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceEnabled)) { _ in
                 self.viewModel.loadSources()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { notification in
+            .onReceive(NotificationCenter.default
+                .publisher(for: .mediaSourceDisabled))
+            { notification in
                 let disabledId = notification.userInfo?["id"] as? String
                 if let disabledId, self.viewModel.selectedMediaSource?.id == disabledId {
                     self.viewModel.clearSearch()
@@ -234,7 +259,8 @@ struct SearchView: View {
             recentlyPlayedEntries: self.recentsManager.recentlyPlayedEntries,
             recentlyViewed: self.recentsManager.recentlyViewed,
             onSelectTrack: { track in
-                guard let index = self.recentsManager.recentlyPlayed.firstIndex(where: { $0.id == track.id }) else { return }
+                guard let index = self.recentsManager.recentlyPlayed
+                    .firstIndex(where: { $0.id == track.id }) else { return }
                 self.playRecentlyPlayedTrack(track, at: index)
             },
             onShowTrackActions: { track in
@@ -255,7 +281,10 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
+                        mediaId: tracklist.mediaId,
+                        mediaSourceId: tracklist.mediaSourceId
+                    )
                 )))
             },
             onPopRecentlyPlayed: {
@@ -359,7 +388,8 @@ struct SearchView: View {
                             track: track,
                             isSelected: PlaybackService.shared.currentTrack?.url == track.url &&
                                 track.url != nil &&
-                                TrackQueueManager.shared.contextId == self.viewModel.searchContextId,
+                                TrackQueueManager.shared.contextId == self.viewModel
+                                .searchContextId,
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying,
                             onTap: { self.playTrack(track, from: tracks, at: index) },
@@ -385,7 +415,11 @@ struct SearchView: View {
                                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                                     tracklistType: .album,
-                                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                                    storedTracklist: TracklistStorageManager.shared
+                                        .findStoredTracklist(
+                                            mediaId: tracklist.mediaId,
+                                            mediaSourceId: tracklist.mediaSourceId
+                                        )
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)
@@ -397,7 +431,12 @@ struct SearchView: View {
                         } else {
                             TracklistRow(tracklist: tracklist)
                                 .listRowBackground(Color.black)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowInsets(EdgeInsets(
+                                    top: 0,
+                                    leading: 0,
+                                    bottom: 0,
+                                    trailing: 0
+                                ))
                                 .listRowSeparator(.hidden)
                         }
                     }
@@ -418,7 +457,12 @@ struct SearchView: View {
                         } else {
                             ArtistRow(artist: artist)
                                 .listRowBackground(Color.black)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowInsets(EdgeInsets(
+                                    top: 0,
+                                    leading: 0,
+                                    bottom: 0,
+                                    trailing: 0
+                                ))
                                 .listRowSeparator(.hidden)
                         }
                     }
@@ -437,7 +481,11 @@ struct SearchView: View {
                                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                                     tracklistType: .playlist,
-                                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                                    storedTracklist: TracklistStorageManager.shared
+                                        .findStoredTracklist(
+                                            mediaId: tracklist.mediaId,
+                                            mediaSourceId: tracklist.mediaSourceId
+                                        )
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)
@@ -449,7 +497,12 @@ struct SearchView: View {
                         } else {
                             TracklistRow(tracklist: tracklist)
                                 .listRowBackground(Color.black)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowInsets(EdgeInsets(
+                                    top: 0,
+                                    leading: 0,
+                                    bottom: 0,
+                                    trailing: 0
+                                ))
                                 .listRowSeparator(.hidden)
                         }
                     }
@@ -485,17 +538,30 @@ struct SearchView: View {
     }
 
     private func playTrack(_ track: Track, from tracks: [Track], at index: Int) {
-        TrackQueueManager.shared.setQueue(tracks, startingAt: index, contextId: self.viewModel.searchContextId)
+        TrackQueueManager.shared.setQueue(
+            tracks,
+            startingAt: index,
+            contextId: self.viewModel.searchContextId
+        )
         PlaybackService.shared.playTrack(track)
     }
 
     private func playRecentlyPlayedTrack(_ track: Track, at index: Int) {
-        TrackQueueManager.shared.setQueue(self.recentsManager.recentlyPlayed, startingAt: index, contextId: "recentlyPlayed")
+        TrackQueueManager.shared.setQueue(
+            self.recentsManager.recentlyPlayed,
+            startingAt: index,
+            contextId: "recentlyPlayed"
+        )
         PlaybackService.shared.playTrack(track, notifyRecentsChanged: false)
     }
 }
 
 #Preview {
-    SearchView(selectedTab: .constant(0), isAtNavigationRoot: .constant(true), externalPendingArtist: .constant(nil), externalPendingTracklist: .constant(nil))
-        .preferredColorScheme(.dark)
+    SearchView(
+        selectedTab: .constant(0),
+        isAtNavigationRoot: .constant(true),
+        externalPendingArtist: .constant(nil),
+        externalPendingTracklist: .constant(nil)
+    )
+    .preferredColorScheme(.dark)
 }

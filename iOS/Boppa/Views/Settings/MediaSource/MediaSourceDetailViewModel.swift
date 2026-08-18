@@ -13,9 +13,16 @@ class MediaSourceDetailViewModel {
         get { self.mediaSource.isEnabled }
         set {
             self.mediaSource.isEnabled = newValue
-            try? MediaSourceStorageManager.shared.setEnabled(id: self.mediaSource.id, isEnabled: newValue)
+            try? MediaSourceStorageManager.shared.setEnabled(
+                id: self.mediaSource.id,
+                isEnabled: newValue
+            )
             let name: Notification.Name = newValue ? .mediaSourceEnabled : .mediaSourceDisabled
-            NotificationCenter.default.post(name: name, object: nil, userInfo: ["id": self.mediaSource.id])
+            NotificationCenter.default.post(
+                name: name,
+                object: nil,
+                userInfo: ["id": self.mediaSource.id]
+            )
         }
     }
 
@@ -23,7 +30,10 @@ class MediaSourceDetailViewModel {
         get { self.mediaSource.autoUpdate }
         set {
             self.mediaSource.autoUpdate = newValue
-            try? MediaSourceStorageManager.shared.setAutoUpdate(id: self.mediaSource.id, autoUpdate: newValue)
+            try? MediaSourceStorageManager.shared.setAutoUpdate(
+                id: self.mediaSource.id,
+                autoUpdate: newValue
+            )
         }
     }
 
@@ -35,9 +45,10 @@ class MediaSourceDetailViewModel {
 
     func clearWebData(completion: (() -> Void)? = nil) {
         self.isClearingWebData = true
-        WebDataStore.shared.clearData(forUrls: self.mediaSource.config.effectiveAllowedUrls) { [weak self] in
-            self?.isClearingWebData = false
-            completion?()
-        }
+        WebDataStore.shared
+            .clearData(forUrls: self.mediaSource.config.effectiveAllowedUrls) { [weak self] in
+                self?.isClearingWebData = false
+                completion?()
+            }
     }
 }

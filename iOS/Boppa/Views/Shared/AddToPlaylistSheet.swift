@@ -92,7 +92,10 @@ struct AddToPlaylistSheet: View {
     }
 
     private func playlistRow(_ playlist: StoredTracklist) -> some View {
-        let isInPlaylist = PlaylistManager.shared.isInPlaylist(self.track, playlistId: playlist.mediaId)
+        let isInPlaylist = PlaylistManager.shared.isInPlaylist(
+            self.track,
+            playlistId: playlist.mediaId
+        )
         return Button {
             PlaylistManager.shared.togglePlaylist(self.track, playlistId: playlist.mediaId)
         } label: {
@@ -117,7 +120,8 @@ struct AddToPlaylistSheet: View {
         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         .listRowSeparator(.hidden)
         .accessibilityLabel(playlist.title)
-        .accessibilityHint(isInPlaylist ? "Remove from \(playlist.title)" : "Add to \(playlist.title)")
+        .accessibilityHint(isInPlaylist ? "Remove from \(playlist.title)" :
+            "Add to \(playlist.title)")
     }
 
     private func createPlaylist() {

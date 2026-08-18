@@ -70,7 +70,8 @@ private struct ComposedTracklistArtworkView: View {
                         cornerRadius: self.cornerRadius,
                         placeholderBackground: self.placeholderBackground
                     )
-                    .id(quadrant.map { ($0.highResUrl ?? $0.lowResUrl) ?? "" }.joined(separator: "|"))
+                    .id(quadrant.map { ($0.highResUrl ?? $0.lowResUrl) ?? "" }
+                        .joined(separator: "|"))
                 } else {
                     ArtworkView(
                         lowResUrl: artwork.first?.lowResUrl,
@@ -159,7 +160,10 @@ private struct QuadrantOrFallbackArtworkView: View {
         } else {
             ZStack {
                 if !self.allLoaded {
-                    ArtworkLoadingPlaceholder(size: self.size, cornerRadius: self.resolvedCornerRadius)
+                    ArtworkLoadingPlaceholder(
+                        size: self.size,
+                        cornerRadius: self.resolvedCornerRadius
+                    )
                 }
                 VStack(spacing: 0) {
                     HStack(spacing: 0) {

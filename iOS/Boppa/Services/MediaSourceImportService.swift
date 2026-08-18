@@ -4,7 +4,10 @@ import os
 class MediaSourceImportService {
     static let shared = MediaSourceImportService()
 
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "MediaSourceImportService")
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
+        category: "MediaSourceImportService"
+    )
     private let session: URLSession
 
     private init() {
@@ -13,7 +16,10 @@ class MediaSourceImportService {
         self.session = URLSession(configuration: configuration)
     }
 
-    func fetchMediaSource(configUrl: String, isDefault: Bool = false) async throws -> StoredMediaSource {
+    func fetchMediaSource(
+        configUrl: String,
+        isDefault: Bool = false
+    ) async throws -> StoredMediaSource {
         guard let url = Self.normalizeConfigUrl(configUrl) else {
             self.logger.error("Invalid config URL: \(configUrl)")
             throw MediaSourceImportError.invalidURL
@@ -26,12 +32,25 @@ class MediaSourceImportService {
             throw MediaSourceImportError.invalidResponse
         }
         guard httpResponse.statusCode == 200 else {
-            self.logger.error("Server returned status \(httpResponse.statusCode) for \(url.absoluteString)")
-            throw MediaSourceImportError.serverError(statusCode: httpResponse.statusCode, mediaSourceUrl: urlString)
+            self.logger
+                .error(
+                    "Server returned status \(httpResponse.statusCode) for \(url.absoluteString)"
+                )
+            throw MediaSourceImportError.serverError(
+                statusCode: httpResponse.statusCode,
+                mediaSourceUrl: urlString
+            )
         }
 
-        let mediaSource = try StoredMediaSource.fromConfigData(data, configUrl: urlString, isDefault: isDefault)
-        self.logger.info("Successfully created media source '\(mediaSource.config.name)' from \(urlString)")
+        let mediaSource = try StoredMediaSource.fromConfigData(
+            data,
+            configUrl: urlString,
+            isDefault: isDefault
+        )
+        self.logger
+            .info(
+                "Successfully created media source '\(mediaSource.config.name)' from \(urlString)"
+            )
 
         return mediaSource
     }
@@ -50,9 +69,15 @@ class MediaSourceImportService {
                         let updated = try await self.fetchMediaSource(configUrl: source.configUrl!)
                         guard Self.shouldApplyUpdate(stored: source, fetched: updated) else {
                             if updated.id != source.id {
-                                self.logger.warning("Config ID mismatch for '\(source.id)': remote returned '\(updated.id)', skipping")
+                                self.logger
+                                    .warning(
+                                        "Config ID mismatch for '\(source.id)': remote returned '\(updated.id)', skipping"
+                                    )
                             } else {
-                                self.logger.info("Config for '\(source.id)' is up to date (version \(source.config.version))")
+                                self.logger
+                                    .info(
+                                        "Config for '\(source.id)' is up to date (version \(source.config.version))"
+                                    )
                             }
                             return
                         }
@@ -60,7 +85,10 @@ class MediaSourceImportService {
                             id: source.id,
                             configData: updated.configData
                         )
-                        self.logger.info("Updated config for '\(source.id)' to version '\(updated.config.version)'")
+                        self.logger
+                            .info(
+                                "Updated config for '\(source.id)' to version '\(updated.config.version)'"
+                            )
                     } catch {
                         self.logger.error("Failed to update config for '\(source.id)': \(error)")
                     }

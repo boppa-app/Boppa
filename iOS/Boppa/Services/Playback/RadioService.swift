@@ -25,7 +25,8 @@ final class RadioService {
     }
 
     func shouldTopUp(currentIndex: Int) -> Bool {
-        guard !self.isExhausted, let lastPageStart = self.pageStartIndices.last else { return false }
+        guard !self.isExhausted,
+              let lastPageStart = self.pageStartIndices.last else { return false }
         return currentIndex >= lastPageStart
     }
 
@@ -39,7 +40,8 @@ final class RadioService {
     @discardableResult
     func fetchTracks(seedTrack: Track, appendingAt entryCount: Int) async -> [Track]? {
         guard !self.isFetchingRadio else { return nil }
-        guard let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: seedTrack.mediaSourceId)
+        guard let mediaSource = MediaSourceStorageManager.shared
+            .fetchOne(id: seedTrack.mediaSourceId)
         else { return nil }
 
         self.isFetchingRadio = true

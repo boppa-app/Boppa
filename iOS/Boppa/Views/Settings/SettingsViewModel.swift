@@ -13,7 +13,9 @@ class SettingsViewModel {
     func moveMediaSources(from source: IndexSet, to destination: Int) {
         var reordered = self.mediaSources
         reordered.move(fromOffsets: source, toOffset: destination)
-        self.mediaSources = (try? MediaSourceStorageManager.shared.updateSortOrders(reordered)) ?? reordered
+        self
+            .mediaSources = (try? MediaSourceStorageManager.shared.updateSortOrders(reordered)) ??
+            reordered
     }
 
     func deleteMediaSource(at offsets: IndexSet) {
@@ -24,7 +26,11 @@ class SettingsViewModel {
                 ConfigService.markDefaultConfigUrlDeleted(configUrl)
             }
             self.mediaSources.remove(at: index)
-            NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["id": mediaSource.id])
+            NotificationCenter.default.post(
+                name: .mediaSourceRemoved,
+                object: nil,
+                userInfo: ["id": mediaSource.id]
+            )
         }
     }
 }

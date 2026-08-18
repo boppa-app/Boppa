@@ -3,7 +3,10 @@ import Foundation
 import os
 import SQLiteData
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "MediaSourceStorageManager")
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
+    category: "MediaSourceStorageManager"
+)
 
 class MediaSourceStorageManager {
     static let shared = MediaSourceStorageManager()
@@ -130,7 +133,10 @@ class MediaSourceStorageManager {
                     contextValues[key] = String(describing: value)
                 }
             }
-            let json = (try? JSONEncoder().encode(contextValues)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+            let json = (try? JSONEncoder().encode(contextValues)).flatMap { String(
+                data: $0,
+                encoding: .utf8
+            ) } ?? "{}"
             try StoredMediaSource.update { $0.contextValuesJSON = json }
                 .where { $0.id.eq(id) }
                 .execute(db)

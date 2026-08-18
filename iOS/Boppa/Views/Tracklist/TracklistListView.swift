@@ -34,7 +34,12 @@ struct TracklistListView: View {
         self.navigationResetId = navigationResetId
     }
 
-    init(type: TracklistListType, title: String, navigationResetId: Int = 0, onTracklistSelected: ((String) -> Void)? = nil) {
+    init(
+        type: TracklistListType,
+        title: String,
+        navigationResetId: Int = 0,
+        onTracklistSelected: ((String) -> Void)? = nil
+    ) {
         self.artist = nil
         self.mediaSource = nil
         self.type = type
@@ -214,15 +219,20 @@ struct TracklistListView: View {
                             Button {
                                 self.viewModel.togglePin(tracklist: tracklist)
                             } label: {
-                                Image(systemName: tracklist.storedTracklist?.isPinned == true ? "pin.slash.fill" : "pin.fill")
+                                Image(systemName: tracklist.storedTracklist?
+                                    .isPinned == true ? "pin.slash.fill" : "pin.fill")
                                     .font(.system(size: 18))
-                                    .foregroundColor(tracklist.storedTracklist?.isPinned == true ? .purp : Color(.systemGray))
+                                    .foregroundColor(tracklist.storedTracklist?
+                                        .isPinned == true ? .purp : Color(.systemGray))
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(tracklist.storedTracklist?.isPinned == true ? "Unpin \(tracklist.title)" : "Pin \(tracklist.title)")
-                            .accessibilityHint(tracklist.storedTracklist?.isPinned == true ? "Remove from pinned" : "Add to pinned")
+                            .accessibilityLabel(tracklist.storedTracklist?
+                                .isPinned == true ? "Unpin \(tracklist.title)" :
+                                "Pin \(tracklist.title)")
+                            .accessibilityHint(tracklist.storedTracklist?
+                                .isPinned == true ? "Remove from pinned" : "Add to pinned")
 
                             Button {
                                 self.tracklistToDelete = tracklist
@@ -237,7 +247,10 @@ struct TracklistListView: View {
                             .accessibilityLabel("Remove \(tracklist.title) from Library")
                             .accessibilityHint("Remove this tracklist from your library")
 
-                            TracklistRow(tracklist: tracklist, showMediaSourceIcon: self.isLibraryMode)
+                            TracklistRow(
+                                tracklist: tracklist,
+                                showMediaSourceIcon: self.isLibraryMode
+                            )
                         }
                         .listRowBackground(Color.black)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

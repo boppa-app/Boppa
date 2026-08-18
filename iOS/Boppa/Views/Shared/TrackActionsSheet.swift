@@ -33,7 +33,10 @@ struct TrackActionsSheet: View {
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
-        .presentationDetents(self.allowsMediumDetent ? [.medium, .large] : [.large], selection: self.$selectedDetent)
+        .presentationDetents(
+            self.allowsMediumDetent ? [.medium, .large] : [.large],
+            selection: self.$selectedDetent
+        )
         .presentationDragIndicator(.visible)
         .presentationBackground(Color(.systemGray6))
     }
@@ -131,7 +134,12 @@ struct TrackActionsSheet: View {
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color(.systemGray6))
-                            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                            .listRowInsets(EdgeInsets(
+                                top: 14,
+                                leading: 20,
+                                bottom: 14,
+                                trailing: 20
+                            ))
                             .listRowSeparator(.hidden)
                             .accessibilityLabel("Go to \(artist.name)")
                             .accessibilityHint("View artist page for \(artist.name)")
@@ -151,7 +159,12 @@ struct TrackActionsSheet: View {
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(Color(.systemGray6))
-                            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                            .listRowInsets(EdgeInsets(
+                                top: 14,
+                                leading: 20,
+                                bottom: 14,
+                                trailing: 20
+                            ))
                             .listRowSeparator(.hidden)
                             .accessibilityLabel("Go to \(album.title)")
                             .accessibilityHint("View album page for \(album.title)")
@@ -206,14 +219,26 @@ struct TrackActionsSheet: View {
                 Button {
                     PlaylistManager.shared.togglePlaylist(self.track, playlistId: "likes")
                 } label: {
-                    Image(systemName: PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? "heart.fill" : "heart")
+                    Image(systemName: PlaylistManager.shared.isInPlaylist(
+                        self.track,
+                        playlistId: "likes"
+                    ) ? "heart.fill" : "heart")
                         .font(.system(size: 22))
-                        .foregroundColor(PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? .purp : Color(.systemGray))
+                        .foregroundColor(PlaylistManager.shared.isInPlaylist(
+                            self.track,
+                            playlistId: "likes"
+                        ) ? .purp : Color(.systemGray))
                         .frame(width: 36, height: 36)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? "Unlike" : "Like")
-                .accessibilityHint(PlaylistManager.shared.isInPlaylist(self.track, playlistId: "likes") ? "Remove from Likes" : "Add to Likes")
+                .accessibilityLabel(PlaylistManager.shared.isInPlaylist(
+                    self.track,
+                    playlistId: "likes"
+                ) ? "Unlike" : "Like")
+                .accessibilityHint(PlaylistManager.shared.isInPlaylist(
+                    self.track,
+                    playlistId: "likes"
+                ) ? "Remove from Likes" : "Add to Likes")
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)

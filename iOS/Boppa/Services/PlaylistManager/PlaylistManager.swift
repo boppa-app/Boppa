@@ -1,7 +1,10 @@
 import Foundation
 import os
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Boppa", category: "PlaylistManager")
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Boppa",
+    category: "PlaylistManager"
+)
 
 extension Notification.Name {
     static let playlistMembershipChanged = Notification.Name("playlistMembershipChanged")
@@ -28,7 +31,8 @@ class PlaylistManager {
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
-            logger.error("Failed to add track '\(track.title)' to playlist '\(playlistId)': \(error)")
+            logger
+                .error("Failed to add track '\(track.title)' to playlist '\(playlistId)': \(error)")
         }
     }
 
@@ -38,7 +42,10 @@ class PlaylistManager {
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
-            logger.error("Failed to remove track '\(track.title)' from playlist '\(playlistId)': \(error)")
+            logger
+                .error(
+                    "Failed to remove track '\(track.title)' from playlist '\(playlistId)': \(error)"
+                )
         }
     }
 

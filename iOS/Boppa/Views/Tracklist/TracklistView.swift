@@ -107,7 +107,8 @@ struct TracklistView: View {
         .sheet(isPresented: self.$showActionSheet) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
-                mediaSource: MediaSourceStorageManager.shared.fetchOne(id: self.viewModel.tracklist.mediaSourceId),
+                mediaSource: MediaSourceStorageManager.shared
+                    .fetchOne(id: self.viewModel.tracklist.mediaSourceId),
                 isMediaSourceEnabled: self.viewModel.tracklist.isMediaSourceEnabled,
                 isPinned: self.viewModel.isPinned,
                 isRefreshing: self.viewModel.isRefreshing,
@@ -132,13 +133,18 @@ struct TracklistView: View {
             .presentationBackground(Color(.systemGray6))
         }
         .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: track.mediaSourceId) {
+            if let mediaSource = MediaSourceStorageManager.shared
+                .fetchOne(id: track.mediaSourceId)
+            {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
                     isMediaSourceEnabled: track.isMediaSourceEnabled,
                     onArtistSelected: { artist in
-                        NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
+                        NotificationCenter.default.post(
+                            name: .navigateToArtistInSearch,
+                            object: artist
+                        )
                     },
                     onAlbumSelected: { tracklist in postTracklistNavigation(tracklist) }
                 )
@@ -166,10 +172,17 @@ struct TracklistView: View {
     private var trackList: some View {
         ScrollFadeView {
             List {
-                ForEach(Array(self.viewModel.displayTracks.enumerated()), id: \.element.id) { index, track in
+                ForEach(
+                    Array(self.viewModel.displayTracks.enumerated()),
+                    id: \.element.id
+                ) { index, track in
                     TrackRow(
                         track: track,
-                        isSelected: track.isMediaSourceEnabled && TrackQueueManager.shared.isTrackSelected(track, contextId: self.contextId),
+                        isSelected: track.isMediaSourceEnabled && TrackQueueManager.shared
+                            .isTrackSelected(
+                                track,
+                                contextId: self.contextId
+                            ),
                         isLoading: PlaybackService.shared.isLoading,
                         isPlaying: PlaybackService.shared.isPlaying,
                         isMediaSourceEnabled: track.isMediaSourceEnabled,
@@ -202,7 +215,11 @@ struct TracklistView: View {
             .modifier(ScrollDirectionTracker(
                 isEnabled: true,
                 onScrollChange: { oldInfo, newInfo in
-                    self.scrollHandler.handleScrollChange(oldInfo: oldInfo, newInfo: newInfo, isSearchFieldFocused: false)
+                    self.scrollHandler.handleScrollChange(
+                        oldInfo: oldInfo,
+                        newInfo: newInfo,
+                        isSearchFieldFocused: false
+                    )
                 }
             ))
         }
@@ -228,7 +245,11 @@ struct TracklistView: View {
     }
 
     private func playTrack(_ track: Track, at index: Int) {
-        TrackQueueManager.shared.setQueue(self.viewModel.displayTracks, startingAt: index, contextId: self.contextId)
+        TrackQueueManager.shared.setQueue(
+            self.viewModel.displayTracks,
+            startingAt: index,
+            contextId: self.contextId
+        )
         PlaybackService.shared.playTrack(track)
     }
 
@@ -236,7 +257,11 @@ struct TracklistView: View {
         let tracks = self.viewModel.displayTracks
         guard !tracks.isEmpty else { return }
 
-        TrackQueueManager.shared.setQueue(tracks, startingAt: Int.random(in: tracks.indices), contextId: self.contextId)
+        TrackQueueManager.shared.setQueue(
+            tracks,
+            startingAt: Int.random(in: tracks.indices),
+            contextId: self.contextId
+        )
         TrackQueueManager.shared.setShuffleMode(.shuffle)
         if let currentTrack = TrackQueueManager.shared.currentTrack {
             PlaybackService.shared.playTrack(currentTrack)

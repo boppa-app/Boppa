@@ -116,8 +116,10 @@ final class WebViewPlaybackEngine: NSObject {
     }
 
     private func serializeTrackData(track: Track, loadToken: String) -> String? {
-        let metadata = track.metadata.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
-        let context = MediaSourceStorageManager.shared.fetchOne(id: self.config.id)?.contextValues ?? [:]
+        let metadata = track.metadata
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+        let context = MediaSourceStorageManager.shared.fetchOne(id: self.config.id)?
+            .contextValues ?? [:]
         let trackData: [String: Any] = [
             "id": track.mediaId,
             "title": track.title,
@@ -269,7 +271,8 @@ final class WebViewPlaybackEngine: NSObject {
                 window.webkit.messageHandlers.\(self.messageHandlerName).postMessage(eventObj);
             };
             window.boppaPopup = function(id) {
-                window.webkit.messageHandlers.\(self.messageHandlerName).postMessage({ type: 'popup', id: id });
+                window.webkit.messageHandlers.\(self
+            .messageHandlerName).postMessage({ type: 'popup', id: id });
             };
         })();
         """
@@ -356,7 +359,8 @@ final class WebViewPlaybackEngine: NSObject {
     private func extractDouble(from dict: [String: Any], key: String) -> Double {
         if let doubleValue = dict[key] as? Double { return doubleValue }
         if let intValue = dict[key] as? Int { return Double(intValue) }
-        if let stringValue = dict[key] as? String, let parsed = Double(stringValue) { return parsed }
+        if let stringValue = dict[key] as? String,
+           let parsed = Double(stringValue) { return parsed }
         return 0
     }
 }
@@ -389,9 +393,16 @@ extension WebViewPlaybackEngine: WKNavigationDelegate {
         }
     }
 
-    nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    nonisolated func webView(
+        _ webView: WKWebView,
+        didFail navigation: WKNavigation!,
+        withError error: Error
+    ) {
         Task { @MainActor in
-            logger.error("WebView navigation failed for '\(self.config.name)': \(error.localizedDescription)")
+            logger
+                .error(
+                    "WebView navigation failed for '\(self.config.name)': \(error.localizedDescription)"
+                )
             self.handleNavigationFinished()
         }
     }
@@ -402,7 +413,10 @@ extension WebViewPlaybackEngine: WKNavigationDelegate {
         withError error: Error
     ) {
         Task { @MainActor in
-            logger.error("WebView provisional navigation failed for '\(self.config.name)': \(error.localizedDescription)")
+            logger
+                .error(
+                    "WebView provisional navigation failed for '\(self.config.name)': \(error.localizedDescription)"
+                )
             self.handleNavigationFinished()
         }
     }

@@ -4,7 +4,11 @@ enum DetailHeaderMetrics {
     static let height: CGFloat = 44
 }
 
-struct DetailHeaderView<CenterLeadingContent: View, TrailingContent: View, CenterContent: View>: View {
+struct DetailHeaderView<
+    CenterLeadingContent: View,
+    TrailingContent: View,
+    CenterContent: View
+>: View {
     let title: String
     let highlightedTitle: String?
     let onBack: () -> Void

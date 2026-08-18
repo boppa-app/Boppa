@@ -13,13 +13,19 @@ struct ConfigPopupView: View {
 
             ScrollFadeView {
                 List {
-                    ForEach(Array(self.popups.sorted(by: { $0.key < $1.key })), id: \.key) { (id: String, popup: PopupConfig) in
+                    ForEach(Array(self.popups.sorted(by: { $0.key < $1.key })), id: \.key) { (
+                        id: String,
+                        popup: PopupConfig
+                    ) in
                         Section(popup.title) {
                             LabeledContent("ID", value: id)
                             LabeledContent("URL", value: popup.url)
 
                             if !popup.userScripts.isEmpty {
-                                ForEach(Array(popup.userScripts.enumerated()), id: \.offset) { (_: Int, script: Script) in
+                                ForEach(Array(popup.userScripts.enumerated()), id: \.offset) { (
+                                    _: Int,
+                                    script: Script
+                                ) in
                                     NavigationLink(destination: CodeView(
                                         title: script.title,
                                         code: script.content

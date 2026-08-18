@@ -93,7 +93,8 @@ class SearchViewModel {
         self.errorMessage = nil
 
         self.searchTask = Task {
-            let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: selectedId) ?? self.selectedMediaSource!
+            let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: selectedId) ?? self
+                .selectedMediaSource!
 
             do {
                 let response = try await SearchService.shared.search(
@@ -133,7 +134,8 @@ class SearchViewModel {
         self.isLoadingNextPage = true
 
         self.nextPageTask = Task {
-            let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: selectedId) ?? self.selectedMediaSource!
+            let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: selectedId) ?? self
+                .selectedMediaSource!
 
             do {
                 let response = try await SearchService.shared.searchNextPage(

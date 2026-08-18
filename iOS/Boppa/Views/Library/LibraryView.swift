@@ -31,7 +31,10 @@ struct LibraryView: View {
     private func refreshSearchHandlers() {
         let query = self.viewModel.searchQuery
         self.trackFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracks)
-        self.tracklistFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracklists)
+        self.tracklistFuzzyHandler.updateSearch(
+            query,
+            items: self.viewModel.categoryFilteredTracklists
+        )
     }
 
     var body: some View {
@@ -58,17 +61,29 @@ struct LibraryView: View {
                 }
             }
             .onChange(of: self.viewModel.searchQuery) { _, query in
-                self.trackFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracks)
-                self.tracklistFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracklists)
+                self.trackFuzzyHandler.updateSearch(
+                    query,
+                    items: self.viewModel.categoryFilteredTracks
+                )
+                self.tracklistFuzzyHandler.updateSearch(
+                    query,
+                    items: self.viewModel.categoryFilteredTracklists
+                )
             }
             .onChange(of: self.viewModel.selectedLibraryCategory) { _, category in
                 self.trackFuzzyHandler.updateSearch("", items: [])
                 self.tracklistFuzzyHandler.updateSearch("", items: [])
                 let query = self.viewModel.searchQuery
                 if category == .songs || category == .videos {
-                    self.trackFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracks)
+                    self.trackFuzzyHandler.updateSearch(
+                        query,
+                        items: self.viewModel.categoryFilteredTracks
+                    )
                 } else {
-                    self.tracklistFuzzyHandler.updateSearch(query, items: self.viewModel.categoryFilteredTracklists)
+                    self.tracklistFuzzyHandler.updateSearch(
+                        query,
+                        items: self.viewModel.categoryFilteredTracklists
+                    )
                 }
             }
             .onAppear {
@@ -85,7 +100,8 @@ struct LibraryView: View {
             }
             .onChange(of: self.pendingArtist) { _, artist in
                 guard let artist,
-                      let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == artist.mediaSourceId })
+                      let mediaSource = self.viewModel.mediaSources
+                      .first(where: { $0.id == artist.mediaSourceId })
                 else { return }
                 self.activeMediaSourceId = mediaSource.id
                 self.path.append(LibraryDestination.artist(artist, mediaSource))
@@ -103,7 +119,10 @@ struct LibraryView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(mediaId: tracklist.mediaId, mediaSourceId: tracklist.mediaSourceId)
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
+                        mediaId: tracklist.mediaId,
+                        mediaSourceId: tracklist.mediaSourceId
+                    )
                 )))
                 self.pendingTracklist = nil
             }
@@ -122,22 +141,36 @@ struct LibraryView: View {
                 case let .tracklist(tracklist):
                     TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
                 case .playlists:
-                    TracklistListView(type: .playlists, title: "Playlists", navigationResetId: self.navigationResetId) { sourceId in
+                    TracklistListView(
+                        type: .playlists,
+                        title: "Playlists",
+                        navigationResetId: self.navigationResetId
+                    ) { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
                 case .albums:
-                    TracklistListView(type: .albums, title: "Albums", navigationResetId: self.navigationResetId) { sourceId in
+                    TracklistListView(
+                        type: .albums,
+                        title: "Albums",
+                        navigationResetId: self.navigationResetId
+                    ) { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
                 case let .artist(artist, mediaSource):
-                    ArtistDetailView(artist: artist, mediaSource: mediaSource, navigationResetId: self.navigationResetId)
+                    ArtistDetailView(
+                        artist: artist,
+                        mediaSource: mediaSource,
+                        navigationResetId: self.navigationResetId
+                    )
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .mediaSourceAdded)) { _ in
                 self.viewModel.loadSources()
                 self.refreshSearchHandlers()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceRemoved)) { notification in
+            .onReceive(NotificationCenter.default
+                .publisher(for: .mediaSourceRemoved))
+            { notification in
                 let removedId = notification.userInfo?["id"] as? String
                 if let active = self.activeMediaSourceId, active == removedId {
                     self.path = NavigationPath()
@@ -149,7 +182,9 @@ struct LibraryView: View {
                 self.viewModel.loadSources()
                 self.refreshSearchHandlers()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .mediaSourceDisabled)) { notification in
+            .onReceive(NotificationCenter.default
+                .publisher(for: .mediaSourceDisabled))
+            { notification in
                 let disabledId = notification.userInfo?["id"] as? String
                 if let disabledId, self.activeMediaSourceId == disabledId {
                     self.path = NavigationPath()
@@ -169,13 +204,18 @@ struct LibraryView: View {
                 self.refreshSearchHandlers()
             }
             .sheet(item: self.$trackForActions) { track in
-                if let mediaSource = self.viewModel.mediaSources.first(where: { $0.id == track.mediaSourceId }) {
+                if let mediaSource = self.viewModel.mediaSources
+                    .first(where: { $0.id == track.mediaSourceId })
+                {
                     TrackActionsSheet(
                         track: track,
                         mediaSource: mediaSource,
                         isMediaSourceEnabled: track.isMediaSourceEnabled,
                         onArtistSelected: { artist in
-                            NotificationCenter.default.post(name: .navigateToArtistInSearch, object: artist)
+                            NotificationCenter.default.post(
+                                name: .navigateToArtistInSearch,
+                                object: artist
+                            )
                         },
                         onAlbumSelected: { tracklist in postTracklistNavigation(tracklist) }
                     )
@@ -190,7 +230,8 @@ struct LibraryView: View {
             LibrarySearchToolbarView(
                 searchQuery: self.$viewModel.searchQuery,
                 isSearchFieldFocused: self.$isSearchFieldFocused,
-                isFuzzySearching: self.trackFuzzyHandler.isFuzzySearching || self.tracklistFuzzyHandler.isFuzzySearching,
+                isFuzzySearching: self.trackFuzzyHandler.isFuzzySearching || self
+                    .tracklistFuzzyHandler.isFuzzySearching,
                 selectedCategory: self.viewModel.selectedLibraryCategory,
                 onClear: {
                     if !self.isSearchFieldFocused {
@@ -267,10 +308,15 @@ struct LibraryView: View {
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowSeparator(.hidden)
                     } else {
-                        ForEach(Array(self.viewModel.pinnedTracklists.enumerated()), id: \.element.id) { _, stored in
+                        ForEach(
+                            Array(self.viewModel.pinnedTracklists.enumerated()),
+                            id: \.element.id
+                        ) { _, stored in
                             Button {
                                 self.activeMediaSourceId = stored.mediaSourceId
-                                self.path.append(LibraryDestination.tracklist(Tracklist(storedTracklist: stored)))
+                                self.path
+                                    .append(LibraryDestination
+                                        .tracklist(Tracklist(storedTracklist: stored)))
                             } label: {
                                 TracklistRow(
                                     tracklist: Tracklist(storedTracklist: stored),
@@ -299,10 +345,14 @@ struct LibraryView: View {
 
     private var searchResultsContent: some View {
         let isEmpty: Bool = {
-            if self.viewModel.selectedLibraryCategory == .songs || self.viewModel.selectedLibraryCategory == .videos {
-                return self.trackFuzzyHandler.filteredItems?.isEmpty == true && !self.trackFuzzyHandler.isFuzzySearching
+            if self.viewModel.selectedLibraryCategory == .songs || self.viewModel
+                .selectedLibraryCategory == .videos
+            {
+                return self.trackFuzzyHandler.filteredItems?.isEmpty == true && !self
+                    .trackFuzzyHandler.isFuzzySearching
             } else {
-                return self.tracklistFuzzyHandler.filteredItems?.isEmpty == true && !self.tracklistFuzzyHandler.isFuzzySearching
+                return self.tracklistFuzzyHandler.filteredItems?.isEmpty == true && !self
+                    .tracklistFuzzyHandler.isFuzzySearching
             }
         }()
 
@@ -335,7 +385,9 @@ struct LibraryView: View {
 
     @ViewBuilder
     private var searchResultRows: some View {
-        if self.viewModel.selectedLibraryCategory == .songs || self.viewModel.selectedLibraryCategory == .videos {
+        if self.viewModel.selectedLibraryCategory == .songs || self.viewModel
+            .selectedLibraryCategory == .videos
+        {
             if let tracks = self.trackFuzzyHandler.filteredItems, !tracks.isEmpty {
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { index, stored in
                     TrackRow(
@@ -347,12 +399,17 @@ struct LibraryView: View {
                         isPlaying: PlaybackService.shared.isPlaying,
                         onTap: {
                             let queue = tracks.map { $0.toTrack() }
-                            TrackQueueManager.shared.setQueue(queue, startingAt: index, contextId: "library")
+                            TrackQueueManager.shared.setQueue(
+                                queue,
+                                startingAt: index,
+                                contextId: "library"
+                            )
                             PlaybackService.shared.playTrack(stored.toTrack())
                         },
                         onEllipsisTap: {
                             self.isSearchFieldFocused = false
-                            self.trackForActions = TracklistStorageManager.shared.loadTrackWithRelations(stored)
+                            self.trackForActions = TracklistStorageManager.shared
+                                .loadTrackWithRelations(stored)
                         }
                     )
                     .listRowBackground(Color.black)
@@ -365,7 +422,9 @@ struct LibraryView: View {
                 ForEach(tracklists, id: \.id) { stored in
                     Button {
                         self.activeMediaSourceId = stored.mediaSourceId
-                        self.path.append(LibraryDestination.tracklist(Tracklist(storedTracklist: stored)))
+                        self.path
+                            .append(LibraryDestination
+                                .tracklist(Tracklist(storedTracklist: stored)))
                     } label: {
                         TracklistRow(
                             tracklist: Tracklist(storedTracklist: stored),
@@ -418,8 +477,10 @@ struct LibraryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(self.viewModel.isPinnedExpanded ? "Pinned, expanded" : "Pinned, collapsed")
-        .accessibilityHint(self.viewModel.isPinnedExpanded ? "Collapse pinned section" : "Expand pinned section")
+        .accessibilityLabel(self.viewModel
+            .isPinnedExpanded ? "Pinned, expanded" : "Pinned, collapsed")
+        .accessibilityHint(self.viewModel
+            .isPinnedExpanded ? "Collapse pinned section" : "Expand pinned section")
     }
 
     private func sectionButton(_ section: LibraryViewModel.LibrarySection) -> some View {
@@ -473,6 +534,10 @@ struct LibraryView: View {
 }
 
 #Preview {
-    LibraryView(isAtNavigationRoot: .constant(true), externalPendingArtist: .constant(nil), externalPendingTracklist: .constant(nil))
-        .preferredColorScheme(.dark)
+    LibraryView(
+        isAtNavigationRoot: .constant(true),
+        externalPendingArtist: .constant(nil),
+        externalPendingTracklist: .constant(nil)
+    )
+    .preferredColorScheme(.dark)
 }

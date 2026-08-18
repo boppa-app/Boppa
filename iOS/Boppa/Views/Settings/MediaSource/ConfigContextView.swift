@@ -13,13 +13,22 @@ struct ConfigContextView: View {
 
             ScrollFadeView {
                 List {
-                    ForEach(Array(self.contexts.enumerated()), id: \.offset) { (_: Int, context: ContextConfig) in
+                    ForEach(Array(self.contexts.enumerated()), id: \.offset) { (
+                        _: Int,
+                        context: ContextConfig
+                    ) in
                         Section(context.title) {
                             LabeledContent("URL", value: context.url)
-                            LabeledContent("Interval", value: Self.formatInterval(context.intervalSeconds))
+                            LabeledContent(
+                                "Interval",
+                                value: Self.formatInterval(context.intervalSeconds)
+                            )
 
                             if !context.userScripts.isEmpty {
-                                ForEach(Array(context.userScripts.enumerated()), id: \.offset) { (_: Int, script: Script) in
+                                ForEach(Array(context.userScripts.enumerated()), id: \.offset) { (
+                                    _: Int,
+                                    script: Script
+                                ) in
                                     NavigationLink(destination: CodeView(
                                         title: script.title,
                                         code: script.content

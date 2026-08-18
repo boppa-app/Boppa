@@ -135,17 +135,47 @@ extension DatabaseMigrator {
                 """
             ).execute(db)
 
-            try #sql("CREATE INDEX idx_tracklists_type_sortOrder ON tracklists (tracklistType, sortOrder)").execute(db)
-            try #sql("CREATE INDEX idx_tracklists_isSavedToLibrary ON tracklists (isSavedToLibrary)").execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracklists_type_sortOrder ON tracklists (tracklistType, sortOrder)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracklists_isSavedToLibrary ON tracklists (isSavedToLibrary)"
+            )
+            .execute(db)
             try #sql("CREATE INDEX idx_tracklists_isPinned ON tracklists (isPinned)").execute(db)
-            try #sql("CREATE INDEX idx_tracklistTracks_tracklist_sorted ON tracklistTracks (tracklistMediaId, tracklistMediaSourceId, sortOrder)").execute(db)
-            try #sql("CREATE INDEX idx_tracklistTracks_track ON tracklistTracks (trackMediaId, trackMediaSourceId)").execute(db)
-            try #sql("CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)").execute(db)
-            try #sql("CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)").execute(db)
-            try #sql("CREATE INDEX idx_tracks_recent ON tracks (mediaSourceId, isRecent, lastPlayedTimestamp)").execute(db)
-            try #sql("CREATE INDEX idx_tracks_isSavedToLibrary_type ON tracks (isSavedToLibrary, type)").execute(db)
-            try #sql("CREATE INDEX idx_artists_recent ON artists (mediaSourceId, isRecent, lastViewedTimestamp)").execute(db)
-            try #sql("CREATE INDEX idx_tracklists_recent ON tracklists (mediaSourceId, isRecent, lastViewedTimestamp)").execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracklistTracks_tracklist_sorted ON tracklistTracks (tracklistMediaId, tracklistMediaSourceId, sortOrder)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracklistTracks_track ON tracklistTracks (trackMediaId, trackMediaSourceId)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_trackArtists_artist ON trackArtists (artistMediaId, artistMediaSourceId)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_trackAlbums_tracklist ON trackAlbums (tracklistMediaId, tracklistMediaSourceId)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracks_recent ON tracks (mediaSourceId, isRecent, lastPlayedTimestamp)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracks_isSavedToLibrary_type ON tracks (isSavedToLibrary, type)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_artists_recent ON artists (mediaSourceId, isRecent, lastViewedTimestamp)"
+            )
+            .execute(db)
+            try #sql(
+                "CREATE INDEX idx_tracklists_recent ON tracklists (mediaSourceId, isRecent, lastViewedTimestamp)"
+            )
+            .execute(db)
         }
     }
 }

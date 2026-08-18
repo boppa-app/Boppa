@@ -273,9 +273,17 @@ struct TrackStorageManagerTests {
         let ctx = try Context()
         try ctx.write { db in
             try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1"), db: db)
-            try TrackStorageManager.shared.markSavedToLibrary(mediaId: "t1", mediaSourceId: "src", db: db)
+            try TrackStorageManager.shared.markSavedToLibrary(
+                mediaId: "t1",
+                mediaSourceId: "src",
+                db: db
+            )
             try TrackStorageManager.shared.upsertTrack(self.makeTrack("t2"), db: db)
-            try TrackStorageManager.shared.markSavedToLibrary(mediaId: "t2", mediaSourceId: "src", db: db)
+            try TrackStorageManager.shared.markSavedToLibrary(
+                mediaId: "t2",
+                mediaSourceId: "src",
+                db: db
+            )
         }
 
         let tracks = try ctx.withDatabase { TrackStorageManager.shared.fetchLibraryTracks() }
@@ -956,8 +964,10 @@ struct TrackStorageManagerTests {
     @Test func createPlaylistTwiceAssignsDistinctIncreasingSortOrder() throws {
         let ctx = try Context()
 
-        let first = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "First") }
-        let second = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Second") }
+        let first = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "First") }
+        let second = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Second") }
 
         #expect(first.mediaId != second.mediaId)
         #expect(first.sortOrder < second.sortOrder)
@@ -965,11 +975,18 @@ struct TrackStorageManagerTests {
 
     @Test func canAddTracksToACreatedPlaylist() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
 
         try ctx.withDatabase {
-            try TrackStorageManager.shared.addTrack(self.makeTrack("t1"), toPlaylist: playlist.mediaId)
-            try TrackStorageManager.shared.addTrack(self.makeTrack("t2"), toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t1"),
+                toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t2"),
+                toPlaylist: playlist.mediaId
+            )
         }
 
         let refs = try ctx.tracklistTrackRefs(playlist: playlist.mediaId)
@@ -991,7 +1008,8 @@ struct TrackStorageManagerTests {
 
     @Test func reorderTracksAppliesNewOrderToBoppaPlaylist() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
         let t1 = self.makeTrack("t1")
         let t2 = self.makeTrack("t2")
         let t3 = self.makeTrack("t3")
@@ -1002,7 +1020,10 @@ struct TrackStorageManagerTests {
         }
 
         try ctx.withDatabase {
-            try TracklistStorageManager.shared.reorderTracks([t3, t1, t2], inPlaylist: playlist.mediaId)
+            try TracklistStorageManager.shared.reorderTracks(
+                [t3, t1, t2],
+                inPlaylist: playlist.mediaId
+            )
         }
 
         let refs = try ctx.tracklistTrackRefs(playlist: playlist.mediaId)
@@ -1040,7 +1061,8 @@ struct TrackStorageManagerTests {
 
     @Test func resolveComposedArtworkReturnsEmptyForTracklistWithNoTracks() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Empty") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Empty") }
 
         let artwork = try ctx.withDatabase {
             TracklistStorageManager.shared.resolveComposedArtwork(
@@ -1053,10 +1075,17 @@ struct TrackStorageManagerTests {
 
     @Test func resolveComposedArtworkReturnsEmptyWhenNoTracksHaveArtwork() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
         try ctx.withDatabase {
-            try TrackStorageManager.shared.addTrack(self.makeTrack("t1"), toPlaylist: playlist.mediaId)
-            try TrackStorageManager.shared.addTrack(self.makeTrack("t2"), toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t1"),
+                toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t2"),
+                toPlaylist: playlist.mediaId
+            )
         }
 
         let artwork = try ctx.withDatabase {
@@ -1070,7 +1099,8 @@ struct TrackStorageManagerTests {
 
     @Test func resolveComposedArtworkCollectsUpToFourDistinctURLsInTrackOrder() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
         try ctx.withDatabase {
             for index in 1 ... 5 {
                 try TrackStorageManager.shared.addTrack(
@@ -1093,22 +1123,28 @@ struct TrackStorageManagerTests {
 
     @Test func resolveComposedArtworkSkipsDuplicateArtworkAcrossTracks() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
         try ctx.withDatabase {
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"),
+                toPlaylist: playlist.mediaId
             )
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t2", highResArtworkUrl: "https://x/a.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t2", highResArtworkUrl: "https://x/a.png"),
+                toPlaylist: playlist.mediaId
             )
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t3", highResArtworkUrl: "https://x/b.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t3", highResArtworkUrl: "https://x/b.png"),
+                toPlaylist: playlist.mediaId
             )
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t4", highResArtworkUrl: "https://x/c.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t4", highResArtworkUrl: "https://x/c.png"),
+                toPlaylist: playlist.mediaId
             )
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t5", highResArtworkUrl: "https://x/d.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t5", highResArtworkUrl: "https://x/d.png"),
+                toPlaylist: playlist.mediaId
             )
         }
 
@@ -1123,17 +1159,24 @@ struct TrackStorageManagerTests {
         ])
     }
 
-    @Test func resolveComposedArtworkReturnsFewerThanFourWhenTracklistLacksThatManyDistinctURLs() throws {
+    @Test func resolveComposedArtworkReturnsFewerThanFourWhenTracklistLacksThatManyDistinctURLs(
+    ) throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
         try ctx.withDatabase {
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"),
+                toPlaylist: playlist.mediaId
             )
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t2", highResArtworkUrl: "https://x/b.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t2", highResArtworkUrl: "https://x/b.png"),
+                toPlaylist: playlist.mediaId
             )
-            try TrackStorageManager.shared.addTrack(self.makeTrack("t3"), toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t3"),
+                toPlaylist: playlist.mediaId
+            )
         }
 
         let artwork = try ctx.withDatabase {
@@ -1147,19 +1190,23 @@ struct TrackStorageManagerTests {
 
     @Test func resolveComposedArtworkScansBeyondInitialBatchWhenNeeded() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Long Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Long Mix") }
         try ctx.withDatabase {
             for index in 1 ... 8 {
                 let art = index.isMultiple(of: 2) ? "https://x/even.png" : "https://x/odd.png"
                 try TrackStorageManager.shared.addTrack(
-                    self.makeTrack("t\(index)", highResArtworkUrl: art), toPlaylist: playlist.mediaId
+                    self.makeTrack("t\(index)", highResArtworkUrl: art),
+                    toPlaylist: playlist.mediaId
                 )
             }
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t9", highResArtworkUrl: "https://x/c.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t9", highResArtworkUrl: "https://x/c.png"),
+                toPlaylist: playlist.mediaId
             )
             try TrackStorageManager.shared.addTrack(
-                self.makeTrack("t10", highResArtworkUrl: "https://x/d.png"), toPlaylist: playlist.mediaId
+                self.makeTrack("t10", highResArtworkUrl: "https://x/d.png"),
+                toPlaylist: playlist.mediaId
             )
         }
 
@@ -1176,7 +1223,8 @@ struct TrackStorageManagerTests {
 
     @Test func reorderTracksPostsPlaylistMembershipChangedNotification() throws {
         let ctx = try Context()
-        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
         let t1 = self.makeTrack("t1")
         let t2 = self.makeTrack("t2")
         try ctx.withDatabase {

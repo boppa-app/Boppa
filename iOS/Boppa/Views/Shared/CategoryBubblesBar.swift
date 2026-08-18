@@ -33,7 +33,9 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
                                 .buttonStyle(.plain)
                                 .id(category)
                                 .accessibilityLabel(category.displayName)
-                                .accessibilityHint(self.selectedCategory == category ? "Currently selected" : "Filter by \(category.displayName)")
+                                .accessibilityHint(self
+                                    .selectedCategory == category ? "Currently selected" :
+                                    "Filter by \(category.displayName)")
                             }
                         }
                     }
@@ -60,13 +62,18 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
             .frame(height: fadeHeight)
             .allowsHitTesting(false)
         }
-        .frame(maxWidth: .infinity, maxHeight: self.scrollHandler.isHeaderVisible ? .infinity : 0, alignment: .top)
+        .frame(
+            maxWidth: .infinity,
+            maxHeight: self.scrollHandler.isHeaderVisible ? .infinity : 0,
+            alignment: .top
+        )
         .clipped()
         .allowsHitTesting(self.scrollHandler.isHeaderVisible)
     }
 
     private func bubbleLabel(for category: Category) -> some View {
-        let isSelected = self.selectedCategory == category && (!self.isFocused || self.highlightSelectedWhenFocused)
+        let isSelected = self
+            .selectedCategory == category && (!self.isFocused || self.highlightSelectedWhenFocused)
         return HStack(spacing: 5) {
             Image(systemName: category.icon)
                 .font(.system(size: 15))
@@ -79,7 +86,10 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
         .background(
             Capsule().fill(Color(.systemGray6).opacity(0.6))
                 .overlay(Capsule().fill(Color.purp.opacity(isSelected ? 0.1 : 0)))
-                .overlay(Capsule().strokeBorder(isSelected ? Color.purp.opacity(0.5) : Color(.systemGray3), lineWidth: 1.5))
+                .overlay(Capsule().strokeBorder(
+                    isSelected ? Color.purp.opacity(0.5) : Color(.systemGray3),
+                    lineWidth: 1.5
+                ))
         )
     }
 }

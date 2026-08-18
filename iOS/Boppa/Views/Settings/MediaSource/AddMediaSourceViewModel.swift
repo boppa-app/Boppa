@@ -40,7 +40,11 @@ class AddMediaSourceViewModel {
             try await self.gatherContextIfNeeded(for: mediaSource)
 
             self.pendingMediaSourceId = nil
-            NotificationCenter.default.post(name: .mediaSourceAdded, object: nil, userInfo: ["id": mediaSource.id])
+            NotificationCenter.default.post(
+                name: .mediaSourceAdded,
+                object: nil,
+                userInfo: ["id": mediaSource.id]
+            )
             self.isLoading = false
             return true
         } catch {
@@ -79,7 +83,8 @@ class AddMediaSourceViewModel {
         defer { self.isGatheringContext = false }
 
         MediaSourceContextProvider.shared.refresh()
-        try await MediaSourceContextProvider.shared.waitForFirstContextGather(mediaSourceId: mediaSource.id)
+        try await MediaSourceContextProvider.shared
+            .waitForFirstContextGather(mediaSourceId: mediaSource.id)
     }
 
     private func rollback(after error: Error) {
@@ -88,7 +93,11 @@ class AddMediaSourceViewModel {
         if let id = self.pendingMediaSourceId {
             self.pendingMediaSourceId = nil
             try? MediaSourceStorageManager.shared.delete(id: id)
-            NotificationCenter.default.post(name: .mediaSourceRemoved, object: nil, userInfo: ["id": id])
+            NotificationCenter.default.post(
+                name: .mediaSourceRemoved,
+                object: nil,
+                userInfo: ["id": id]
+            )
         }
 
         if !(error is CancellationError) {

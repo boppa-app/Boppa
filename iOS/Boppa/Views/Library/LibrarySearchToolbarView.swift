@@ -13,7 +13,8 @@ struct LibrarySearchToolbarView: View {
                 Group {
                     if self.isFuzzySearching {
                         SpinnerView(
-                            tint: self.isSearchFieldFocused.wrappedValue ? .white : Color(.systemGray),
+                            tint: self.isSearchFieldFocused
+                                .wrappedValue ? .white : Color(.systemGray),
                             lineWidth: 2.5
                         )
                         .frame(width: 16, height: 16)
@@ -21,7 +22,8 @@ struct LibrarySearchToolbarView: View {
                         Image(systemName: self.selectedCategory.icon)
                     }
                 }
-                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color.white : Color(.systemGray))
+                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color
+                    .white : Color(.systemGray))
                 .frame(width: 20, height: 24)
 
                 TextField(
@@ -31,7 +33,8 @@ struct LibrarySearchToolbarView: View {
                 )
                 .tint(Color.purp)
                 .textFieldStyle(.plain)
-                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color.white : Color(.systemGray))
+                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color
+                    .white : Color(.systemGray))
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
                 .focused(self.isSearchFieldFocused)

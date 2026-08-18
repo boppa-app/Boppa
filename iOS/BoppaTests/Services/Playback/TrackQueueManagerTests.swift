@@ -586,14 +586,37 @@ struct TrackQueueManagerTests {
         let tracks = [self.track("a"), self.track("b"), self.track("c"), self.track("d")]
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
 
-        manager.applyReorder([manager.entries[0], manager.entries[3], manager.entries[1], manager.entries[2]])
-        #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], tracks[3], tracks[1], tracks[2]]))
+        manager.applyReorder([
+            manager.entries[0],
+            manager.entries[3],
+            manager.entries[1],
+            manager.entries[2],
+        ])
+        #expect(self.entryKeys(manager.entries) == self.keys([
+            tracks[0],
+            tracks[3],
+            tracks[1],
+            tracks[2],
+        ]))
         let x = self.track("x")
         manager.addToQueue(x)
-        #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], x, tracks[3], tracks[1], tracks[2]]))
+        #expect(self.entryKeys(manager.entries) == self.keys([
+            tracks[0],
+            x,
+            tracks[3],
+            tracks[1],
+            tracks[2],
+        ]))
         let y = self.track("y")
         manager.playNext(y)
-        #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], y, x, tracks[3], tracks[1], tracks[2]]))
+        #expect(self.entryKeys(manager.entries) == self.keys([
+            tracks[0],
+            y,
+            x,
+            tracks[3],
+            tracks[1],
+            tracks[2],
+        ]))
     }
 
     @Test func complexPathShuffleToggledMultipleTimesWithMutationsBetween() {

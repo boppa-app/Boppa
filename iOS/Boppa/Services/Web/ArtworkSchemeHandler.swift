@@ -45,8 +45,9 @@ final class ArtworkSchemeHandler: NSObject, WKURLSchemeHandler {
         let taskId = ObjectIdentifier(urlSchemeTask)
         self.lock.withLock { _ = self.activeTasks.insert(taskId) }
 
-        guard let originalURLString = ArtworkURLBridge.originalURLString(from: urlSchemeTask.request),
-              let requestURL = urlSchemeTask.request.url
+        guard let originalURLString = ArtworkURLBridge
+            .originalURLString(from: urlSchemeTask.request),
+            let requestURL = urlSchemeTask.request.url
         else {
             self.fail(urlSchemeTask, taskId: taskId, error: URLError(.badURL))
             return
@@ -73,9 +74,18 @@ final class ArtworkSchemeHandler: NSObject, WKURLSchemeHandler {
                 switch result {
                 case let .success(value):
                     if let data = value.data() {
-                        self.respond(urlSchemeTask, taskId: taskId, requestURL: requestURL, data: data)
+                        self.respond(
+                            urlSchemeTask,
+                            taskId: taskId,
+                            requestURL: requestURL,
+                            data: data
+                        )
                     } else {
-                        self.fail(urlSchemeTask, taskId: taskId, error: URLError(.cannotDecodeContentData))
+                        self.fail(
+                            urlSchemeTask,
+                            taskId: taskId,
+                            error: URLError(.cannotDecodeContentData)
+                        )
                     }
                 case let .failure(error):
                     self.fail(urlSchemeTask, taskId: taskId, error: error)
@@ -92,7 +102,12 @@ final class ArtworkSchemeHandler: NSObject, WKURLSchemeHandler {
         self.lock.withLock { self.activeTasks.contains(taskId) }
     }
 
-    private func respond(_ urlSchemeTask: WKURLSchemeTask, taskId: ObjectIdentifier, requestURL: URL, data: Data) {
+    private func respond(
+        _ urlSchemeTask: WKURLSchemeTask,
+        taskId: ObjectIdentifier,
+        requestURL: URL,
+        data: Data
+    ) {
         guard self.isActive(taskId) else { return }
         let response = URLResponse(
             url: requestURL,
@@ -120,7 +135,12 @@ final class ArtworkSchemeHandler: NSObject, WKURLSchemeHandler {
         if bytes.starts(with: [0xFF, 0xD8, 0xFF]) { return "image/jpeg" }
         if bytes.starts(with: [0x89, 0x50, 0x4E, 0x47]) { return "image/png" }
         if bytes.starts(with: [0x47, 0x49, 0x46]) { return "image/gif" }
-        if bytes.count >= 12, bytes[0 ... 3] == [0x52, 0x49, 0x46, 0x46], bytes[8 ... 11] == [0x57, 0x45, 0x42, 0x50] {
+        if bytes.count >= 12, bytes[0 ... 3] == [0x52, 0x49, 0x46, 0x46], bytes[8 ... 11] == [
+            0x57,
+            0x45,
+            0x42,
+            0x50,
+        ] {
             return "image/webp"
         }
         return "application/octet-stream"

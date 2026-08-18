@@ -22,7 +22,8 @@ private struct ScrollFadeModifier: ViewModifier {
                     )
                 } action: { _, newValue in
                     self.topFade = min(newValue.contentOffset / self.fadeThreshold, 1)
-                    let bottomOffset = newValue.contentHeight - newValue.containerHeight - newValue.contentOffset
+                    let bottomOffset = newValue.contentHeight - newValue.containerHeight - newValue
+                        .contentOffset
                     self.bottomFade = min(max(bottomOffset, 0) / self.fadeThreshold, 1)
                 }
         } else {

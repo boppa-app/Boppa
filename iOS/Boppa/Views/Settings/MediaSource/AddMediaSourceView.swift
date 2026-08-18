@@ -50,14 +50,17 @@ struct AddMediaSourceView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 } else {
                     Section("Option 1: From URL") {
-                        TextField("cdn.boppa.app/media-source-config/iOS/internet-archive.yaml", text: self.$viewModel.configUrl)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.URL)
-                            .autocorrectionDisabled()
-                            .disabled(self.viewModel.isLoading)
-                            .tint(Color.purp)
-                            .accessibilityLabel("Media Source Config URL")
-                            .accessibilityHint("Enter the URL of the media source config")
+                        TextField(
+                            "cdn.boppa.app/media-source-config/iOS/internet-archive.yaml",
+                            text: self.$viewModel.configUrl
+                        )
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .disabled(self.viewModel.isLoading)
+                        .tint(Color.purp)
+                        .accessibilityLabel("Media Source Config URL")
+                        .accessibilityHint("Enter the URL of the media source config")
                     }
                     .transition(.opacity.combined(with: .move(edge: .top)))
 
@@ -176,11 +179,13 @@ struct AddMediaSourceView: View {
             if self.viewModel.isLoading {
                 SpinnerView(tint: .purp, lineWidth: 3)
                     .frame(width: 20, height: 20)
-                    .accessibilityLabel(self.viewModel.isGatheringContext ? "Gathering context" : "Adding media source")
+                    .accessibilityLabel(self.viewModel
+                        .isGatheringContext ? "Gathering context" : "Adding media source")
             } else {
                 Button(action: { self.addMediaSource() }) {
                     Image(systemName: "checkmark").font(.title3)
-                        .foregroundColor(self.viewModel.isAddDisabled ? Color(.systemGray) : Color.purp)
+                        .foregroundColor(self.viewModel.isAddDisabled ? Color(.systemGray) : Color
+                            .purp)
                         .frame(width: 20, height: 20)
                 }
                 .buttonStyle(.plain)

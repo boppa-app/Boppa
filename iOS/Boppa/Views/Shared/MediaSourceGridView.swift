@@ -22,7 +22,8 @@ enum MediaSourceGridLayout {
         let sidePad = self.sidePadding(for: width)
         let cols = self.columnsForWidth(width)
         let rowCount = ceil(Double(mediaSourceCount) / Double(cols))
-        let contentHeight = CGFloat(rowCount) * self.iconSize + CGFloat(max(rowCount - 1, 0)) * self.gridSpacing
+        let contentHeight = CGFloat(rowCount) * self.iconSize + CGFloat(max(rowCount - 1, 0)) * self
+            .gridSpacing
         return contentHeight + 2 * sidePad
     }
 }

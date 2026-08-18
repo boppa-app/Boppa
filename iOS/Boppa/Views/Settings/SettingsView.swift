@@ -19,7 +19,9 @@ struct SettingsView: View {
             .environment(\.editMode, self.isEditMode ? .constant(.active) : .constant(.inactive))
             .navigationTitle("Settings")
             .navigationDestination(for: StoredMediaSource.self) { mediaSource in
-                MediaSourceDetailView(viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource))
+                MediaSourceDetailView(
+                    viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource)
+                )
             }
             .onAppear {
                 self.viewModel.loadSources()
@@ -97,7 +99,8 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(self.isEditing ? "Done Editing" : "Edit Media Sources")
-                .accessibilityHint(self.isEditing ? "Exit editing mode" : "Manage and reorder media sources")
+                .accessibilityHint(self
+                    .isEditing ? "Exit editing mode" : "Manage and reorder media sources")
             }
         }
     }

@@ -128,7 +128,11 @@ struct StoredSearchToolbar: View {
             .frame(height: self.fadeHeight)
             .allowsHitTesting(false)
         }
-        .frame(maxWidth: .infinity, maxHeight: self.showSearchBar ? self.toolbarHeight : 0, alignment: .top)
+        .frame(
+            maxWidth: .infinity,
+            maxHeight: self.showSearchBar ? self.toolbarHeight : 0,
+            alignment: .top
+        )
         .clipped()
         .allowsHitTesting(self.showSearchBar)
         .animation(.easeInOut(duration: 0.3), value: self.showSearchBar)

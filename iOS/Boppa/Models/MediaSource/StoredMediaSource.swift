@@ -23,7 +23,13 @@ extension StoredMediaSource {
     }
 
     var contextValues: [String: String] {
-        (try? JSONDecoder().decode([String: String].self, from: Data(self.contextValuesJSON.utf8))) ?? [:]
+        (
+            try? JSONDecoder().decode(
+                [String: String].self,
+                from: Data(self.contextValuesJSON.utf8)
+            )
+        ) ??
+            [:]
     }
 
     var lastUpdatedDate: Date {
@@ -40,7 +46,14 @@ extension StoredMediaSource {
         return self.contextLastGatheredTimestamp != nil
     }
 
-    init(id: String, config: MediaSourceConfig, configUrl: String? = nil, sortOrder: String = "a0", isEnabled: Bool = true, isDefault: Bool = false) {
+    init(
+        id: String,
+        config: MediaSourceConfig,
+        configUrl: String? = nil,
+        sortOrder: String = "a0",
+        isEnabled: Bool = true,
+        isDefault: Bool = false
+    ) {
         self.id = id
         self.configData = (try? YAMLEncoder().encode(config)).flatMap { Data($0.utf8) } ?? Data()
         self.sortOrder = sortOrder
@@ -53,17 +66,27 @@ extension StoredMediaSource {
         self.autoUpdate = true
     }
 
-    static func fromConfigData(_ data: Data, configUrl: String? = nil, isDefault: Bool = false) throws -> StoredMediaSource {
+    static func fromConfigData(
+        _ data: Data,
+        configUrl: String? = nil,
+        isDefault: Bool = false
+    ) throws -> StoredMediaSource {
         let config: MediaSourceConfig
         do {
             config = try YAMLDecoder().decode(MediaSourceConfig.self, from: data)
         } catch let decodingError as DecodingError {
-            throw MediaSourceImportError.malformedConfig(detail: describeDecodingError(decodingError))
+            throw MediaSourceImportError
+                .malformedConfig(detail: describeDecodingError(decodingError))
         } catch {
             throw MediaSourceImportError.malformedConfig(detail: error.localizedDescription)
         }
 
-        return StoredMediaSource(id: config.id, config: config, configUrl: configUrl, isDefault: isDefault)
+        return StoredMediaSource(
+            id: config.id,
+            config: config,
+            configUrl: configUrl,
+            isDefault: isDefault
+        )
     }
 
     private static func describeDecodingError(_ error: DecodingError) -> String {

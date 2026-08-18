@@ -11,7 +11,8 @@ struct SearchToolbarView: View {
                 Group {
                     if self.viewModel.isSearching {
                         SpinnerView(
-                            tint: self.isSearchFieldFocused.wrappedValue ? .white : Color(.systemGray),
+                            tint: self.isSearchFieldFocused
+                                .wrappedValue ? .white : Color(.systemGray),
                             lineWidth: 2.5
                         )
                         .frame(width: 16, height: 16)
@@ -21,7 +22,8 @@ struct SearchToolbarView: View {
                         Image(systemName: "magnifyingglass")
                     }
                 }
-                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color.white : Color(.systemGray))
+                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color
+                    .white : Color(.systemGray))
                 .frame(width: 20, height: 24)
 
                 TextField(
@@ -31,7 +33,8 @@ struct SearchToolbarView: View {
                 )
                 .tint(Color.purp)
                 .textFieldStyle(.plain)
-                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color.white : Color(.systemGray))
+                .foregroundColor(self.isSearchFieldFocused.wrappedValue ? Color
+                    .white : Color(.systemGray))
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -100,7 +103,8 @@ struct SearchToolbarView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(self.viewModel.selectedMediaSource.map { "Selected source: \($0.config.name)" } ?? "Select Media Source")
+        .accessibilityLabel(self.viewModel.selectedMediaSource
+            .map { "Selected source: \($0.config.name)" } ?? "Select Media Source")
         .accessibilityHint("Choose which media source to search")
         .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {
             MediaSourcePickerSheet(

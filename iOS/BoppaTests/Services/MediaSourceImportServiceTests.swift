@@ -34,7 +34,10 @@ struct MediaSourceImportServiceTests {
         autoUpdate: Bool = true,
         contextConfigs: String = ""
     ) throws -> StoredMediaSource {
-        var source = try StoredMediaSource.fromConfigData(self.yaml(id: id, version: version, contextConfigs: contextConfigs), configUrl: configUrl)
+        var source = try StoredMediaSource.fromConfigData(
+            self.yaml(id: id, version: version, contextConfigs: contextConfigs),
+            configUrl: configUrl
+        )
         source.autoUpdate = autoUpdate
         return source
     }
@@ -68,12 +71,16 @@ struct MediaSourceImportServiceTests {
     }
 
     @Test func parsesUrlFromConfig() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(url: "https://freemusicarchive.org"))
+        let source = try StoredMediaSource
+            .fromConfigData(self.yaml(url: "https://freemusicarchive.org"))
         #expect(source.config.url == "https://freemusicarchive.org")
     }
 
     @Test func storesConfigUrl() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(), configUrl: "https://cdn.example.com/config.yaml")
+        let source = try StoredMediaSource.fromConfigData(
+            self.yaml(),
+            configUrl: "https://cdn.example.com/config.yaml"
+        )
         #expect(source.configUrl == "https://cdn.example.com/config.yaml")
     }
 
@@ -83,30 +90,36 @@ struct MediaSourceImportServiceTests {
     }
 
     @Test func parsesContextConfigCount() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
+        let source = try StoredMediaSource
+            .fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
         #expect(source.config.context?.count == 2)
     }
 
     @Test func parsesContextConfigUrls() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
+        let source = try StoredMediaSource
+            .fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
         let urls = source.config.context?.map(\.url)
         #expect(urls == ["https://example.com/auth", "https://example.com/token"])
     }
 
     @Test func parsesContextConfigIntervalSeconds() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
+        let source = try StoredMediaSource
+            .fromConfigData(self.yaml(contextConfigs: self.twoContextConfigs))
         let intervals = source.config.context?.map(\.intervalSeconds)
         #expect(intervals == [3600, 1800])
     }
 
     @Test func parsesPlaybackUrl() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(playback: "  url: https://player.example.com\n  userScripts: []"))
+        let source = try StoredMediaSource
+            .fromConfigData(self
+                .yaml(playback: "  url: https://player.example.com\n  userScripts: []"))
         #expect(source.config.playback.url == "https://player.example.com")
         #expect(source.config.playback.html == nil)
     }
 
     @Test func parsesPlaybackHtml() throws {
-        let source = try StoredMediaSource.fromConfigData(self.yaml(playback: "  html: \"<html/>\"\n  userScripts: []"))
+        let source = try StoredMediaSource
+            .fromConfigData(self.yaml(playback: "  html: \"<html/>\"\n  userScripts: []"))
         #expect(source.config.playback.html == "<html/>")
         #expect(source.config.playback.url == nil)
     }
@@ -417,12 +430,18 @@ struct MediaSourceImportServiceTests {
     }
 
     @Test func serverError404MentionsNotFound() {
-        let error = MediaSourceImportError.serverError(statusCode: 404, mediaSourceUrl: "https://example.com")
+        let error = MediaSourceImportError.serverError(
+            statusCode: 404,
+            mediaSourceUrl: "https://example.com"
+        )
         #expect(error.errorDescription?.contains("No config found") == true)
     }
 
     @Test func serverErrorNon404MentionsStatusCode() {
-        let error = MediaSourceImportError.serverError(statusCode: 503, mediaSourceUrl: "https://example.com")
+        let error = MediaSourceImportError.serverError(
+            statusCode: 503,
+            mediaSourceUrl: "https://example.com"
+        )
         #expect(error.errorDescription?.contains("503") == true)
     }
 
@@ -455,7 +474,8 @@ struct MediaSourceImportServiceTests {
     @Test func isAddDisabledWhenUrlIsWhitespaceOnly() {
         let vm = AddMediaSourceViewModel()
         vm.configUrl = "   "
-        #expect(vm.isAddDisabled == false) // vm only checks isEmpty; normalization happens on submit
+        #expect(vm
+            .isAddDisabled == false) // vm only checks isEmpty; normalization happens on submit
     }
 
     // MARK: - sourcesToUpdate filtering
@@ -489,7 +509,12 @@ struct MediaSourceImportServiceTests {
         let noUrl = try makeSource(id: "b", configUrl: nil)
         let noAutoUpdate = try makeSource(id: "c", autoUpdate: false)
         let neither = try makeSource(id: "d", configUrl: nil, autoUpdate: false)
-        let results = MediaSourceImportService.sourcesToUpdate([updatable, noUrl, noAutoUpdate, neither])
+        let results = MediaSourceImportService.sourcesToUpdate([
+            updatable,
+            noUrl,
+            noAutoUpdate,
+            neither,
+        ])
         #expect(results.map(\.id) == ["a"])
     }
 
@@ -505,36 +530,42 @@ struct MediaSourceImportServiceTests {
     @Test func sameVersionSkipsUpdate() throws {
         let stored = try makeSource(version: "1.0")
         let fetched = try makeSource(version: "1.0")
-        #expect(MediaSourceImportService.shouldApplyUpdate(stored: stored, fetched: fetched) == false)
+        #expect(MediaSourceImportService
+            .shouldApplyUpdate(stored: stored, fetched: fetched) == false)
     }
 
     @Test func newerVersionTriggersUpdate() throws {
         let stored = try makeSource(version: "1.0")
         let fetched = try makeSource(version: "1.1")
-        #expect(MediaSourceImportService.shouldApplyUpdate(stored: stored, fetched: fetched) == true)
+        #expect(MediaSourceImportService
+            .shouldApplyUpdate(stored: stored, fetched: fetched) == true)
     }
 
     @Test func olderVersionTriggersUpdate() throws {
         let stored = try makeSource(version: "2.0")
         let fetched = try makeSource(version: "1.0")
-        #expect(MediaSourceImportService.shouldApplyUpdate(stored: stored, fetched: fetched) == true)
+        #expect(MediaSourceImportService
+            .shouldApplyUpdate(stored: stored, fetched: fetched) == true)
     }
 
     @Test func idMismatchSkipsUpdateEvenWhenVersionChanged() throws {
         let stored = try makeSource(id: "original", version: "1.0")
         let fetched = try makeSource(id: "different", version: "2.0")
-        #expect(MediaSourceImportService.shouldApplyUpdate(stored: stored, fetched: fetched) == false)
+        #expect(MediaSourceImportService
+            .shouldApplyUpdate(stored: stored, fetched: fetched) == false)
     }
 
     @Test func idMismatchSkipsUpdateEvenWhenVersionSame() throws {
         let stored = try makeSource(id: "original", version: "1.0")
         let fetched = try makeSource(id: "different", version: "1.0")
-        #expect(MediaSourceImportService.shouldApplyUpdate(stored: stored, fetched: fetched) == false)
+        #expect(MediaSourceImportService
+            .shouldApplyUpdate(stored: stored, fetched: fetched) == false)
     }
 
     @Test func matchingIdWithPatchVersionChangeTriggersUpdate() throws {
         let stored = try makeSource(id: "src", version: "1.0")
         let fetched = try makeSource(id: "src", version: "1.0.1")
-        #expect(MediaSourceImportService.shouldApplyUpdate(stored: stored, fetched: fetched) == true)
+        #expect(MediaSourceImportService
+            .shouldApplyUpdate(stored: stored, fetched: fetched) == true)
     }
 }

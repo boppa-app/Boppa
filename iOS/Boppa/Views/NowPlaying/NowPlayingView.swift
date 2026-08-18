@@ -26,7 +26,9 @@ struct NowPlayingView: View {
         .background(Color.charcoal)
         .preferredColorScheme(.dark)
         .sheet(item: self.$trackForActions) { track in
-            if let mediaSource = MediaSourceStorageManager.shared.fetchOne(id: track.mediaSourceId) {
+            if let mediaSource = MediaSourceStorageManager.shared
+                .fetchOne(id: track.mediaSourceId)
+            {
                 TrackActionsSheet(
                     track: track,
                     mediaSource: mediaSource,
@@ -122,13 +124,15 @@ struct NowPlayingView: View {
             } label: {
                 Image(systemName: self.viewModel.isCurrentTrackLiked ? "heart.fill" : "heart")
                     .font(.system(size: 22))
-                    .foregroundColor(self.viewModel.isCurrentTrackLiked ? .purp : Color(.systemGray))
+                    .foregroundColor(self.viewModel
+                        .isCurrentTrackLiked ? .purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
             .disabled(self.viewModel.currentTrack == nil)
             .accessibilityLabel(self.viewModel.isCurrentTrackLiked ? "Unlike" : "Like")
-            .accessibilityHint(self.viewModel.isCurrentTrackLiked ? "Remove from Likes" : "Add to Likes")
+            .accessibilityHint(self.viewModel
+                .isCurrentTrackLiked ? "Remove from Likes" : "Add to Likes")
         }
     }
 
@@ -168,9 +172,11 @@ struct NowPlayingView: View {
             Button {
                 self.viewModel.cycleShuffleMode()
             } label: {
-                Image(systemName: self.viewModel.shuffleMode == .radio ? "dot.radiowaves.left.and.right" : "shuffle")
+                Image(systemName: self.viewModel
+                    .shuffleMode == .radio ? "dot.radiowaves.left.and.right" : "shuffle")
                     .font(.system(size: 18))
-                    .foregroundColor(self.viewModel.shuffleMode == .off ? Color(.systemGray) : Color.purp)
+                    .foregroundColor(self.viewModel.shuffleMode == .off ? Color(.systemGray) : Color
+                        .purp)
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
@@ -208,7 +214,8 @@ struct NowPlayingView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(self.viewModel.isPlaying ? "Pause" : "Play")
-                    .accessibilityHint(self.viewModel.isPlaying ? "Pause playback" : "Resume playback")
+                    .accessibilityHint(self.viewModel
+                        .isPlaying ? "Pause playback" : "Resume playback")
                 }
 
                 Button {
@@ -232,11 +239,13 @@ struct NowPlayingView: View {
             } label: {
                 Image(systemName: self.viewModel.repeatIconName)
                     .font(.system(size: 18))
-                    .foregroundColor(self.viewModel.isRepeatActive ? Color.purp : Color(.systemGray))
+                    .foregroundColor(self.viewModel.isRepeatActive ? Color
+                        .purp : Color(.systemGray))
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(self.viewModel.repeatMode == .one ? "Repeat One" : self.viewModel.repeatMode == .all ? "Repeat All" : "Repeat Off")
+            .accessibilityLabel(self.viewModel.repeatMode == .one ? "Repeat One" : self.viewModel
+                .repeatMode == .all ? "Repeat All" : "Repeat Off")
             .accessibilityHint("Cycle repeat mode")
         }
     }
