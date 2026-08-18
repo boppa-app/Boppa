@@ -22,7 +22,7 @@ struct TracklistActionSheet: View {
     }
 
     private var deleteAlertTitle: String {
-        self.isLocalPlaylist ? "Delete from Library" : "Remove From Library"
+        self.isLocalPlaylist ? "Delete From Library" : "Remove From Library"
     }
 
     private var deleteAlertMessage: String {
@@ -203,7 +203,7 @@ struct TracklistActionSheet: View {
                 self.showDeleteConfirmation = true
             } label: {
                 self.rowLabel(
-                    title: self.isLocalPlaylist ? "Delete from Library" : "Remove From Library",
+                    title: self.isLocalPlaylist ? "Delete From Library" : "Remove From Library",
                     icon: self.isLocalPlaylist ? "trash" : "bookmark.slash",
                     iconColor: .red,
                     titleColor: .red
@@ -214,7 +214,7 @@ struct TracklistActionSheet: View {
             .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
             .listRowSeparator(.hidden)
             .accessibilityLabel(self
-                .isLocalPlaylist ? "Delete from Library" : "Remove from Library")
+                .isLocalPlaylist ? "Delete From Library" : "Remove from Library")
             .accessibilityHint(
                 "\(self.isLocalPlaylist ? "Delete" : "Remove") \(self.tracklist.title) from your library"
             )

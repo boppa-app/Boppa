@@ -149,14 +149,21 @@ struct TracklistListView: View {
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGray6))
         }
-        .alert("Remove From Library", isPresented: Binding(
-            get: { self.tracklistToDelete != nil },
-            set: { if !$0 { self.tracklistToDelete = nil } }
-        )) {
+        .alert(
+            self.tracklistToDelete.map(self.isLocalPlaylist) == true ?
+                "Delete From Library" : "Remove From Library",
+            isPresented: Binding(
+                get: { self.tracklistToDelete != nil },
+                set: { if !$0 { self.tracklistToDelete = nil } }
+            )
+        ) {
             Button("Cancel", role: .cancel) {
                 self.tracklistToDelete = nil
             }
-            Button("Remove", role: .destructive) {
+            Button(
+                self.tracklistToDelete.map(self.isLocalPlaylist) == true ? "Delete" : "Remove",
+                role: .destructive
+            ) {
                 if let tracklist = self.tracklistToDelete {
                     self.viewModel.deleteTracklistById(tracklist.id)
                     self.tracklistToDelete = nil
@@ -164,7 +171,11 @@ struct TracklistListView: View {
             }
         } message: {
             if let tracklist = self.tracklistToDelete {
-                Text("Are you sure you want to remove \"\(tracklist.title)\" from your library?")
+                Text(
+                    self.isLocalPlaylist(tracklist) ?
+                        "Are you sure you want to delete \"\(tracklist.title)\"?" :
+                        "Are you sure you want to remove \"\(tracklist.title)\" from your library?"
+                )
             }
         }
         .onAppear {
@@ -202,6 +213,10 @@ struct TracklistListView: View {
 
     private var canCreatePlaylist: Bool {
         self.isLibraryMode && self.type == .playlists
+    }
+
+    private func isLocalPlaylist(_ tracklist: Tracklist) -> Bool {
+        tracklist.mediaSourceId == "boppa.app"
     }
 
     private var canNavigateToTracklist: Bool {
@@ -242,15 +257,26 @@ struct TracklistListView: View {
                             Button {
                                 self.tracklistToDelete = tracklist
                             } label: {
-                                Image(systemName: "bookmark.slash")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.red)
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
+                                Image(
+                                    systemName: self
+                                        .isLocalPlaylist(tracklist) ? "trash" : "bookmark.slash"
+                                )
+                                .font(.system(size: 16))
+                                .foregroundColor(.red)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Remove \(tracklist.title) from Library")
-                            .accessibilityHint("Remove this tracklist from your library")
+                            .accessibilityLabel(
+                                self.isLocalPlaylist(tracklist) ?
+                                    "Delete \(tracklist.title) from Library" :
+                                    "Remove \(tracklist.title) from Library"
+                            )
+                            .accessibilityHint(
+                                self.isLocalPlaylist(tracklist) ?
+                                    "Delete this tracklist from your library" :
+                                    "Remove this tracklist from your library"
+                            )
 
                             TracklistRow(
                                 tracklist: tracklist,
