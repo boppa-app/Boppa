@@ -117,6 +117,11 @@ struct TracklistListView: View {
         .onChange(of: self.navigationResetId) { _, _ in
             self.isNavigatingAway = true
         }
+        .onChange(of: self.navigationTarget) { _, newValue in
+            if newValue == nil {
+                self.isNavigatingAway = false
+            }
+        }
         .navigationDestination(item: self.$navigationTarget) { tracklist in
             TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
         }
@@ -266,6 +271,7 @@ struct TracklistListView: View {
                         .onTapGesture {
                             if self.canNavigateToTracklist {
                                 self.onTracklistSelected?(tracklist.mediaSourceId)
+                                self.isNavigatingAway = true
                                 self.navigationTarget = tracklist
                             }
                         }
