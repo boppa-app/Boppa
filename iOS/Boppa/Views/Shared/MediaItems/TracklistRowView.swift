@@ -41,11 +41,9 @@ struct TracklistRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(
-                lowResUrl: self.tracklist.lowResArtworkUrl,
-                highResUrl: self.tracklist.highResArtworkUrl,
+            TracklistArtworkView(
+                tracklist: self.tracklist,
                 preferLowRes: self.resolvedPreferLowResArtwork,
-                tracklistType: self.tracklist.tracklistType,
                 size: self.artworkSize,
                 placeholderBackground: self.placeholderBackground
             )

@@ -12,7 +12,7 @@ extension Notification.Name {
 class PlaylistManager {
     static let shared = PlaylistManager()
 
-    /// Incremented on every add/remove so @Observable views re-evaluate isInPlaylist.
+    /// Incremented on every add/remove so @Observable views re-evaluate isInPlaylist
     private(set) var membershipVersion: Int = 0
 
     private init() {}

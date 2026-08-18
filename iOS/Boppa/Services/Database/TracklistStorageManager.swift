@@ -81,6 +81,54 @@ class TracklistStorageManager {
             ?? Tracklist(storedTracklist: stored)
     }
 
+    // MARK: - Composed Artwork
+
+    private static let composedArtworkTargetCount = 4
+    private static let composedArtworkInitialBatchSize = 8
+    private static let composedArtworkMaxBatchSize = 64
+
+    func resolveComposedArtwork(mediaId: String, mediaSourceId: String) -> [TrackArtworkURLs] {
+        var collected: [TrackArtworkURLs] = []
+        var seenKeys = Set<String>()
+        var offset = 0
+        var batchSize = Self.composedArtworkInitialBatchSize
+
+        while collected.count < Self.composedArtworkTargetCount {
+            let batch: [StoredTrack] = (try? self.database.read { db in
+                try StoredTracklistTrack
+                    .where {
+                        $0.tracklistMediaId.eq(mediaId).and($0.tracklistMediaSourceId.eq(mediaSourceId))
+                    }
+                    .join(StoredTrack.all) { tt, t in
+                        tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
+                    }
+                    .order { tt, _ in tt.sortOrder }
+                    .select { _, t in t }
+                    .limit(batchSize, offset: offset)
+                    .fetchAll(db)
+            }) ?? []
+
+            guard !batch.isEmpty else { break }
+
+            for track in batch {
+                guard let key = track.highResArtworkUrl ?? track.lowResArtworkUrl, !key.isEmpty else {
+                    continue
+                }
+                guard seenKeys.insert(key).inserted else { continue }
+                collected.append(
+                    TrackArtworkURLs(lowResUrl: track.lowResArtworkUrl, highResUrl: track.highResArtworkUrl)
+                )
+                if collected.count >= Self.composedArtworkTargetCount { break }
+            }
+
+            offset += batch.count
+            if batch.count < batchSize { break }
+            batchSize = min(batchSize * 2, Self.composedArtworkMaxBatchSize)
+        }
+
+        return collected
+    }
+
     // MARK: - Writes
 
     func storeTracklist(_ tracklist: Tracklist, tracks: [Track]) async throws -> StoredTracklist {
@@ -126,6 +174,7 @@ class TracklistStorageManager {
     }
 
     func reorderTracks(_ tracks: [Track], inPlaylist playlistId: String) throws {
+        var didReorder = false
         try self.database.write { db in
             let tracklist = try StoredTracklist
                 .where {
@@ -135,6 +184,7 @@ class TracklistStorageManager {
                 }
                 .fetchOne(db)
             guard tracklist != nil else { return }
+            didReorder = true
             let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
             for (track, key) in zip(tracks, keys) {
                 try StoredTracklistTrack.update { $0.sortOrder = key }
@@ -146,6 +196,9 @@ class TracklistStorageManager {
                     }
                     .execute(db)
             }
+        }
+        if didReorder {
+            NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         }
     }
 

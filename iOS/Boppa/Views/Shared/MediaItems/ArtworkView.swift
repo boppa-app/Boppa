@@ -11,6 +11,7 @@ struct ArtworkView: View {
     var isCircular: Bool = false
     var cornerRadius: CGFloat?
     var placeholderBackground: Color? = nil
+    var onLoadStateChange: ((Bool) -> Void)? = nil
 
     private var resolvedCornerRadius: CGFloat {
         if self.isCircular {
@@ -52,10 +53,12 @@ struct ArtworkView: View {
             if !self.candidateURLs.isEmpty {
                 ArtworkImageContent(
                     urls: self.candidateURLs, size: self.size,
-                    placeholderSystemName: self.resolvedPlaceholder
+                    placeholderSystemName: self.resolvedPlaceholder,
+                    onLoadStateChange: self.onLoadStateChange
                 )
             } else {
                 self.placeholderImage
+                    .onAppear { self.onLoadStateChange?(false) }
             }
         }
         .frame(width: self.size, height: self.size)
@@ -86,6 +89,7 @@ private struct ArtworkImageContent: View {
     let urls: [URL]
     let size: CGFloat
     let placeholderSystemName: String
+    var onLoadStateChange: ((Bool) -> Void)? = nil
 
     @Environment(\.displayScale) private var displayScale
     @State private var loadedImage: UIImage? = nil
@@ -154,7 +158,10 @@ private struct ArtworkImageContent: View {
                         .frame(width: max(self.size * 0.25, 16), height: max(self.size * 0.25, 16))
 
                     KFImage(url)
-                        .onSuccess { result in self.loadedImage = result.image }
+                        .onSuccess { result in
+                            self.loadedImage = result.image
+                            self.onLoadStateChange?(true)
+                        }
                         .onFailure { _ in self.advanceToNextCandidate() }
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -177,6 +184,7 @@ private struct ArtworkImageContent: View {
             self.candidateIndex = nextIndex
         } else {
             self.failed = true
+            self.onLoadStateChange?(false)
         }
     }
 }

@@ -1044,6 +1044,184 @@ struct TrackStorageManagerTests {
         #expect(after.map(\.sortOrder) == before.map(\.sortOrder))
     }
 
+    // MARK: - resolveComposedArtwork
+
+    @Test func resolveComposedArtworkReturnsEmptyForTracklistWithNoTracks() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Empty") }
+
+        let artwork = try ctx.withDatabase {
+            TracklistStorageManager.shared.resolveComposedArtwork(
+                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
+            )
+        }
+
+        #expect(artwork.isEmpty)
+    }
+
+    @Test func resolveComposedArtworkReturnsEmptyWhenNoTracksHaveArtwork() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(self.makeTrack("t1"), toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(self.makeTrack("t2"), toPlaylist: playlist.mediaId)
+        }
+
+        let artwork = try ctx.withDatabase {
+            TracklistStorageManager.shared.resolveComposedArtwork(
+                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
+            )
+        }
+
+        #expect(artwork.isEmpty)
+    }
+
+    @Test func resolveComposedArtworkCollectsUpToFourDistinctURLsInTrackOrder() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        try ctx.withDatabase {
+            for index in 1 ... 5 {
+                try TrackStorageManager.shared.addTrack(
+                    self.makeTrack("t\(index)", highResArtworkUrl: "https://x/\(index).png"),
+                    toPlaylist: playlist.mediaId
+                )
+            }
+        }
+
+        let artwork = try ctx.withDatabase {
+            TracklistStorageManager.shared.resolveComposedArtwork(
+                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
+            )
+        }
+
+        #expect(artwork.map(\.highResUrl) == [
+            "https://x/1.png", "https://x/2.png", "https://x/3.png", "https://x/4.png",
+        ])
+    }
+
+    @Test func resolveComposedArtworkSkipsDuplicateArtworkAcrossTracks() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t2", highResArtworkUrl: "https://x/a.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t3", highResArtworkUrl: "https://x/b.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t4", highResArtworkUrl: "https://x/c.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t5", highResArtworkUrl: "https://x/d.png"), toPlaylist: playlist.mediaId
+            )
+        }
+
+        let artwork = try ctx.withDatabase {
+            TracklistStorageManager.shared.resolveComposedArtwork(
+                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
+            )
+        }
+
+        #expect(artwork.map(\.highResUrl) == [
+            "https://x/a.png", "https://x/b.png", "https://x/c.png", "https://x/d.png",
+        ])
+    }
+
+    @Test func resolveComposedArtworkReturnsFewerThanFourWhenTracklistLacksThatManyDistinctURLs() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t2", highResArtworkUrl: "https://x/b.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(self.makeTrack("t3"), toPlaylist: playlist.mediaId)
+        }
+
+        let artwork = try ctx.withDatabase {
+            TracklistStorageManager.shared.resolveComposedArtwork(
+                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
+            )
+        }
+
+        #expect(artwork.map(\.highResUrl) == ["https://x/a.png", "https://x/b.png"])
+    }
+
+    @Test func resolveComposedArtworkScansBeyondInitialBatchWhenNeeded() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Long Mix") }
+        try ctx.withDatabase {
+            for index in 1 ... 8 {
+                let art = index.isMultiple(of: 2) ? "https://x/even.png" : "https://x/odd.png"
+                try TrackStorageManager.shared.addTrack(
+                    self.makeTrack("t\(index)", highResArtworkUrl: art), toPlaylist: playlist.mediaId
+                )
+            }
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t9", highResArtworkUrl: "https://x/c.png"), toPlaylist: playlist.mediaId
+            )
+            try TrackStorageManager.shared.addTrack(
+                self.makeTrack("t10", highResArtworkUrl: "https://x/d.png"), toPlaylist: playlist.mediaId
+            )
+        }
+
+        let artwork = try ctx.withDatabase {
+            TracklistStorageManager.shared.resolveComposedArtwork(
+                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
+            )
+        }
+
+        #expect(artwork.map(\.highResUrl) == [
+            "https://x/odd.png", "https://x/even.png", "https://x/c.png", "https://x/d.png",
+        ])
+    }
+
+    @Test func reorderTracksPostsPlaylistMembershipChangedNotification() throws {
+        let ctx = try Context()
+        let playlist = try ctx.withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let t1 = self.makeTrack("t1")
+        let t2 = self.makeTrack("t2")
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(t1, toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(t2, toPlaylist: playlist.mediaId)
+        }
+
+        var received = false
+        let observer = NotificationCenter.default.addObserver(
+            forName: .playlistMembershipChanged, object: nil, queue: nil
+        ) { _ in received = true }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.reorderTracks([t2, t1], inPlaylist: playlist.mediaId)
+        }
+
+        #expect(received)
+    }
+
+    @Test func reorderTracksDoesNotPostNotificationForNonexistentPlaylist() throws {
+        let ctx = try Context()
+        let t1 = self.makeTrack("t1")
+
+        var received = false
+        let observer = NotificationCenter.default.addObserver(
+            forName: .playlistMembershipChanged, object: nil, queue: nil
+        ) { _ in received = true }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.reorderTracks([t1], inPlaylist: "ghost-playlist")
+        }
+
+        #expect(!received)
+    }
+
     // MARK: - Recents: tracks
 
     @Test func markRecentlyPlayedInsertsTrackAndSetsFlagAndTimestamp() throws {
