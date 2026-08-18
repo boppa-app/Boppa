@@ -292,7 +292,6 @@ struct LibraryView: View {
                 }
             }
             .listStyle(.plain)
-            // .padding(.top, -10)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
         }

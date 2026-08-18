@@ -90,8 +90,8 @@ struct Track: Identifiable, Equatable {
         self.isSavedToLibrary = isSavedToLibrary
     }
 
-    /// Preserves `id` so SwiftUI identity is stable when enriching an
-    /// already-playing track with fuller metadata from a get.song/get.video call.
+    /// Preserves id so SwiftUI identity is stable when enriching an
+    /// already-playing track with fuller metadata from a get.song/get.video call
     func merging(fetched: Track) -> Track {
         Track(
             id: self.id,

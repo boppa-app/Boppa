@@ -16,8 +16,7 @@ enum FractionalIndex {
         self.base62.firstIndex(of: c) ?? 0
     }
 
-    /// Total length of the integer part (head + digits) for a given head.
-    /// 'a'→2 (1 digit), 'b'→3, ..., 'z'→27
+    /// Total length of the integer part (head + digits) for a given head ('a'→2 (1 digit), 'b'→3, ..., 'z'→27)
     private static func integerLength(forHead head: Character) -> Int {
         let aVal = Character("a").asciiValue!
         let zVal = Character("z").asciiValue!
@@ -36,7 +35,7 @@ enum FractionalIndex {
         return String(key.prefix(len))
     }
 
-    /// Returns the next integer string, or nil on overflow.
+    /// Returns the next integer string, or nil on overflow
     private static func incrementInteger(_ x: String) -> String? {
         let head = x.first!
         var digs = Array(x.dropFirst())
@@ -55,7 +54,7 @@ enum FractionalIndex {
         return String(newHead) + String(repeating: self.base62[0], count: newDigitCount)
     }
 
-    /// Returns the previous integer string, or nil on underflow.
+    /// Returns the previous integer string, or nil on underflow
     private static func decrementInteger(_ x: String) -> String? {
         let head = x.first!
         var digs = Array(x.dropFirst())
@@ -74,9 +73,7 @@ enum FractionalIndex {
         return String(newHead) + String(repeating: self.base62[self.base62Count - 1], count: newDigitCount)
     }
 
-    // Lexicographic midpoint between two fractional suffix strings.
-    // `a`: lower fractional suffix ("" means no lower bound).
-    // `b`: upper fractional suffix, or nil for no upper bound.
+    /// Lexicographic midpoint between two fractional suffix strings; a "" means no lower bound, b nil means no upper bound
     private static func midpoint(_ a: String, _ b: String?) -> String {
         let aChars = Array(a)
         if let b, !b.isEmpty {
@@ -115,8 +112,7 @@ enum FractionalIndex {
         return String(firstChar) + self.midpoint(rest, nil)
     }
 
-    /// Generates a key strictly between `a` and `b`.
-    /// Pass `nil` for `a` to generate before `b`; `nil` for `b` to generate after `a`; both `nil` for the first key.
+    /// Generates a key strictly between a and b; nil bounds mean before/after/first key
     static func generateKeyBetween(_ a: String?, _ b: String?) -> String {
         if let a, let b { precondition(a < b, "FractionalIndex: lower bound must be less than upper bound") }
 
@@ -146,7 +142,7 @@ enum FractionalIndex {
         return ia + self.midpoint(fa, nil)
     }
 
-    /// Generates `n` evenly distributed keys strictly between `a` and `b`.
+    /// Generates n evenly distributed keys strictly between a and b
     static func generateNKeysBetween(_ a: String?, _ b: String?, n: Int) -> [String] {
         guard n > 0 else { return [] }
         if n == 1 { return [self.generateKeyBetween(a, b)] }

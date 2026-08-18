@@ -77,16 +77,16 @@ class ScrollAwareVisibilityHandler {
         else if delta < 0 {
             self.accumulatedScrollDown = 0 // Reset scroll down accumulator
 
-            // Accumulate if velocity is high enough OR if the spacer is about to become visible (contentOffset < searchBarHeight).
-            // This ensures the search bar always appears before the black spacer is exposed, even during very slow scrolls.
+            // Accumulate if velocity is high enough OR if the spacer is about to become visible (contentOffset < searchBarHeight)
+            // This ensures the search bar always appears before the black spacer is exposed, even during very slow scrolls
             let spacerAboutToShow = newInfo.contentOffset < self.bubblesBarHeight
             if velocity > velocityThreshold || spacerAboutToShow {
                 self.accumulatedScrollUp += abs(delta)
 
                 // Show when both velocity and distance thresholds are met
                 if self.accumulatedScrollUp > scrollUpThreshold || spacerAboutToShow, !self.isHeaderVisible {
-                    // Dynamically calculate animation duration based on how quickly the scroll will reach the top.
-                    // This ensures the search bar finishes appearing before the spacer is fully exposed.
+                    // Dynamically calculate animation duration based on how quickly the scroll will reach the top
+                    // This ensures the search bar finishes appearing before the spacer is fully exposed
                     let maxFPS = CGFloat(UIScreen.main.maximumFramesPerSecond)
                     let framesUntilTop = velocity > 0 ? newInfo.contentOffset / velocity : 0
                     let secondsUntilTop = framesUntilTop / maxFPS

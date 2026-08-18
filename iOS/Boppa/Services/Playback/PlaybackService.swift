@@ -55,7 +55,7 @@ final class PlaybackService {
         RecentsStorageManager.shared.recordPlayedTrack(track, notify: notifyRecentsChanged)
 
         // Silence old engine's event handler immediately, before any await, so
-        // interruption-induced pause/play events from it doesn't pollute our state.
+        // interruption-induced pause/play events from it doesn't pollute our state
         let previousEngine = self.activeEngine !== engine ? self.activeEngine : nil
         previousEngine?.onEvent = nil
 

@@ -22,10 +22,10 @@ final class WebViewPlaybackEngine: NSObject {
     private var domReadyAt: Date?
     private var currentLoadToken: String?
 
-    /// `mediaTypesRequiringUserActionForPlayback = .all` means a player page's autoplay-on-load
+    /// mediaTypesRequiringUserActionForPlayback = .all means a player page's autoplay-on-load
     /// only reliably succeeds once the WebView has been settled for a moment after its DOM
-    /// finished loading; calling `boppaLoad` right as navigation finishes races that and can
-    /// leave playback stuck paused.
+    /// finished loading; calling boppaLoad right as navigation finishes races that and can
+    /// leave playback stuck paused
     private static let autoplayWarmupInterval: TimeInterval = 1
 
     init(config: MediaSourceConfig) {

@@ -24,8 +24,8 @@ struct TrackQueueManagerTests {
         manager.setShuffleMode(manager.shuffleMode == .shuffle ? .off : .shuffle)
     }
 
-    /// All tracks are enabled by default; pass `disabledSources` to mark specific media sources
-    /// as disabled, mirroring `Track.isMediaSourceEnabled` without touching a real database.
+    /// All tracks are enabled by default; pass disabledSources to mark specific media sources
+    /// as disabled, mirroring Track.isMediaSourceEnabled without touching a real database
     private func makeManager(disabledSources: Set<String> = []) -> TrackQueueManager {
         TrackQueueManager(isTrackEnabled: { !disabledSources.contains($0.mediaSourceId) })
     }
@@ -35,6 +35,7 @@ struct TrackQueueManagerTests {
     @Test func setQueueSetsEntriesAndCurrentIndex() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
+
         manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
 
         #expect(self.entryKeys(manager.entries) == self.keys(tracks))
@@ -45,19 +46,25 @@ struct TrackQueueManagerTests {
 
     @Test func setQueueClampsNegativeStartIndex() {
         let manager = self.makeManager()
+
         manager.setQueue([self.track("a"), self.track("b")], startingAt: -5, contextId: "ctx")
+
         #expect(manager.currentIndex == 0)
     }
 
     @Test func setQueueClampsOutOfBoundsStartIndex() {
         let manager = self.makeManager()
+
         manager.setQueue([self.track("a"), self.track("b")], startingAt: 99, contextId: "ctx")
+
         #expect(manager.currentIndex == 1)
     }
 
     @Test func setQueueWithEmptyTracksResultsInNilCurrentTrack() {
         let manager = self.makeManager()
+
         manager.setQueue([], startingAt: 0, contextId: "ctx")
+
         #expect(manager.currentTrack == nil)
         #expect(manager.currentIndex == 0)
     }
@@ -77,7 +84,9 @@ struct TrackQueueManagerTests {
     @Test func isTrackSelectedFalseForDifferentContext() {
         let manager = self.makeManager()
         let a = self.track("a")
+
         manager.setQueue([a], startingAt: 0, contextId: "ctx")
+
         #expect(manager.isTrackSelected(a, contextId: "other-ctx") == false)
     }
 
@@ -89,6 +98,7 @@ struct TrackQueueManagerTests {
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
 
         manager.jump(to: manager.entries[2])
+
         #expect(manager.currentIndex == 2)
         #expect(manager.currentTrack?.trackKey == tracks[2].trackKey)
     }
@@ -99,6 +109,7 @@ struct TrackQueueManagerTests {
 
         let bogus = QueueEntry(track: self.track("z"))
         manager.jump(to: bogus)
+
         #expect(manager.currentIndex == 0)
     }
 
@@ -154,7 +165,7 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
 
         #expect(await manager.advanceToNext()?.trackKey == tracks[0].trackKey)
         #expect(manager.currentIndex == 0)
@@ -164,7 +175,7 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
 
         #expect(manager.rewindToPrevious()?.trackKey == tracks[2].trackKey)
         #expect(manager.currentIndex == 2)
@@ -174,7 +185,7 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager(disabledSources: [Self.disabledSource])
         let tracks = (0 ..< 3).map { self.track("t\($0)", source: Self.disabledSource) }
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
 
         #expect(await manager.advanceToNext() == nil)
         #expect(manager.currentIndex == 0)
@@ -186,8 +197,8 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
-        manager.cycleRepeatMode() // all -> one
+        manager.cycleRepeatMode()
+        manager.cycleRepeatMode()
 
         #expect(await manager.advanceToNext()?.trackKey == tracks[1].trackKey)
         #expect(manager.currentIndex == 1)
@@ -199,8 +210,8 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
-        manager.cycleRepeatMode() // all -> one
+        manager.cycleRepeatMode()
+        manager.cycleRepeatMode()
 
         manager.exitRepeatOneOnUserSkip()
         #expect(manager.repeatMode == .all)
@@ -213,7 +224,7 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
         #expect(manager.repeatMode == .all)
 
         manager.setShuffleMode(.radio)
@@ -226,9 +237,9 @@ struct TrackQueueManagerTests {
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
         manager.setShuffleMode(.radio)
 
-        manager.cycleRepeatMode() // off -> one (skips all)
+        manager.cycleRepeatMode()
         #expect(manager.repeatMode == .one)
-        manager.cycleRepeatMode() // one -> off
+        manager.cycleRepeatMode()
         #expect(manager.repeatMode == .off)
     }
 
@@ -243,6 +254,7 @@ struct TrackQueueManagerTests {
         manager.setQueue([a, b, c], startingAt: 0, contextId: "ctx")
 
         manager.playNext(x)
+
         #expect(self.entryKeys(manager.entries) == self.keys([a, x, b, c]))
         #expect(manager.entries[1].userAdded == true)
         #expect(manager.currentIndex == 0)
@@ -258,6 +270,7 @@ struct TrackQueueManagerTests {
 
         manager.playNext(x)
         manager.playNext(y)
+
         #expect(self.entryKeys(manager.entries) == self.keys([a, y, x, b]))
     }
 
@@ -269,6 +282,7 @@ struct TrackQueueManagerTests {
         manager.setQueue([a, b], startingAt: 0, contextId: "ctx")
 
         manager.addToQueue(x)
+
         #expect(self.entryKeys(manager.entries) == self.keys([a, x, b]))
     }
 
@@ -282,6 +296,7 @@ struct TrackQueueManagerTests {
 
         manager.addToQueue(x)
         manager.addToQueue(y)
+
         #expect(self.entryKeys(manager.entries) == self.keys([a, x, y, b]))
     }
 
@@ -294,9 +309,10 @@ struct TrackQueueManagerTests {
         let z = self.track("z")
         manager.setQueue([a, b], startingAt: 0, contextId: "ctx")
 
-        manager.playNext(x) // [a, x, b]
-        manager.addToQueue(y) // [a, x, y, b]
-        manager.playNext(z) // [a, z, x, y, b]
+        manager.playNext(x)
+        manager.addToQueue(y)
+        manager.playNext(z)
+
         #expect(self.entryKeys(manager.entries) == self.keys([a, z, x, y, b]))
     }
 
@@ -305,9 +321,10 @@ struct TrackQueueManagerTests {
     @Test func removeFromQueueBeforeCurrentShiftsIndexDown() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c"), self.track("d")]
-        manager.setQueue(tracks, startingAt: 1, contextId: "ctx") // current = b
+        manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
 
-        manager.removeFromQueue(manager.entries[0]) // remove a
+        manager.removeFromQueue(manager.entries[0])
+
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[1], tracks[2], tracks[3]]))
         #expect(manager.currentIndex == 0)
         #expect(manager.currentTrack?.trackKey == tracks[1].trackKey)
@@ -316,9 +333,10 @@ struct TrackQueueManagerTests {
     @Test func removeFromQueueAfterCurrentDoesNotShiftIndex() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c"), self.track("d")]
-        manager.setQueue(tracks, startingAt: 1, contextId: "ctx") // current = b
+        manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
 
-        manager.removeFromQueue(manager.entries[3]) // remove d
+        manager.removeFromQueue(manager.entries[3])
+
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], tracks[1], tracks[2]]))
         #expect(manager.currentIndex == 1)
         #expect(manager.currentTrack?.trackKey == tracks[1].trackKey)
@@ -327,9 +345,10 @@ struct TrackQueueManagerTests {
     @Test func removeFromQueueIsNoOpForCurrentlyPlayingEntry() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
-        manager.setQueue(tracks, startingAt: 1, contextId: "ctx") // current = b
+        manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
 
         manager.removeFromQueue(manager.entries[1])
+
         #expect(self.entryKeys(manager.entries) == self.keys(tracks))
         #expect(manager.currentIndex == 1)
     }
@@ -339,9 +358,9 @@ struct TrackQueueManagerTests {
     @Test func applyReorderUpdatesOrderAndPreservesCurrentEntry() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
-        manager.setQueue(tracks, startingAt: 1, contextId: "ctx") // current = b
+        manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
 
-        let reordered = [manager.entries[2], manager.entries[0], manager.entries[1]] // c, a, b
+        let reordered = [manager.entries[2], manager.entries[0], manager.entries[1]]
         manager.applyReorder(reordered)
 
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[2], tracks[0], tracks[1]]))
@@ -356,8 +375,7 @@ struct TrackQueueManagerTests {
         let c = self.track("c")
         manager.setQueue([a, b, c], startingAt: 0, contextId: "ctx")
 
-        // Caller (the queue UI) only reorders the enabled subset.
-        manager.applyReorder([manager.entries[2], manager.entries[0]]) // c, a (b excluded)
+        manager.applyReorder([manager.entries[2], manager.entries[0]])
 
         #expect(self.entryKeys(manager.entries) == self.keys([c, a, b]))
     }
@@ -367,9 +385,10 @@ struct TrackQueueManagerTests {
     @Test func toggleShuffleOnAnchorsCurrentTrackAtFront() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c"), self.track("d")]
-        manager.setQueue(tracks, startingAt: 2, contextId: "ctx") // current = c
+        manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
 
         self.toggleShuffle(manager)
+
         #expect((manager.shuffleMode == .shuffle) == true)
         #expect(manager.currentIndex == 0)
         #expect(manager.activeEntries.first?.track.trackKey == tracks[2].trackKey)
@@ -382,10 +401,11 @@ struct TrackQueueManagerTests {
         let b = self.track("b")
         let c = self.track("c")
         let x = self.track("x")
-        manager.setQueue([a, b, c], startingAt: 0, contextId: "ctx") // current = a
-        manager.playNext(x) // [a, x, b, c], x is userAdded
+        manager.setQueue([a, b, c], startingAt: 0, contextId: "ctx")
+        manager.playNext(x)
 
         self.toggleShuffle(manager)
+
         #expect(manager.activeEntries[0].track.trackKey == a.trackKey)
         #expect(manager.activeEntries[1].track.trackKey == x.trackKey)
         let remainder = Set(manager.activeEntries[2...].map(\.track.trackKey))
@@ -396,9 +416,10 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = (0 ..< 5).map { self.track("t\($0)") }
         manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
 
         self.toggleShuffle(manager)
+
         #expect(manager.activeEntries.count == 5)
         #expect(Set(manager.activeEntries.map(\.track.trackKey)) == Set(self.keys(tracks)))
     }
@@ -406,7 +427,7 @@ struct TrackQueueManagerTests {
     @Test func toggleShuffleOffRestoresCanonicalOrderAndCurrentIndex() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c"), self.track("d")]
-        manager.setQueue(tracks, startingAt: 1, contextId: "ctx") // current = b
+        manager.setQueue(tracks, startingAt: 1, contextId: "ctx")
 
         self.toggleShuffle(manager)
         self.toggleShuffle(manager)
@@ -421,11 +442,12 @@ struct TrackQueueManagerTests {
 
     @Test func shuffleWithRepeatOffExcludesAlreadyPlayedTracksFromPool() {
         let manager = self.makeManager()
-        let tracks = (0 ..< 5).map { self.track("t\($0)") } // t0..t4
-        manager.setQueue(tracks, startingAt: 2, contextId: "ctx") // current = t2, repeat off
+        let tracks = (0 ..< 5).map { self.track("t\($0)") }
+        manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
 
         self.toggleShuffle(manager)
-        #expect(manager.activeEntries.count == 3) // t2, t3, t4 only
+
+        #expect(manager.activeEntries.count == 3)
         #expect(!manager.activeEntries.contains { $0.track.trackKey == tracks[0].trackKey })
         #expect(!manager.activeEntries.contains { $0.track.trackKey == tracks[1].trackKey })
     }
@@ -434,9 +456,10 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = (0 ..< 5).map { self.track("t\($0)") }
         manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
 
         self.toggleShuffle(manager)
+
         #expect(manager.activeEntries.count == 5)
         #expect(Set(manager.activeEntries.map(\.track.trackKey)) == Set(self.keys(tracks)))
     }
@@ -444,11 +467,12 @@ struct TrackQueueManagerTests {
     @Test func changingRepeatModeWhileShuffledOffToAllExpandsPool() {
         let manager = self.makeManager()
         let tracks = (0 ..< 5).map { self.track("t\($0)") }
-        manager.setQueue(tracks, startingAt: 2, contextId: "ctx") // repeat off
+        manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
         self.toggleShuffle(manager)
         #expect(manager.shuffledEntries.count == 3)
 
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
+
         #expect(manager.shuffledEntries.count == 5)
         #expect(manager.currentIndex == 0)
         #expect(manager.activeEntries.first?.track.trackKey == tracks[2].trackKey)
@@ -458,14 +482,13 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = (0 ..< 5).map { self.track("t\($0)") }
         manager.setQueue(tracks, startingAt: 2, contextId: "ctx")
-        manager.cycleRepeatMode() // off -> all
+        manager.cycleRepeatMode()
         self.toggleShuffle(manager)
         #expect(manager.shuffledEntries.count == 5)
 
-        manager.cycleRepeatMode() // all -> one (still treated as "everything")
+        manager.cycleRepeatMode()
         #expect(manager.shuffledEntries.count == 5)
-
-        manager.cycleRepeatMode() // one -> off (now restricted to remaining)
+        manager.cycleRepeatMode()
         #expect(manager.shuffledEntries.count == 3)
     }
 
@@ -479,6 +502,7 @@ struct TrackQueueManagerTests {
         self.toggleShuffle(manager)
 
         manager.addToQueue(x)
+
         #expect(manager.entries.count == 4)
         #expect(manager.entries.contains { $0.track.trackKey == x.trackKey })
         #expect(manager.shuffledEntries.count == 4)
@@ -489,10 +513,11 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         let x = self.track("x")
-        manager.setQueue(tracks, startingAt: 0, contextId: "ctx") // current = a
-        self.toggleShuffle(manager) // shuffledEntries[0] == a
+        manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
+        self.toggleShuffle(manager)
 
         manager.playNext(x)
+
         #expect(manager.shuffledEntries[1].track.trackKey == x.trackKey)
         #expect(manager.entries[1].track.trackKey == x.trackKey)
     }
@@ -532,6 +557,7 @@ struct TrackQueueManagerTests {
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
 
         manager.applyReorder([manager.entries[2], manager.entries[0], manager.entries[1]])
+
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[2], tracks[0], tracks[1]]))
         #expect(manager.shuffledEntries.isEmpty)
     }
@@ -539,17 +565,16 @@ struct TrackQueueManagerTests {
     @Test func reorderWhileShuffledThenToggleCycleDiscardsManualReorder() {
         let manager = self.makeManager()
         let tracks = (0 ..< 5).map { self.track("t\($0)") }
-        manager.setQueue(tracks, startingAt: 0, contextId: "ctx") // current = t0
+        manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
         self.toggleShuffle(manager)
 
         let original = manager.shuffledEntries
         let swapped = [original[0], original[2], original[1], original[3], original[4]]
         manager.applyReorder(swapped)
 
-        self.toggleShuffle(manager) // off: canonical must be untouched by the manual reorder
+        self.toggleShuffle(manager)
         #expect(self.entryKeys(manager.entries) == self.keys(tracks))
-
-        self.toggleShuffle(manager) // on again: freshly rebuilt from canonical, anchored at t0
+        self.toggleShuffle(manager)
         #expect(manager.shuffledEntries.first?.track.trackKey == tracks[0].trackKey)
         #expect(Set(manager.shuffledEntries.map(\.track.trackKey)) == Set(self.keys(tracks)))
     }
@@ -559,18 +584,15 @@ struct TrackQueueManagerTests {
     @Test func complexPathReorderThenAddToQueueThenPlayNext() {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c"), self.track("d")]
-        manager.setQueue(tracks, startingAt: 0, contextId: "ctx") // current = a
+        manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
 
-        // Reorder so d comes right after a.
         manager.applyReorder([manager.entries[0], manager.entries[3], manager.entries[1], manager.entries[2]])
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], tracks[3], tracks[1], tracks[2]]))
-
         let x = self.track("x")
-        manager.addToQueue(x) // no userAdded entries yet -> right after current (a)
+        manager.addToQueue(x)
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], x, tracks[3], tracks[1], tracks[2]]))
-
         let y = self.track("y")
-        manager.playNext(y) // also lands right after current (a), ahead of x
+        manager.playNext(y)
         #expect(self.entryKeys(manager.entries) == self.keys([tracks[0], y, x, tracks[3], tracks[1], tracks[2]]))
     }
 
@@ -578,21 +600,18 @@ struct TrackQueueManagerTests {
         let manager = self.makeManager()
         let tracks = [self.track("a"), self.track("b"), self.track("c")]
         manager.setQueue(tracks, startingAt: 0, contextId: "ctx")
-
         let x = self.track("x")
         let y = self.track("y")
 
-        self.toggleShuffle(manager) // on
+        self.toggleShuffle(manager)
         manager.addToQueue(x)
-        self.toggleShuffle(manager) // off
+        self.toggleShuffle(manager)
         #expect(Set(self.entryKeys(manager.entries)) == Set(self.keys(tracks) + [x.trackKey]))
-
-        self.toggleShuffle(manager) // on again
+        self.toggleShuffle(manager)
         manager.playNext(y)
         #expect(manager.shuffledEntries.count == 5)
         #expect(manager.entries.count == 5)
-
-        self.toggleShuffle(manager) // off again: canonical must still contain everything exactly once
+        self.toggleShuffle(manager)
         let allKeys = self.entryKeys(manager.entries)
         #expect(allKeys.count == 5)
         #expect(Set(allKeys).count == 5)
