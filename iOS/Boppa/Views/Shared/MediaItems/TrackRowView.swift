@@ -19,8 +19,6 @@ struct TrackRow: View {
     var onDeleteTap: (() -> Void)?
     var isDeleteDisabled: Bool = false
 
-    private let accessorySize: CGFloat = 44
-
     private var artworkSize: CGFloat {
         self.style == .compact ? 36 : 48
     }
@@ -74,7 +72,7 @@ struct TrackRow: View {
                 if self.style == .regular {
                     Image(systemName: "ellipsis")
                         .foregroundColor(Color(.systemGray4))
-                        .frame(width: self.accessorySize, height: self.accessorySize)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             self.onEllipsisTap?()
@@ -86,7 +84,7 @@ struct TrackRow: View {
             } else if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
                 Image(systemName: "xmark")
                     .foregroundColor(.purp)
-                    .frame(width: self.accessorySize, height: self.accessorySize)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
                     .onTapGesture { onDeleteTap() }
                     .accessibilityLabel("Remove from queue")
@@ -95,7 +93,7 @@ struct TrackRow: View {
                 if self.isSelected && self.isLoading {
                     SpinnerView(tint: .purp, lineWidth: 3)
                         .frame(width: 20, height: 20)
-                        .frame(width: self.accessorySize, height: self.accessorySize)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             self.onEllipsisTap?()
@@ -113,7 +111,7 @@ struct TrackRow: View {
                                 .background(Color.black)
                         }
                     }
-                    .frame(width: self.accessorySize, height: self.accessorySize)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         self.onEllipsisTap?()
@@ -124,7 +122,7 @@ struct TrackRow: View {
                 } else {
                     Image(systemName: "ellipsis")
                         .foregroundColor(Color(.systemGray))
-                        .frame(width: self.accessorySize, height: self.accessorySize)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             self.onEllipsisTap?()
@@ -133,8 +131,6 @@ struct TrackRow: View {
                         .accessibilityHint("More options for \(self.track.title)")
                         .accessibilityAddTraits(.isButton)
                 }
-            } else if self.style == .compact {
-                Color.clear.frame(width: self.accessorySize, height: self.accessorySize)
             }
         }
         .padding(.leading, self.leftPadding)
