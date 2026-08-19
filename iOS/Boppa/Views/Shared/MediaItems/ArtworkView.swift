@@ -167,6 +167,7 @@ private struct ArtworkImageContent: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: self.size, height: self.size)
                         .opacity(0)
+                        .id(url)
                 }
                 .frame(width: self.size, height: self.size)
             }
