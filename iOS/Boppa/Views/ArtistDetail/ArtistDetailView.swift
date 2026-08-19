@@ -7,7 +7,7 @@ struct ArtistDetailView: View {
 
     let artist: Artist
     let mediaSource: StoredMediaSource
-    var navigationResetId: Int = 0
+    var navigationReset = NavigationResetSignal()
 
     private let maxAlbums = 3
     private let maxSongs = 5
@@ -38,7 +38,7 @@ struct ArtistDetailView: View {
                     mediaSource: self.mediaSource,
                     type: .albums,
                     title: "Albums",
-                    navigationResetId: self.navigationResetId
+                    navigationReset: self.navigationReset
                 )
             case .playlistList:
                 TracklistListView(
@@ -46,10 +46,10 @@ struct ArtistDetailView: View {
                     mediaSource: self.mediaSource,
                     type: .playlists,
                     title: "Playlists",
-                    navigationResetId: self.navigationResetId
+                    navigationReset: self.navigationReset
                 )
             case let .tracklist(tracklist):
-                TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
+                TracklistView(tracklist: tracklist, navigationReset: self.navigationReset)
             }
         }
         .onAppear {

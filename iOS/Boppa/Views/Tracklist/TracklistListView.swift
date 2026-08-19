@@ -7,7 +7,7 @@ struct TracklistListView: View {
     @State private var showActionSheet = false
     @State private var tracklistToDelete: Tracklist?
     @State private var scrollHandler = ScrollAwareVisibilityHandler()
-    @State private var isNavigatingAway = false
+    @State private var navigatingAwayHideOverlayButton = false
     @State private var showNewPlaylistAlert = false
     @State private var newPlaylistName = ""
 
@@ -17,27 +17,27 @@ struct TracklistListView: View {
     let title: String
     let isLibraryMode: Bool
     var onTracklistSelected: ((String) -> Void)?
-    var navigationResetId: Int = 0
+    var navigationReset: NavigationResetSignal
 
     init(
         artist: Artist,
         mediaSource: StoredMediaSource,
         type: TracklistListType,
         title: String,
-        navigationResetId: Int = 0
+        navigationReset: NavigationResetSignal = NavigationResetSignal()
     ) {
         self.artist = artist
         self.mediaSource = mediaSource
         self.type = type
         self.title = title
         self.isLibraryMode = false
-        self.navigationResetId = navigationResetId
+        self.navigationReset = navigationReset
     }
 
     init(
         type: TracklistListType,
         title: String,
-        navigationResetId: Int = 0,
+        navigationReset: NavigationResetSignal = NavigationResetSignal(),
         onTracklistSelected: ((String) -> Void)? = nil
     ) {
         self.artist = nil
@@ -45,7 +45,7 @@ struct TracklistListView: View {
         self.type = type
         self.title = title
         self.isLibraryMode = true
-        self.navigationResetId = navigationResetId
+        self.navigationReset = navigationReset
         self.onTracklistSelected = onTracklistSelected
     }
 
@@ -59,6 +59,7 @@ struct TracklistListView: View {
                         if self.viewModel.isEditing {
                             self.viewModel.exitEditMode()
                         } else {
+                            self.navigatingAwayHideOverlayButton = true
                             self.dismiss()
                         }
                     },
@@ -103,7 +104,7 @@ struct TracklistListView: View {
                     accessibilityLabel: "New Playlist",
                     accessibilityHint: "Create a new playlist",
                     scrollHandler: self.scrollHandler,
-                    isNavigatingAway: self.isNavigatingAway,
+                    isHidden: self.navigatingAwayHideOverlayButton,
                     action: {
                         self.newPlaylistName = ""
                         self.showNewPlaylistAlert = true
@@ -114,16 +115,16 @@ struct TracklistListView: View {
         }
         .navigationBarHidden(true)
         .enableSwipeBack()
-        .onChange(of: self.navigationResetId) { _, _ in
-            self.isNavigatingAway = true
+        .onChange(of: self.navigationReset.id) { _, _ in
+            self.navigatingAwayHideOverlayButton = true
         }
         .onChange(of: self.navigationTarget) { _, newValue in
             if newValue == nil {
-                self.isNavigatingAway = false
+                self.navigatingAwayHideOverlayButton = false
             }
         }
         .navigationDestination(item: self.$navigationTarget) { tracklist in
-            TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
+            TracklistView(tracklist: tracklist, navigationReset: self.navigationReset)
         }
         .alert("New Playlist", isPresented: self.$showNewPlaylistAlert) {
             TextField("Playlist Name", text: self.$newPlaylistName)
@@ -297,7 +298,12 @@ struct TracklistListView: View {
                         .onTapGesture {
                             if self.canNavigateToTracklist {
                                 self.onTracklistSelected?(tracklist.mediaSourceId)
-                                self.isNavigatingAway = true
+                                if TracklistStorageManager.shared.isTracklistEmpty(
+                                    mediaId: tracklist.mediaId,
+                                    mediaSourceId: tracklist.mediaSourceId
+                                ) {
+                                    self.navigatingAwayHideOverlayButton = true
+                                }
                                 self.navigationTarget = tracklist
                             }
                         }

@@ -12,7 +12,7 @@ struct LibraryView: View {
     @State private var pendingTracklist: Tracklist?
     @State private var path = NavigationPath()
     @State private var activeMediaSourceId: String?
-    var navigationResetId: Int = 0
+    var navigationReset = NavigationResetSignal()
     @Binding var isAtNavigationRoot: Bool
     @Binding var externalPendingArtist: Artist?
     @Binding var externalPendingTracklist: Tracklist?
@@ -93,7 +93,7 @@ struct LibraryView: View {
                 self.isAtNavigationRoot = count == 0
                 if count == 0 { self.activeMediaSourceId = nil }
             }
-            .onChange(of: self.navigationResetId) { _, _ in
+            .onChange(of: self.navigationReset.id) { _, _ in
                 self.path = NavigationPath()
                 self.pendingArtist = nil
                 self.pendingTracklist = nil
@@ -139,12 +139,12 @@ struct LibraryView: View {
             .navigationDestination(for: LibraryDestination.self) { destination in
                 switch destination {
                 case let .tracklist(tracklist):
-                    TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
+                    TracklistView(tracklist: tracklist, navigationReset: self.navigationReset)
                 case .playlists:
                     TracklistListView(
                         type: .playlists,
                         title: "Playlists",
-                        navigationResetId: self.navigationResetId
+                        navigationReset: self.navigationReset
                     ) { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
@@ -152,7 +152,7 @@ struct LibraryView: View {
                     TracklistListView(
                         type: .albums,
                         title: "Albums",
-                        navigationResetId: self.navigationResetId
+                        navigationReset: self.navigationReset
                     ) { sourceId in
                         self.activeMediaSourceId = sourceId
                     }
@@ -160,7 +160,7 @@ struct LibraryView: View {
                     ArtistDetailView(
                         artist: artist,
                         mediaSource: mediaSource,
-                        navigationResetId: self.navigationResetId
+                        navigationReset: self.navigationReset
                     )
                 }
             }

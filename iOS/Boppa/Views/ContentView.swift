@@ -4,8 +4,8 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNowPlaying = false
     @State private var nowPlayingViewModel = NowPlayingViewModel()
-    @State private var searchResetId = 0
-    @State private var libraryResetId = 0
+    @State private var searchNavigationReset = NavigationResetSignal()
+    @State private var libraryNavigationReset = NavigationResetSignal()
     @State private var settingsResetId = 0
     @State private var searchFocusId = 0
     @State private var searchIsAtRoot = true
@@ -31,7 +31,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ZStack {
                     SearchView(
-                        navigationResetId: self.searchResetId,
+                        navigationReset: self.searchNavigationReset,
                         focusSearchId: self.searchFocusId,
                         selectedTab: self.$selectedTab,
                         isAtNavigationRoot: self.$searchIsAtRoot,
@@ -41,7 +41,7 @@ struct ContentView: View {
                     .opacity(self.selectedTab == 0 ? 1 : 0)
                     .allowsHitTesting(self.selectedTab == 0)
                     LibraryView(
-                        navigationResetId: self.libraryResetId,
+                        navigationReset: self.libraryNavigationReset,
                         isAtNavigationRoot: self.$libraryIsAtRoot,
                         externalPendingArtist: self.$libraryPendingArtist,
                         externalPendingTracklist: self.$libraryPendingTracklist
@@ -99,9 +99,10 @@ struct ContentView: View {
                             withAnimation(.easeInOut(duration: 0.35)) {
                                 switch tab {
                                 case 0:
-                                    if !self.searchIsAtRoot { self.searchResetId += 1 }
+                                    if !self.searchIsAtRoot { self.searchNavigationReset.fire() }
                                     self.searchFocusId += 1
-                                case 1: if !self.libraryIsAtRoot { self.libraryResetId += 1 }
+                                case 1:
+                                    if !self.libraryIsAtRoot { self.libraryNavigationReset.fire() }
                                 case 2: if !self.settingsIsAtRoot { self.settingsResetId += 1 }
                                 default: break
                                 }

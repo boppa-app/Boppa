@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 extension Notification.Name {
     static let navigateToArtistInSearch = Notification.Name("navigateToArtistInSearch")
@@ -15,4 +16,15 @@ func postTracklistNavigation(_ tracklist: Tracklist) {
         name: isSavedToLibrary ? .navigateToTracklistInLibrary : .navigateToTracklistInSearch,
         object: tracklist
     )
+}
+
+/// Broadcasts a tab's "reset to root" event by reference so deeply nested destinations
+/// (pushed several navigationDestination levels down) observe it directly via Observation.
+@Observable
+final class NavigationResetSignal {
+    private(set) var id = 0
+
+    func fire() {
+        self.id += 1
+    }
 }

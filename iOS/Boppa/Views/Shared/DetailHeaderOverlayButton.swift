@@ -5,13 +5,13 @@ struct DetailHeaderOverlayButton: View {
     let accessibilityLabel: String
     let accessibilityHint: String
     let scrollHandler: ScrollAwareVisibilityHandler
-    let isNavigatingAway: Bool
+    let isHidden: Bool
     let action: () -> Void
 
     static let diameter: CGFloat = 44
 
     private var isVisible: Bool {
-        self.scrollHandler.isHeaderVisible && !self.isNavigatingAway
+        self.scrollHandler.isHeaderVisible && !self.isHidden
     }
 
     var body: some View {
@@ -28,7 +28,7 @@ struct DetailHeaderOverlayButton: View {
         .accessibilityAddTraits(.isButton)
         .opacity(self.isVisible ? 1 : 0)
         .scaleEffect(self.isVisible ? 1 : 0.6)
-        .animation(.easeInOut(duration: 0.1), value: self.isNavigatingAway)
+        .animation(.easeInOut(duration: 0.1), value: self.isHidden)
         .animation(.easeInOut(duration: 0.2), value: self.scrollHandler.isHeaderVisible)
         .allowsHitTesting(self.isVisible)
         .padding(.top, DetailHeaderMetrics.height - Self.diameter / 2)

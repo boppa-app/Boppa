@@ -12,7 +12,7 @@ struct SearchView: View {
     @State private var activeMediaSourceId: String?
     @State private var keyboardTop: CGFloat = UIScreen.main.bounds.height
     @FocusState private var isSearchFieldFocused: Bool
-    var navigationResetId: Int = 0
+    var navigationReset = NavigationResetSignal()
     var focusSearchId: Int = 0
     @Binding var selectedTab: Int
     @Binding var isAtNavigationRoot: Bool
@@ -85,7 +85,7 @@ struct SearchView: View {
                     self.activeMediaSourceId = self.viewModel.selectedMediaSource?.id
                 }
             }
-            .onChange(of: self.navigationResetId) { _, _ in
+            .onChange(of: self.navigationReset.id) { _, _ in
                 self.path = NavigationPath()
                 self.pendingArtist = nil
                 self.pendingTracklist = nil
@@ -150,12 +150,12 @@ struct SearchView: View {
             .navigationDestination(for: SearchDestination.self) { destination in
                 switch destination {
                 case let .tracklist(tracklist):
-                    TracklistView(tracklist: tracklist, navigationResetId: self.navigationResetId)
+                    TracklistView(tracklist: tracklist, navigationReset: self.navigationReset)
                 case let .artist(artist, mediaSource):
                     ArtistDetailView(
                         artist: artist,
                         mediaSource: mediaSource,
-                        navigationResetId: self.navigationResetId
+                        navigationReset: self.navigationReset
                     )
                 }
             }
