@@ -62,7 +62,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.title = storedTracklist.title
         self.subtitle = storedTracklist.subtitle
         self.year = storedTracklist.year
-        self.trackCount = nil
+        self.trackCount = storedTracklist.trackCount
         self.lowResArtworkUrl = storedTracklist.lowResArtworkUrl
         self.highResArtworkUrl = storedTracklist.highResArtworkUrl
         self.url = storedTracklist.url

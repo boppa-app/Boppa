@@ -11,6 +11,7 @@ nonisolated struct StoredTracklist {
     var lowResArtworkUrl: String?
     var highResArtworkUrl: String?
     var url: String?
+    var trackCount: Int?
     var tracklistType: String
     var isPinned: Bool
     var isSavedToLibrary: Bool
@@ -60,6 +61,7 @@ extension StoredTracklist {
                 incoming: tracklist.highResArtworkUrl
             )
             && Self.fieldMatches(stored: self.url, incoming: tracklist.url)
+            && Self.fieldMatches(stored: self.trackCount, incoming: tracklist.trackCount)
     }
 
     private static func fieldMatches(stored: String, incoming: String) -> Bool {

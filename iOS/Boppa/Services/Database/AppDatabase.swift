@@ -20,7 +20,6 @@ extension DatabaseWriter where Self == DatabasePool {
         let database = try DatabasePool(path: url.path, configuration: configuration)
         var migrator = DatabaseMigrator()
         migrator.registerV1InitialSchema()
-        migrator.register20260818172551_DropTrackCount()
         try migrator.migrate(database)
         return database
     }
