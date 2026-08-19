@@ -44,7 +44,6 @@ struct TrackStorageManagerTests {
                       "lowResArtworkUrl" TEXT,
                       "highResArtworkUrl" TEXT,
                       "url" TEXT,
-                      "trackCount" INTEGER,
                       "tracklistType" TEXT NOT NULL CHECK (tracklistType IN ('album', 'playlist', 'likes')),
                       "isPinned" INTEGER NOT NULL DEFAULT 0,
                       "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
@@ -250,11 +249,10 @@ struct TrackStorageManagerTests {
         source: String = "src",
         title: String = "Album Title",
         type: Tracklist.TracklistType = .album,
-        url: String? = nil,
-        trackCount: Int? = nil
+        url: String? = nil
     ) -> Tracklist {
         Tracklist(
-            mediaId: mediaId, mediaSourceId: source, title: title, trackCount: trackCount, url: url,
+            mediaId: mediaId, mediaSourceId: source, title: title, url: url,
             tracklistType: type
         )
     }
@@ -321,14 +319,14 @@ struct TrackStorageManagerTests {
         #expect(try ctx.trackAlbumRefs("t1").count == 1)
     }
 
-    @Test func upsertTrackPersistsArtistAndAlbumURLAndTrackCount() throws {
+    @Test func upsertTrackPersistsArtistAndAlbumURL() throws {
         let ctx = try Context()
         let t1 = self.makeTrack(
             "t1",
             artists: [
                 self.makeArtist("a1", name: "Artist One", url: "https://example.com/artists/a1"),
             ],
-            albums: [self.makeAlbum("al1", url: "https://example.com/albums/al1", trackCount: 12)]
+            albums: [self.makeAlbum("al1", url: "https://example.com/albums/al1")]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
 
@@ -337,7 +335,6 @@ struct TrackStorageManagerTests {
 
         let album = try #require(try ctx.tracklist("al1"))
         #expect(album.url == "https://example.com/albums/al1")
-        #expect(album.trackCount == 12)
     }
 
     // MARK: - upsertTrack: change detection
@@ -406,12 +403,10 @@ struct TrackStorageManagerTests {
         #expect(artist.url == "https://example.com/a1")
     }
 
-    @Test func upsertTrackToleratesMissingAlbumURLAndTrackCountOnResyncWithoutTriggeringReplace()
-        throws
-    {
+    @Test func upsertTrackToleratesMissingAlbumURLOnResyncWithoutTriggeringReplace() throws {
         let ctx = try Context()
         let t1 = self.makeTrack(
-            "t1", albums: [self.makeAlbum("al1", url: "https://example.com/al1", trackCount: 12)]
+            "t1", albums: [self.makeAlbum("al1", url: "https://example.com/al1")]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
         try ctx.write { db in
@@ -421,7 +416,7 @@ struct TrackStorageManagerTests {
         }
 
         let resynced = self.makeTrack(
-            "t1", albums: [self.makeAlbum("al1", url: nil, trackCount: nil)]
+            "t1", albums: [self.makeAlbum("al1", url: nil)]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
 
@@ -429,7 +424,6 @@ struct TrackStorageManagerTests {
         #expect(refs.first?.sortOrder == "sentinel")
         let album = try #require(try ctx.tracklist("al1"))
         #expect(album.url == "https://example.com/al1")
-        #expect(album.trackCount == 12)
     }
 
     @Test func upsertTrackDetectsAndPersistsArtistURLWhenNewlyProvided() throws {
@@ -449,20 +443,18 @@ struct TrackStorageManagerTests {
         #expect(try ctx.artist("a1")?.url == "https://example.com/a1")
     }
 
-    @Test func upsertTrackDetectsAndPersistsAlbumURLAndTrackCountWhenNewlyProvided() throws {
+    @Test func upsertTrackDetectsAndPersistsAlbumURLWhenNewlyProvided() throws {
         let ctx = try Context()
-        let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1", url: nil, trackCount: nil)])
+        let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1", url: nil)])
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
         #expect(try ctx.tracklist("al1")?.url == nil)
-        #expect(try ctx.tracklist("al1")?.trackCount == nil)
 
         let resynced = self.makeTrack(
-            "t1", albums: [self.makeAlbum("al1", url: "https://example.com/al1", trackCount: 9)]
+            "t1", albums: [self.makeAlbum("al1", url: "https://example.com/al1")]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
 
         #expect(try ctx.tracklist("al1")?.url == "https://example.com/al1")
-        #expect(try ctx.tracklist("al1")?.trackCount == 9)
     }
 
     // MARK: - upsertTrack: artist orphaning
@@ -565,12 +557,12 @@ struct TrackStorageManagerTests {
         #expect(album.isSavedToLibrary == false)
     }
 
-    @Test func upsertTracklistStubPartialUpdateIgnoresEmptyTitleAndNilURLAndNilTrackCount() throws {
+    @Test func upsertTracklistStubPartialUpdateIgnoresEmptyTitleAndNilURL() throws {
         let ctx = try Context()
         let t1 = self.makeTrack(
             "t1",
             albums: [
-                self.makeAlbum("al1", title: "Real Album", url: "https://x/al1", trackCount: 10),
+                self.makeAlbum("al1", title: "Real Album", url: "https://x/al1"),
             ]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
@@ -578,14 +570,13 @@ struct TrackStorageManagerTests {
         let t1Updated = self.makeTrack(
             "t1",
             title: "New Track Title",
-            albums: [self.makeAlbum("al1", title: "", url: nil, trackCount: nil)]
+            albums: [self.makeAlbum("al1", title: "", url: nil)]
         )
         try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
 
         let album = try #require(try ctx.tracklist("al1"))
         #expect(album.title == "Real Album")
         #expect(album.url == "https://x/al1")
-        #expect(album.trackCount == 10)
     }
 
     @Test func upsertTrackWithInvalidAlbumTracklistTypeThrows() throws {

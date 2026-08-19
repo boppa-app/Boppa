@@ -49,6 +49,18 @@ class TracklistStorageManager {
         }
     }
 
+    func isTracklistEmpty(mediaId: String, mediaSourceId: String) -> Bool {
+        let match: StoredTracklistTrack? = try? self.database.read { db in
+            try StoredTracklistTrack
+                .where {
+                    $0.tracklistMediaId.eq(mediaId)
+                        .and($0.tracklistMediaSourceId.eq(mediaSourceId))
+                }
+                .fetchOne(db)
+        }
+        return match == nil
+    }
+
     func loadTracksForTracklist(_ tracklist: StoredTracklist) -> [Track] {
         let isLikes = tracklist.tracklistType == Tracklist.TracklistType.likes.rawValue
         return (try? self.database.read { db in
@@ -323,7 +335,6 @@ class TracklistStorageManager {
                 $0.lowResArtworkUrl = tracklist.lowResArtworkUrl
                 $0.highResArtworkUrl = tracklist.highResArtworkUrl
                 $0.url = tracklist.url
-                $0.trackCount = tracklist.trackCount
                 $0.isSavedToLibrary = true
             }
             .where {
@@ -356,7 +367,6 @@ class TracklistStorageManager {
                 lowResArtworkUrl: tracklist.lowResArtworkUrl,
                 highResArtworkUrl: tracklist.highResArtworkUrl,
                 url: tracklist.url,
-                trackCount: tracklist.trackCount,
                 tracklistType: typeString,
                 isPinned: false,
                 isSavedToLibrary: true,
@@ -610,7 +620,6 @@ class TracklistStorageManager {
                 if tracklist
                     .highResArtworkUrl != nil { $0.highResArtworkUrl = tracklist.highResArtworkUrl }
                 if tracklist.url != nil { $0.url = tracklist.url }
-                if tracklist.trackCount != nil { $0.trackCount = tracklist.trackCount }
             }
             .where {
                 $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
@@ -638,7 +647,6 @@ class TracklistStorageManager {
                     lowResArtworkUrl: tracklist.lowResArtworkUrl,
                     highResArtworkUrl: tracklist.highResArtworkUrl,
                     url: tracklist.url,
-                    trackCount: tracklist.trackCount,
                     tracklistType: typeString,
                     isPinned: false,
                     isSavedToLibrary: false,
