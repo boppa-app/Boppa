@@ -105,7 +105,6 @@ struct ScriptTracklist {
     let title: String
     let subtitle: String?
     let year: Int?
-    let trackCount: Int?
     let lowResArtworkUrl: String?
     let highResArtworkUrl: String?
     let url: String?
@@ -118,7 +117,6 @@ struct ScriptTracklist {
         self.title = title
         self.subtitle = dict["subtitle"] as? String
         self.year = scriptInt(dict["year"])
-        self.trackCount = scriptInt(dict["trackCount"])
         self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
         self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
@@ -182,7 +180,6 @@ protocol TracklistMetadata {
     var title: String { get }
     var subtitle: String? { get }
     var year: Int? { get }
-    var trackCount: Int? { get }
     var lowResArtworkUrl: String? { get }
     var highResArtworkUrl: String? { get }
     var url: String? { get }
@@ -193,7 +190,6 @@ struct GetAlbumResponse: TracklistMetadata {
     let title: String
     let subtitle: String?
     let year: Int?
-    let trackCount: Int?
     let lowResArtworkUrl: String?
     let highResArtworkUrl: String?
     let url: String?
@@ -206,7 +202,6 @@ struct GetAlbumResponse: TracklistMetadata {
         self.title = title
         self.subtitle = dict["subtitle"] as? String
         self.year = scriptInt(dict["year"])
-        self.trackCount = scriptInt(dict["trackCount"])
         self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
         self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
@@ -218,7 +213,6 @@ struct GetPlaylistResponse: TracklistMetadata {
     let title: String
     let subtitle: String?
     let year: Int? = nil
-    let trackCount: Int?
     let lowResArtworkUrl: String?
     let highResArtworkUrl: String?
     let url: String?
@@ -230,7 +224,6 @@ struct GetPlaylistResponse: TracklistMetadata {
         self.id = id
         self.title = title
         self.subtitle = dict["subtitle"] as? String
-        self.trackCount = scriptInt(dict["trackCount"])
         self.lowResArtworkUrl = dict["lowResArtworkUrl"] as? String
         self.highResArtworkUrl = dict["highResArtworkUrl"] as? String
         self.url = dict["url"] as? String
@@ -399,7 +392,6 @@ extension ScriptTracklist {
             title: self.title,
             subtitle: self.subtitle,
             year: self.year,
-            trackCount: self.trackCount,
             lowResArtworkUrl: self.lowResArtworkUrl,
             highResArtworkUrl: self.highResArtworkUrl,
             url: self.url,

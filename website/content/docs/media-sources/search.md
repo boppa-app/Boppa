@@ -81,7 +81,6 @@ postResult({
       title: "Album Title", // required
       subtitle: "Artist Name", // optional
       year: 1975, // optional
-      trackCount: 12, // optional
       lowResArtworkUrl: "https://...", // optional
       highResArtworkUrl: "https://..." // optional
     }

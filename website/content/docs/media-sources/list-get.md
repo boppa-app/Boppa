@@ -73,7 +73,6 @@ postResult({
       title: "Album Title", // required
       subtitle: "Artist Name", // optional
       year: 1975, // optional
-      trackCount: 12, // optional
       lowResArtworkUrl: "https://...", // optional
       highResArtworkUrl: "https://..." // optional
     }
@@ -149,7 +148,7 @@ postResult({
 
 ### `get.album`, `get.playlist`
 
-Called with `params.id` set to the album or playlist's media id whenever its page is opened. Returns a single tracklist object, using the same shape as an item from `search.albums` or `search.playlists`. Boppa merges the returned fields into whatever metadata is already known about the tracklist (for example, from the search result or list item that led to this page), filling in anything the earlier metadata was missing, such as `trackCount` or artwork.
+Called with `params.id` set to the album or playlist's media id whenever its page is opened. Returns a single tracklist object, using the same shape as an item from `search.albums` or `search.playlists`. Boppa merges the returned fields into whatever metadata is already known about the tracklist (for example, from the search result or list item that led to this page), filling in anything the earlier metadata was missing, such as artwork.
 
 ```js
 postResult({
@@ -157,7 +156,6 @@ postResult({
   title: "Album Title",
   subtitle: "Artist Name", // optional
   year: 1975, // optional, get.album only
-  trackCount: 12, // optional
   lowResArtworkUrl: "https://...", // optional
   highResArtworkUrl: "https://..." // optional
 });

@@ -7,7 +7,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     let title: String
     let subtitle: String?
     let year: Int?
-    let trackCount: Int?
     let lowResArtworkUrl: String?
     let highResArtworkUrl: String?
     let url: String?
@@ -30,7 +29,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         title: String,
         subtitle: String? = nil,
         year: Int? = nil,
-        trackCount: Int? = nil,
         lowResArtworkUrl: String? = nil,
         highResArtworkUrl: String? = nil,
         url: String? = nil,
@@ -45,7 +43,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.title = title
         self.subtitle = subtitle
         self.year = year
-        self.trackCount = trackCount
         self.lowResArtworkUrl = lowResArtworkUrl
         self.highResArtworkUrl = highResArtworkUrl
         self.url = url
@@ -62,7 +59,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.title = storedTracklist.title
         self.subtitle = storedTracklist.subtitle
         self.year = storedTracklist.year
-        self.trackCount = nil
         self.lowResArtworkUrl = storedTracklist.lowResArtworkUrl
         self.highResArtworkUrl = storedTracklist.highResArtworkUrl
         self.url = storedTracklist.url
@@ -77,7 +73,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
             && lhs.mediaSourceId == rhs.mediaSourceId
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
-            && lhs.trackCount == rhs.trackCount
             && lhs.lowResArtworkUrl == rhs.lowResArtworkUrl
             && lhs.highResArtworkUrl == rhs.highResArtworkUrl
             && lhs.url == rhs.url
@@ -100,11 +95,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         return source.isEnabled
     }
 
-    var formattedTrackCount: String? {
-        guard let trackCount else { return nil }
-        return "\(trackCount) track\(trackCount == 1 ? "" : "s")"
-    }
-
     func merging(fetched: any TracklistMetadata) -> Tracklist {
         Tracklist(
             mediaId: self.mediaId,
@@ -112,7 +102,6 @@ struct Tracklist: Identifiable, Equatable, Hashable {
             title: fetched.title.isEmpty ? self.title : fetched.title,
             subtitle: fetched.subtitle ?? self.subtitle,
             year: fetched.year ?? self.year,
-            trackCount: fetched.trackCount ?? self.trackCount,
             lowResArtworkUrl: fetched.lowResArtworkUrl ?? self.lowResArtworkUrl,
             highResArtworkUrl: fetched.highResArtworkUrl ?? self.highResArtworkUrl,
             url: fetched.url ?? self.url,

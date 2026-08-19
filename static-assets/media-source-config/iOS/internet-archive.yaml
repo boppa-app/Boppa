@@ -1,5 +1,5 @@
 id: archive.org
-version: 1.0.1
+version: 0.1.0
 name: Internet Archive
 url: archive.org
 iconSvg: |-
@@ -336,10 +336,6 @@ data:
       const filesResp = await fetch('https://archive.org/metadata/' + encodeURIComponent(identifier) + '/files');
       const filesData = await filesResp.json();
       const files = filesData.result || [];
-      const audioCount = files.filter(f =>
-        f.format === 'VBR MP3' || f.format === 'MP3' || f.format === '128Kbps MP3' || f.format === 'Ogg Vorbis'
-      ).length;
-
       function findRealArtworkFile(fileList) {
         const candidates = (fileList || []).filter(f => {
           const name = (f.name || '').toLowerCase();
@@ -366,7 +362,6 @@ data:
         title: meta.title || identifier,
         subtitle: meta.creator || 'Unknown Artist',
         year: meta.date ? parseInt(String(meta.date).substring(0, 4), 10) || null : null,
-        trackCount: audioCount || null,
         lowResArtworkUrl: lowResArtworkUrl,
         highResArtworkUrl: highResArtworkUrl
       });
