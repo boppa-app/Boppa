@@ -235,8 +235,8 @@ struct TracklistListView: View {
         ScrollFadeView {
             List {
                 ForEach(self.viewModel.displayTracklists) { tracklist in
-                    if self.viewModel.isEditing {
-                        HStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        if self.viewModel.isEditing {
                             Button {
                                 self.viewModel.togglePin(tracklist: tracklist)
                             } label: {
@@ -278,39 +278,34 @@ struct TracklistListView: View {
                                     "Delete this tracklist from your library" :
                                     "Remove this tracklist from your library"
                             )
-
-                            TracklistRow(
-                                tracklist: tracklist,
-                                showMediaSourceIcon: self.isLibraryMode
-                            )
                         }
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                    } else {
+
                         TracklistRow(
                             tracklist: tracklist,
                             showMediaSourceIcon: self.isLibraryMode,
-                            showChevron: self.canNavigateToTracklist,
-                            isMediaSourceEnabled: tracklist.isMediaSourceEnabled
+                            showChevron: self.viewModel.isEditing ? false : self
+                                .canNavigateToTracklist,
+                            isMediaSourceEnabled: self.viewModel.isEditing ? true : tracklist
+                                .isMediaSourceEnabled
                         )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if self.canNavigateToTracklist {
-                                self.onTracklistSelected?(tracklist.mediaSourceId)
-                                if TracklistStorageManager.shared.isTracklistEmpty(
-                                    mediaId: tracklist.mediaId,
-                                    mediaSourceId: tracklist.mediaSourceId
-                                ) {
-                                    self.navigatingAwayHideOverlayButton = true
-                                }
-                                self.navigationTarget = tracklist
-                            }
-                        }
-                        .listRowBackground(Color.black)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard !self.viewModel.isEditing else { return }
+                        if self.canNavigateToTracklist {
+                            self.onTracklistSelected?(tracklist.mediaSourceId)
+                            if TracklistStorageManager.shared.isTracklistEmpty(
+                                mediaId: tracklist.mediaId,
+                                mediaSourceId: tracklist.mediaSourceId
+                            ) {
+                                self.navigatingAwayHideOverlayButton = true
+                            }
+                            self.navigationTarget = tracklist
+                        }
+                    }
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
                 }
                 .onMove { source, destination in
                     self.viewModel.moveTracklist(from: source, to: destination)
@@ -331,6 +326,7 @@ struct TracklistListView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
+            .animation(.easeInOut(duration: 0.2), value: self.viewModel.isEditing)
         }
     }
 
