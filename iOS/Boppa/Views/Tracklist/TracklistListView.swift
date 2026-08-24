@@ -98,13 +98,13 @@ struct TracklistListView: View {
                 self.content
             }
 
-            if self.canCreatePlaylist && !self.viewModel.isEditing {
+            if self.canCreatePlaylist {
                 DetailHeaderOverlayButton(
                     systemImage: "plus",
                     accessibilityLabel: "New Playlist",
                     accessibilityHint: "Create a new playlist",
                     scrollHandler: self.scrollHandler,
-                    isHidden: self.navigatingAwayHideOverlayButton,
+                    isHidden: self.navigatingAwayHideOverlayButton || self.viewModel.isEditing,
                     action: {
                         self.newPlaylistName = ""
                         self.showNewPlaylistAlert = true

@@ -102,13 +102,13 @@ struct TracklistView: View {
                 self.content
             }
 
-            if self.isSaved && !self.viewModel.tracks.isEmpty && !self.viewModel.isEditing {
+            if self.isSaved && !self.viewModel.tracks.isEmpty {
                 DetailHeaderOverlayButton(
                     systemImage: "shuffle",
                     accessibilityLabel: "Shuffle",
                     accessibilityHint: "Play this tracklist in shuffled order",
                     scrollHandler: self.scrollHandler,
-                    isHidden: self.navigatingAwayHideOverlayButton,
+                    isHidden: self.navigatingAwayHideOverlayButton || self.viewModel.isEditing,
                     action: { self.shuffleAndPlay() }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
