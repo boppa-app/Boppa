@@ -997,7 +997,7 @@ struct TrackStorageManagerTests {
         #expect(playlists.map(\.title) == ["First", "Second"])
     }
 
-    @Test func reorderTracksAppliesNewOrderToBoppaPlaylist() throws {
+    @Test func moveTrackAppliesNewOrderToBoppaPlaylist() throws {
         let ctx = try Context()
         let playlist = try ctx
             .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
@@ -1011,8 +1011,10 @@ struct TrackStorageManagerTests {
         }
 
         try ctx.withDatabase {
-            try TracklistStorageManager.shared.reorderTracks(
-                [t3, t1, t2],
+            try TracklistStorageManager.shared.moveTrack(
+                t3,
+                after: nil,
+                before: t1,
                 inPlaylist: playlist.mediaId
             )
         }
@@ -1021,16 +1023,51 @@ struct TrackStorageManagerTests {
         #expect(refs.map(\.trackMediaId) == ["t3", "t1", "t2"])
     }
 
-    @Test func reorderTracksIsNoOpForNonexistentPlaylist() throws {
+    @Test func moveTrackOnlyRewritesTheMovedTrack() throws {
+        let ctx = try Context()
+        let playlist = try ctx
+            .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
+        let t1 = self.makeTrack("t1")
+        let t2 = self.makeTrack("t2")
+        let t3 = self.makeTrack("t3")
+        try ctx.withDatabase {
+            try TrackStorageManager.shared.addTrack(t1, toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(t2, toPlaylist: playlist.mediaId)
+            try TrackStorageManager.shared.addTrack(t3, toPlaylist: playlist.mediaId)
+        }
+        let before = try ctx.tracklistTrackRefs(playlist: playlist.mediaId)
+        let t1KeyBefore = try #require(before.first { $0.trackMediaId == "t1" }).sortOrder
+        let t2KeyBefore = try #require(before.first { $0.trackMediaId == "t2" }).sortOrder
+
+        try ctx.withDatabase {
+            try TracklistStorageManager.shared.moveTrack(
+                t3,
+                after: nil,
+                before: t1,
+                inPlaylist: playlist.mediaId
+            )
+        }
+
+        let after = try ctx.tracklistTrackRefs(playlist: playlist.mediaId)
+        #expect(try #require(after.first { $0.trackMediaId == "t1" }).sortOrder == t1KeyBefore)
+        #expect(try #require(after.first { $0.trackMediaId == "t2" }).sortOrder == t2KeyBefore)
+    }
+
+    @Test func moveTrackIsNoOpForNonexistentPlaylist() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1")
 
         try ctx.withDatabase {
-            try TracklistStorageManager.shared.reorderTracks([t1], inPlaylist: "ghost-playlist")
+            try TracklistStorageManager.shared.moveTrack(
+                t1,
+                after: nil,
+                before: nil,
+                inPlaylist: "ghost-playlist"
+            )
         }
     }
 
-    @Test func reorderTracksIsNoOpForLikes() throws {
+    @Test func moveTrackIsNoOpForLikes() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1")
         let t2 = self.makeTrack("t2")
@@ -1041,7 +1078,12 @@ struct TrackStorageManagerTests {
         let before = try ctx.tracklistTrackRefs(playlist: "likes")
 
         try ctx.withDatabase {
-            try TracklistStorageManager.shared.reorderTracks([t2, t1], inPlaylist: "likes")
+            try TracklistStorageManager.shared.moveTrack(
+                t2,
+                after: nil,
+                before: t1,
+                inPlaylist: "likes"
+            )
         }
 
         let after = try ctx.tracklistTrackRefs(playlist: "likes")
@@ -1212,7 +1254,7 @@ struct TrackStorageManagerTests {
         ])
     }
 
-    @Test func reorderTracksPostsPlaylistMembershipChangedNotification() throws {
+    @Test func moveTrackPostsPlaylistMembershipChangedNotification() throws {
         let ctx = try Context()
         let playlist = try ctx
             .withDatabase { try TracklistStorageManager.shared.createPlaylist(title: "Mix") }
@@ -1229,13 +1271,18 @@ struct TrackStorageManagerTests {
         defer { NotificationCenter.default.removeObserver(observer) }
 
         try ctx.withDatabase {
-            try TracklistStorageManager.shared.reorderTracks([t2, t1], inPlaylist: playlist.mediaId)
+            try TracklistStorageManager.shared.moveTrack(
+                t2,
+                after: nil,
+                before: t1,
+                inPlaylist: playlist.mediaId
+            )
         }
 
         #expect(received)
     }
 
-    @Test func reorderTracksDoesNotPostNotificationForNonexistentPlaylist() throws {
+    @Test func moveTrackDoesNotPostNotificationForNonexistentPlaylist() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1")
         var received = false
@@ -1245,7 +1292,12 @@ struct TrackStorageManagerTests {
         defer { NotificationCenter.default.removeObserver(observer) }
 
         try ctx.withDatabase {
-            try TracklistStorageManager.shared.reorderTracks([t1], inPlaylist: "ghost-playlist")
+            try TracklistStorageManager.shared.moveTrack(
+                t1,
+                after: nil,
+                before: nil,
+                inPlaylist: "ghost-playlist"
+            )
         }
 
         #expect(!received)

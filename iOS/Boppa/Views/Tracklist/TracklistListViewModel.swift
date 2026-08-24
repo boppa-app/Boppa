@@ -168,8 +168,22 @@ class TracklistListViewModel {
     }
 
     func moveTracklist(from source: IndexSet, to destination: Int) {
+        guard let sourceIndex = source.first, source.count == 1 else { return }
+        let movedTracklist = self.tracklists[sourceIndex]
         self.tracklists.move(fromOffsets: source, toOffset: destination)
-        self.persistAllSortOrders()
+
+        guard let newIndex = self.tracklists
+            .firstIndex(where: { $0.tracklistKey == movedTracklist.tracklistKey })
+        else { return }
+        let previousTracklist = newIndex > 0 ? self.tracklists[newIndex - 1] : nil
+        let nextTracklist = newIndex < self.tracklists.count - 1 ?
+            self.tracklists[newIndex + 1] : nil
+
+        try? TracklistStorageManager.shared.moveTracklist(
+            movedTracklist,
+            after: previousTracklist,
+            before: nextTracklist
+        )
     }
 
     func togglePin(tracklist: Tracklist) {
@@ -186,13 +200,6 @@ class TracklistListViewModel {
         }
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)
         logger.info("\(newIsPinned ? "Pinned" : "Unpinned") tracklist '\(stored.title)'")
-    }
-
-    private func persistAllSortOrders() {
-        try? TracklistStorageManager.shared.updateSortOrders(
-            for: self.tracklists,
-            reversed: self.libraryType == .albums
-        )
     }
 
     func loadFromArtist(
@@ -267,10 +274,7 @@ class TracklistListViewModel {
 
     private func reloadFromLibrary(type: TracklistListType) {
         let typeString = type == .albums ? "album" : "playlist"
-        self.tracklists = TracklistStorageManager.shared.loadLibraryTracklists(
-            type: typeString,
-            reversed: type == .albums
-        )
+        self.tracklists = TracklistStorageManager.shared.loadLibraryTracklists(type: typeString)
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 

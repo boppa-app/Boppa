@@ -201,23 +201,41 @@ class TracklistStorageManager {
         }
     }
 
-    func updateSortOrders(for tracklists: [Tracklist], reversed: Bool) throws {
-        var keys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracklists.count)
-        if reversed { keys = keys.reversed() }
+    func moveTracklist(
+        _ tracklist: Tracklist,
+        after previousTracklist: Tracklist?,
+        before nextTracklist: Tracklist?
+    ) throws {
+        guard let stored = tracklist.storedTracklist else { return }
         try self.database.write { db in
-            for (tracklist, key) in zip(tracklists, keys) {
-                guard let stored = tracklist.storedTracklist else { continue }
-                try StoredTracklist.update { $0.sortOrder = key }
+            func sortOrderKey(for tracklist: Tracklist?) throws -> String? {
+                guard let stored = tracklist?.storedTracklist else { return nil }
+                return try StoredTracklist
                     .where {
-                        $0.mediaId.eq(stored.mediaId)
-                            .and($0.mediaSourceId.eq(stored.mediaSourceId))
+                        $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId))
                     }
-                    .execute(db)
+                    .fetchOne(db)?.sortOrder
             }
+
+            let prevKey = try sortOrderKey(for: previousTracklist)
+            let nextKey = try sortOrderKey(for: nextTracklist)
+            let newKey = FractionalIndex.generateKeyBetween(prevKey, nextKey)
+
+            try StoredTracklist.update { $0.sortOrder = newKey }
+                .where {
+                    $0.mediaId.eq(stored.mediaId)
+                        .and($0.mediaSourceId.eq(stored.mediaSourceId))
+                }
+                .execute(db)
         }
     }
 
-    func reorderTracks(_ tracks: [Track], inPlaylist playlistId: String) throws {
+    func moveTrack(
+        _ track: Track,
+        after previousTrack: Track?,
+        before nextTrack: Track?,
+        inPlaylist playlistId: String
+    ) throws {
         var didReorder = false
         try self.database.write { db in
             let tracklist = try StoredTracklist
@@ -229,30 +247,43 @@ class TracklistStorageManager {
                 .fetchOne(db)
             guard tracklist != nil else { return }
             didReorder = true
-            let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
-            for (track, key) in zip(tracks, keys) {
-                try StoredTracklistTrack.update { $0.sortOrder = key }
+
+            func sortOrderKey(for track: Track?) throws -> String? {
+                guard let track else { return nil }
+                return try StoredTracklistTrack
                     .where {
                         $0.tracklistMediaId.eq(playlistId)
                             .and($0.tracklistMediaSourceId.eq("boppa.app"))
                             .and($0.trackMediaId.eq(track.mediaId))
                             .and($0.trackMediaSourceId.eq(track.mediaSourceId))
                     }
-                    .execute(db)
+                    .fetchOne(db)?.sortOrder
             }
+
+            let prevKey = try sortOrderKey(for: previousTrack)
+            let nextKey = try sortOrderKey(for: nextTrack)
+            let newKey = FractionalIndex.generateKeyBetween(prevKey, nextKey)
+
+            try StoredTracklistTrack.update { $0.sortOrder = newKey }
+                .where {
+                    $0.tracklistMediaId.eq(playlistId)
+                        .and($0.tracklistMediaSourceId.eq("boppa.app"))
+                        .and($0.trackMediaId.eq(track.mediaId))
+                        .and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                }
+                .execute(db)
         }
         if didReorder {
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         }
     }
 
-    func loadLibraryTracklists(type: String, reversed: Bool) -> [Tracklist] {
+    func loadLibraryTracklists(type: String) -> [Tracklist] {
         (try? self.database.read { db in
-            var allStored = try StoredTracklist
+            let allStored = try StoredTracklist
                 .where { $0.tracklistType.eq(type).and($0.isSavedToLibrary.eq(true)) }
                 .order { $0.sortOrder }
                 .fetchAll(db)
-            if reversed { allStored.reverse() }
             return try allStored.map { try self.tracklist(from: $0, db: db) }
         }) ?? []
     }

@@ -104,11 +104,21 @@ class TracklistViewModel {
     }
 
     func moveTrack(from source: IndexSet, to destination: Int) {
+        guard let sourceIndex = source.first, source.count == 1 else { return }
+        let movedTrack = self.tracks[sourceIndex]
         self.tracks.move(fromOffsets: source, toOffset: destination)
         self.unsortedTracks = self.tracks
         self.suppressNextMembershipReload = true
-        try? TracklistStorageManager.shared.reorderTracks(
-            self.tracks,
+
+        guard let newIndex = self.tracks.firstIndex(where: { $0.trackKey == movedTrack.trackKey })
+        else { return }
+        let previousTrack = newIndex > 0 ? self.tracks[newIndex - 1] : nil
+        let nextTrack = newIndex < self.tracks.count - 1 ? self.tracks[newIndex + 1] : nil
+
+        try? TracklistStorageManager.shared.moveTrack(
+            movedTrack,
+            after: previousTrack,
+            before: nextTrack,
             inPlaylist: self.tracklist.mediaId
         )
     }

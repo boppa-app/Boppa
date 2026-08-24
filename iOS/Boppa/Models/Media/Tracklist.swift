@@ -87,6 +87,10 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.storedTracklist?.isSavedToLibrary == true
     }
 
+    var tracklistKey: String {
+        "\(self.mediaId)|\(self.mediaSourceId)"
+    }
+
     var isMediaSourceEnabled: Bool {
         guard self.mediaSourceId != "boppa.app" else { return true }
         guard let source = MediaSourceStorageManager.shared.fetchOne(id: self.mediaSourceId) else {
