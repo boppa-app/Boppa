@@ -32,10 +32,28 @@ struct TracklistView: View {
                 DetailHeaderView(
                     title: self.viewModel.tracklist.title,
                     highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
-                    onBack: { self.dismiss() },
+                    onBack: {
+                        if self.viewModel.isEditing {
+                            self.viewModel.exitEditMode()
+                        } else {
+                            self.dismiss()
+                        }
+                    },
                     trailing: {
                         HStack(spacing: 0) {
-                            if self.isSaved {
+                            if self.viewModel.isEditing {
+                                Image(systemName: "door.left.hand.open")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.purp)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        self.viewModel.exitEditMode()
+                                    }
+                                    .accessibilityLabel("Done Editing")
+                                    .accessibilityHint("Exit edit mode")
+                                    .accessibilityAddTraits(.isButton)
+                            } else if self.isSaved {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 16))
                                     .foregroundColor(.purp)
@@ -84,7 +102,7 @@ struct TracklistView: View {
                 self.content
             }
 
-            if self.isSaved && !self.viewModel.tracks.isEmpty {
+            if self.isSaved && !self.viewModel.tracks.isEmpty && !self.viewModel.isEditing {
                 DetailHeaderOverlayButton(
                     systemImage: "shuffle",
                     accessibilityLabel: "Shuffle",
@@ -126,7 +144,8 @@ struct TracklistView: View {
                 onDelete: {
                     self.viewModel.deleteFromLibrary()
                     self.dismiss()
-                }
+                },
+                onEdit: self.viewModel.canReorder ? { self.viewModel.enterEditMode() } : nil
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
@@ -176,26 +195,50 @@ struct TracklistView: View {
                     Array(self.viewModel.displayTracks.enumerated()),
                     id: \.element.id
                 ) { index, track in
-                    TrackRow(
-                        track: track,
-                        isSelected: track.isMediaSourceEnabled && TrackQueueManager.shared
-                            .isTrackSelected(
-                                track,
-                                contextId: self.contextId
-                            ),
-                        isLoading: PlaybackService.shared.isLoading,
-                        isPlaying: PlaybackService.shared.isPlaying,
-                        isMediaSourceEnabled: track.isMediaSourceEnabled,
-                        onTap: {
-                            self.playTrack(track, at: index)
-                        },
-                        onEllipsisTap: {
-                            self.trackForActions = track
+                    HStack(spacing: 0) {
+                        if self.viewModel.isEditing {
+                            Button {
+                                withAnimation {
+                                    self.viewModel.removeTrack(track)
+                                }
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.red)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Remove \(track.title) from Playlist")
+                            .accessibilityHint("Remove this track from the playlist")
                         }
-                    )
+
+                        TrackRow(
+                            track: track,
+                            isSelected: track.isMediaSourceEnabled && TrackQueueManager.shared
+                                .isTrackSelected(
+                                    track,
+                                    contextId: self.contextId
+                                ),
+                            isLoading: PlaybackService.shared.isLoading,
+                            isPlaying: PlaybackService.shared.isPlaying,
+                            isMediaSourceEnabled: track.isMediaSourceEnabled,
+                            showTrailingControls: !self.viewModel.isEditing,
+                            onTap: {
+                                guard !self.viewModel.isEditing else { return }
+                                self.playTrack(track, at: index)
+                            },
+                            onEllipsisTap: {
+                                self.trackForActions = track
+                            }
+                        )
+                    }
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparator(.hidden)
+                }
+                .onMove { source, destination in
+                    self.viewModel.moveTrack(from: source, to: destination)
                 }
 
                 if self.viewModel.hasMorePages {
@@ -212,6 +255,8 @@ struct TracklistView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
+            .animation(.easeInOut(duration: 0.2), value: self.viewModel.isEditing)
             .modifier(ScrollDirectionTracker(
                 isEnabled: true,
                 onScrollChange: { oldInfo, newInfo in

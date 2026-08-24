@@ -13,6 +13,7 @@ struct TrackRow: View {
     var isLoading: Bool = false
     var isPlaying: Bool = false
     var isMediaSourceEnabled: Bool = true
+    var showTrailingControls: Bool = true
     var style: TrackRowStyle = .regular
     var onTap: (() -> Void)?
     var onEllipsisTap: (() -> Void)?
@@ -68,68 +69,70 @@ struct TrackRow: View {
                 }
             }
             Spacer()
-            if !self.isMediaSourceEnabled {
-                if self.style == .regular {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(Color(.systemGray4))
+            if self.showTrailingControls {
+                if !self.isMediaSourceEnabled {
+                    if self.style == .regular {
+                        Image(systemName: "ellipsis")
+                            .foregroundColor(Color(.systemGray4))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                self.onEllipsisTap?()
+                            }
+                            .accessibilityLabel("More Options")
+                            .accessibilityHint("More options for \(self.track.title)")
+                            .accessibilityAddTraits(.isButton)
+                    }
+                } else if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.purp)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
-                        .onTapGesture {
-                            self.onEllipsisTap?()
-                        }
-                        .accessibilityLabel("More Options")
-                        .accessibilityHint("More options for \(self.track.title)")
+                        .onTapGesture { onDeleteTap() }
+                        .accessibilityLabel("Remove from queue")
                         .accessibilityAddTraits(.isButton)
-                }
-            } else if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
-                Image(systemName: "xmark")
-                    .foregroundColor(.purp)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-                    .onTapGesture { onDeleteTap() }
-                    .accessibilityLabel("Remove from queue")
-                    .accessibilityAddTraits(.isButton)
-            } else if self.style == .regular {
-                if self.isSelected && self.isLoading {
-                    SpinnerView(tint: .purp, lineWidth: 3)
-                        .frame(width: 20, height: 20)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            self.onEllipsisTap?()
-                        }
-                        .accessibilityLabel("Loading")
-                        .accessibilityAddTraits(.isButton)
-                } else if self.isSelected {
-                    ZStack {
-                        Image(systemName: "waveform")
-                            .foregroundColor(.purp)
-                            .symbolEffect(.variableColor.iterative.reversing)
-                        if !self.isPlaying {
+                } else if self.style == .regular {
+                    if self.isSelected && self.isLoading {
+                        SpinnerView(tint: .purp, lineWidth: 3)
+                            .frame(width: 20, height: 20)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                self.onEllipsisTap?()
+                            }
+                            .accessibilityLabel("Loading")
+                            .accessibilityAddTraits(.isButton)
+                    } else if self.isSelected {
+                        ZStack {
                             Image(systemName: "waveform")
-                                .foregroundColor(.purp.opacity(0.3))
-                                .background(Color.black)
+                                .foregroundColor(.purp)
+                                .symbolEffect(.variableColor.iterative.reversing)
+                            if !self.isPlaying {
+                                Image(systemName: "waveform")
+                                    .foregroundColor(.purp.opacity(0.3))
+                                    .background(Color.black)
+                            }
                         }
-                    }
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        self.onEllipsisTap?()
-                    }
-                    .accessibilityLabel(self.isPlaying ? "Now Playing" : "Paused")
-                    .accessibilityHint("More options for \(self.track.title)")
-                    .accessibilityAddTraits(.isButton)
-                } else {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(Color(.systemGray))
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             self.onEllipsisTap?()
                         }
-                        .accessibilityLabel("More Options")
+                        .accessibilityLabel(self.isPlaying ? "Now Playing" : "Paused")
                         .accessibilityHint("More options for \(self.track.title)")
                         .accessibilityAddTraits(.isButton)
+                    } else {
+                        Image(systemName: "ellipsis")
+                            .foregroundColor(Color(.systemGray))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                self.onEllipsisTap?()
+                            }
+                            .accessibilityLabel("More Options")
+                            .accessibilityHint("More options for \(self.track.title)")
+                            .accessibilityAddTraits(.isButton)
+                    }
                 }
             }
         }

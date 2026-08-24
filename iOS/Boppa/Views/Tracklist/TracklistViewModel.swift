@@ -1,5 +1,6 @@
 import Foundation
 import os
+import SwiftUI
 
 extension Notification.Name {
     static let tracklistPinChanged = Notification.Name("tracklistPinChanged")
@@ -25,6 +26,7 @@ class TracklistViewModel {
     var sortMode: SortMode = .defaultOrder
     var hasMorePages = false
     var pageLoadId = 0
+    var isEditing = false
 
     let searchHandler = FuzzySearchHandler<Track>()
 
@@ -34,6 +36,8 @@ class TracklistViewModel {
 
     @ObservationIgnored
     private var observers: [NSObjectProtocol] = []
+    @ObservationIgnored
+    private var suppressNextMembershipReload = false
 
     init(tracklist: Tracklist) {
         self.tracklist = tracklist
@@ -47,6 +51,10 @@ class TracklistViewModel {
                     queue: .main
                 ) { [weak self] _ in
                     guard let self else { return }
+                    if self.suppressNextMembershipReload {
+                        self.suppressNextMembershipReload = false
+                        return
+                    }
                     if let stored = TracklistStorageManager.shared.findStoredTracklist(
                         mediaId: self.tracklist.mediaId,
                         mediaSourceId: self.tracklist.mediaSourceId
@@ -71,11 +79,48 @@ class TracklistViewModel {
                 PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
             }
         }
+        if self.isEditing {
+            return base
+        }
         let items = self.searchHandler.displayItems(from: base)
         if self.searchHandler.filteredItems != nil {
             return items
         }
         return self.applySorting(items)
+    }
+
+    var canReorder: Bool {
+        self.tracklist.mediaSourceId == "boppa.app" && self.tracklist.tracklistType == .playlist
+    }
+
+    func enterEditMode() {
+        guard self.canReorder else { return }
+        self.sortMode = .defaultOrder
+        self.isEditing = true
+    }
+
+    func exitEditMode() {
+        self.isEditing = false
+    }
+
+    func moveTrack(from source: IndexSet, to destination: Int) {
+        self.tracks.move(fromOffsets: source, toOffset: destination)
+        self.unsortedTracks = self.tracks
+        self.suppressNextMembershipReload = true
+        try? TracklistStorageManager.shared.reorderTracks(
+            self.tracks,
+            inPlaylist: self.tracklist.mediaId
+        )
+    }
+
+    func removeTrack(_ track: Track) {
+        guard self.canReorder else { return }
+        self.tracks.removeAll {
+            $0.mediaId == track.mediaId && $0.mediaSourceId == track.mediaSourceId
+        }
+        self.unsortedTracks = self.tracks
+        self.suppressNextMembershipReload = true
+        PlaylistManager.shared.removeFromPlaylist(track, playlistId: self.tracklist.mediaId)
     }
 
     func updateSearch(_ text: String) {

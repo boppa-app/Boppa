@@ -12,6 +12,7 @@ struct TracklistActionSheet: View {
     let onSortSelected: (SortMode) -> Void
     let onArtistSelected: ((Artist) -> Void)?
     let onDelete: () -> Void
+    var onEdit: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var showSortPage = false
@@ -41,6 +42,9 @@ struct TracklistActionSheet: View {
                 List {
                     if self.isMediaSourceEnabled {
                         self.refreshRow
+                    }
+                    if self.onEdit != nil {
+                        self.editRow
                     }
                     self.pinRow
                     self.sortRow
@@ -158,6 +162,31 @@ struct TracklistActionSheet: View {
             .accessibilityLabel(self.isRefreshing ? "Refreshing" : "Refresh")
             .accessibilityHint("Reload tracks from source")
         }
+    }
+
+    private var editRow: some View {
+        Button {
+            self.onEdit?()
+            self.dismiss()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 16))
+                    .foregroundColor(.purp)
+                    .frame(width: 24)
+                Text("Edit")
+                    .font(.body)
+                    .foregroundColor(.white)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Color(.systemGray6))
+        .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+        .listRowSeparator(.hidden)
+        .accessibilityLabel("Edit")
+        .accessibilityHint("Enter edit mode to reorder tracks")
     }
 
     private var sortRow: some View {
