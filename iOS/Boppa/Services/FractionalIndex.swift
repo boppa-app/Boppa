@@ -49,9 +49,8 @@ enum FractionalIndex {
             }
             digs[i] = self.base62[0]
         }
-        let headVal = head.asciiValue!
-        guard headVal < Character("z").asciiValue! else { return nil }
-        let newHead = Character(UnicodeScalar(headVal + 1))
+        guard head != "z" else { return nil }
+        let newHead: Character = head == "Z" ? "a" : Character(UnicodeScalar(head.asciiValue! + 1))
         let newDigitCount = self.integerLength(forHead: newHead) - 1
         return String(newHead) + String(repeating: self.base62[0], count: newDigitCount)
     }
@@ -68,9 +67,8 @@ enum FractionalIndex {
             }
             digs[i] = self.base62[self.base62Count - 1]
         }
-        let headVal = head.asciiValue!
-        guard headVal > Character("a").asciiValue! else { return nil }
-        let newHead = Character(UnicodeScalar(headVal - 1))
+        guard head != "A" else { return nil }
+        let newHead: Character = head == "a" ? "Z" : Character(UnicodeScalar(head.asciiValue! - 1))
         let newDigitCount = self.integerLength(forHead: newHead) - 1
         return String(newHead) + String(
             repeating: self.base62[self.base62Count - 1],
@@ -78,7 +76,7 @@ enum FractionalIndex {
         )
     }
 
-    /// Lexicographic midpoint between two fractional suffix strings;
+    /// Lexicographic midpoint between two fractional suffix strings
     /// a "" means no lower bound, b nil means no upper bound
     private static func midpoint(_ a: String, _ b: String?) -> String {
         let aChars = Array(a)
@@ -128,9 +126,7 @@ enum FractionalIndex {
         guard let a else {
             guard let b else { return "a0" }
             let ib = self.integerPart(of: b)
-            let fb = String(b.dropFirst(ib.count))
-            if ib == "a0" { return "a" + self.midpoint("", fb) }
-            if ib > "a0", let prev = decrementInteger(ib) { return prev }
+            if let prev = decrementInteger(ib) { return prev }
             preconditionFailure("FractionalIndex: cannot generate key before \(b)")
         }
 
