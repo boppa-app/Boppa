@@ -279,8 +279,7 @@ struct NowPlayingView: View {
            let shareURL = self.viewModel.shareURL
         {
             ShareLink(item: shareURL) {
-                SVGImageView(svgString: iconSvg, size: 60)
-                    .frame(width: 40, height: 40)
+                SVGImageView(svgString: iconSvg, size: 40)
                     .shadow(color: .black.opacity(0.6), radius: 8, y: 4)
             }
             .buttonStyle(.plain)

@@ -33,7 +33,7 @@ struct SVGImageView: View {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: self.size, height: self.size)
+                .frame(width: image.size.width, height: image.size.height)
         }
     }
 }
