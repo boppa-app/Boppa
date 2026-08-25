@@ -61,6 +61,16 @@ final class NowPlayingViewModel {
         return URL(string: artworkUrl)
     }
 
+    var shareURL: URL? {
+        guard let url = self.currentTrack?.url else { return nil }
+        return URL(string: url)
+    }
+
+    var currentMediaSourceIconSvg: String? {
+        guard let mediaSourceId = self.currentTrack?.mediaSourceId else { return nil }
+        return MediaSourceStorageManager.shared.fetchOne(id: mediaSourceId)?.config.iconSvg
+    }
+
     var trackTitle: String {
         self.currentTrack?.title ?? "Not Playing"
     }

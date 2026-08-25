@@ -75,6 +75,11 @@ struct NowPlayingView: View {
                 size: geometry.size.width,
                 cornerRadius: 12
             )
+            .overlay(alignment: .topTrailing) {
+                self.shareButton
+                    .padding(.top, 30)
+                    .padding(.trailing, 30)
+            }
         }
         .aspectRatio(1, contentMode: .fit)
         .shadow(color: .black.opacity(self.viewModel.showQueue ? 0 : 0.6), radius: 30, y: 16)
@@ -251,7 +256,7 @@ struct NowPlayingView: View {
     }
 
     private var queueToggleButton: some View {
-        HStack {
+        HStack(alignment: .center) {
             Spacer()
 
             Button {
@@ -265,6 +270,22 @@ struct NowPlayingView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(self.viewModel.showQueue ? "Hide Queue" : "Show Queue")
             .accessibilityHint("Toggle the playback queue")
+        }
+    }
+
+    @ViewBuilder
+    private var shareButton: some View {
+        if let iconSvg = self.viewModel.currentMediaSourceIconSvg,
+           let shareURL = self.viewModel.shareURL
+        {
+            ShareLink(item: shareURL) {
+                SVGImageView(svgString: iconSvg, size: 60)
+                    .frame(width: 40, height: 40)
+                    .shadow(color: .black.opacity(0.6), radius: 8, y: 4)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Share")
+            .accessibilityHint("Share a link to this track")
         }
     }
 }
