@@ -94,6 +94,7 @@ struct TracklistActionSheet: View {
                     }
                 }
                 Spacer()
+                self.shareButton
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -103,6 +104,41 @@ struct TracklistActionSheet: View {
                 .fill(Color(.systemGray5))
                 .frame(height: 2)
                 .padding(.horizontal, 16)
+        }
+    }
+
+    private var shareURL: URL? {
+        guard let url = self.tracklist.url else { return nil }
+        return URL(string: url)
+    }
+
+    @ViewBuilder
+    private var shareButton: some View {
+        if let mediaSource = self.mediaSource {
+            if let shareURL = self.shareURL {
+                ShareLink(item: shareURL) {
+                    self.mediaSourceIcon(mediaSource)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Share")
+                .accessibilityHint("Share a link to this tracklist")
+            } else {
+                self.mediaSourceIcon(mediaSource)
+                    .opacity(0.2)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func mediaSourceIcon(_ mediaSource: StoredMediaSource) -> some View {
+        if let iconSvg = mediaSource.config.iconSvg {
+            SVGImageView(svgString: iconSvg, size: 42)
+                .frame(width: 42, height: 42)
+        } else {
+            Image(systemName: "music.note")
+                .font(.system(size: 30))
+                .foregroundColor(.purp)
+                .frame(width: 42, height: 42)
         }
     }
 
