@@ -11,6 +11,7 @@ struct ArtworkView: View {
     var isCircular: Bool = false
     var cornerRadius: CGFloat?
     var placeholderBackground: Color? = nil
+    var borderColor: Color? = nil
     var onLoadStateChange: ((Bool) -> Void)? = nil
 
     private var resolvedCornerRadius: CGFloat {
@@ -65,6 +66,12 @@ struct ArtworkView: View {
         .background(self.placeholderBackground ?? Color(.systemGray6))
         .cornerRadius(self.resolvedCornerRadius)
         .clipped()
+        .overlay {
+            if let borderColor = self.borderColor {
+                RoundedRectangle(cornerRadius: self.resolvedCornerRadius)
+                    .strokeBorder(borderColor, lineWidth: 2)
+            }
+        }
     }
 
     private var placeholderImage: some View {

@@ -6,13 +6,24 @@ struct TracklistArtworkView: View {
     var size: CGFloat = 48
     var cornerRadius: CGFloat?
     var placeholderBackground: Color? = nil
+    var borderColor: Color? = nil
+    var mediaSourceIconSvg: String? = nil
+    var revealBackgroundColor: Color = .init(.systemGray5)
+
+    @State private var isRevealingMediaSource = false
+    @State private var revealTask: Task<Void, Never>?
 
     private var hasStoredArtwork: Bool {
         !(self.tracklist.lowResArtworkUrl ?? "").isEmpty
             || !(self.tracklist.highResArtworkUrl ?? "").isEmpty
     }
 
-    var body: some View {
+    private var resolvedCornerRadius: CGFloat {
+        self.cornerRadius ?? 6
+    }
+
+    @ViewBuilder
+    private var artworkContent: some View {
         if self.tracklist.tracklistType == .likes || self.hasStoredArtwork {
             ArtworkView(
                 lowResUrl: self.tracklist.lowResArtworkUrl,
@@ -21,7 +32,8 @@ struct TracklistArtworkView: View {
                 tracklistType: self.tracklist.tracklistType,
                 size: self.size,
                 cornerRadius: self.cornerRadius,
-                placeholderBackground: self.placeholderBackground
+                placeholderBackground: self.placeholderBackground,
+                borderColor: self.borderColor
             )
         } else {
             ComposedTracklistArtworkView(
@@ -30,8 +42,58 @@ struct TracklistArtworkView: View {
                 tracklistType: self.tracklist.tracklistType,
                 size: self.size,
                 cornerRadius: self.cornerRadius,
-                placeholderBackground: self.placeholderBackground
+                placeholderBackground: self.placeholderBackground,
+                borderColor: self.borderColor
             )
+        }
+    }
+
+    private func mediaSourceRevealContent(svg: String) -> some View {
+        RoundedRectangle(cornerRadius: self.resolvedCornerRadius)
+            .fill(self.revealBackgroundColor)
+            .frame(width: self.size, height: self.size)
+            .overlay {
+                SVGImageView(svgString: svg, size: self.size * 0.45)
+            }
+            .overlay {
+                if let borderColor = self.borderColor {
+                    RoundedRectangle(cornerRadius: self.resolvedCornerRadius)
+                        .strokeBorder(borderColor, lineWidth: 2)
+                }
+            }
+    }
+
+    private func stackedContent(svg: String? = nil) -> some View {
+        ZStack {
+            self.artworkContent
+                .opacity(self.isRevealingMediaSource ? 0 : 1)
+            if let svg {
+                self.mediaSourceRevealContent(svg: svg)
+                    .opacity(self.isRevealingMediaSource ? 1 : 0)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: self.isRevealingMediaSource)
+    }
+
+    var body: some View {
+        if let mediaSourceIconSvg = self.mediaSourceIconSvg {
+            self.stackedContent(svg: mediaSourceIconSvg)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    self.revealMediaSource()
+                }
+        } else {
+            self.stackedContent()
+        }
+    }
+
+    private func revealMediaSource() {
+        self.revealTask?.cancel()
+        self.isRevealingMediaSource = true
+        self.revealTask = Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            self.isRevealingMediaSource = false
         }
     }
 }
@@ -46,6 +108,7 @@ private struct ComposedTracklistArtworkView: View {
     let size: CGFloat
     let cornerRadius: CGFloat?
     let placeholderBackground: Color?
+    let borderColor: Color?
 
     @State private var artwork: [TrackArtworkURLs]?
     @State private var refreshTick = 0
@@ -68,7 +131,8 @@ private struct ComposedTracklistArtworkView: View {
                         tracklistType: self.tracklistType,
                         size: self.size,
                         cornerRadius: self.cornerRadius,
-                        placeholderBackground: self.placeholderBackground
+                        placeholderBackground: self.placeholderBackground,
+                        borderColor: self.borderColor
                     )
                     .id(quadrant.map { ($0.highResUrl ?? $0.lowResUrl) ?? "" }
                         .joined(separator: "|"))
@@ -79,7 +143,8 @@ private struct ComposedTracklistArtworkView: View {
                         tracklistType: self.tracklistType,
                         size: self.size,
                         cornerRadius: self.cornerRadius,
-                        placeholderBackground: self.placeholderBackground
+                        placeholderBackground: self.placeholderBackground,
+                        borderColor: self.borderColor
                     )
                 }
             } else {
@@ -128,6 +193,7 @@ private struct QuadrantOrFallbackArtworkView: View {
     let size: CGFloat
     let cornerRadius: CGFloat?
     let placeholderBackground: Color?
+    let borderColor: Color?
 
     @State private var tileResults: [Int: Bool] = [:]
 
@@ -155,7 +221,8 @@ private struct QuadrantOrFallbackArtworkView: View {
                 tracklistType: self.tracklistType,
                 size: self.size,
                 cornerRadius: self.cornerRadius,
-                placeholderBackground: self.placeholderBackground
+                placeholderBackground: self.placeholderBackground,
+                borderColor: self.borderColor
             )
         } else {
             ZStack {
@@ -179,6 +246,12 @@ private struct QuadrantOrFallbackArtworkView: View {
                 .cornerRadius(self.resolvedCornerRadius)
                 .clipped()
                 .opacity(self.allLoaded ? 1 : 0)
+            }
+            .overlay {
+                if let borderColor = self.borderColor {
+                    RoundedRectangle(cornerRadius: self.resolvedCornerRadius)
+                        .strokeBorder(borderColor, lineWidth: 2)
+                }
             }
         }
     }

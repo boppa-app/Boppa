@@ -3,11 +3,14 @@ import SwiftUI
 struct TracklistRow: View {
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
+    var showMediaSourceBorder: Bool = false
+    var showMediaSourceReveal: Bool = false
     var showChevron: Bool = false
     var isMediaSourceEnabled: Bool = true
     var artworkSize: CGFloat = 72
     var preferLowResArtwork: Bool? = nil
     var placeholderBackground: Color? = nil
+    var mediaSourceRevealBackgroundColor: Color = .init(.black)
     var isSelected: Bool = false
 
     private var resolvedPreferLowResArtwork: Bool {
@@ -35,8 +38,25 @@ struct TracklistRow: View {
     }
 
     private var resolvedMediaSource: StoredMediaSource? {
-        guard self.showMediaSourceIcon else { return nil }
+        guard self.showMediaSourceIcon || self.showMediaSourceBorder || self
+            .showMediaSourceReveal
+        else { return nil }
         return MediaSourceStorageManager.shared.fetchOne(id: self.tracklist.mediaSourceId)
+    }
+
+    private var mediaSourceBorderColor: Color? {
+        guard self.showMediaSourceBorder, let mediaSource = self.resolvedMediaSource else {
+            return nil
+        }
+        if let hex = mediaSource.config.highlightColor {
+            return Color(hex: hex)
+        }
+        return Color.purp
+    }
+
+    private var mediaSourceRevealIconSvg: String? {
+        guard self.showMediaSourceReveal else { return nil }
+        return self.resolvedMediaSource?.config.iconSvg
     }
 
     var body: some View {
@@ -45,7 +65,10 @@ struct TracklistRow: View {
                 tracklist: self.tracklist,
                 preferLowRes: self.resolvedPreferLowResArtwork,
                 size: self.artworkSize,
-                placeholderBackground: self.placeholderBackground
+                placeholderBackground: self.placeholderBackground,
+                borderColor: self.mediaSourceBorderColor,
+                mediaSourceIconSvg: self.mediaSourceRevealIconSvg,
+                revealBackgroundColor: self.mediaSourceRevealBackgroundColor
             )
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             VStack(alignment: .leading, spacing: 4) {
@@ -60,7 +83,7 @@ struct TracklistRow: View {
             }
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             Spacer()
-            if let mediaSource = self.resolvedMediaSource {
+            if self.showMediaSourceIcon, let mediaSource = self.resolvedMediaSource {
                 self.mediaSourceIcon(mediaSource)
             }
             if self.showChevron {
