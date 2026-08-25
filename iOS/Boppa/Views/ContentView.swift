@@ -147,7 +147,7 @@ struct ContentTabView: View {
 
     let tabs: [(icon: String, name: String, num: Int)] = [
         ("magnifyingglass", "Search", 0),
-        ("bookmark", "Library", 1),
+        ("books.vertical", "Library", 1),
         ("gear", "Settings", 2),
     ]
 
