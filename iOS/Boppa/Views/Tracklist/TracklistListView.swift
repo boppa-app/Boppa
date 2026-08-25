@@ -294,12 +294,7 @@ struct TracklistListView: View {
                         guard !self.viewModel.isEditing else { return }
                         if self.canNavigateToTracklist {
                             self.onTracklistSelected?(tracklist.mediaSourceId)
-                            if TracklistStorageManager.shared.isTracklistEmpty(
-                                mediaId: tracklist.mediaId,
-                                mediaSourceId: tracklist.mediaSourceId
-                            ) {
-                                self.navigatingAwayHideOverlayButton = true
-                            }
+                            self.navigatingAwayHideOverlayButton = true
                             self.navigationTarget = tracklist
                         }
                     }

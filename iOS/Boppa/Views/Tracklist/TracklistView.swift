@@ -36,6 +36,7 @@ struct TracklistView: View {
                         if self.viewModel.isEditing {
                             self.viewModel.exitEditMode()
                         } else {
+                            self.navigatingAwayHideOverlayButton = true
                             self.dismiss()
                         }
                     },
