@@ -195,7 +195,8 @@ class TracklistListViewModel {
             updatedStored.isPinned = newIsPinned
             self.tracklists[index] = Tracklist(
                 storedTracklist: updatedStored,
-                fromArtist: tracklist.fromArtist
+                fromArtist: tracklist.fromArtist,
+                id: tracklist.id
             )
         }
         NotificationCenter.default.post(name: .tracklistPinChanged, object: nil)

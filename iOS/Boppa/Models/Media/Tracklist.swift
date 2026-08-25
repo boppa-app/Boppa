@@ -24,6 +24,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
     }
 
     init(
+        id: UUID = UUID(),
         mediaId: String,
         mediaSourceId: String,
         title: String,
@@ -37,7 +38,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         artistDetail: ArtistDetail? = nil,
         storedTracklist: StoredTracklist? = nil
     ) {
-        self.id = UUID()
+        self.id = id
         self.mediaId = mediaId
         self.mediaSourceId = mediaSourceId
         self.title = title
@@ -52,20 +53,22 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         self.storedTracklist = storedTracklist
     }
 
-    init(storedTracklist: StoredTracklist, fromArtist: Artist? = nil) {
-        self.id = UUID()
-        self.mediaId = storedTracklist.mediaId
-        self.mediaSourceId = storedTracklist.mediaSourceId
-        self.title = storedTracklist.title
-        self.subtitle = storedTracklist.subtitle
-        self.year = storedTracklist.year
-        self.lowResArtworkUrl = storedTracklist.lowResArtworkUrl
-        self.highResArtworkUrl = storedTracklist.highResArtworkUrl
-        self.url = storedTracklist.url
-        self.tracklistType = TracklistType(rawValue: storedTracklist.tracklistType) ?? .playlist
-        self.fromArtist = fromArtist
-        self.artistDetail = nil
-        self.storedTracklist = storedTracklist
+    init(storedTracklist: StoredTracklist, fromArtist: Artist? = nil, id: UUID = UUID()) {
+        self.init(
+            id: id,
+            mediaId: storedTracklist.mediaId,
+            mediaSourceId: storedTracklist.mediaSourceId,
+            title: storedTracklist.title,
+            subtitle: storedTracklist.subtitle,
+            year: storedTracklist.year,
+            lowResArtworkUrl: storedTracklist.lowResArtworkUrl,
+            highResArtworkUrl: storedTracklist.highResArtworkUrl,
+            url: storedTracklist.url,
+            tracklistType: TracklistType(rawValue: storedTracklist.tracklistType) ?? .playlist,
+            fromArtist: fromArtist,
+            artistDetail: nil,
+            storedTracklist: storedTracklist
+        )
     }
 
     static func == (lhs: Tracklist, rhs: Tracklist) -> Bool {
@@ -101,6 +104,7 @@ struct Tracklist: Identifiable, Equatable, Hashable {
 
     func merging(fetched: any TracklistMetadata) -> Tracklist {
         Tracklist(
+            id: self.id,
             mediaId: self.mediaId,
             mediaSourceId: self.mediaSourceId,
             title: fetched.title.isEmpty ? self.title : fetched.title,

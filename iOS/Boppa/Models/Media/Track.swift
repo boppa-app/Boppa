@@ -26,6 +26,7 @@ struct Track: Identifiable, Equatable {
     }
 
     init(
+        id: UUID = UUID(),
         mediaId: String,
         mediaSourceId: String,
         title: String,
@@ -39,40 +40,6 @@ struct Track: Identifiable, Equatable {
         albums: [Tracklist] = [],
         metadata: Data? = nil,
         isSavedToLibrary: Bool = false
-    ) {
-        self.init(
-            id: UUID(),
-            mediaId: mediaId,
-            mediaSourceId: mediaSourceId,
-            title: title,
-            subtitle: subtitle,
-            duration: duration,
-            lowResArtworkUrl: lowResArtworkUrl,
-            highResArtworkUrl: highResArtworkUrl,
-            url: url,
-            type: type,
-            artists: artists,
-            albums: albums,
-            metadata: metadata,
-            isSavedToLibrary: isSavedToLibrary
-        )
-    }
-
-    private init(
-        id: UUID,
-        mediaId: String,
-        mediaSourceId: String,
-        title: String,
-        subtitle: String?,
-        duration: Int?,
-        lowResArtworkUrl: String?,
-        highResArtworkUrl: String?,
-        url: String?,
-        type: TrackType,
-        artists: [Artist],
-        albums: [Tracklist],
-        metadata: Data?,
-        isSavedToLibrary: Bool
     ) {
         self.id = id
         self.mediaId = mediaId
