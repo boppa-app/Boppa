@@ -34,11 +34,11 @@ context:
 ### When context is gathered
 
 - Immediately when the app launches, for every media source that declares a `context`.
-- Immediately when a media source with a `context` is added. The **Add Media Source** screen waits for this first pass to complete (or to time out) before finishing.
+- Immediately when a media source with a `context` is added. The "Add Media Source" screen waits for this first pass to complete (or to time out) before finishing.
 - Immediately whenever a media source is enabled.
 - On a recurring timer, at the `intervalSeconds` configured for each entry, for as long as the app continues running.
 
-Each context page load is allotted 60 seconds. If a script never signals completion within that window, Boppa abandons that load and moves on to the next queued item. Always call `window.boppaContextDone()` on success or `window.boppaContextFailed()` on failure, so a source does not become permanently stuck.
+Each context page load is allotted 60 seconds. If a script never signals completion within that window, Boppa abandons that load and moves on to the next queued item. Always call `window.boppaContextDone()` on success or `window.boppaContextFailed()` on failure, so a source does not become stuck.
 
 ### The script contract
 
@@ -79,9 +79,9 @@ popup:
     customUserAgent: null   # optional
 ```
 
-`popup` is a map from an id to a `PopupConfig`. A popup is never shown on its own; it is presented only when a context or playback script calls `window.boppaPopup('<id>')`, where `<id>` matches a key in this map.
+`popup` is a map from an id to a `PopupConfig`. A popup is never shown on its own, it is presented only when a context or playback script calls `window.boppaPopup('<id>')`, where `<id>` matches a key in this map.
 
-When triggered, Boppa presents a visible, scrollable WebView in a sheet, titled with the popup's `title`, with a manual dismiss button. Only one popup can be presented at a time; a second `boppaPopup` call while one is already showing is ignored.
+When triggered, Boppa presents a visible, scrollable WebView in a sheet, titled with the popup's `title`, with a manual dismiss button. Only one popup can be presented at a time, a second `boppaPopup` call while one is already showing is ignored.
 
 ### The script contract
 
@@ -92,4 +92,4 @@ When triggered, Boppa presents a visible, scrollable WebView in a sheet, titled 
 ### What happens on dismiss
 
 - If the popup was triggered from a **context** script, the context page reloads and its 60-second timeout restarts.
-- If the popup was triggered from a **playback** script, playback is stopped and the queue is cleared before the popup is shown, and the player page reloads once the popup is dismissed. Because of this, reserve playback-triggered popups for cases that genuinely require interruption, such as an expired session, rather than routine checks.
+- If the popup was triggered from a **playback** script, playback is stopped and the queue is cleared before the popup is shown, and the player page reloads once the popup is dismissed.
