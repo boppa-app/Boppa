@@ -48,7 +48,7 @@ navigator.mediaSession.setPositionState({
 navigator.mediaSession.playbackState = 'playing';
 ```
 
-Crucially, Now Playing Info isn't owned by the page as a whole, it's owned by whichever specific `HTMLMediaElement` on the page holds an active `MediaElementSession`. If no such element actually exists and is playing, these calls succeed without erroring, but there's no session for iOS to route lock screen commands through.
+Now Playing Info isn't owned by the page as a whole, it's owned by whichever specific `HTMLMediaElement` on the page holds an active `MediaElementSession`. If no such element actually exists and is playing, there's no session for iOS to route lock screen commands through.
 
 ## `AudioContext` and limitations
 
