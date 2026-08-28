@@ -147,7 +147,7 @@ struct ContentTabView: View {
 
     let tabs: [(icon: String, name: String, num: Int)] = [
         ("magnifyingglass", "Search", 0),
-        ("books.vertical", "Library", 1),
+        ("Library", "Library", 1),
         ("gear", "Settings", 2),
     ]
 
@@ -179,11 +179,21 @@ struct ContentTabView: View {
                             self.selectedTab = tab.num
                         }
                     }) {
-                        Image(systemName: tab.icon)
-                            .font(.system(size: 24))
-                            .foregroundColor(self.selectedTab == tab
-                                .num ? .purp : Color(.systemGray))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        Group {
+                            if tab.icon == "Library" {
+                                Image("Library")
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 24, height: 24)
+                            } else {
+                                Image(systemName: tab.icon)
+                                    .font(.system(size: 24))
+                            }
+                        }
+                        .foregroundColor(self.selectedTab == tab
+                            .num ? .purp : Color(.systemGray))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(tab.name)
