@@ -763,6 +763,7 @@ playback:
           document.body.appendChild(audio);
 
           var currentLoadToken = null;
+          var playingLoadToken = null;
 
           function reportEvent(evt, tokenOverride) {
             var tagged = {};
@@ -779,6 +780,7 @@ playback:
             reportEvent({type: 'pause'});
           });
           audio.addEventListener('timeupdate', function() {
+            if (playingLoadToken !== currentLoadToken) return;
             reportEvent({type: 'progress', currentTime: audio.currentTime, duration: audio.duration});
           });
           audio.addEventListener('loadedmetadata', function() {
@@ -816,6 +818,7 @@ playback:
           function loadTrack(trackData) {
             var thisLoadToken = (trackData && trackData.loadToken) || null;
             currentLoadToken = thisLoadToken;
+            audio.pause();
             if (!trackData || !trackData.url) {
               reportEvent({type: 'error', message: 'Missing stream URL'}, thisLoadToken);
               return;
@@ -825,6 +828,7 @@ playback:
                 reportEvent({type: 'error', message: 'Could not resolve audio file'}, thisLoadToken);
                 return;
               }
+              playingLoadToken = thisLoadToken;
               audio.src = streamUrl;
               audio.play().catch(function(e) {
                 reportEvent({type: 'error', message: 'Playback failed: ' + e.message}, thisLoadToken);
