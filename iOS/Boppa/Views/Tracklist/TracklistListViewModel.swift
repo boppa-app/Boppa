@@ -275,7 +275,15 @@ class TracklistListViewModel {
 
     private func reloadFromLibrary(type: TracklistListType) {
         let typeString = type == .albums ? "album" : "playlist"
+        let existingIds = Dictionary(
+            self.tracklists.map { ($0.tracklistKey, $0.id) },
+            uniquingKeysWith: { first, _ in first }
+        )
         self.tracklists = TracklistStorageManager.shared.loadLibraryTracklists(type: typeString)
+            .map { tracklist in
+                guard let id = existingIds[tracklist.tracklistKey] else { return tracklist }
+                return tracklist.withId(id)
+            }
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 

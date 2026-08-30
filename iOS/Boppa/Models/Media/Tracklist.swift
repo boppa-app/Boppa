@@ -119,6 +119,24 @@ struct Tracklist: Identifiable, Equatable, Hashable {
             storedTracklist: self.storedTracklist
         )
     }
+
+    func withId(_ id: UUID) -> Tracklist {
+        Tracklist(
+            id: id,
+            mediaId: self.mediaId,
+            mediaSourceId: self.mediaSourceId,
+            title: self.title,
+            subtitle: self.subtitle,
+            year: self.year,
+            lowResArtworkUrl: self.lowResArtworkUrl,
+            highResArtworkUrl: self.highResArtworkUrl,
+            url: self.url,
+            tracklistType: self.tracklistType,
+            fromArtist: self.fromArtist,
+            artistDetail: self.artistDetail,
+            storedTracklist: self.storedTracklist
+        )
+    }
 }
 
 extension Tracklist: FuzzySearchable {

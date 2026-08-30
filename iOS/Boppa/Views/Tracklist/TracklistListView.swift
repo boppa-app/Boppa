@@ -297,7 +297,13 @@ struct TracklistListView: View {
                         guard !self.viewModel.isEditing else { return }
                         if self.canNavigateToTracklist {
                             self.onTracklistSelected?(tracklist.mediaSourceId)
-                            self.navigatingAwayHideOverlayButton = true
+                            let isEmpty = TracklistStorageManager.shared.isTracklistEmpty(
+                                mediaId: tracklist.mediaId,
+                                mediaSourceId: tracklist.mediaSourceId
+                            )
+                            if isEmpty {
+                                self.navigatingAwayHideOverlayButton = true
+                            }
                             self.navigationTarget = tracklist
                         }
                     }
