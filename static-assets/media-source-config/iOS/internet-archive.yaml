@@ -762,6 +762,8 @@ playback:
           audio.id = 'boppa-player';
           document.body.appendChild(audio);
 
+          var currentLoadToken = null;
+
           function reportEvent(evt, tokenOverride) {
             var tagged = {};
             for (var k in evt) tagged[k] = evt[k];
