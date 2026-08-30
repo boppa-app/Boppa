@@ -78,6 +78,25 @@ struct Track: Identifiable, Equatable {
         )
     }
 
+    func withId(_ id: UUID) -> Track {
+        Track(
+            id: id,
+            mediaId: self.mediaId,
+            mediaSourceId: self.mediaSourceId,
+            title: self.title,
+            subtitle: self.subtitle,
+            duration: self.duration,
+            lowResArtworkUrl: self.lowResArtworkUrl,
+            highResArtworkUrl: self.highResArtworkUrl,
+            url: self.url,
+            type: self.type,
+            artists: self.artists,
+            albums: self.albums,
+            metadata: self.metadata,
+            isSavedToLibrary: self.isSavedToLibrary
+        )
+    }
+
     static func == (lhs: Track, rhs: Track) -> Bool {
         lhs.mediaId == rhs.mediaId
             && lhs.title == rhs.title

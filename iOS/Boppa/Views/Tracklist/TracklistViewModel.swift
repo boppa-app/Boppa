@@ -210,8 +210,9 @@ class TracklistViewModel {
                     for: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
-                        self.unsortedTracks = allTracksSoFar
-                        self.tracks = allTracksSoFar
+                        let stabilized = self.stabilizingIds(for: allTracksSoFar)
+                        self.unsortedTracks = stabilized
+                        self.tracks = stabilized
                         self.hasMorePages = false
                     }
                 )
@@ -243,9 +244,21 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist) {
-        self.unsortedTracks = TracklistStorageManager.shared.loadTracksForTracklist(storedTracklist)
+        let loaded = TracklistStorageManager.shared.loadTracksForTracklist(storedTracklist)
+        self.unsortedTracks = self.stabilizingIds(for: loaded)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
+    }
+
+    private func stabilizingIds(for newTracks: [Track]) -> [Track] {
+        let existingIds = Dictionary(
+            self.unsortedTracks.map { ($0.trackKey, $0.id) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        return newTracks.map { track in
+            guard let id = existingIds[track.trackKey] else { return track }
+            return track.withId(id)
+        }
     }
 
     private func applySorting(_ tracks: [Track]) -> [Track] {
@@ -328,8 +341,9 @@ class TracklistViewModel {
                     for: self.tracklist,
                     onPageFetched: { [weak self] allTracksSoFar in
                         guard let self else { return }
-                        self.unsortedTracks = allTracksSoFar
-                        self.tracks = allTracksSoFar
+                        let stabilized = self.stabilizingIds(for: allTracksSoFar)
+                        self.unsortedTracks = stabilized
+                        self.tracks = stabilized
                         self.hasMorePages = false
                     }
                 )
