@@ -431,7 +431,7 @@ final class TrackQueueManager {
             for i in indices {
                 let track = entries[i].track
                 guard self.isTrackEnabled(track) else { continue }
-                for url in [track.lowResArtworkUrl, track.highResArtworkUrl] {
+                for url in [track.resolvedLowResArtworkUrl, track.resolvedHighResArtworkUrl] {
                     if let url, !url.isEmpty {
                         desiredBySource[track.mediaSourceId, default: []].insert(url)
                     }
