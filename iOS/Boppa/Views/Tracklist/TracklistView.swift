@@ -72,7 +72,7 @@ struct TracklistView: View {
                             } else if self.canSave {
                                 Group {
                                     if self.viewModel.isSaving {
-                                        SpinnerView(tint: .purp, lineWidth: 2)
+                                        SpinnerView(lineWidth: 2)
                                             .frame(width: 14, height: 14)
                                             .accessibilityLabel("Saving to Library")
                                     } else {

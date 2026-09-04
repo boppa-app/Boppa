@@ -177,7 +177,7 @@ struct AddMediaSourceView: View {
     private var addToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
             if self.viewModel.isLoading {
-                SpinnerView(tint: .purp, lineWidth: 3)
+                SpinnerView(lineWidth: 3)
                     .frame(width: 20, height: 20)
                     .accessibilityLabel(self.viewModel
                         .isGatheringContext ? "Gathering context" : "Adding media source")
