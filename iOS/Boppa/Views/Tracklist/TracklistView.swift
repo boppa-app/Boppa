@@ -115,8 +115,10 @@ struct TracklistView: View {
                     action: { self.shuffleAndPlay() }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .transition(.scale.combined(with: .opacity))
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: self.isSaved)
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onChange(of: self.navigationReset.id) { _, _ in
