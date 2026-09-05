@@ -55,6 +55,7 @@ struct SearchToolbarView: View {
 
             if self.isSearchFieldFocused.wrappedValue {
                 Button("Cancel") {
+                    self.viewModel.cancelMediaSourceSwitchIfNeeded()
                     self.isSearchFieldFocused.wrappedValue = false
                 }
                 .buttonStyle(.plain)
@@ -70,6 +71,8 @@ struct SearchToolbarView: View {
 
     private var mediaSourcePickerButton: some View {
         Button {
+            self.viewModel
+                .beginMediaSourceSwitch(isEditingSearch: self.isSearchFieldFocused.wrappedValue)
             self.viewModel.showMediaSourcePicker = true
         } label: {
             HStack(spacing: 8) {

@@ -26,6 +26,8 @@ class SearchViewModel {
     private var searchTask: Task<Void, Never>?
     private var nextPageTask: Task<Void, Never>?
     private var continuation: [String: Any]?
+    private var mediaSourceIdBeforeSwitch: String?
+    private var isEditingSearchDuringSwitch = false
 
     var isQueryActive: Bool {
         !self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -52,13 +54,35 @@ class SearchViewModel {
         self.updateAvailableCategories()
     }
 
+    func beginMediaSourceSwitch(isEditingSearch: Bool) {
+        self.mediaSourceIdBeforeSwitch = self.selectedMediaSource?.id
+        self.isEditingSearchDuringSwitch = isEditingSearch
+    }
+
+    func cancelMediaSourceSwitchIfNeeded() {
+        defer {
+            self.mediaSourceIdBeforeSwitch = nil
+            self.isEditingSearchDuringSwitch = false
+        }
+
+        guard self.isEditingSearchDuringSwitch,
+              let previousId = self.mediaSourceIdBeforeSwitch,
+              previousId != self.selectedMediaSource?.id,
+              let previous = self.mediaSources.first(where: { $0.id == previousId })
+        else { return }
+
+        self.selectedMediaSource = previous
+        UserDefaults.standard.set(previous.id, forKey: Self.selectedMediaSourceKey)
+        self.updateAvailableCategories()
+    }
+
     func selectMediaSource(_ mediaSource: StoredMediaSource) {
         self.selectedMediaSource = mediaSource
         self.showMediaSourcePicker = false
         UserDefaults.standard.set(mediaSource.id, forKey: Self.selectedMediaSourceKey)
         self.updateAvailableCategories()
 
-        if self.isQueryActive {
+        if self.isQueryActive, !self.isEditingSearchDuringSwitch {
             self.search()
         }
     }
