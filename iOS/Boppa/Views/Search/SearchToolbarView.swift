@@ -10,6 +10,14 @@ struct SearchToolbarView: View {
 
     private static let searchBarHeight: CGFloat = 44
 
+    private var searchPrompt: String {
+        guard let mediaSource = self.viewModel.selectedMediaSource else {
+            return "Search"
+        }
+
+        return "Search \"\(mediaSource.config.name)\""
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             HStack(spacing: 8) {
@@ -19,7 +27,7 @@ struct SearchToolbarView: View {
                     TextField(
                         "",
                         text: self.$viewModel.searchQuery,
-                        prompt: Text("Search for music").foregroundColor(Color(.systemGray4))
+                        prompt: Text(self.searchPrompt).foregroundColor(Color(.systemGray4))
                     )
                     .tint(Color.purp)
                     .textFieldStyle(.plain)
@@ -34,7 +42,7 @@ struct SearchToolbarView: View {
                         self.onSearch?()
                         self.isSearchFieldFocused.wrappedValue = false
                     }
-                    .accessibilityLabel("Search for music")
+                    .accessibilityLabel(self.searchPrompt)
 
                     if self.viewModel.isQueryActive {
                         Button {
