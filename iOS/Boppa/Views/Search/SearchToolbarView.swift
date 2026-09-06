@@ -1,9 +1,12 @@
 import SwiftUI
+import UIKit
 
 struct SearchToolbarView: View {
     @Bindable var viewModel: SearchViewModel
     var isSearchFieldFocused: FocusState<Bool>.Binding
     var onSearch: (() -> Void)?
+
+    @State private var isMediaSourcePickerVisible = false
 
     private static let searchBarHeight: CGFloat = 44
 
@@ -97,9 +100,12 @@ struct SearchToolbarView: View {
                         .frame(width: 24, height: 24)
                 }
 
-                Image(systemName: "chevron.down")
+                Image(systemName: self.isMediaSourcePickerVisible
+                    ? "circle.grid.2x2.fill" : "chevron.down")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Color.purp)
+                    .contentTransition(.symbolEffect(.replace, options: .speed(3)))
+                    .animation(.easeInOut(duration: 0.1), value: self.isMediaSourcePickerVisible)
             }
             .padding(.horizontal, 8)
             .frame(height: Self.searchBarHeight)
@@ -117,6 +123,9 @@ struct SearchToolbarView: View {
         .accessibilityLabel(self.viewModel.selectedMediaSource
             .map { "Selected source: \($0.config.name)" } ?? "Select Media Source")
         .accessibilityHint("Choose which media source to search")
+        .onChange(of: self.viewModel.showMediaSourcePicker) { _, isPresented in
+            self.isMediaSourcePickerVisible = isPresented
+        }
         .sheet(isPresented: self.$viewModel.showMediaSourcePicker) {
             MediaSourcePickerSheet(
                 mediaSourcePickerMode: .single(
@@ -129,6 +138,53 @@ struct SearchToolbarView: View {
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGray6))
+            .background(
+                SheetDismissDelegateBridge(
+                    onWillDismiss: { self.isMediaSourcePickerVisible = false },
+                    onDidDismiss: { self.viewModel.showMediaSourcePicker = false }
+                )
+            )
+        }
+    }
+}
+
+private struct SheetDismissDelegateBridge: UIViewControllerRepresentable {
+    var onWillDismiss: () -> Void
+    var onDidDismiss: () -> Void
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        UIViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        DispatchQueue.main.async {
+            var candidate = uiViewController.parent
+            while let current = candidate, current.presentingViewController == nil {
+                candidate = current.parent
+            }
+            candidate?.presentationController?.delegate = context.coordinator
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onWillDismiss: self.onWillDismiss, onDidDismiss: self.onDidDismiss)
+    }
+
+    final class Coordinator: NSObject, UIAdaptivePresentationControllerDelegate {
+        private let onWillDismiss: () -> Void
+        private let onDidDismiss: () -> Void
+
+        init(onWillDismiss: @escaping () -> Void, onDidDismiss: @escaping () -> Void) {
+            self.onWillDismiss = onWillDismiss
+            self.onDidDismiss = onDidDismiss
+        }
+
+        func presentationControllerWillDismiss(_ presentationController: UIPresentationController) {
+            self.onWillDismiss()
+        }
+
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            self.onDidDismiss()
         }
     }
 }
