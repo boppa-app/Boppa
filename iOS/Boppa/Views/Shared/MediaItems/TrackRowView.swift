@@ -14,6 +14,7 @@ struct TrackRow: View {
     var isPlaying: Bool = false
     var isMediaSourceEnabled: Bool = true
     var showTrailingControls: Bool = true
+    var showMediaSourceReveal: Bool = false
     var style: TrackRowStyle = .regular
     var onTap: (() -> Void)?
     var onEllipsisTap: (() -> Void)?
@@ -22,6 +23,23 @@ struct TrackRow: View {
 
     private var artworkSize: CGFloat {
         self.style == .compact ? 36 : 48
+    }
+
+    private var resolvedMediaSource: StoredMediaSource? {
+        guard self.showMediaSourceReveal else { return nil }
+        return MediaSourceStorageManager.shared.fetchOne(id: self.track.mediaSourceId)
+    }
+
+    private var mediaSourceColor: Color? {
+        guard let mediaSource = self.resolvedMediaSource else { return nil }
+        if let hex = mediaSource.config.highlightColor {
+            return Color(hex: hex)
+        }
+        return Color.purp
+    }
+
+    private var mediaSourceRevealIcon: MediaSourceRevealIcon? {
+        self.resolvedMediaSource?.config.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     private var titleFont: Font {
@@ -42,13 +60,25 @@ struct TrackRow: View {
 
     var body: some View {
         HStack(spacing: self.style == .compact ? 10 : 12) {
-            ArtworkView(
-                lowResUrl: self.track.resolvedLowResArtworkUrl,
-                highResUrl: self.track.resolvedHighResArtworkUrl,
-                placeholder: "music.note",
-                size: self.artworkSize
-            )
+            MediaSourceRevealArtwork(
+                size: self.artworkSize,
+                borderColor: self.mediaSourceColor,
+                mediaSourceRevealIcon: self.mediaSourceRevealIcon,
+                revealBackgroundColor: .init(.black)
+            ) {
+                ArtworkView(
+                    lowResUrl: self.track.resolvedLowResArtworkUrl,
+                    highResUrl: self.track.resolvedHighResArtworkUrl,
+                    placeholder: "music.note",
+                    size: self.artworkSize
+                )
+            }
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
+            if let mediaSourceColor = self.mediaSourceColor {
+                Capsule()
+                    .fill(mediaSourceColor)
+                    .frame(width: 2, height: self.artworkSize * 0.7)
+            }
             VStack(alignment: .leading, spacing: self.style == .compact ? 2 : 4) {
                 Text(self.track.title)
                     .font(self.titleFont)

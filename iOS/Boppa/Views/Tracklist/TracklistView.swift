@@ -229,6 +229,8 @@ struct TracklistView: View {
                             isPlaying: PlaybackService.shared.isPlaying,
                             isMediaSourceEnabled: track.isMediaSourceEnabled,
                             showTrailingControls: !self.viewModel.isEditing,
+                            showMediaSourceReveal: self.viewModel.tracklist
+                                .mediaSourceId == "boppa.app",
                             onTap: {
                                 guard !self.viewModel.isEditing else { return }
                                 self.playTrack(track, at: index)
