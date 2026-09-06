@@ -55,12 +55,12 @@ struct TracklistArtworkView: View {
     private func revealGlyph(_ icon: MediaSourceRevealIcon) -> some View {
         switch icon {
         case let .svg(svg):
-            SVGImageView(svgString: svg, size: self.size * 0.675)
+            SVGImageView(svgString: svg, size: self.size * 0.6)
         case let .asset(name):
             Image(name)
                 .resizable()
                 .scaledToFit()
-                .frame(width: self.size * 0.675, height: self.size * 0.675)
+                .frame(width: self.size * 0.6, height: self.size * 0.6)
         }
     }
 
@@ -95,7 +95,7 @@ struct TracklistArtworkView: View {
         if let mediaSourceRevealIcon = self.mediaSourceRevealIcon {
             self.stackedContent(icon: mediaSourceRevealIcon)
                 .contentShape(Rectangle())
-                .onTapGesture {
+                .onTapGesture(count: 2) {
                     self.revealMediaSource()
                 }
         } else {
