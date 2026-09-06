@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum MediaSourceRevealIcon {
+    case svg(String)
+    case asset(String)
+}
+
 struct TracklistArtworkView: View {
     let tracklist: Tracklist
     var preferLowRes: Bool = true
@@ -7,7 +12,7 @@ struct TracklistArtworkView: View {
     var cornerRadius: CGFloat?
     var placeholderBackground: Color? = nil
     var borderColor: Color? = nil
-    var mediaSourceIconSvg: String? = nil
+    var mediaSourceRevealIcon: MediaSourceRevealIcon? = nil
     var revealBackgroundColor: Color = .init(.systemGray5)
 
     @State private var isRevealingMediaSource = false
@@ -32,8 +37,7 @@ struct TracklistArtworkView: View {
                 tracklistType: self.tracklist.tracklistType,
                 size: self.size,
                 cornerRadius: self.cornerRadius,
-                placeholderBackground: self.placeholderBackground,
-                borderColor: self.borderColor
+                placeholderBackground: self.placeholderBackground
             )
         } else {
             ComposedTracklistArtworkView(
@@ -42,18 +46,30 @@ struct TracklistArtworkView: View {
                 tracklistType: self.tracklist.tracklistType,
                 size: self.size,
                 cornerRadius: self.cornerRadius,
-                placeholderBackground: self.placeholderBackground,
-                borderColor: self.borderColor
+                placeholderBackground: self.placeholderBackground
             )
         }
     }
 
-    private func mediaSourceRevealContent(svg: String) -> some View {
+    @ViewBuilder
+    private func revealGlyph(_ icon: MediaSourceRevealIcon) -> some View {
+        switch icon {
+        case let .svg(svg):
+            SVGImageView(svgString: svg, size: self.size * 0.675)
+        case let .asset(name):
+            Image(name)
+                .resizable()
+                .scaledToFit()
+                .frame(width: self.size * 0.675, height: self.size * 0.675)
+        }
+    }
+
+    private func mediaSourceRevealContent(icon: MediaSourceRevealIcon) -> some View {
         RoundedRectangle(cornerRadius: self.resolvedCornerRadius)
             .fill(self.revealBackgroundColor)
             .frame(width: self.size, height: self.size)
             .overlay {
-                SVGImageView(svgString: svg, size: self.size * 0.45)
+                self.revealGlyph(icon)
             }
             .overlay {
                 if let borderColor = self.borderColor {
@@ -63,12 +79,12 @@ struct TracklistArtworkView: View {
             }
     }
 
-    private func stackedContent(svg: String? = nil) -> some View {
+    private func stackedContent(icon: MediaSourceRevealIcon? = nil) -> some View {
         ZStack {
             self.artworkContent
                 .opacity(self.isRevealingMediaSource ? 0 : 1)
-            if let svg {
-                self.mediaSourceRevealContent(svg: svg)
+            if let icon {
+                self.mediaSourceRevealContent(icon: icon)
                     .opacity(self.isRevealingMediaSource ? 1 : 0)
             }
         }
@@ -76,8 +92,8 @@ struct TracklistArtworkView: View {
     }
 
     var body: some View {
-        if let mediaSourceIconSvg = self.mediaSourceIconSvg {
-            self.stackedContent(svg: mediaSourceIconSvg)
+        if let mediaSourceRevealIcon = self.mediaSourceRevealIcon {
+            self.stackedContent(icon: mediaSourceRevealIcon)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     self.revealMediaSource()
@@ -108,7 +124,6 @@ private struct ComposedTracklistArtworkView: View {
     let size: CGFloat
     let cornerRadius: CGFloat?
     let placeholderBackground: Color?
-    let borderColor: Color?
 
     @State private var artwork: [TrackArtworkURLs]?
     @State private var refreshTick = 0
@@ -131,8 +146,7 @@ private struct ComposedTracklistArtworkView: View {
                         tracklistType: self.tracklistType,
                         size: self.size,
                         cornerRadius: self.cornerRadius,
-                        placeholderBackground: self.placeholderBackground,
-                        borderColor: self.borderColor
+                        placeholderBackground: self.placeholderBackground
                     )
                     .id(quadrant.map { ($0.highResUrl ?? $0.lowResUrl) ?? "" }
                         .joined(separator: "|"))
@@ -143,8 +157,7 @@ private struct ComposedTracklistArtworkView: View {
                         tracklistType: self.tracklistType,
                         size: self.size,
                         cornerRadius: self.cornerRadius,
-                        placeholderBackground: self.placeholderBackground,
-                        borderColor: self.borderColor
+                        placeholderBackground: self.placeholderBackground
                     )
                 }
             } else {
@@ -193,7 +206,6 @@ private struct QuadrantOrFallbackArtworkView: View {
     let size: CGFloat
     let cornerRadius: CGFloat?
     let placeholderBackground: Color?
-    let borderColor: Color?
 
     @State private var tileResults: [Int: Bool] = [:]
 
@@ -221,8 +233,7 @@ private struct QuadrantOrFallbackArtworkView: View {
                 tracklistType: self.tracklistType,
                 size: self.size,
                 cornerRadius: self.cornerRadius,
-                placeholderBackground: self.placeholderBackground,
-                borderColor: self.borderColor
+                placeholderBackground: self.placeholderBackground
             )
         } else {
             ZStack {
@@ -246,12 +257,6 @@ private struct QuadrantOrFallbackArtworkView: View {
                 .cornerRadius(self.resolvedCornerRadius)
                 .clipped()
                 .opacity(self.allLoaded ? 1 : 0)
-            }
-            .overlay {
-                if let borderColor = self.borderColor {
-                    RoundedRectangle(cornerRadius: self.resolvedCornerRadius)
-                        .strokeBorder(borderColor, lineWidth: 2)
-                }
             }
         }
     }

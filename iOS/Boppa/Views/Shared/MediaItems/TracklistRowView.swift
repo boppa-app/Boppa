@@ -3,7 +3,7 @@ import SwiftUI
 struct TracklistRow: View {
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
-    var showMediaSourceBorder: Bool = false
+    var showMediaSourceDivider: Bool = false
     var showMediaSourceReveal: Bool = false
     var showChevron: Bool = false
     var isMediaSourceEnabled: Bool = true
@@ -38,25 +38,30 @@ struct TracklistRow: View {
     }
 
     private var resolvedMediaSource: StoredMediaSource? {
-        guard self.showMediaSourceIcon || self.showMediaSourceBorder || self
+        guard self.showMediaSourceIcon || self.showMediaSourceDivider || self
             .showMediaSourceReveal
         else { return nil }
         return MediaSourceStorageManager.shared.fetchOne(id: self.tracklist.mediaSourceId)
     }
 
-    private var mediaSourceBorderColor: Color? {
-        guard self.showMediaSourceBorder, let mediaSource = self.resolvedMediaSource else {
-            return nil
+    private var mediaSourceColor: Color? {
+        guard self.showMediaSourceDivider else { return nil }
+        if self.tracklist.mediaSourceId == "boppa.app" {
+            return .purp
         }
+        guard let mediaSource = self.resolvedMediaSource else { return nil }
         if let hex = mediaSource.config.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
     }
 
-    private var mediaSourceRevealIconSvg: String? {
+    private var mediaSourceRevealIcon: MediaSourceRevealIcon? {
         guard self.showMediaSourceReveal else { return nil }
-        return self.resolvedMediaSource?.config.iconSvg
+        if self.tracklist.mediaSourceId == "boppa.app" {
+            return .asset("Boppa")
+        }
+        return self.resolvedMediaSource?.config.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     var body: some View {
@@ -66,11 +71,16 @@ struct TracklistRow: View {
                 preferLowRes: self.resolvedPreferLowResArtwork,
                 size: self.artworkSize,
                 placeholderBackground: self.placeholderBackground,
-                borderColor: self.mediaSourceBorderColor,
-                mediaSourceIconSvg: self.mediaSourceRevealIconSvg,
+                borderColor: self.mediaSourceColor,
+                mediaSourceRevealIcon: self.mediaSourceRevealIcon,
                 revealBackgroundColor: self.mediaSourceRevealBackgroundColor
             )
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
+            if let mediaSourceColor = self.mediaSourceColor {
+                Capsule()
+                    .fill(mediaSourceColor)
+                    .frame(width: 2, height: self.artworkSize * 0.7)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(self.tracklist.title)

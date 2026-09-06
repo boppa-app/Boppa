@@ -282,14 +282,12 @@ struct TracklistListView: View {
 
                         TracklistRow(
                             tracklist: tracklist,
-                            showMediaSourceBorder: self.isLibraryMode && self.type == .playlists,
+                            showMediaSourceDivider: self.isLibraryMode,
                             showMediaSourceReveal: self.isLibraryMode,
                             showChevron: self.viewModel.isEditing ? false : self
                                 .canNavigateToTracklist,
                             isMediaSourceEnabled: self.viewModel.isEditing ? true : tracklist
-                                .isMediaSourceEnabled,
-                            mediaSourceRevealBackgroundColor: self.type == .albums ?
-                                Color(.systemGray5) : Color.black
+                                .isMediaSourceEnabled
                         )
                     }
                     .contentShape(Rectangle())
