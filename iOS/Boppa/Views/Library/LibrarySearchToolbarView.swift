@@ -29,7 +29,7 @@ struct LibrarySearchToolbarView: View {
                 TextField(
                     "",
                     text: self.$searchQuery,
-                    prompt: Text("Search library").foregroundColor(Color(.systemGray4))
+                    prompt: Text("Find in library").foregroundColor(Color(.systemGray4))
                 )
                 .tint(Color.purp)
                 .textFieldStyle(.plain)

@@ -267,8 +267,8 @@ struct LibraryView: View {
                     .foregroundColor(.purp)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Search Library")
-            .accessibilityHint("Search your library")
+            .accessibilityLabel("Find in Library")
+            .accessibilityHint("Find in your library")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
