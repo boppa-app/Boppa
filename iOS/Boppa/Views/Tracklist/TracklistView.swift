@@ -78,7 +78,7 @@ struct TracklistView: View {
                                     } else {
                                         Image(systemName: "bookmark")
                                             .font(.system(size: 18))
-                                            .foregroundColor(.purp)
+                                            .foregroundColor(.white)
                                     }
                                 }
                                 .frame(width: 44, height: 44)
