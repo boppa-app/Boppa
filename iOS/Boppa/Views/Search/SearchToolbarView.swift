@@ -15,7 +15,21 @@ struct SearchToolbarView: View {
             return "Search"
         }
 
-        return "Search for media on \"\(mediaSource.config.name)\""
+        return "Explore \(self.mediaKind(for: mediaSource)) on \"\(mediaSource.config.name)\""
+    }
+
+    private func mediaKind(for mediaSource: StoredMediaSource) -> String {
+        guard let search = mediaSource.config.data.search else {
+            return "audio"
+        }
+
+        if search.songs != nil || search.albums != nil {
+            return "music"
+        } else if search.videos != nil {
+            return "videos"
+        } else {
+            return "media"
+        }
     }
 
     var body: some View {
