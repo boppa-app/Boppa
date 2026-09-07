@@ -23,12 +23,14 @@ class LibraryViewModel {
         case likes
         case playlists = "playlist"
         case albums = "album"
+        case artists = "artist"
 
         var displayName: String {
             switch self {
             case .likes: return "Likes"
             case .playlists: return "Playlists"
             case .albums: return "Albums"
+            case .artists: return "Artists"
             }
         }
 
@@ -42,6 +44,7 @@ class LibraryViewModel {
                 } else {
                     return "square.stack.fill"
                 }
+            case .artists: return "person.fill"
             }
         }
     }

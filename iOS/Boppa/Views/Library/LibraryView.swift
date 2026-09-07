@@ -21,6 +21,7 @@ struct LibraryView: View {
         case tracklist(Tracklist)
         case playlists
         case albums
+        case artistsList
         case artist(Artist, StoredMediaSource)
     }
 
@@ -157,6 +158,13 @@ struct LibraryView: View {
                         navigationReset: self.navigationReset
                     ) { sourceId in
                         self.activeMediaSourceId = sourceId
+                    }
+                case .artistsList:
+                    LibraryArtistListView(navigationReset: self
+                        .navigationReset)
+                    { artist, mediaSource in
+                        self.activeMediaSourceId = mediaSource.id
+                        self.path.append(LibraryDestination.artist(artist, mediaSource))
                     }
                 case let .artist(artist, mediaSource):
                     ArtistDetailView(
@@ -530,6 +538,9 @@ struct LibraryView: View {
             case .albums:
                 self.activeMediaSourceId = nil
                 self.path.append(LibraryDestination.albums)
+            case .artists:
+                self.activeMediaSourceId = nil
+                self.path.append(LibraryDestination.artistsList)
             }
         }
         .listRowBackground(Color.black)
