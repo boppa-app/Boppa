@@ -40,7 +40,9 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack(path: self.$path) {
             VStack(spacing: 0) {
-                self.toolbar
+                if self.isSearchVisible {
+                    self.toolbar
+                }
                 ZStack(alignment: .top) {
                     if self.isSearchVisible {
                         self.searchResultsContent
@@ -224,54 +226,52 @@ struct LibraryView: View {
         }
     }
 
-    @ViewBuilder
     private var toolbar: some View {
-        if self.isSearchVisible {
-            LibrarySearchToolbarView(
-                searchQuery: self.$viewModel.searchQuery,
-                isSearchFieldFocused: self.$isSearchFieldFocused,
-                isFuzzySearching: self.trackFuzzyHandler.isFuzzySearching || self
-                    .tracklistFuzzyHandler.isFuzzySearching,
-                selectedCategory: self.viewModel.selectedLibraryCategory,
-                onClear: {
-                    if !self.isSearchFieldFocused {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            self.isSearchVisible = false
-                        }
-                    }
-                }
-            )
-            .transition(.asymmetric(
-                insertion: .move(edge: .trailing).combined(with: .opacity),
-                removal: .move(edge: .trailing).combined(with: .opacity)
-            ))
-        } else {
-            HStack {
-                Text("Library")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                Spacer()
-                Button {
-                    self.viewModel.loadAllContent()
-                    self.refreshSearchHandlers()
+        LibrarySearchToolbarView(
+            searchQuery: self.$viewModel.searchQuery,
+            isSearchFieldFocused: self.$isSearchFieldFocused,
+            isFuzzySearching: self.trackFuzzyHandler.isFuzzySearching || self
+                .tracklistFuzzyHandler.isFuzzySearching,
+            selectedCategory: self.viewModel.selectedLibraryCategory,
+            onClear: {
+                if !self.isSearchFieldFocused {
                     withAnimation(.easeInOut(duration: 0.25)) {
-                        self.isSearchVisible = true
+                        self.isSearchVisible = false
                     }
-                    self.isSearchFieldFocused = true
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 20))
-                        .foregroundColor(.purp)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Search Library")
-                .accessibilityHint("Search your library")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .transition(.opacity)
+        )
+        .transition(.asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .trailing).combined(with: .opacity)
+        ))
+    }
+
+    private var libraryHeader: some View {
+        HStack {
+            Text("Library")
+                .font(.title)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            Spacer()
+            Button {
+                self.viewModel.loadAllContent()
+                self.refreshSearchHandlers()
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.isSearchVisible = true
+                }
+                self.isSearchFieldFocused = true
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 20))
+                    .foregroundColor(.purp)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Search Library")
+            .accessibilityHint("Search your library")
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private var categoryBubblesBar: some View {
@@ -290,6 +290,11 @@ struct LibraryView: View {
     private var sectionList: some View {
         ScrollFadeView {
             List {
+                self.libraryHeader
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+
                 self.pinnedHeader
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -340,6 +345,8 @@ struct LibraryView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
 
@@ -365,6 +372,7 @@ struct LibraryView: View {
                 .contentMargins(.top, self.scrollHandler.bubblesBarHeight)
                 .scrollContentBackground(.hidden)
                 .scrollDismissesKeyboard(.immediately)
+                .scrollIndicators(.hidden)
                 .modifier(ScrollDirectionTracker(
                     isEnabled: true,
                     onScrollChange: { oldInfo, newInfo in

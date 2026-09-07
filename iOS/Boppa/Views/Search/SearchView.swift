@@ -28,20 +28,12 @@ struct SearchView: View {
         self.isSearchFieldFocused
     }
 
-    private var showSearchHeader: Bool {
-        !self.isSearchFieldFocused && !self.viewModel.isQueryActive
-    }
-
     var body: some View {
         NavigationStack(path: self.$path) {
             VStack(spacing: 0) {
                 if self.viewModel.mediaSources.isEmpty {
                     self.noMediaSourceView
                 } else {
-                    if self.showSearchHeader {
-                        self.header
-                            .transition(.opacity)
-                    }
                     SearchToolbarView(
                         viewModel: self.viewModel,
                         isSearchFieldFocused: self.$isSearchFieldFocused,
@@ -61,7 +53,6 @@ struct SearchView: View {
                     }
                 }
             }
-            .animation(.easeInOut(duration: 0.25), value: self.showSearchHeader)
             .onChange(of: self.isSearchFieldFocused) { _, focused in
                 if !focused {
                     self.viewModel.searchQuery = self.viewModel.lastSearchedQuery
@@ -232,16 +223,6 @@ struct SearchView: View {
     private enum SearchDestination: Hashable {
         case tracklist(Tracklist)
         case artist(Artist, StoredMediaSource)
-    }
-
-    private var header: some View {
-        Text("Search")
-            .font(.title)
-            .fontWeight(.bold)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
     }
 
     private var categoryBubblesBar: some View {

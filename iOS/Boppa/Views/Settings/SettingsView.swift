@@ -12,12 +12,23 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack(path: self.$navigationPath) {
-            List {
-                self.mediaSourcesSection
-                self.communitySection
+            ScrollFadeView {
+                List {
+                    self.header
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+
+                    self.mediaSourcesSection
+                    self.communitySection
+                }
+                .environment(
+                    \.editMode,
+                    self.isEditMode ? .constant(.active) : .constant(.inactive)
+                )
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .environment(\.editMode, self.isEditMode ? .constant(.active) : .constant(.inactive))
-            .navigationTitle("Settings")
             .navigationDestination(for: StoredMediaSource.self) { mediaSource in
                 MediaSourceDetailView(
                     viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource)
@@ -55,6 +66,16 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private var header: some View {
+        Text("Settings")
+            .font(.title)
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
     }
 
     private var mediaSourcesSection: some View {
