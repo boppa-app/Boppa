@@ -27,6 +27,7 @@ struct TrackStorageManagerTests {
                       "lowResArtworkUrl" TEXT,
                       "highResArtworkUrl" TEXT,
                       "url" TEXT,
+                      "isSavedToLibrary" INTEGER NOT NULL DEFAULT 0,
                       "lastViewedTimestamp" REAL,
                       "isRecent" INTEGER NOT NULL DEFAULT 0,
                       PRIMARY KEY ("mediaId", "mediaSourceId")
