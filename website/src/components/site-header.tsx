@@ -31,7 +31,7 @@ export function SiteHeader() {
           <RedditIcon className="w-[18px] h-[18px]" />
         </a>
         <a
-          href="https://discord.gg/zk6FhWNnM"
+          href="https://discord.gg/shK2P7psK"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Discord"

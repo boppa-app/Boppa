@@ -139,7 +139,7 @@ struct SettingsView: View {
                 self.communityRow(
                     title: "Discord",
                     imageName: "Discord",
-                    url: URL(string: "https://discord.gg/zk6FhWNnM")!
+                    url: URL(string: "https://discord.gg/shK2P7psK")!
                 )
                 Divider()
                     .padding(.leading, 44)
