@@ -66,7 +66,7 @@ class RecentsStorageManager {
     func recordViewedArtist(_ artist: Artist) {
         let now = Date().timeIntervalSince1970
         try? self.database.write { db in
-            try TrackStorageManager.shared.markArtistRecentlyViewed(artist, viewedAt: now, db: db)
+            try ArtistStorageManager.shared.markArtistRecentlyViewed(artist, viewedAt: now, db: db)
             try Self.trimOverflowArtists(mediaSourceId: artist.mediaSourceId, db: db)
         }
         logger
@@ -104,7 +104,7 @@ class RecentsStorageManager {
 
     func removeRecentlyViewedArtist(mediaId: String, mediaSourceId: String) {
         try? self.database.write { db in
-            try TrackStorageManager.shared.unmarkArtistRecentlyViewed(
+            try ArtistStorageManager.shared.unmarkArtistRecentlyViewed(
                 mediaId: mediaId,
                 mediaSourceId: mediaSourceId,
                 db: db
@@ -151,7 +151,7 @@ class RecentsStorageManager {
             .fetchAll(db)
         guard all.count > Self.maxItemsPerSource else { return }
         for artist in all[Self.maxItemsPerSource...] {
-            try TrackStorageManager.shared.unmarkArtistRecentlyViewed(
+            try ArtistStorageManager.shared.unmarkArtistRecentlyViewed(
                 mediaId: artist.mediaId,
                 mediaSourceId: artist.mediaSourceId,
                 db: db

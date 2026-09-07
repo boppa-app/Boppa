@@ -127,7 +127,7 @@ class TrackStorageManager {
         logger.info("Deleted orphaned track '\(mediaId)' from '\(mediaSourceId)'")
 
         for ref in artistRefs {
-            try self.deleteArtistIfOrphaned(ref, db: db)
+            try ArtistStorageManager.shared.deleteArtistIfOrphaned(ref, db: db)
         }
         for ref in albumRefs {
             try self.deleteAlbumStubIfOrphaned(ref, db: db)
@@ -153,23 +153,6 @@ class TrackStorageManager {
         try self.deleteIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
     }
 
-    func markArtistRecentlyViewed(_ artist: Artist, viewedAt: Double, db: Database) throws {
-        try self.upsertArtist(artist, db: db)
-        try StoredArtist.update {
-            $0.isRecent = true
-            $0.lastViewedTimestamp = #bind(viewedAt)
-        }
-        .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
-        .execute(db)
-    }
-
-    func unmarkArtistRecentlyViewed(mediaId: String, mediaSourceId: String, db: Database) throws {
-        try StoredArtist.update { $0.isRecent = false }
-            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-            .execute(db)
-        try self.deleteArtistIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
-    }
-
     func unmarkTracklistRecentlyViewed(
         mediaId: String,
         mediaSourceId: String,
@@ -182,35 +165,6 @@ class TrackStorageManager {
     }
 
     // MARK: Private
-
-    private func deleteArtistIfOrphaned(_ ref: StoredTrackArtist, db: Database) throws {
-        try self.deleteArtistIfOrphaned(
-            mediaId: ref.artistMediaId, mediaSourceId: ref.artistMediaSourceId, db: db
-        )
-    }
-
-    private func deleteArtistIfOrphaned(
-        mediaId: String,
-        mediaSourceId: String,
-        db: Database
-    ) throws {
-        let inTracks =
-            try StoredTrackArtist
-                .where { $0.artistMediaId.eq(mediaId).and($0.artistMediaSourceId.eq(mediaSourceId))
-                }
-                .fetchCount(db)
-        guard inTracks == 0 else { return }
-        let artist =
-            try StoredArtist
-                .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-                .fetchOne(db)
-        guard let artist, !artist.isRecent else { return }
-        try StoredArtist
-            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-            .delete()
-            .execute(db)
-        logger.info("Deleted orphaned artist '\(mediaId)'")
-    }
 
     private func deleteAlbumStubIfOrphaned(_ ref: StoredTrackAlbum, db: Database) throws {
         try self.deleteAlbumStubIfOrphaned(
@@ -404,7 +358,7 @@ class TrackStorageManager {
             .execute(db)
         let keys = FractionalIndex.generateNKeysBetween(nil, nil, n: artists.count)
         for (artist, key) in zip(artists, keys) {
-            try self.upsertArtist(artist, db: db)
+            try ArtistStorageManager.shared.upsertArtist(artist, db: db)
             try StoredTrackArtist.insert {
                 StoredTrackArtist.Draft(
                     trackMediaId: track.mediaId,
@@ -416,7 +370,7 @@ class TrackStorageManager {
             }.execute(db)
         }
         for ref in oldRefs {
-            try self.deleteArtistIfOrphaned(ref, db: db)
+            try ArtistStorageManager.shared.deleteArtistIfOrphaned(ref, db: db)
         }
     }
 
@@ -450,40 +404,5 @@ class TrackStorageManager {
         for ref in oldRefs {
             try self.deleteAlbumStubIfOrphaned(ref, db: db)
         }
-    }
-
-    @discardableResult
-    private func upsertArtist(_ artist: Artist, db: Database) throws -> String {
-        let existing =
-            try StoredArtist
-                .where {
-                    $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId))
-                }
-                .fetchOne(db)
-        if let existing {
-            try StoredArtist.update {
-                if !artist.name.isEmpty { $0.name = artist.name }
-                if artist.lowResArtworkUrl != nil { $0.lowResArtworkUrl = artist.lowResArtworkUrl }
-                if artist
-                    .highResArtworkUrl != nil { $0.highResArtworkUrl = artist.highResArtworkUrl }
-                if artist.url != nil { $0.url = artist.url }
-            }
-            .where {
-                $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
-            }
-            .execute(db)
-        } else {
-            try StoredArtist.insert {
-                StoredArtist.Draft(
-                    mediaId: artist.mediaId,
-                    mediaSourceId: artist.mediaSourceId,
-                    name: artist.name,
-                    lowResArtworkUrl: artist.lowResArtworkUrl,
-                    highResArtworkUrl: artist.highResArtworkUrl,
-                    url: artist.url
-                )
-            }.execute(db)
-        }
-        return artist.mediaId
     }
 }

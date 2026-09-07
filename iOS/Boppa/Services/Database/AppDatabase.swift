@@ -21,6 +21,7 @@ extension DatabaseWriter where Self == DatabasePool {
         var migrator = DatabaseMigrator()
         migrator.registerV1InitialSchema()
         migrator.register20260818172551_DropTrackCount()
+        migrator.register20260906120000_AddArtistIsSavedToLibrary()
         try migrator.migrate(database)
         return database
     }

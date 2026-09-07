@@ -9,6 +9,7 @@ nonisolated struct StoredArtist {
     var lowResArtworkUrl: String?
     var highResArtworkUrl: String?
     var url: String?
+    var isSavedToLibrary: Bool = false
     var lastViewedTimestamp: Double? = nil
     var isRecent: Bool = false
 }
