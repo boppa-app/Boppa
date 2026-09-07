@@ -263,6 +263,7 @@ struct RecentsSectionsView: View {
                     .padding(.bottom, 24)
                 }
                 .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
