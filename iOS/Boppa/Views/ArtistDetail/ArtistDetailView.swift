@@ -24,7 +24,30 @@ struct ArtistDetailView: View {
         VStack(spacing: 0) {
             DetailHeaderView(
                 title: self.artist.name,
-                onBack: { self.dismiss() }
+                onBack: { self.dismiss() },
+                trailing: {
+                    Image(systemName: self.viewModel.isSaved ? "heart.fill" : "heart")
+                        .font(.system(size: 18))
+                        .foregroundColor(self.viewModel.isSaved ? .purp : .white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if self.viewModel.isSaved {
+                                self.viewModel.removeFromLibrary()
+                            } else {
+                                self.viewModel.saveToLibrary()
+                            }
+                        }
+                        .accessibilityLabel(
+                            self.viewModel.isSaved ? "Remove from Library" : "Add to Library"
+                        )
+                        .accessibilityHint(
+                            self.viewModel.isSaved ?
+                                "Remove this artist from your library" :
+                                "Save this artist to your library"
+                        )
+                        .accessibilityAddTraits(.isButton)
+                }
             )
             self.content
         }
