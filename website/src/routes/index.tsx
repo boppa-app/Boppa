@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
   head: () => {
     const meta = pageMeta(
       "Boppa - Music for All",
-      "Turn any website into a native audio player.",
+      "A native audio player for anything you already stream.",
       "/",
     );
     return {
@@ -41,7 +41,7 @@ function Home() {
             Music for All
           </h1>
           <p className="text-white/70 text-lg leading-relaxed max-w-lg">
-            Turn any website into a native audio player.
+            A native audio player for anything you already stream.
           </p>
         </div>
 

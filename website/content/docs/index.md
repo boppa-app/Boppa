@@ -8,7 +8,7 @@ category: Introduction
 
 # Getting Started
 
-Boppa is an app that lets you turn any website into a native audio player. Everything it can search,
+Boppa is a native audio player for anything you already stream. Everything it can search,
 browse, and play comes from a **media source**, a small config you add yourself.
 
 ## Add your first media source
