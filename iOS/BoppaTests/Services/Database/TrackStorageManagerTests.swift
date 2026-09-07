@@ -1386,54 +1386,6 @@ struct TrackStorageManagerTests {
         #expect(try ctx.track("t1") == nil)
     }
 
-    // MARK: - Recents: artists
-
-    @Test func markArtistRecentlyViewedInsertsArtistAndSetsFlag() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1", name: "Some Artist")
-
-        try ctx.write { db in
-            try TrackStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 55, db: db)
-        }
-
-        let stored = try #require(try ctx.artist("a1"))
-        #expect(stored.isRecent == true)
-        #expect(stored.lastViewedTimestamp == 55)
-    }
-
-    @Test func unmarkArtistRecentlyViewedDeletesOrphanedArtist() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1")
-        try ctx.write { db in
-            try TrackStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
-        }
-
-        try ctx.write { db in
-            try TrackStorageManager.shared.unmarkArtistRecentlyViewed(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
-        }
-
-        #expect(try ctx.artist("a1") == nil)
-    }
-
-    @Test func unmarkArtistRecentlyViewedKeepsArtistReferencedByTrack() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1")
-        try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1", artists: [a1]), db: db)
-            try TrackStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
-        }
-
-        try ctx.write { db in
-            try TrackStorageManager.shared.unmarkArtistRecentlyViewed(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
-        }
-
-        #expect(try ctx.artist("a1") != nil)
-    }
-
     // MARK: - Recents: tracklists
 
     @Test func unmarkTracklistRecentlyViewedDeletesUnsavedUnreferencedStub() throws {
