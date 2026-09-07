@@ -333,7 +333,8 @@ struct LibraryView: View {
                             } label: {
                                 TracklistRow(
                                     tracklist: Tracklist(storedTracklist: stored),
-                                    showMediaSourceIcon: true,
+                                    showMediaSourceDivider: true,
+                                    showMediaSourceReveal: true,
                                     showChevron: true,
                                     isMediaSourceEnabled: stored.isMediaSourceEnabled
                                 )
