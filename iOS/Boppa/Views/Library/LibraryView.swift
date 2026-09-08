@@ -303,6 +303,11 @@ struct LibraryView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparator(.hidden)
 
+                self.sectionGrid
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+
                 self.pinnedHeader
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -345,10 +350,6 @@ struct LibraryView: View {
                             .listRowSeparator(.hidden)
                         }
                     }
-                }
-
-                ForEach(LibraryViewModel.LibrarySection.allCases, id: \.self) { section in
-                    self.sectionButton(section)
                 }
             }
             .listStyle(.plain)
@@ -500,29 +501,41 @@ struct LibraryView: View {
             .isPinnedExpanded ? "Collapse pinned section" : "Expand pinned section")
     }
 
-    private func sectionButton(_ section: LibraryViewModel.LibrarySection) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: section.icon)
-                .font(.system(size: 16))
-                .foregroundColor(.purp)
-                .frame(width: 48, height: 48)
-
-            Text(section.displayName)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.purp)
-
-            Spacer()
+    private var sectionGrid: some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12),
+            ],
+            spacing: 12
+        ) {
+            ForEach(LibraryViewModel.LibrarySection.allCases, id: \.self) { section in
+                self.sectionTile(section)
+            }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.bottom, 8)
+    }
+
+    private func sectionTile(_ section: LibraryViewModel.LibrarySection) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: section.icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.purp)
+
+            Text(section.displayName)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black)
-        .contentShape(Rectangle())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemGray6))
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onTapGesture {
             switch section {
             case .likes:
@@ -544,9 +557,6 @@ struct LibraryView: View {
                 self.path.append(LibraryDestination.artistsList)
             }
         }
-        .listRowBackground(Color.black)
-        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-        .listRowSeparator(.hidden)
         .accessibilityLabel(section.displayName)
         .accessibilityHint("Open \(section.displayName)")
         .accessibilityAddTraits(.isButton)
