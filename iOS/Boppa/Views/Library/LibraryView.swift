@@ -308,47 +308,34 @@ struct LibraryView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparator(.hidden)
 
-                self.pinnedHeader
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
+                if !self.viewModel.pinnedTracklists.isEmpty {
+                    self.pinnedHeader
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
 
-                if self.viewModel.isPinnedExpanded {
-                    if self.viewModel.pinnedTracklists.isEmpty {
-                        Image(systemName: "zzz")
-                            .font(.system(size: 20))
-                            .foregroundColor(Color(.systemGray3))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 12)
-                            .padding(.leading, 76)
-                            .padding(.trailing, 16)
-                            .listRowBackground(Color.black)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparator(.hidden)
-                    } else {
-                        ForEach(
-                            Array(self.viewModel.pinnedTracklists.enumerated()),
-                            id: \.element.id
-                        ) { _, stored in
-                            Button {
-                                self.activeMediaSourceId = stored.mediaSourceId
-                                self.path
-                                    .append(LibraryDestination
-                                        .tracklist(Tracklist(storedTracklist: stored)))
-                            } label: {
-                                TracklistRow(
-                                    tracklist: Tracklist(storedTracklist: stored),
-                                    showMediaSourceDivider: true,
-                                    showMediaSourceReveal: true,
-                                    showChevron: true,
-                                    isMediaSourceEnabled: stored.isMediaSourceEnabled
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color.black)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparator(.hidden)
+                    ForEach(
+                        Array(self.viewModel.pinnedTracklists.enumerated()),
+                        id: \.element.id
+                    ) { _, stored in
+                        Button {
+                            self.activeMediaSourceId = stored.mediaSourceId
+                            self.path
+                                .append(LibraryDestination
+                                    .tracklist(Tracklist(storedTracklist: stored)))
+                        } label: {
+                            TracklistRow(
+                                tracklist: Tracklist(storedTracklist: stored),
+                                showMediaSourceDivider: true,
+                                showMediaSourceReveal: true,
+                                showChevron: true,
+                                isMediaSourceEnabled: stored.isMediaSourceEnabled
+                            )
                         }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
                     }
                 }
             }
@@ -469,36 +456,23 @@ struct LibraryView: View {
     }
 
     private var pinnedHeader: some View {
-        Button {
-            withAnimation {
-                self.viewModel.isPinnedExpanded.toggle()
-            }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "pin.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(.purp)
-                    .frame(width: 48, height: 48)
-                Text("Pinned")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                Image(systemName: self.viewModel.isPinnedExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(.systemGray))
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.black)
-            .contentShape(Rectangle())
+        HStack(spacing: 12) {
+            Image(systemName: "pin.fill")
+                .font(.system(size: 16))
+                .foregroundColor(.purp)
+                .frame(width: 48, height: 48)
+            Text("Pinned")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            Spacer()
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(self.viewModel
-            .isPinnedExpanded ? "Pinned, expanded" : "Pinned, collapsed")
-        .accessibilityHint(self.viewModel
-            .isPinnedExpanded ? "Collapse pinned section" : "Expand pinned section")
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black)
+        .accessibilityLabel("Pinned")
+        .accessibilityAddTraits(.isHeader)
     }
 
     private var sectionGrid: some View {

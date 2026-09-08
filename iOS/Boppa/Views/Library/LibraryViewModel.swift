@@ -5,9 +5,7 @@ import os
 @Observable
 class LibraryViewModel {
     var mediaSources: [StoredMediaSource] = []
-    var isPinnedExpanded = false
     private var allPinnedTracklists: [StoredTracklist] = []
-    private var hasSetInitialPinnedState = false
 
     var searchQuery: String = ""
     var selectedLibraryCategory: SearchCategory = .songs
@@ -57,10 +55,6 @@ class LibraryViewModel {
 
     func loadPinnedTracklists() {
         self.allPinnedTracklists = TracklistStorageManager.shared.fetchPinnedTracklists()
-        if !self.hasSetInitialPinnedState {
-            self.hasSetInitialPinnedState = true
-            self.isPinnedExpanded = !self.pinnedTracklists.isEmpty
-        }
     }
 
     var categoryFilteredTracks: [StoredTrack] {
