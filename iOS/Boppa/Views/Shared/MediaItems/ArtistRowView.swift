@@ -3,15 +3,59 @@ import SwiftUI
 struct ArtistRow: View {
     let artist: Artist
     var showChevron: Bool = false
+    var showMediaSourceDivider: Bool = false
+    var showMediaSourceReveal: Bool = false
+    var mediaSourceRevealBackgroundColor: Color = .init(.black)
+
+    private let artworkSize: CGFloat = 48
+
+    private var resolvedMediaSource: StoredMediaSource? {
+        guard self.showMediaSourceDivider || self.showMediaSourceReveal else { return nil }
+        return MediaSourceStorageManager.shared.fetchOne(id: self.artist.mediaSourceId)
+    }
+
+    private var mediaSourceColor: Color? {
+        guard self.showMediaSourceDivider else { return nil }
+        if self.artist.mediaSourceId == "boppa.app" {
+            return .purp
+        }
+        guard let mediaSource = self.resolvedMediaSource else { return nil }
+        if let hex = mediaSource.config.highlightColor {
+            return Color(hex: hex)
+        }
+        return Color.purp
+    }
+
+    private var mediaSourceRevealIcon: MediaSourceRevealIcon? {
+        guard self.showMediaSourceReveal else { return nil }
+        if self.artist.mediaSourceId == "boppa.app" {
+            return .asset("Boppa")
+        }
+        return self.resolvedMediaSource?.config.iconSvg.map(MediaSourceRevealIcon.svg)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(
-                lowResUrl: self.artist.lowResArtworkUrl,
-                highResUrl: self.artist.highResArtworkUrl,
-                placeholder: "person",
-                isCircular: true
-            )
+            MediaSourceRevealArtwork(
+                size: self.artworkSize,
+                cornerRadius: self.artworkSize / 2,
+                borderColor: self.mediaSourceColor,
+                mediaSourceRevealIcon: self.mediaSourceRevealIcon,
+                revealBackgroundColor: self.mediaSourceRevealBackgroundColor
+            ) {
+                ArtworkView(
+                    lowResUrl: self.artist.lowResArtworkUrl,
+                    highResUrl: self.artist.highResArtworkUrl,
+                    placeholder: "person",
+                    size: self.artworkSize,
+                    isCircular: true
+                )
+            }
+            if let mediaSourceColor = self.mediaSourceColor {
+                Capsule()
+                    .fill(mediaSourceColor)
+                    .frame(width: 2, height: self.artworkSize * 0.7)
+            }
             Text(self.artist.name)
                 .font(.body)
                 .foregroundColor(.white)

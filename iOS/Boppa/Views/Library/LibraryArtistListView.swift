@@ -50,7 +50,11 @@ struct LibraryArtistListView: View {
                 }
                 self.onArtistSelected(stored.toArtist(), mediaSource)
             } label: {
-                ArtistRow(artist: stored.toArtist())
+                ArtistRow(
+                    artist: stored.toArtist(),
+                    showMediaSourceDivider: true,
+                    showMediaSourceReveal: true
+                )
             }
             .buttonStyle(.plain)
         }
