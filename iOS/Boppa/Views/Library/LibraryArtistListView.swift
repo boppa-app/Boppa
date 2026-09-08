@@ -43,25 +43,16 @@ struct LibraryArtistListView: View {
     }
 
     private var artistList: some View {
-        ScrollFadeView {
-            List {
-                ForEach(self.artists) { stored in
-                    Button {
-                        guard let mediaSource = self.mediaSourcesById[stored.mediaSourceId] else {
-                            return
-                        }
-                        self.onArtistSelected(stored.toArtist(), mediaSource)
-                    } label: {
-                        ArtistRow(artist: stored.toArtist(), showChevron: true)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
+        AlphabetIndexedList(items: self.artists, name: \.name) { stored in
+            Button {
+                guard let mediaSource = self.mediaSourcesById[stored.mediaSourceId] else {
+                    return
                 }
+                self.onArtistSelected(stored.toArtist(), mediaSource)
+            } label: {
+                ArtistRow(artist: stored.toArtist())
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
+            .buttonStyle(.plain)
         }
     }
 
