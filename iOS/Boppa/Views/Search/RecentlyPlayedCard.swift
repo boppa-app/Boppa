@@ -24,8 +24,8 @@ struct RecentlyPlayedCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 ZStack {
                     ArtworkView(
-                        lowResUrl: self.track.resolvedLowResArtworkUrl,
-                        highResUrl: self.track.resolvedHighResArtworkUrl,
+                        lowResUrl: self.track.lowResArtworkUrl,
+                        highResUrl: self.track.highResArtworkUrl,
                         preferLowRes: false,
                         placeholder: "music.note",
                         size: Self.artworkSize

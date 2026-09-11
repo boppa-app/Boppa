@@ -11,6 +11,8 @@ struct TrackActionsSheet: View {
     @State private var isShowingAddToPlaylist = false
     @State private var selectedDetent: PresentationDetent = .medium
     @State private var allowsMediumDetent = true
+    @State private var artists: [Artist] = []
+    @State private var albums: [Tracklist] = []
 
     private var albumIcon: String {
         if #available(iOS 26.0, *) {
@@ -39,6 +41,20 @@ struct TrackActionsSheet: View {
         )
         .presentationDragIndicator(.visible)
         .presentationBackground(Color(.systemGray6))
+        .task(id: self.track.trackKey) {
+            self.artists = self.track.artists.isEmpty
+                ? TrackStorageManager.shared.loadArtists(
+                    forTrackMediaId: self.track.mediaId,
+                    mediaSourceId: self.track.mediaSourceId
+                )
+                : self.track.artists
+            self.albums = self.track.albums.isEmpty
+                ? TrackStorageManager.shared.loadAlbums(
+                    forTrackMediaId: self.track.mediaId,
+                    mediaSourceId: self.track.mediaSourceId
+                )
+                : self.track.albums
+        }
     }
 
     private let transitionDuration: TimeInterval = 0.1
@@ -121,7 +137,7 @@ struct TrackActionsSheet: View {
                 }
 
                 if self.isMediaSourceEnabled {
-                    ForEach(self.track.artists) { artist in
+                    ForEach(self.artists) { artist in
                         if self.mediaSource.config.data.get?.artist != nil {
                             Button {
                                 self.dismiss()
@@ -146,7 +162,7 @@ struct TrackActionsSheet: View {
                         }
                     }
 
-                    ForEach(self.track.albums) { album in
+                    ForEach(self.albums) { album in
                         if self.mediaSource.config.data.list?.album != nil {
                             Button {
                                 self.dismiss()
@@ -182,8 +198,8 @@ struct TrackActionsSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
                 ArtworkView(
-                    lowResUrl: self.track.resolvedLowResArtworkUrl,
-                    highResUrl: self.track.resolvedHighResArtworkUrl,
+                    lowResUrl: self.track.lowResArtworkUrl,
+                    highResUrl: self.track.highResArtworkUrl,
                     size: 56,
                     placeholderBackground: .purp
                 )

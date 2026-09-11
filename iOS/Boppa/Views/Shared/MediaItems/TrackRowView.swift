@@ -67,8 +67,8 @@ struct TrackRow: View {
                 revealBackgroundColor: .init(.black)
             ) {
                 ArtworkView(
-                    lowResUrl: self.track.resolvedLowResArtworkUrl,
-                    highResUrl: self.track.resolvedHighResArtworkUrl,
+                    lowResUrl: self.track.lowResArtworkUrl,
+                    highResUrl: self.track.highResArtworkUrl,
                     placeholder: "music.note",
                     size: self.artworkSize
                 )

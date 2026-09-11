@@ -124,8 +124,8 @@ struct RecentsSectionsView: View {
                                         tracklist: group.tracklist,
                                         artworkUrls: group.tracks.map {
                                             (
-                                                $0.resolvedLowResArtworkUrl,
-                                                $0.resolvedHighResArtworkUrl
+                                                $0.lowResArtworkUrl,
+                                                $0.highResArtworkUrl
                                             )
                                         },
                                         onTap: {

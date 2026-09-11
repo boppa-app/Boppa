@@ -53,11 +53,7 @@ class RecentsStorageManager {
                 .order { $0.lastPlayedTimestamp.desc() }
                 .limit(limit)
                 .fetchAll(db)
-                .map { stored in
-                    let artists = try TrackStorageManager.shared.loadArtistsForTrack(stored, db: db)
-                    let albums = try TrackStorageManager.shared.loadAlbumsForTrack(stored, db: db)
-                    return stored.toTrack(artists: artists, albums: albums)
-                }
+                .map { $0.toTrack() }
         }) ?? []
     }
 

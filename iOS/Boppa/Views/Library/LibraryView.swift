@@ -286,7 +286,7 @@ struct LibraryView: View {
             } label: {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 20))
-                    .foregroundColor(.purp)
+                    .foregroundColor(.red)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Find in Library")
@@ -434,8 +434,7 @@ struct LibraryView: View {
                         },
                         onEllipsisTap: {
                             self.isSearchFieldFocused = false
-                            self.trackForActions = TracklistStorageManager.shared
-                                .loadTrackWithRelations(stored)
+                            self.trackForActions = stored.toTrack()
                         }
                     )
                     .listRowBackground(Color.black)

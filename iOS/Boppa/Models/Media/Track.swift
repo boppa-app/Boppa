@@ -119,16 +119,8 @@ struct Track: Identifiable, Equatable {
         return source.isEnabled
     }
 
-    var resolvedLowResArtworkUrl: String? {
-        self.albums.compactMap(\.lowResArtworkUrl).first ?? self.lowResArtworkUrl
-    }
-
-    var resolvedHighResArtworkUrl: String? {
-        self.albums.compactMap(\.highResArtworkUrl).first ?? self.highResArtworkUrl
-    }
-
     var displayHighResArtworkUrl: String? {
-        self.resolvedHighResArtworkUrl ?? self.resolvedLowResArtworkUrl
+        self.highResArtworkUrl ?? self.lowResArtworkUrl
     }
 
     var formattedDuration: String? {

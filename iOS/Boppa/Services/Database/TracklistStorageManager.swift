@@ -89,11 +89,7 @@ class TracklistStorageManager {
             storedTracks = try query.order { tt, _ in tt.sortOrder }.select { _, t in t }
                 .fetchAll(db)
         }
-        return try storedTracks.map { stored in
-            let artists = try TrackStorageManager.shared.loadArtistsForTrack(stored, db: db)
-            let albums = try TrackStorageManager.shared.loadAlbumsForTrack(stored, db: db)
-            return stored.toTrack(artists: artists, albums: albums)
-        }
+        return storedTracks.map { $0.toTrack() }
     }
 
     func tracklist(from stored: StoredTracklist, db: Database) throws -> Tracklist {
@@ -337,14 +333,6 @@ class TracklistStorageManager {
             }
         }
         logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
-    }
-
-    func loadTrackWithRelations(_ stored: StoredTrack) -> Track {
-        (try? self.database.read { db in
-            let artists = try TrackStorageManager.shared.loadArtistsForTrack(stored, db: db)
-            let albums = try TrackStorageManager.shared.loadAlbumsForTrack(stored, db: db)
-            return stored.toTrack(artists: artists, albums: albums)
-        }) ?? stored.toTrack()
     }
 
     // MARK: - Private: Tracklist Persistence
