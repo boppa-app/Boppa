@@ -3,15 +3,18 @@ import SwiftUI
 struct MiniPlayerView: View {
     @Binding var showNowPlaying: Bool
 
+    private static let artworkSize: CGFloat = 48
+    private static let verticalPadding: CGFloat = 6
+    private static let progressBarHeight: CGFloat = 3
+
+    static let height: CGFloat = artworkSize + verticalPadding * 2 + progressBarHeight
+
     private var playbackService: PlaybackService {
         PlaybackService.shared
     }
 
     var body: some View {
-        if self.playbackService.hasTrack {
-            self.playerContent
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
+        self.playerContent
     }
 
     private var playerContent: some View {
@@ -23,7 +26,7 @@ struct MiniPlayerView: View {
                 self.playPauseButton
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            .padding(.vertical, Self.verticalPadding)
 
             self.progressBar
         }
@@ -56,7 +59,7 @@ struct MiniPlayerView: View {
                     .frame(width: geometry.size.width * CGFloat(min(progress, 1.0)))
             }
         }
-        .frame(height: 3)
+        .frame(height: Self.progressBarHeight)
     }
 
     private var artwork: some View {
@@ -64,6 +67,7 @@ struct MiniPlayerView: View {
             lowResUrl: self.playbackService.currentTrack?.resolvedLowResArtworkUrl,
             highResUrl: self.playbackService.currentTrack?.resolvedHighResArtworkUrl,
             placeholder: "music.note",
+            size: Self.artworkSize,
             placeholderBackground: .charcoal
         )
     }

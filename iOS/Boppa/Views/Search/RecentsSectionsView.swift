@@ -9,6 +9,8 @@ private struct AlbumCardFramePreferenceKey: PreferenceKey {
 }
 
 struct RecentsSectionsView: View {
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let recentlyPlayedEntries: [RecentlyPlayedEntry]
     let recentlyViewed: [RecentlyViewedItem]
     let onSelectTrack: (Track) -> Void
@@ -235,7 +237,7 @@ struct RecentsSectionsView: View {
                 action: self.onPopRecentlyViewed
             )
             .padding(.bottom, 8)
-            ScrollFadeView {
+            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(self.recentlyViewed) { item in
@@ -260,10 +262,11 @@ struct RecentsSectionsView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.bottom, 24)
                 }
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
+                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                .reportsBottomScrollProximity()
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)

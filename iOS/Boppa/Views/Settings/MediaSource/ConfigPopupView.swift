@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ConfigPopupView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let popups: [String: PopupConfig]
 
     var body: some View {
@@ -11,7 +13,7 @@ struct ConfigPopupView: View {
                 onBack: { self.dismiss() }
             )
 
-            ScrollFadeView {
+            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
                 List {
                     ForEach(Array(self.popups.sorted(by: { $0.key < $1.key })), id: \.key) { (
                         id: String,
@@ -51,6 +53,8 @@ struct ConfigPopupView: View {
                         }
                     }
                 }
+                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                .reportsBottomScrollProximity()
             }
         }
         .navigationBarHidden(true)

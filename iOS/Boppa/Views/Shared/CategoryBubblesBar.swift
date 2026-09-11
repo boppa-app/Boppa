@@ -14,7 +14,7 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
     let onSelect: (Category) -> Void
 
     var body: some View {
-        let fadeHeight = self.isFocused ? CGFloat(0) : self.scrollHandler.fadeHeight
+        let fadeHeight = self.isFocused ? CGFloat(0) : EdgeFade.height
 
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
@@ -44,7 +44,6 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
                 }
             }
             .padding(.top, 10)
-            .padding(.bottom, 5)
             .background(Color.black)
             .background(
                 GeometryReader { geo in
@@ -55,7 +54,7 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
             )
 
             LinearGradient(
-                colors: [.black.opacity(self.scrollHandler.headerTopFade), .clear],
+                colors: [.black, .clear],
                 startPoint: .top,
                 endPoint: .bottom
             )

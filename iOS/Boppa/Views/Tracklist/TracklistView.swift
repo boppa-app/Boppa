@@ -2,6 +2,8 @@ import SwiftUI
 
 struct TracklistView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @State private var viewModel: TracklistViewModel
     @State private var showActionSheet = false
     @State private var trackForActions: Track?
@@ -194,7 +196,7 @@ struct TracklistView: View {
     }
 
     private var trackList: some View {
-        ScrollFadeView {
+        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
             List {
                 ForEach(
                     Array(self.viewModel.displayTracks.enumerated()),
@@ -262,6 +264,8 @@ struct TracklistView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+            .reportsBottomScrollProximity(hasMorePages: self.viewModel.hasMorePages)
             .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
             .animation(.easeInOut(duration: 0.2), value: self.viewModel.isEditing)
             .modifier(ScrollDirectionTracker(

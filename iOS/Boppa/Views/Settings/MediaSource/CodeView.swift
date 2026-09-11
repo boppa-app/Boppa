@@ -3,6 +3,8 @@ import SwiftUI
 
 struct CodeView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let title: String
     let code: String
 
@@ -14,10 +16,12 @@ struct CodeView: View {
             )
 
             GeometryReader { geometry in
-                ScrollFadeView {
+                EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
                     ScrollView {
                         HighlightedTextView(code: self.code, width: geometry.size.width)
                     }
+                    .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                    .reportsBottomScrollProximity()
                 }
             }
         }

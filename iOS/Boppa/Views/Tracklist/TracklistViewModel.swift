@@ -75,9 +75,11 @@ class TracklistViewModel {
     var displayTracks: [Track] {
         var base = self.tracks
         if self.tracklist.mediaSourceId == "boppa.app" {
-            base = base.filter {
-                PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
-            }
+            // One query for the whole membership set, not one per track: this is a computed
+            // property re-evaluated on every body pass, and the per-track form made each pass
+            // cost a database read per row.
+            let members = PlaylistManager.shared.trackKeys(inPlaylist: self.tracklist.mediaId)
+            base = base.filter { members.contains($0.trackKey) }
         }
         if self.isEditing {
             return base
