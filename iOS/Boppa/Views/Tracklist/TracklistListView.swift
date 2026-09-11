@@ -282,6 +282,10 @@ struct TracklistListView: View {
                             )
                         }
 
+                        let revealInfo = self.viewModel.mediaSourceRevealInfoById[
+                            tracklist.mediaSourceId
+                        ]
+
                         TracklistRow(
                             tracklist: tracklist,
                             showMediaSourceDivider: self.isLibraryMode,
@@ -289,12 +293,10 @@ struct TracklistListView: View {
                             showChevron: self.viewModel.isEditing ? false : self
                                 .canNavigateToTracklist,
                             isMediaSourceEnabled: self.viewModel.isEditing ? true : (
-                                tracklist.mediaSourceId == "boppa.app" || self.viewModel
-                                    .mediaSourcesById[tracklist.mediaSourceId]?.isEnabled ?? false
+                                tracklist.mediaSourceId == "boppa.app" || revealInfo?
+                                    .isEnabled ?? false
                             ),
-                            revealConfig: self.isLibraryMode
-                                ? self.viewModel.mediaSourceConfigsById[tracklist.mediaSourceId]
-                                : nil
+                            revealInfo: self.isLibraryMode ? revealInfo : nil
                         )
                     }
                     .contentShape(Rectangle())

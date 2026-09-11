@@ -17,6 +17,18 @@ nonisolated struct StoredMediaSource: Identifiable, Hashable {
     var contextLastGatheredTimestamp: Double?
 }
 
+struct MediaSourceRevealInfo {
+    let isEnabled: Bool
+    let highlightColor: String?
+    let iconSvg: String?
+
+    init(_ source: StoredMediaSource) {
+        self.isEnabled = source.isEnabled
+        self.highlightColor = source.config.highlightColor
+        self.iconSvg = source.config.iconSvg
+    }
+}
+
 extension StoredMediaSource {
     var config: MediaSourceConfig {
         try! YAMLDecoder().decode(MediaSourceConfig.self, from: self.configData)

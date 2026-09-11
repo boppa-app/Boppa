@@ -22,8 +22,7 @@ class TracklistListViewModel {
     var isEditing = false
     var hasMorePages = false
     var pageLoadId = 0
-    var mediaSourcesById: [String: StoredMediaSource] = [:]
-    var mediaSourceConfigsById: [String: MediaSourceConfig] = [:]
+    var mediaSourceRevealInfoById: [String: MediaSourceRevealInfo] = [:]
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
@@ -117,13 +116,11 @@ class TracklistListViewModel {
         let sources = MediaSourceStorageManager.shared.fetchMany(
             ids: self.tracklists.map(\.mediaSourceId)
         )
-        self.mediaSourcesById = sources
-        self.mediaSourceConfigsById = sources.mapValues(\.config)
+        self.mediaSourceRevealInfoById = sources.mapValues(MediaSourceRevealInfo.init)
     }
 
     private func setSingleMediaSource(_ mediaSource: StoredMediaSource) {
-        self.mediaSourcesById = [mediaSource.id: mediaSource]
-        self.mediaSourceConfigsById = [mediaSource.id: mediaSource.config]
+        self.mediaSourceRevealInfoById = [mediaSource.id: MediaSourceRevealInfo(mediaSource)]
     }
 
     private func applySorting(_ tracklists: [Tracklist]) -> [Tracklist] {

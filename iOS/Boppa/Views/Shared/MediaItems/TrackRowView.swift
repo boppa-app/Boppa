@@ -14,7 +14,7 @@ struct TrackRow: View {
     var isPlaying: Bool = false
     var isMediaSourceEnabled: Bool = true
     var showTrailingControls: Bool = true
-    var revealConfig: MediaSourceConfig?
+    var revealInfo: MediaSourceRevealInfo?
     var style: TrackRowStyle = .regular
     var onTap: (() -> Void)?
     var onEllipsisTap: (() -> Void)?
@@ -25,16 +25,16 @@ struct TrackRow: View {
         self.style == .compact ? 36 : 48
     }
 
-    private func mediaSourceColor(_ config: MediaSourceConfig?) -> Color? {
-        guard let config else { return nil }
-        if let hex = config.highlightColor {
+    private func mediaSourceColor(_ info: MediaSourceRevealInfo?) -> Color? {
+        guard let info else { return nil }
+        if let hex = info.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
     }
 
-    private func mediaSourceRevealIcon(_ config: MediaSourceConfig?) -> MediaSourceRevealIcon? {
-        config?.iconSvg.map(MediaSourceRevealIcon.svg)
+    private func mediaSourceRevealIcon(_ info: MediaSourceRevealInfo?) -> MediaSourceRevealIcon? {
+        info?.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     private var titleFont: Font {
@@ -54,14 +54,14 @@ struct TrackRow: View {
     }
 
     var body: some View {
-        let revealConfig = self.revealConfig
-        let mediaSourceColor = self.mediaSourceColor(revealConfig)
+        let revealInfo = self.revealInfo
+        let mediaSourceColor = self.mediaSourceColor(revealInfo)
 
         HStack(spacing: self.style == .compact ? 10 : 12) {
             MediaSourceRevealArtwork(
                 size: self.artworkSize,
                 borderColor: mediaSourceColor,
-                mediaSourceRevealIcon: self.mediaSourceRevealIcon(revealConfig),
+                mediaSourceRevealIcon: self.mediaSourceRevealIcon(revealInfo),
                 revealBackgroundColor: .init(.black)
             ) {
                 ArtworkView(

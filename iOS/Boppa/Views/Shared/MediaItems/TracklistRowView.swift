@@ -12,7 +12,7 @@ struct TracklistRow: View {
     var placeholderBackground: Color? = nil
     var mediaSourceRevealBackgroundColor: Color = .init(.black)
     var isSelected: Bool = false
-    var revealConfig: MediaSourceConfig?
+    var revealInfo: MediaSourceRevealInfo?
 
     private var resolvedPreferLowResArtwork: Bool {
         self.preferLowResArtwork ?? (self.tracklist.tracklistType == .album)
@@ -43,8 +43,8 @@ struct TracklistRow: View {
         if self.tracklist.mediaSourceId == "boppa.app" {
             return .purp
         }
-        guard let config = self.revealConfig else { return nil }
-        if let hex = config.highlightColor {
+        guard let info = self.revealInfo else { return nil }
+        if let hex = info.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
@@ -55,7 +55,7 @@ struct TracklistRow: View {
         if self.tracklist.mediaSourceId == "boppa.app" {
             return .asset("Boppa")
         }
-        return self.revealConfig?.iconSvg.map(MediaSourceRevealIcon.svg)
+        return self.revealInfo?.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     var body: some View {
@@ -87,8 +87,8 @@ struct TracklistRow: View {
             }
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             Spacer()
-            if self.showMediaSourceIcon, let config = self.revealConfig {
-                self.mediaSourceIcon(config)
+            if self.showMediaSourceIcon, let info = self.revealInfo {
+                self.mediaSourceIcon(info)
             }
             if self.showChevron {
                 Image(systemName: "chevron.right")
@@ -105,8 +105,8 @@ struct TracklistRow: View {
     }
 
     @ViewBuilder
-    private func mediaSourceIcon(_ config: MediaSourceConfig) -> some View {
-        if let iconSvg = config.iconSvg {
+    private func mediaSourceIcon(_ info: MediaSourceRevealInfo) -> some View {
+        if let iconSvg = info.iconSvg {
             SVGImageView(svgString: iconSvg, size: 28)
                 .frame(width: 28, height: 28)
                 .opacity(0.5)
