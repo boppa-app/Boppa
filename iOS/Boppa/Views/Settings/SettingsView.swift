@@ -14,22 +14,17 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack(path: self.$navigationPath) {
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+            EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
                 List {
-                    self.header
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-
                     self.mediaSourcesSection
                     self.communitySection
                 }
+                .navigationTitle("Settings")
                 .environment(
                     \.editMode,
                     self.isEditMode ? .constant(.active) : .constant(.inactive)
                 )
                 .scrollIndicators(.hidden)
-                .scrollBounceBehavior(.basedOnSize)
                 .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
                 .reportsBottomScrollProximity()
             }
@@ -70,16 +65,6 @@ struct SettingsView: View {
                 }
             }
         }
-    }
-
-    private var header: some View {
-        Text("Settings")
-            .font(.title)
-            .fontWeight(.bold)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
     }
 
     private var mediaSourcesSection: some View {
