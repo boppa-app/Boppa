@@ -14,7 +14,7 @@ struct TrackRow: View {
     var isPlaying: Bool = false
     var isMediaSourceEnabled: Bool = true
     var showTrailingControls: Bool = true
-    var showMediaSourceReveal: Bool = false
+    var revealConfig: MediaSourceConfig?
     var style: TrackRowStyle = .regular
     var onTap: (() -> Void)?
     var onEllipsisTap: (() -> Void)?
@@ -25,21 +25,16 @@ struct TrackRow: View {
         self.style == .compact ? 36 : 48
     }
 
-    private var resolvedMediaSource: StoredMediaSource? {
-        guard self.showMediaSourceReveal else { return nil }
-        return MediaSourceStorageManager.shared.fetchOne(id: self.track.mediaSourceId)
-    }
-
-    private var mediaSourceColor: Color? {
-        guard let mediaSource = self.resolvedMediaSource else { return nil }
-        if let hex = mediaSource.config.highlightColor {
+    private func mediaSourceColor(_ config: MediaSourceConfig?) -> Color? {
+        guard let config else { return nil }
+        if let hex = config.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
     }
 
-    private var mediaSourceRevealIcon: MediaSourceRevealIcon? {
-        self.resolvedMediaSource?.config.iconSvg.map(MediaSourceRevealIcon.svg)
+    private func mediaSourceRevealIcon(_ config: MediaSourceConfig?) -> MediaSourceRevealIcon? {
+        config?.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     private var titleFont: Font {
@@ -59,11 +54,14 @@ struct TrackRow: View {
     }
 
     var body: some View {
+        let revealConfig = self.revealConfig
+        let mediaSourceColor = self.mediaSourceColor(revealConfig)
+
         HStack(spacing: self.style == .compact ? 10 : 12) {
             MediaSourceRevealArtwork(
                 size: self.artworkSize,
-                borderColor: self.mediaSourceColor,
-                mediaSourceRevealIcon: self.mediaSourceRevealIcon,
+                borderColor: mediaSourceColor,
+                mediaSourceRevealIcon: self.mediaSourceRevealIcon(revealConfig),
                 revealBackgroundColor: .init(.black)
             ) {
                 ArtworkView(
@@ -74,7 +72,7 @@ struct TrackRow: View {
                 )
             }
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
-            if let mediaSourceColor = self.mediaSourceColor {
+            if let mediaSourceColor {
                 Capsule()
                     .fill(mediaSourceColor)
                     .frame(width: 2, height: self.artworkSize * 0.7)

@@ -5,6 +5,8 @@ import os
 @Observable
 class LibraryViewModel {
     var mediaSources: [StoredMediaSource] = []
+    var mediaSourcesById: [String: StoredMediaSource] = [:]
+    var mediaSourceConfigsById: [String: MediaSourceConfig] = [:]
     private var allPinnedTracklists: [StoredTracklist] = []
 
     var searchQuery: String = ""
@@ -49,6 +51,12 @@ class LibraryViewModel {
 
     func loadSources() {
         self.mediaSources = MediaSourceStorageManager.shared.fetchAll()
+        self.mediaSourcesById = Dictionary(
+            uniqueKeysWithValues: self.mediaSources.map { ($0.id, $0) }
+        )
+        self.mediaSourceConfigsById = Dictionary(
+            uniqueKeysWithValues: self.mediaSources.map { ($0.id, $0.config) }
+        )
         self.loadPinnedTracklists()
         self.loadAllContent()
     }

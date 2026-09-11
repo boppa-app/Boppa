@@ -22,6 +22,8 @@ class TracklistListViewModel {
     var isEditing = false
     var hasMorePages = false
     var pageLoadId = 0
+    var mediaSourcesById: [String: StoredMediaSource] = [:]
+    var mediaSourceConfigsById: [String: MediaSourceConfig] = [:]
 
     let searchHandler = FuzzySearchHandler<Tracklist>()
 
@@ -109,6 +111,19 @@ class TracklistListViewModel {
         case .albums: return "tracklistListSortMode.albums"
         case .playlists: return "tracklistListSortMode.playlists"
         }
+    }
+
+    private func refreshMediaSources() {
+        let sources = MediaSourceStorageManager.shared.fetchMany(
+            ids: self.tracklists.map(\.mediaSourceId)
+        )
+        self.mediaSourcesById = sources
+        self.mediaSourceConfigsById = sources.mapValues(\.config)
+    }
+
+    private func setSingleMediaSource(_ mediaSource: StoredMediaSource) {
+        self.mediaSourcesById = [mediaSource.id: mediaSource]
+        self.mediaSourceConfigsById = [mediaSource.id: mediaSource.config]
     }
 
     private func applySorting(_ tracklists: [Tracklist]) -> [Tracklist] {
@@ -254,6 +269,7 @@ class TracklistListViewModel {
                 self.hasMorePages = response.continuation != nil
                 self.pageLoadId += 1
                 self.isLoading = false
+                self.setSingleMediaSource(mediaSource)
 
                 logger.info(
                     "Loaded next page: \(response.tracklists.count) item(s), total: \(self.tracklists.count), hasMore: \(self.hasMorePages)"
@@ -284,6 +300,7 @@ class TracklistListViewModel {
                 guard let id = existingIds[tracklist.tracklistKey] else { return tracklist }
                 return tracklist.withId(id)
             }
+        self.refreshMediaSources()
         logger.info("Loaded \(self.tracklists.count) \(typeString)(s) from library")
     }
 
@@ -308,6 +325,7 @@ class TracklistListViewModel {
                 self.continuation = response.continuation
                 self.hasMorePages = response.continuation != nil
                 self.isLoading = false
+                self.setSingleMediaSource(mediaSource)
 
                 logger.info("Loaded \(self.tracklists.count) album(s) for artist '\(artist.name)'")
             } catch {
@@ -344,6 +362,7 @@ class TracklistListViewModel {
                 self.continuation = response.continuation
                 self.hasMorePages = response.continuation != nil
                 self.isLoading = false
+                self.setSingleMediaSource(mediaSource)
 
                 logger
                     .info("Loaded \(self.tracklists.count) playlist(s) for artist '\(artist.name)'")

@@ -52,9 +52,9 @@ struct MediaSourceRevealArtwork<Content: View>: View {
         ZStack {
             self.content()
                 .opacity(self.isRevealingMediaSource ? 0 : 1)
-            if let icon {
+            if let icon, self.isRevealingMediaSource {
                 self.mediaSourceRevealContent(icon: icon)
-                    .opacity(self.isRevealingMediaSource ? 1 : 0)
+                    .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: self.isRevealingMediaSource)

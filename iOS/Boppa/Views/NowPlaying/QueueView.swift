@@ -201,12 +201,19 @@ final class QueueTableViewController: UITableViewController {
             return self.queueManager.currentEntry.map { [$0] } ?? []
         case .off:
             guard !entries.isEmpty else { return [] }
-            return Array(entries[currentIndex...]).filter { $0.track.isMediaSourceEnabled }
+            return self.filterEnabled(Array(entries[currentIndex...]))
         case .all:
             guard !entries.isEmpty else { return [] }
             let reordered = Array(entries[currentIndex...]) + Array(entries[..<currentIndex])
-            return reordered.filter { $0.track.isMediaSourceEnabled }
+            return self.filterEnabled(reordered)
         }
+    }
+
+    private func filterEnabled(_ entries: [QueueEntry]) -> [QueueEntry] {
+        let sources = MediaSourceStorageManager.shared.fetchMany(
+            ids: entries.map { $0.track.mediaSourceId }
+        )
+        return entries.filter { sources[$0.track.mediaSourceId]?.isEnabled == true }
     }
 
     private func reloadData() {

@@ -288,8 +288,13 @@ struct TracklistListView: View {
                             showMediaSourceReveal: self.isLibraryMode,
                             showChevron: self.viewModel.isEditing ? false : self
                                 .canNavigateToTracklist,
-                            isMediaSourceEnabled: self.viewModel.isEditing ? true : tracklist
-                                .isMediaSourceEnabled
+                            isMediaSourceEnabled: self.viewModel.isEditing ? true : (
+                                tracklist.mediaSourceId == "boppa.app" || self.viewModel
+                                    .mediaSourcesById[tracklist.mediaSourceId]?.isEnabled ?? false
+                            ),
+                            revealConfig: self.isLibraryMode
+                                ? self.viewModel.mediaSourceConfigsById[tracklist.mediaSourceId]
+                                : nil
                         )
                     }
                     .contentShape(Rectangle())

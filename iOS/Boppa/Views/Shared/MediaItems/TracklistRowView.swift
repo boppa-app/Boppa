@@ -12,6 +12,7 @@ struct TracklistRow: View {
     var placeholderBackground: Color? = nil
     var mediaSourceRevealBackgroundColor: Color = .init(.black)
     var isSelected: Bool = false
+    var revealConfig: MediaSourceConfig?
 
     private var resolvedPreferLowResArtwork: Bool {
         self.preferLowResArtwork ?? (self.tracklist.tracklistType == .album)
@@ -37,20 +38,13 @@ struct TracklistRow: View {
         }
     }
 
-    private var resolvedMediaSource: StoredMediaSource? {
-        guard self.showMediaSourceIcon || self.showMediaSourceDivider || self
-            .showMediaSourceReveal
-        else { return nil }
-        return MediaSourceStorageManager.shared.fetchOne(id: self.tracklist.mediaSourceId)
-    }
-
     private var mediaSourceColor: Color? {
         guard self.showMediaSourceDivider else { return nil }
         if self.tracklist.mediaSourceId == "boppa.app" {
             return .purp
         }
-        guard let mediaSource = self.resolvedMediaSource else { return nil }
-        if let hex = mediaSource.config.highlightColor {
+        guard let config = self.revealConfig else { return nil }
+        if let hex = config.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
@@ -61,7 +55,7 @@ struct TracklistRow: View {
         if self.tracklist.mediaSourceId == "boppa.app" {
             return .asset("Boppa")
         }
-        return self.resolvedMediaSource?.config.iconSvg.map(MediaSourceRevealIcon.svg)
+        return self.revealConfig?.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     var body: some View {
@@ -93,8 +87,8 @@ struct TracklistRow: View {
             }
             .opacity(!self.isMediaSourceEnabled ? 0.3 : 1.0)
             Spacer()
-            if self.showMediaSourceIcon, let mediaSource = self.resolvedMediaSource {
-                self.mediaSourceIcon(mediaSource)
+            if self.showMediaSourceIcon, let config = self.revealConfig {
+                self.mediaSourceIcon(config)
             }
             if self.showChevron {
                 Image(systemName: "chevron.right")
@@ -111,8 +105,8 @@ struct TracklistRow: View {
     }
 
     @ViewBuilder
-    private func mediaSourceIcon(_ mediaSource: StoredMediaSource) -> some View {
-        if let iconSvg = mediaSource.config.iconSvg {
+    private func mediaSourceIcon(_ config: MediaSourceConfig) -> some View {
+        if let iconSvg = config.iconSvg {
             SVGImageView(svgString: iconSvg, size: 28)
                 .frame(width: 28, height: 28)
                 .opacity(0.5)

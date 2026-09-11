@@ -220,19 +220,24 @@ struct TracklistView: View {
                             .accessibilityHint("Remove this track from the playlist")
                         }
 
+                        let isMediaSourceEnabled = self.viewModel.mediaSourcesById[
+                            track.mediaSourceId
+                        ]?.isEnabled ?? false
+
                         TrackRow(
                             track: track,
-                            isSelected: track.isMediaSourceEnabled && TrackQueueManager.shared
+                            isSelected: isMediaSourceEnabled && TrackQueueManager.shared
                                 .isTrackSelected(
                                     track,
                                     contextId: self.contextId
                                 ),
                             isLoading: PlaybackService.shared.isLoading,
                             isPlaying: PlaybackService.shared.isPlaying,
-                            isMediaSourceEnabled: track.isMediaSourceEnabled,
+                            isMediaSourceEnabled: isMediaSourceEnabled,
                             showTrailingControls: !self.viewModel.isEditing,
-                            showMediaSourceReveal: self.viewModel.tracklist
-                                .mediaSourceId == "boppa.app",
+                            revealConfig: self.viewModel.tracklist.mediaSourceId == "boppa.app"
+                                ? self.viewModel.mediaSourceConfigsById[track.mediaSourceId]
+                                : nil,
                             onTap: {
                                 guard !self.viewModel.isEditing else { return }
                                 self.playTrack(track, at: index)

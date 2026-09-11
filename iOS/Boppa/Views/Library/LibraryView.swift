@@ -342,7 +342,12 @@ struct LibraryView: View {
                             showMediaSourceDivider: true,
                             showMediaSourceReveal: true,
                             showChevron: true,
-                            isMediaSourceEnabled: stored.isMediaSourceEnabled
+                            isMediaSourceEnabled: stored.mediaSourceId == "boppa.app"
+                                || self.viewModel.mediaSourcesById[stored.mediaSourceId]?
+                                .isEnabled ?? false,
+                            revealConfig: self.viewModel.mediaSourceConfigsById[
+                                stored.mediaSourceId
+                            ]
                         )
                     }
                     .buttonStyle(.plain)
@@ -454,7 +459,10 @@ struct LibraryView: View {
                         TracklistRow(
                             tracklist: Tracklist(storedTracklist: stored),
                             showMediaSourceIcon: true,
-                            showChevron: true
+                            showChevron: true,
+                            revealConfig: self.viewModel.mediaSourceConfigsById[
+                                stored.mediaSourceId
+                            ]
                         )
                     }
                     .buttonStyle(.plain)

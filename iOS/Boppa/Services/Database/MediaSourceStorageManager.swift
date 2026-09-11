@@ -36,6 +36,15 @@ class MediaSourceStorageManager {
         }
     }
 
+    func fetchMany(ids: some Sequence<String>) -> [String: StoredMediaSource] {
+        let uniqueIds = Array(Set(ids))
+        guard !uniqueIds.isEmpty else { return [:] }
+        let rows = (try? self.database.read { db in
+            try StoredMediaSource.find(uniqueIds).fetchAll(db)
+        }) ?? []
+        return Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+    }
+
     // MARK: - Writes
 
     func insert(_ mediaSources: [StoredMediaSource]) throws {

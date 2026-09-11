@@ -4,6 +4,7 @@ struct LibraryArtistListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var artists: [StoredArtist] = []
     @State private var mediaSourcesById: [String: StoredMediaSource] = [:]
+    @State private var mediaSourceConfigsById: [String: MediaSourceConfig] = [:]
     var navigationReset: NavigationResetSignal
     var onArtistSelected: (Artist, StoredMediaSource) -> Void
 
@@ -53,7 +54,8 @@ struct LibraryArtistListView: View {
                 ArtistRow(
                     artist: stored.toArtist(),
                     showMediaSourceDivider: true,
-                    showMediaSourceReveal: true
+                    showMediaSourceReveal: true,
+                    revealConfig: self.mediaSourceConfigsById[stored.mediaSourceId]
                 )
             }
             .buttonStyle(.plain)
@@ -71,8 +73,10 @@ struct LibraryArtistListView: View {
 
     private func loadArtists() {
         self.artists = ArtistStorageManager.shared.fetchLibraryArtists()
-        self.mediaSourcesById = Dictionary(
-            uniqueKeysWithValues: MediaSourceStorageManager.shared.fetchAll().map { ($0.id, $0) }
+        let sources = MediaSourceStorageManager.shared.fetchAll()
+        self.mediaSourcesById = Dictionary(uniqueKeysWithValues: sources.map { ($0.id, $0) })
+        self.mediaSourceConfigsById = Dictionary(
+            uniqueKeysWithValues: sources.map { ($0.id, $0.config) }
         )
     }
 }

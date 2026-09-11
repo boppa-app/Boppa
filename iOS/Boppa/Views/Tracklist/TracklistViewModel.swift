@@ -27,6 +27,8 @@ class TracklistViewModel {
     var hasMorePages = false
     var pageLoadId = 0
     var isEditing = false
+    var mediaSourcesById: [String: StoredMediaSource] = [:]
+    var mediaSourceConfigsById: [String: MediaSourceConfig] = [:]
 
     let searchHandler = FuzzySearchHandler<Track>()
 
@@ -73,12 +75,7 @@ class TracklistViewModel {
     }
 
     var displayTracks: [Track] {
-        var base = self.tracks
-        if self.tracklist.mediaSourceId == "boppa.app" {
-            base = base.filter {
-                PlaylistManager.shared.isInPlaylist($0, playlistId: self.tracklist.mediaId)
-            }
-        }
+        let base = self.tracks
         if self.isEditing {
             return base
         }
@@ -214,6 +211,7 @@ class TracklistViewModel {
                         self.unsortedTracks = stabilized
                         self.tracks = stabilized
                         self.hasMorePages = false
+                        self.refreshMediaSources()
                     }
                 )
                 _ = try await TracklistStorageManager.shared.storeTracklist(
@@ -248,6 +246,15 @@ class TracklistViewModel {
         self.unsortedTracks = self.stabilizingIds(for: loaded)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
+        self.refreshMediaSources()
+    }
+
+    private func refreshMediaSources() {
+        let sources = MediaSourceStorageManager.shared.fetchMany(
+            ids: self.tracks.map(\.mediaSourceId)
+        )
+        self.mediaSourcesById = sources
+        self.mediaSourceConfigsById = sources.mapValues(\.config)
     }
 
     private func stabilizingIds(for newTracks: [Track]) -> [Track] {
@@ -304,6 +311,7 @@ class TracklistViewModel {
                 self.tracks = response.tracks
                 self.continuation = response.tracks.isEmpty ? nil : response.continuation
                 self.hasMorePages = !response.tracks.isEmpty && response.continuation != nil
+                self.refreshMediaSources()
 
                 guard !Task.isCancelled else { return }
 
@@ -345,6 +353,7 @@ class TracklistViewModel {
                         self.unsortedTracks = stabilized
                         self.tracks = stabilized
                         self.hasMorePages = false
+                        self.refreshMediaSources()
                     }
                 )
                 let stored = try await TracklistStorageManager.shared.storeTracklist(
@@ -407,6 +416,7 @@ class TracklistViewModel {
                 self.hasMorePages = response.continuation != nil
                 self.pageLoadId += 1
                 self.isLoading = false
+                self.refreshMediaSources()
 
                 logger.info(
                     "Loaded next page: \(response.tracks.count) track(s), total: \(self.tracks.count), hasMore: \(self.hasMorePages)"

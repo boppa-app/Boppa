@@ -6,21 +6,17 @@ struct ArtistRow: View {
     var showMediaSourceDivider: Bool = false
     var showMediaSourceReveal: Bool = false
     var mediaSourceRevealBackgroundColor: Color = .init(.black)
+    var revealConfig: MediaSourceConfig?
 
     private let artworkSize: CGFloat = 48
-
-    private var resolvedMediaSource: StoredMediaSource? {
-        guard self.showMediaSourceDivider || self.showMediaSourceReveal else { return nil }
-        return MediaSourceStorageManager.shared.fetchOne(id: self.artist.mediaSourceId)
-    }
 
     private var mediaSourceColor: Color? {
         guard self.showMediaSourceDivider else { return nil }
         if self.artist.mediaSourceId == "boppa.app" {
             return .purp
         }
-        guard let mediaSource = self.resolvedMediaSource else { return nil }
-        if let hex = mediaSource.config.highlightColor {
+        guard let config = self.revealConfig else { return nil }
+        if let hex = config.highlightColor {
             return Color(hex: hex)
         }
         return Color.purp
@@ -31,7 +27,7 @@ struct ArtistRow: View {
         if self.artist.mediaSourceId == "boppa.app" {
             return .asset("Boppa")
         }
-        return self.resolvedMediaSource?.config.iconSvg.map(MediaSourceRevealIcon.svg)
+        return self.revealConfig?.iconSvg.map(MediaSourceRevealIcon.svg)
     }
 
     var body: some View {
