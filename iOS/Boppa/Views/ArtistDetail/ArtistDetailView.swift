@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ArtistDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @State private var viewModel = ArtistDetailViewModel()
     @State private var trackForActions: Track?
 
@@ -111,7 +113,7 @@ struct ArtistDetailView: View {
     }
 
     private func detailList(_ detail: ArtistDetail) -> some View {
-        ScrollFadeView {
+        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
             List {
                 ForEach(detail.sectionOrder, id: \.self) { section in
                     switch section {
@@ -137,6 +139,8 @@ struct ArtistDetailView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.defaultMinListHeaderHeight, 0)
+            .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+            .reportsBottomScrollProximity()
         }
     }
 

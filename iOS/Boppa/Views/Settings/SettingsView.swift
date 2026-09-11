@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @Binding var selectedTab: Int
     var navigationResetId: Int = 0
     @Binding var isAtNavigationRoot: Bool
@@ -12,7 +14,7 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack(path: self.$navigationPath) {
-            ScrollFadeView {
+            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
                 List {
                     self.header
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -28,6 +30,8 @@ struct SettingsView: View {
                 )
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
+                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                .reportsBottomScrollProximity()
             }
             .navigationDestination(for: StoredMediaSource.self) { mediaSource in
                 MediaSourceDetailView(

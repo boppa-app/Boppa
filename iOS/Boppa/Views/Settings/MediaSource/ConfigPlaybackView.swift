@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ConfigPlaybackView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let playback: PlaybackConfig
 
     var body: some View {
@@ -11,7 +13,7 @@ struct ConfigPlaybackView: View {
                 onBack: { self.dismiss() }
             )
 
-            ScrollFadeView {
+            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
                 List {
                     if let url = self.playback.url {
                         Section("URL") {
@@ -66,6 +68,8 @@ struct ConfigPlaybackView: View {
                         }
                     }
                 }
+                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                .reportsBottomScrollProximity()
             }
         }
         .navigationBarHidden(true)

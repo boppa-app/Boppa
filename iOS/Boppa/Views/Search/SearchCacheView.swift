@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SearchCacheView: View {
+    @Environment(\.bottomBarInset) private var bottomBarInset
+    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let cachedQueries: [StoredSearchQuery]
     var keyboardHeight: CGFloat = 0
     let onSelect: (StoredSearchQuery) -> Void
@@ -14,7 +16,7 @@ struct SearchCacheView: View {
             VStack(alignment: .leading, spacing: 0) {
                 self.headerView
 
-                ScrollFadeView {
+                EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(self.cachedQueries, id: \.id) { cached in
@@ -40,6 +42,8 @@ struct SearchCacheView: View {
                         }
                     }
                     .scrollIndicators(.hidden)
+                    .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                    .reportsBottomScrollProximity()
                 }
                 Color.clear.frame(height: self.keyboardHeight + 1)
             }
