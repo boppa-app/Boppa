@@ -286,7 +286,7 @@ struct LibraryView: View {
             } label: {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 20))
-                    .foregroundColor(.red)
+                    .foregroundColor(.purp)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Find in Library")
