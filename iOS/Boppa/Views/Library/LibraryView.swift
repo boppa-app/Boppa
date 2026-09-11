@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct LibraryView: View {
-    @Environment(\.bottomBarInset) private var bottomBarInset
-    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @State private var viewModel = LibraryViewModel()
     @State private var isSearchVisible = false
     @FocusState private var isSearchFieldFocused: Bool
@@ -29,18 +27,6 @@ struct LibraryView: View {
 
     private var isSearchQueryEmpty: Bool {
         self.viewModel.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty
-    }
-
-    private var bubblesBarReservedSpace: CGFloat {
-        self.viewModel.availableLibraryCategories.isEmpty ? 0 : self.scrollHandler.bubblesBarHeight
-    }
-
-    private var isBubblesBarShowing: Bool {
-        !self.viewModel.availableLibraryCategories.isEmpty && self.scrollHandler.isHeaderVisible
-    }
-
-    private var bubblesBarInset: CGFloat {
-        self.isBubblesBarShowing ? self.scrollHandler.bubblesBarHeight : 0
     }
 
     private func refreshSearchHandlers() {
@@ -310,45 +296,47 @@ struct LibraryView: View {
     }
 
     private var sectionList: some View {
-        VStack(spacing: 0) {
-            self.libraryHeader
-            self.sectionGrid
-
-            if !self.viewModel.pinnedTracklists.isEmpty {
-                self.pinnedHeader
-                self.pinnedList
-            } else {
-                Spacer(minLength: 0)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private var pinnedList: some View {
-        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        ScrollFadeView {
             List {
-                ForEach(
-                    Array(self.viewModel.pinnedTracklists.enumerated()),
-                    id: \.element.id
-                ) { _, stored in
-                    Button {
-                        self.activeMediaSourceId = stored.mediaSourceId
-                        self.path
-                            .append(LibraryDestination
-                                .tracklist(Tracklist(storedTracklist: stored)))
-                    } label: {
-                        TracklistRow(
-                            tracklist: Tracklist(storedTracklist: stored),
-                            showMediaSourceDivider: true,
-                            showMediaSourceReveal: true,
-                            showChevron: true,
-                            isMediaSourceEnabled: stored.isMediaSourceEnabled
-                        )
-                    }
-                    .buttonStyle(.plain)
+                self.libraryHeader
                     .listRowBackground(Color.black)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparator(.hidden)
+
+                self.sectionGrid
+                    .listRowBackground(Color.black)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowSeparator(.hidden)
+
+                if !self.viewModel.pinnedTracklists.isEmpty {
+                    self.pinnedHeader
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+
+                    ForEach(
+                        Array(self.viewModel.pinnedTracklists.enumerated()),
+                        id: \.element.id
+                    ) { _, stored in
+                        Button {
+                            self.activeMediaSourceId = stored.mediaSourceId
+                            self.path
+                                .append(LibraryDestination
+                                    .tracklist(Tracklist(storedTracklist: stored)))
+                        } label: {
+                            TracklistRow(
+                                tracklist: Tracklist(storedTracklist: stored),
+                                showMediaSourceDivider: true,
+                                showMediaSourceReveal: true,
+                                showChevron: true,
+                                isMediaSourceEnabled: stored.isMediaSourceEnabled
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                    }
                 }
             }
             .listStyle(.plain)
@@ -356,9 +344,6 @@ struct LibraryView: View {
             .scrollDismissesKeyboard(.immediately)
             .scrollIndicators(.hidden)
             .scrollBounceBehavior(.basedOnSize)
-            .contentMargins(.top, 0, for: .scrollContent)
-            .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-            .reportsBottomScrollProximity()
         }
     }
 
@@ -376,18 +361,12 @@ struct LibraryView: View {
         }()
 
         return ZStack(alignment: .top) {
-            EdgeFadeView(
-                topFadeHeight: self.isBubblesBarShowing ? 0 : EdgeFade.height,
-                topInset: self.bubblesBarInset,
-                bottomInset: self.scrollFadeBottomInset
-            ) {
+            ScrollFadeView {
                 List {
                     self.searchResultRows
                 }
                 .listStyle(.plain)
-                .contentMargins(.top, self.bubblesBarReservedSpace, for: .scrollContent)
-                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                .reportsBottomScrollProximity()
+                .contentMargins(.top, self.scrollHandler.bubblesBarHeight)
                 .scrollContentBackground(.hidden)
                 .scrollDismissesKeyboard(.immediately)
                 .scrollIndicators(.hidden)
@@ -489,7 +468,7 @@ struct LibraryView: View {
             Spacer()
         }
         .padding(.horizontal, 16)
-        .padding(.top, 14)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.black)
         .accessibilityLabel("Pinned")

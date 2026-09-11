@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct AlphabetIndexedList<Item: Identifiable, RowContent: View>: View {
-    @Environment(\.bottomBarInset) private var bottomBarInset
-    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let items: [Item]
     let name: KeyPath<Item, String>
     @ViewBuilder let rowContent: (Item) -> RowContent
@@ -43,7 +41,7 @@ struct AlphabetIndexedList<Item: Identifiable, RowContent: View>: View {
     var body: some View {
         ScrollViewReader { proxy in
             ZStack(alignment: .trailing) {
-                EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+                ScrollFadeView {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
                             ForEach(self.letterGroups) { group in
@@ -69,8 +67,6 @@ struct AlphabetIndexedList<Item: Identifiable, RowContent: View>: View {
                         }
                     }
                     .scrollIndicators(.hidden)
-                    .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                    .reportsBottomScrollProximity()
                 }
 
                 AlphabetIndexView(

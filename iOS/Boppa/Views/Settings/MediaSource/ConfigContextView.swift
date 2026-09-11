@@ -2,8 +2,6 @@ import SwiftUI
 
 struct ConfigContextView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.bottomBarInset) private var bottomBarInset
-    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let contexts: [ContextConfig]
 
     var body: some View {
@@ -13,7 +11,7 @@ struct ConfigContextView: View {
                 onBack: { self.dismiss() }
             )
 
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+            ScrollFadeView {
                 List {
                     ForEach(Array(self.contexts.enumerated()), id: \.offset) { (
                         _: Int,
@@ -56,8 +54,6 @@ struct ConfigContextView: View {
                         }
                     }
                 }
-                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                .reportsBottomScrollProximity()
             }
         }
         .navigationBarHidden(true)

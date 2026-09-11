@@ -2,8 +2,6 @@ import SwiftUI
 
 struct ConfigDataView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.bottomBarInset) private var bottomBarInset
-    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let data: DataScripts
 
     var body: some View {
@@ -13,7 +11,7 @@ struct ConfigDataView: View {
                 onBack: { self.dismiss() }
             )
 
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+            ScrollFadeView {
                 List {
                     if !self.searchItems.isEmpty {
                         Section("Search") {
@@ -69,8 +67,6 @@ struct ConfigDataView: View {
                         }
                     }
                 }
-                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                .reportsBottomScrollProximity()
             }
         }
         .navigationBarHidden(true)

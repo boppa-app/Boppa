@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct SearchView: View {
-    @Environment(\.bottomBarInset) private var bottomBarInset
-    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @State private var viewModel = SearchViewModel()
     @State private var cacheManager = SearchCacheManager()
     @State private var recentsManager = RecentsManager()
@@ -28,18 +26,6 @@ struct SearchView: View {
 
     private var showRecentSearches: Bool {
         self.isSearchFieldFocused
-    }
-
-    private var bubblesBarReservedSpace: CGFloat {
-        self.showBubbles ? self.scrollHandler.bubblesBarHeight : 0
-    }
-
-    private var isBubblesBarShowing: Bool {
-        self.showBubbles && self.scrollHandler.isHeaderVisible
-    }
-
-    private var bubblesBarInset: CGFloat {
-        self.isBubblesBarShowing ? self.scrollHandler.bubblesBarHeight : 0
     }
 
     var body: some View {
@@ -393,11 +379,7 @@ struct SearchView: View {
     }
 
     private var resultsList: some View {
-        EdgeFadeView(
-            topFadeHeight: self.isBubblesBarShowing ? 0 : EdgeFade.height,
-            topInset: self.bubblesBarInset,
-            bottomInset: self.scrollFadeBottomInset
-        ) {
+        ScrollFadeView {
             List {
                 switch self.viewModel.results {
                 case let .songs(tracks), let .videos(tracks):
@@ -539,9 +521,7 @@ struct SearchView: View {
                 }
             }
             .listStyle(.plain)
-            .contentMargins(.top, self.bubblesBarReservedSpace, for: .scrollContent)
-            .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-            .reportsBottomScrollProximity(hasMorePages: self.viewModel.hasMorePages)
+            .contentMargins(.top, self.showBubbles ? self.scrollHandler.bubblesBarHeight : 0)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
             .modifier(ScrollDirectionTracker(

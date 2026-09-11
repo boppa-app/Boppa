@@ -37,12 +37,18 @@ struct ScrollDirectionTracker: ViewModifier {
 @Observable
 class ScrollAwareVisibilityHandler {
     var isHeaderVisible = true
+    var headerTopFade: CGFloat = 0
     var bubblesBarHeight: CGFloat = 0
+
+    let fadeHeight: CGFloat = 40
 
     private var accumulatedScrollDown: CGFloat = 0
     private var accumulatedScrollUp: CGFloat = 0
 
     func handleScrollChange(oldInfo: ScrollInfo, newInfo: ScrollInfo, isSearchFieldFocused: Bool) {
+        // Update fade based on scroll offset
+        self.headerTopFade = min(max(newInfo.contentOffset, 0) / self.fadeHeight, 1)
+
         let isScrollable = newInfo.contentHeight > newInfo.containerHeight + 50
         guard isScrollable, !isSearchFieldFocused else { return }
 

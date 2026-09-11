@@ -8,8 +8,6 @@ private let relativeTimeFormatter: RelativeDateTimeFormatter = {
 
 struct MediaSourceDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.bottomBarInset) private var bottomBarInset
-    @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @State var viewModel: MediaSourceDetailViewModel
     @State private var showClearConfirmation = false
     @State private var showDataCleared = false
@@ -21,7 +19,7 @@ struct MediaSourceDetailView: View {
                 onBack: { self.dismiss() }
             )
 
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+            ScrollFadeView {
                 List {
                     Section("Details") {
                         LabeledContent("Name", value: self.viewModel.mediaSource.config.name)
@@ -183,8 +181,6 @@ struct MediaSourceDetailView: View {
                         )
                     }
                 }
-                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                .reportsBottomScrollProximity()
             }
         }
         .navigationBarHidden(true)
