@@ -14,10 +14,15 @@ struct LibraryView: View {
     @State private var pendingTracklist: Tracklist?
     @State private var path = NavigationPath()
     @State private var activeMediaSourceId: String?
+    @State private var libraryHeaderHeight: CGFloat = 0
+    @State private var libraryTitleHeight: CGFloat = 0
+    @State private var headerFadeVisibility: CGFloat = 0
     var navigationReset = NavigationResetSignal()
     @Binding var isAtNavigationRoot: Bool
     @Binding var externalPendingArtist: Artist?
     @Binding var externalPendingTracklist: Tracklist?
+
+    private static let headerTopPadding: CGFloat = 12
 
     private enum LibraryDestination: Hashable {
         case tracklist(Tracklist)
@@ -41,6 +46,10 @@ struct LibraryView: View {
 
     private var bubblesBarInset: CGFloat {
         self.isBubblesBarShowing ? self.scrollHandler.bubblesBarHeight : 0
+    }
+
+    private var headerSolidExtent: CGFloat {
+        Self.headerTopPadding + self.libraryTitleHeight / 2
     }
 
     private func refreshSearchHandlers() {
@@ -275,6 +284,13 @@ struct LibraryView: View {
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.onChange(of: geo.size.height, initial: true) { _, height in
+                            self.libraryTitleHeight = height
+                        }
+                    }
+                )
             Spacer()
             Button {
                 self.viewModel.loadAllContent()
@@ -294,6 +310,17 @@ struct LibraryView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .padding(.bottom, 14)
+        .background(alignment: .top) {
+            Color.black.frame(height: self.headerSolidExtent)
+        }
+        .background(
+            GeometryReader { geo in
+                Color.clear.onChange(of: geo.size.height, initial: true) { _, height in
+                    self.libraryHeaderHeight = height
+                }
+            }
+        )
     }
 
     private var categoryBubblesBar: some View {
@@ -310,50 +337,62 @@ struct LibraryView: View {
     }
 
     private var sectionList: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            self.scrollableSections
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: 75,
+                solidExtent: self.headerSolidExtent
+            )
             self.libraryHeader
-            self.sectionGrid
-
-            if !self.viewModel.pinnedTracklists.isEmpty {
-                self.pinnedHeader
-                self.pinnedList
-            } else {
-                Spacer(minLength: 0)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .clipped()
     }
 
-    private var pinnedList: some View {
-        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+    private var scrollableSections: some View {
+        EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
             List {
-                ForEach(
-                    Array(self.viewModel.pinnedTracklists.enumerated()),
-                    id: \.element.id
-                ) { _, stored in
-                    Button {
-                        self.activeMediaSourceId = stored.mediaSourceId
-                        self.path
-                            .append(LibraryDestination
-                                .tracklist(Tracklist(storedTracklist: stored)))
-                    } label: {
-                        let revealInfo = self.viewModel.mediaSourceRevealInfoById[
-                            stored.mediaSourceId
-                        ]
-                        TracklistRow(
-                            tracklist: Tracklist(storedTracklist: stored),
-                            showMediaSourceDivider: true,
-                            showMediaSourceReveal: true,
-                            showChevron: true,
-                            isMediaSourceEnabled: stored.mediaSourceId == "boppa.app"
-                                || revealInfo?.isEnabled ?? false,
-                            revealInfo: revealInfo
-                        )
-                    }
-                    .buttonStyle(.plain)
+                self.sectionGrid
+                    .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.black)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowSeparator(.hidden)
+
+                if !self.viewModel.pinnedTracklists.isEmpty {
+                    self.pinnedHeader
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.black)
+                        .listRowSeparator(.hidden)
+
+                    ForEach(
+                        Array(self.viewModel.pinnedTracklists.enumerated()),
+                        id: \.element.id
+                    ) { _, stored in
+                        Button {
+                            self.activeMediaSourceId = stored.mediaSourceId
+                            self.path
+                                .append(LibraryDestination
+                                    .tracklist(Tracklist(storedTracklist: stored)))
+                        } label: {
+                            let revealInfo = self.viewModel.mediaSourceRevealInfoById[
+                                stored.mediaSourceId
+                            ]
+                            TracklistRow(
+                                tracklist: Tracklist(storedTracklist: stored),
+                                showMediaSourceDivider: true,
+                                showMediaSourceReveal: true,
+                                showChevron: true,
+                                isMediaSourceEnabled: stored.mediaSourceId == "boppa.app"
+                                    || revealInfo?.isEnabled ?? false,
+                                revealInfo: revealInfo
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.black)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.hidden)
+                    }
                 }
             }
             .listStyle(.plain)
@@ -361,9 +400,14 @@ struct LibraryView: View {
             .scrollDismissesKeyboard(.immediately)
             .scrollIndicators(.hidden)
             .scrollBounceBehavior(.basedOnSize)
-            .contentMargins(.top, 0, for: .scrollContent)
+            .contentMargins(.top, self.libraryHeaderHeight, for: .scrollContent)
             .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
             .reportsBottomScrollProximity()
+            .reportsScrollEdgeProximity(
+                .top,
+                visibility: self.$headerFadeVisibility,
+                fadeThreshold: 25
+            )
         }
     }
 

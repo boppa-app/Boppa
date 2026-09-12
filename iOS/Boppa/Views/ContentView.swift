@@ -64,11 +64,7 @@ private struct BottomScrollProximityModifier: ViewModifier {
         if #available(iOS 18.0, *) {
             content
                 .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                    let distanceFromBottom = geometry.contentSize.height
-                        + geometry.contentInsets.bottom
-                        - geometry.visibleRect.maxY
-                    let threshold = max(self.fadeThreshold, 1)
-                    return min(max(distanceFromBottom, 0) / threshold, 1)
+                    ScrollFadeEdge.bottom.proximity(in: geometry, threshold: self.fadeThreshold)
                 } action: { _, newValue in
                     self.localProximity = newValue
                     if self.isActiveTab {
@@ -310,7 +306,6 @@ struct ContentTabView: View {
     @Environment(TabBarGradientState.self) private var gradientState
 
     static let height: CGFloat = 60
-    private let gradientTopExtension: CGFloat = 150
 
     static let keepsGradientWithMiniPlayer = true
     private var usesOpaqueBar: Bool {
@@ -381,20 +376,12 @@ struct ContentTabView: View {
         }
         .frame(height: Self.height)
         .background(alignment: .bottom) {
-            VStack(spacing: 0) {
-                LinearGradient(
-                    colors: [Color.black.opacity(0), Color.black.opacity(1)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(
-                    height: self.gradientTopExtension * self.effectiveGradientVisibility + Self
-                        .height / 2
-                )
-                .animation(.easeOut(duration: 0.25), value: self.effectiveGradientVisibility)
-                Color.black
-                    .frame(height: Self.height / 2)
-            }
+            EdgeGradientFade(
+                edge: .bottom,
+                visibility: self.effectiveGradientVisibility,
+                gradientExtension: 150,
+                solidExtent: Self.height / 2
+            )
             .overlay(alignment: .bottom) {
                 Color.black
                     .frame(height: Self.height)
