@@ -7,8 +7,6 @@ import Testing
 struct TrackStorageManagerTests {
     // MARK: - Test Infrastructure
 
-    /// Wraps an isolated, fully-migrated in-memory database for a single test, plus
-    /// convenience accessors mirroring the tables TrackStorageManage touches
     private struct Context {
         let db: DatabaseQueue
 
@@ -127,8 +125,6 @@ struct TrackStorageManagerTests {
             self.db = database
         }
 
-        /// Scopes \.defaultDatabase for calls that go through self.database internally
-        /// (playlist/likes management, fetchLibraryTracks) rather than taking a db: param
         func withDatabase<R>(_ operation: () throws -> R) throws -> R {
             try withDependencies {
                 $0.defaultDatabase = self.db
@@ -1332,6 +1328,45 @@ struct TrackStorageManagerTests {
 
         let stored = try #require(try ctx.track("t1"))
         #expect(stored.lastPlayedTimestamp == 200)
+    }
+
+    @Test func markRecentlyPlayedOnExistingTrackDoesNotTouchScalarsOrRelations() throws {
+        let ctx = try Context()
+        let full = self.makeTrack(
+            "t1",
+            title: "Real Title",
+            artists: [self.makeArtist("a1", name: "Artist One")],
+            albums: [self.makeAlbum("al1", title: "Album One")]
+        )
+        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(full, db: db) }
+
+        let lightweight = self.makeTrack("t1", title: "Stale Title")
+        try ctx.write { db in
+            try TrackStorageManager.shared.markRecentlyPlayed(lightweight, playedAt: 100, db: db)
+        }
+
+        let stored = try #require(try ctx.track("t1"))
+        #expect(stored.isRecent == true)
+        #expect(stored.lastPlayedTimestamp == 100)
+        #expect(stored.title == "Real Title")
+        #expect(try ctx.trackArtistRefs("t1").map(\.artistMediaId) == ["a1"])
+        #expect(try ctx.trackAlbumRefs("t1").map(\.tracklistMediaId) == ["al1"])
+    }
+
+    @Test func markRecentlyPlayedInsertsNewTrackWithProvidedArtistsAndAlbums() throws {
+        let ctx = try Context()
+        let t1 = self.makeTrack(
+            "t1",
+            artists: [self.makeArtist("a1", name: "Artist One")],
+            albums: [self.makeAlbum("al1", title: "Album One")]
+        )
+
+        try ctx.write { db in
+            try TrackStorageManager.shared.markRecentlyPlayed(t1, playedAt: 100, db: db)
+        }
+
+        #expect(try ctx.trackArtistRefs("t1").map(\.artistMediaId) == ["a1"])
+        #expect(try ctx.trackAlbumRefs("t1").map(\.tracklistMediaId) == ["al1"])
     }
 
     @Test func unmarkRecentlyPlayedDeletesOrphanedTrack() throws {

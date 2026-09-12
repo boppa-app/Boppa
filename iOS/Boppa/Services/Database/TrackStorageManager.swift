@@ -137,7 +137,14 @@ class TrackStorageManager {
     // MARK: - Recents
 
     func markRecentlyPlayed(_ track: Track, playedAt: Double, db: Database) throws {
-        try self.upsertTrack(track, db: db)
+        let existing =
+            try StoredTrack
+                .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId))
+                }
+                .fetchOne(db)
+        if existing == nil {
+            try self.upsertTrack(track, db: db)
+        }
         try StoredTrack.update {
             $0.isRecent = true
             $0.lastPlayedTimestamp = #bind(playedAt)
