@@ -6,6 +6,8 @@ struct VisualsPreferencesView: View {
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @AppStorage(ArtworkMediaSourceRevealTrigger.storageKey) private var revealTriggerRaw =
         ArtworkMediaSourceRevealTrigger.defaultValue.rawValue
+    @AppStorage(MediaSourceCapsuleVisibility.storageKey) private var capsuleVisibilityRaw =
+        MediaSourceCapsuleVisibility.defaultValue.rawValue
     @State private var headerFadeVisibility: CGFloat = 0
 
     private var revealTrigger: Binding<ArtworkMediaSourceRevealTrigger> {
@@ -14,6 +16,15 @@ struct VisualsPreferencesView: View {
                 ArtworkMediaSourceRevealTrigger(rawValue: self.revealTriggerRaw) ?? .defaultValue
             },
             set: { self.revealTriggerRaw = $0.rawValue }
+        )
+    }
+
+    private var capsuleVisibility: Binding<MediaSourceCapsuleVisibility> {
+        Binding(
+            get: {
+                MediaSourceCapsuleVisibility(rawValue: self.capsuleVisibilityRaw) ?? .defaultValue
+            },
+            set: { self.capsuleVisibilityRaw = $0.rawValue }
         )
     }
 
@@ -33,6 +44,21 @@ struct VisualsPreferencesView: View {
                     } footer: {
                         Text(
                             "Choose how to reveal the media source for a track or tracklist by tapping on its artwork."
+                        )
+                    }
+
+                    Section {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Media Source Capsule")
+                                .font(.body)
+                                .foregroundColor(.primary)
+                            ThreeWaySlider(selection: self.capsuleVisibility)
+                                .accessibilityLabel("Media Source Capsule Visibility")
+                        }
+                        .padding(.vertical, 6)
+                    } footer: {
+                        Text(
+                            "Choose where to show the colored capsule that marks a track or tracklist's media source."
                         )
                     }
                 }
