@@ -17,6 +17,7 @@ struct SettingsView: View {
             EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
                 List {
                     self.mediaSourcesSection
+                    self.preferencesSection
                     self.communitySection
                 }
                 .navigationTitle("Settings")
@@ -112,6 +113,26 @@ struct SettingsView: View {
                 .accessibilityHint(self
                     .isEditing ? "Exit editing mode" : "Manage and reorder media sources")
             }
+        }
+    }
+
+    private var preferencesSection: some View {
+        Section {
+            NavigationLink(destination: VisualsPreferencesView()) {
+                HStack(spacing: 12) {
+                    Image(systemName: "eye")
+                        .font(.title3)
+                        .foregroundColor(Color.purp)
+                        .frame(width: 32, height: 32)
+                    Text("Visuals")
+                        .font(.body)
+                        .foregroundColor(.primary)
+                }
+                .padding(.vertical, 4)
+            }
+        } header: {
+            Text("Preferences")
+                .font(.body)
         }
     }
 

@@ -15,6 +15,12 @@ struct MediaSourceRevealArtwork<Content: View>: View {
 
     @State private var isRevealingMediaSource = false
     @State private var revealTask: Task<Void, Never>?
+    @AppStorage(ArtworkMediaSourceRevealTrigger.storageKey) private var revealTriggerRaw =
+        ArtworkMediaSourceRevealTrigger.defaultValue.rawValue
+
+    private var revealTrigger: ArtworkMediaSourceRevealTrigger {
+        ArtworkMediaSourceRevealTrigger(rawValue: self.revealTriggerRaw) ?? .defaultValue
+    }
 
     private var resolvedCornerRadius: CGFloat {
         self.cornerRadius ?? 6
@@ -62,11 +68,15 @@ struct MediaSourceRevealArtwork<Content: View>: View {
 
     var body: some View {
         if let mediaSourceRevealIcon = self.mediaSourceRevealIcon {
-            self.stackedContent(icon: mediaSourceRevealIcon)
-                .contentShape(Rectangle())
-                .onTapGesture(count: 2) {
-                    self.revealMediaSource()
-                }
+            if let tapCount = self.revealTrigger.tapCount {
+                self.stackedContent(icon: mediaSourceRevealIcon)
+                    .contentShape(Rectangle())
+                    .onTapGesture(count: tapCount) {
+                        self.revealMediaSource()
+                    }
+            } else {
+                self.stackedContent(icon: mediaSourceRevealIcon)
+            }
         } else {
             self.stackedContent()
         }
