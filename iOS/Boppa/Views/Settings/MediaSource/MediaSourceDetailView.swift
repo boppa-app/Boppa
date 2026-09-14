@@ -13,15 +13,11 @@ struct MediaSourceDetailView: View {
     @State var viewModel: MediaSourceDetailViewModel
     @State private var showClearConfirmation = false
     @State private var showDataCleared = false
+    @State private var headerFadeVisibility: CGFloat = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            DetailHeaderView(
-                title: self.viewModel.mediaSource.config.name,
-                onBack: { self.dismiss() }
-            )
-
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        ZStack(alignment: .top) {
+            EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
                 List {
                     Section("Details") {
                         LabeledContent("Name", value: self.viewModel.mediaSource.config.name)
@@ -183,10 +179,25 @@ struct MediaSourceDetailView: View {
                         )
                     }
                 }
+                .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
                 .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
                 .reportsBottomScrollProximity()
+                .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
             }
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
+            DetailHeaderView(
+                title: self.viewModel.mediaSource.config.name,
+                onBack: { self.dismiss() }
+            )
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
         .alert("Clear Web Data?", isPresented: self.$showClearConfirmation) {

@@ -5,15 +5,11 @@ struct ConfigContextView: View {
     @Environment(\.bottomBarInset) private var bottomBarInset
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let contexts: [ContextConfig]
+    @State private var headerFadeVisibility: CGFloat = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            DetailHeaderView(
-                title: "Context",
-                onBack: { self.dismiss() }
-            )
-
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        ZStack(alignment: .top) {
+            EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
                 List {
                     ForEach(Array(self.contexts.enumerated()), id: \.offset) { (
                         _: Int,
@@ -56,10 +52,25 @@ struct ConfigContextView: View {
                         }
                     }
                 }
+                .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
                 .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
                 .reportsBottomScrollProximity()
+                .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
             }
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
+            DetailHeaderView(
+                title: "Context",
+                onBack: { self.dismiss() }
+            )
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
     }

@@ -9,6 +9,7 @@ struct TracklistView: View {
     @State private var trackForActions: Track?
     @State private var scrollHandler = ScrollAwareVisibilityHandler()
     @State private var navigatingAwayHideOverlayButton = false
+    @State private var headerFadeVisibility: CGFloat = 0
     var navigationReset: NavigationResetSignal
     init(tracklist: Tracklist, navigationReset: NavigationResetSignal = NavigationResetSignal()) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -30,82 +31,87 @@ struct TracklistView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                DetailHeaderView(
-                    title: self.viewModel.tracklist.title,
-                    highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
-                    onBack: {
-                        if self.viewModel.isEditing {
-                            self.viewModel.exitEditMode()
-                        } else {
-                            if self.viewModel.tracks.isEmpty {
-                                self.navigatingAwayHideOverlayButton = true
-                            }
-                            self.dismiss()
+            self.content
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
+            DetailHeaderView(
+                title: self.viewModel.tracklist.title,
+                highlightedTitle: self.viewModel.tracklist.fromArtist?.name,
+                onBack: {
+                    if self.viewModel.isEditing {
+                        self.viewModel.exitEditMode()
+                    } else {
+                        if self.viewModel.tracks.isEmpty {
+                            self.navigatingAwayHideOverlayButton = true
                         }
-                    },
-                    trailing: {
-                        HStack(spacing: 0) {
-                            if self.viewModel.isEditing {
-                                Image(systemName: "door.left.hand.open")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.purp)
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        self.viewModel.exitEditMode()
-                                    }
-                                    .accessibilityLabel("Done Editing")
-                                    .accessibilityHint("Exit edit mode")
-                                    .accessibilityAddTraits(.isButton)
-                            } else if self.isSaved {
-                                Image(systemName: "ellipsis")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.purp)
-                                    .rotationEffect(.degrees(90))
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        self.showActionSheet = true
-                                    }
-                                    .accessibilityLabel("More Options")
-                                    .accessibilityHint("View options for this tracklist")
-                                    .accessibilityAddTraits(.isButton)
-                            } else if self.canSave {
-                                Group {
-                                    if self.viewModel.isSaving {
-                                        SpinnerView(lineWidth: 2)
-                                            .frame(width: 14, height: 14)
-                                            .accessibilityLabel("Saving to Library")
-                                    } else {
-                                        Image(systemName: "bookmark")
-                                            .font(.system(size: 18))
-                                            .foregroundColor(.white)
-                                    }
-                                }
+                        self.dismiss()
+                    }
+                },
+                trailing: {
+                    HStack(spacing: 0) {
+                        if self.viewModel.isEditing {
+                            Image(systemName: "door.left.hand.open")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
-                                    if !self.viewModel.isSaving {
-                                        self.viewModel.saveToLibrary()
-                                    }
+                                    self.viewModel.exitEditMode()
                                 }
-                                .accessibilityLabel("Save to Library")
-                                .accessibilityHint("Save this tracklist to your library")
+                                .accessibilityLabel("Done Editing")
+                                .accessibilityHint("Exit edit mode")
                                 .accessibilityAddTraits(.isButton)
+                        } else if self.isSaved {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
+                                .rotationEffect(.degrees(90))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    self.showActionSheet = true
+                                }
+                                .accessibilityLabel("More Options")
+                                .accessibilityHint("View options for this tracklist")
+                                .accessibilityAddTraits(.isButton)
+                        } else if self.canSave {
+                            Group {
+                                if self.viewModel.isSaving {
+                                    SpinnerView(lineWidth: 2)
+                                        .frame(width: 14, height: 14)
+                                        .accessibilityLabel("Saving to Library")
+                                } else {
+                                    Image(systemName: "bookmark")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.white)
+                                }
                             }
-                        }
-                    },
-                    centerTrailing: {
-                        if self.viewModel.isRefreshing {
-                            SpinnerView(lineWidth: 2)
-                                .frame(width: 14, height: 14)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if !self.viewModel.isSaving {
+                                    self.viewModel.saveToLibrary()
+                                }
+                            }
+                            .accessibilityLabel("Save to Library")
+                            .accessibilityHint("Save this tracklist to your library")
+                            .accessibilityAddTraits(.isButton)
                         }
                     }
-                )
-
-                self.content
-            }
+                },
+                centerTrailing: {
+                    if self.viewModel.isRefreshing {
+                        SpinnerView(lineWidth: 2)
+                            .frame(width: 14, height: 14)
+                    }
+                }
+            )
 
             if self.isSaved && !self.viewModel.tracks.isEmpty {
                 DetailHeaderOverlayButton(
@@ -120,6 +126,7 @@ struct TracklistView: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
+        .clipped()
         .animation(.easeInOut(duration: 0.25), value: self.isSaved)
         .navigationBarHidden(true)
         .enableSwipeBack()
@@ -182,12 +189,15 @@ struct TracklistView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
+                    .padding(.top, DetailHeaderMetrics.height)
             } else if self.viewModel.tracks.isEmpty && self.viewModel.isLoading {
                 SpinnerView(tint: Color(.systemGray), lineWidth: 4)
                     .frame(width: 40, height: 40)
+                    .padding(.top, DetailHeaderMetrics.height)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.displayTracks.isEmpty {
                 self.emptyState
+                    .padding(.top, DetailHeaderMetrics.height)
             } else {
                 self.trackList
             }
@@ -196,7 +206,7 @@ struct TracklistView: View {
     }
 
     private var trackList: some View {
-        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
             List {
                 ForEach(
                     Array(self.viewModel.displayTracks.enumerated()),
@@ -270,8 +280,10 @@ struct TracklistView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
             .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
             .reportsBottomScrollProximity(hasMorePages: self.viewModel.hasMorePages)
+            .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
             .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
             .animation(.easeInOut(duration: 0.2), value: self.viewModel.isEditing)
             .modifier(ScrollDirectionTracker(

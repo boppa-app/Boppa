@@ -7,6 +7,7 @@ struct LibraryArtistListView: View {
     @State private var mediaSourceRevealInfoById: [String: MediaSourceRevealInfo] = [:]
     var navigationReset: NavigationResetSignal
     var onArtistSelected: (Artist, StoredMediaSource) -> Void
+    @State private var headerFadeVisibility: CGFloat = 0
 
     init(
         navigationReset: NavigationResetSignal = NavigationResetSignal(),
@@ -17,13 +18,22 @@ struct LibraryArtistListView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            self.content
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
             DetailHeaderView(
                 title: "Artists",
                 onBack: { self.dismiss() }
             )
-            self.content
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onAppear { self.loadArtists() }
@@ -44,7 +54,13 @@ struct LibraryArtistListView: View {
     }
 
     private var artistList: some View {
-        AlphabetIndexedList(items: self.artists, name: \.name) { stored in
+        AlphabetIndexedList(
+            items: self.artists,
+            name: \.name,
+            topContentInset: DetailHeaderMetrics.height,
+            topFadeHeight: 0,
+            topFadeVisibility: self.$headerFadeVisibility
+        ) { stored in
             Button {
                 guard let mediaSource = self.mediaSourcesById[stored.mediaSourceId] else {
                     return
@@ -68,6 +84,7 @@ struct LibraryArtistListView: View {
                 .font(.system(size: 40))
                 .foregroundColor(Color(.systemGray5))
         }
+        .padding(.top, DetailHeaderMetrics.height)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

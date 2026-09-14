@@ -5,15 +5,11 @@ struct ConfigPlaybackView: View {
     @Environment(\.bottomBarInset) private var bottomBarInset
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let playback: PlaybackConfig
+    @State private var headerFadeVisibility: CGFloat = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            DetailHeaderView(
-                title: "Playback",
-                onBack: { self.dismiss() }
-            )
-
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        ZStack(alignment: .top) {
+            EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
                 List {
                     if let url = self.playback.url {
                         Section("URL") {
@@ -68,10 +64,25 @@ struct ConfigPlaybackView: View {
                         }
                     }
                 }
+                .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
                 .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
                 .reportsBottomScrollProximity()
+                .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
             }
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
+            DetailHeaderView(
+                title: "Playback",
+                onBack: { self.dismiss() }
+            )
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
     }

@@ -2,6 +2,8 @@ import SwiftUI
 
 enum DetailHeaderMetrics {
     static let height: CGFloat = 44
+    static let fadeSolidExtent: CGFloat = height / 2
+    static let fadeGradientExtension: CGFloat = 75
 }
 
 struct DetailHeaderView<
@@ -85,7 +87,9 @@ struct DetailHeaderView<
                 }
             }
             .frame(height: DetailHeaderMetrics.height)
-            .background(Color.black)
+            .background(alignment: .top) {
+                Color.black.frame(height: DetailHeaderMetrics.fadeSolidExtent)
+            }
         }
     }
 }

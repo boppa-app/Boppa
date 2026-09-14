@@ -5,6 +5,9 @@ struct AlphabetIndexedList<Item: Identifiable, RowContent: View>: View {
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let items: [Item]
     let name: KeyPath<Item, String>
+    var topContentInset: CGFloat = 0
+    var topFadeHeight: CGFloat = EdgeFade.height
+    var topFadeVisibility: Binding<CGFloat> = .constant(0)
     @ViewBuilder let rowContent: (Item) -> RowContent
 
     private struct LetterGroup: Identifiable {
@@ -43,7 +46,10 @@ struct AlphabetIndexedList<Item: Identifiable, RowContent: View>: View {
     var body: some View {
         ScrollViewReader { proxy in
             ZStack(alignment: .trailing) {
-                EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+                EdgeFadeView(
+                    topFadeHeight: self.topFadeHeight,
+                    bottomInset: self.scrollFadeBottomInset
+                ) {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
                             ForEach(self.letterGroups) { group in
@@ -69,8 +75,10 @@ struct AlphabetIndexedList<Item: Identifiable, RowContent: View>: View {
                         }
                     }
                     .scrollIndicators(.hidden)
+                    .contentMargins(.top, self.topContentInset, for: .scrollContent)
                     .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
                     .reportsBottomScrollProximity()
+                    .reportsScrollEdgeProximity(.top, visibility: self.topFadeVisibility)
                 }
 
                 AlphabetIndexView(

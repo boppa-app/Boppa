@@ -12,6 +12,7 @@ struct TracklistListView: View {
     @State private var navigatingAwayHideOverlayButton = false
     @State private var showNewPlaylistAlert = false
     @State private var newPlaylistName = ""
+    @State private var headerFadeVisibility: CGFloat = 0
 
     let artist: Artist?
     let mediaSource: StoredMediaSource?
@@ -53,52 +54,57 @@ struct TracklistListView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                DetailHeaderView(
-                    title: self.title,
-                    highlightedTitle: self.artist?.name,
-                    onBack: {
+            self.content
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
+            DetailHeaderView(
+                title: self.title,
+                highlightedTitle: self.artist?.name,
+                onBack: {
+                    if self.viewModel.isEditing {
+                        self.viewModel.exitEditMode()
+                    } else {
+                        self.navigatingAwayHideOverlayButton = true
+                        self.dismiss()
+                    }
+                },
+                trailing: {
+                    if self.isLibraryMode {
                         if self.viewModel.isEditing {
-                            self.viewModel.exitEditMode()
+                            Image(systemName: "door.left.hand.open")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    self.viewModel.exitEditMode()
+                                }
+                                .accessibilityLabel("Done Editing")
+                                .accessibilityHint("Exit edit mode")
+                                .accessibilityAddTraits(.isButton)
                         } else {
-                            self.navigatingAwayHideOverlayButton = true
-                            self.dismiss()
-                        }
-                    },
-                    trailing: {
-                        if self.isLibraryMode {
-                            if self.viewModel.isEditing {
-                                Image(systemName: "door.left.hand.open")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.purp)
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        self.viewModel.exitEditMode()
-                                    }
-                                    .accessibilityLabel("Done Editing")
-                                    .accessibilityHint("Exit edit mode")
-                                    .accessibilityAddTraits(.isButton)
-                            } else {
-                                Image(systemName: "ellipsis")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.purp)
-                                    .rotationEffect(.degrees(90))
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        self.showActionSheet = true
-                                    }
-                                    .accessibilityLabel("More Options")
-                                    .accessibilityHint("Sort or edit this list")
-                                    .accessibilityAddTraits(.isButton)
-                            }
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purp)
+                                .rotationEffect(.degrees(90))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    self.showActionSheet = true
+                                }
+                                .accessibilityLabel("More Options")
+                                .accessibilityHint("Sort or edit this list")
+                                .accessibilityAddTraits(.isButton)
                         }
                     }
-                )
-
-                self.content
-            }
+                }
+            )
 
             if self.canCreatePlaylist {
                 DetailHeaderOverlayButton(
@@ -115,6 +121,7 @@ struct TracklistListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
         .onChange(of: self.navigationReset.id) { _, _ in
@@ -201,12 +208,15 @@ struct TracklistListView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
+                    .padding(.top, DetailHeaderMetrics.height)
             } else if self.viewModel.tracklists.isEmpty && self.viewModel.isLoading {
                 SpinnerView(tint: Color(.systemGray), lineWidth: 4)
                     .frame(width: 40, height: 40)
+                    .padding(.top, DetailHeaderMetrics.height)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.tracklists.isEmpty {
                 self.emptyState
+                    .padding(.top, DetailHeaderMetrics.height)
             } else {
                 self.tracklistList
             }
@@ -234,7 +244,7 @@ struct TracklistListView: View {
     }
 
     private var tracklistList: some View {
-        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
             List {
                 ForEach(self.viewModel.displayTracklists) { tracklist in
                     HStack(spacing: 0) {
@@ -336,8 +346,10 @@ struct TracklistListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
             .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
             .reportsBottomScrollProximity(hasMorePages: self.viewModel.hasMorePages)
+            .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
             .environment(\.editMode, .constant(self.viewModel.isEditing ? .active : .inactive))
             .animation(.easeInOut(duration: 0.2), value: self.viewModel.isEditing)
         }

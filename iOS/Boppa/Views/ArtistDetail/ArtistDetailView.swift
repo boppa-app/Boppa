@@ -6,6 +6,7 @@ struct ArtistDetailView: View {
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     @State private var viewModel = ArtistDetailViewModel()
     @State private var trackForActions: Track?
+    @State private var headerFadeVisibility: CGFloat = 0
 
     let artist: Artist
     let mediaSource: StoredMediaSource
@@ -23,7 +24,16 @@ struct ArtistDetailView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            self.content
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
             DetailHeaderView(
                 title: self.artist.name,
                 onBack: { self.dismiss() },
@@ -51,8 +61,8 @@ struct ArtistDetailView: View {
                         .accessibilityAddTraits(.isButton)
                 }
             )
-            self.content
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
         .navigationDestination(for: Destination.self) { destination in
@@ -99,12 +109,15 @@ struct ArtistDetailView: View {
         Group {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
+                    .padding(.top, DetailHeaderMetrics.height)
             } else if self.viewModel.detail == nil && self.viewModel.isLoading {
                 SpinnerView(lineWidth: 3)
                     .frame(width: 24, height: 24)
+                    .padding(.top, DetailHeaderMetrics.height)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let detail = self.viewModel.detail, detail.isEmpty {
                 self.emptyState
+                    .padding(.top, DetailHeaderMetrics.height)
             } else if let detail = self.viewModel.detail {
                 self.detailList(detail)
             }
@@ -113,7 +126,7 @@ struct ArtistDetailView: View {
     }
 
     private func detailList(_ detail: ArtistDetail) -> some View {
-        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+        EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
             List {
                 ForEach(detail.sectionOrder, id: \.self) { section in
                     switch section {
@@ -139,8 +152,10 @@ struct ArtistDetailView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.defaultMinListHeaderHeight, 0)
+            .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
             .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
             .reportsBottomScrollProximity()
+            .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
         }
     }
 

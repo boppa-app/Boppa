@@ -7,24 +7,35 @@ struct CodeView: View {
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
     let title: String
     let code: String
+    @State private var headerFadeVisibility: CGFloat = 0
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            GeometryReader { geometry in
+                EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
+                    ScrollView {
+                        HighlightedTextView(code: self.code, width: geometry.size.width)
+                    }
+                    .contentMargins(.top, DetailHeaderMetrics.height, for: .scrollContent)
+                    .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+                    .reportsBottomScrollProximity()
+                    .reportsScrollEdgeProximity(.top, visibility: self.$headerFadeVisibility)
+                }
+            }
+
+            EdgeGradientFade(
+                edge: .top,
+                visibility: self.headerFadeVisibility,
+                gradientExtension: DetailHeaderMetrics.fadeGradientExtension,
+                solidExtent: DetailHeaderMetrics.fadeSolidExtent
+            )
+
             DetailHeaderView(
                 title: self.title,
                 onBack: { self.dismiss() }
             )
-
-            GeometryReader { geometry in
-                EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
-                    ScrollView {
-                        HighlightedTextView(code: self.code, width: geometry.size.width)
-                    }
-                    .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                    .reportsBottomScrollProximity()
-                }
-            }
         }
+        .clipped()
         .navigationBarHidden(true)
         .enableSwipeBack()
         .allowsLandscape()
