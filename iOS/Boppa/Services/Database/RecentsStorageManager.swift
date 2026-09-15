@@ -47,14 +47,20 @@ class RecentsStorageManager {
     }
 
     func fetchRecentlyPlayed(mediaSourceId: String, limit: Int = 10) -> [Track] {
-        (try? self.database.read { db in
+        let storedTracks: [StoredTrack] = (try? self.database.read { db in
             try StoredTrack
                 .where { $0.mediaSourceId.eq(mediaSourceId).and($0.isRecent.eq(true)) }
                 .order { $0.lastPlayedTimestamp.desc() }
                 .limit(limit)
                 .fetchAll(db)
-                .map { $0.toTrack() }
         }) ?? []
+        let albumsByTrackMediaId = TracklistStorageManager.shared.loadAlbums(
+            forTrackMediaIds: storedTracks.map(\.mediaId),
+            mediaSourceId: mediaSourceId
+        )
+        return storedTracks.map { stored in
+            stored.toTrack(albums: albumsByTrackMediaId[stored.mediaId] ?? [])
+        }
     }
 
     // MARK: - Writes

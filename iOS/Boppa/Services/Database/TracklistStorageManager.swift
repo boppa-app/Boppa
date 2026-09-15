@@ -96,6 +96,32 @@ class TracklistStorageManager {
         Tracklist(storedTracklist: stored)
     }
 
+    func loadAlbums(
+        forTrackMediaIds mediaIds: [String],
+        mediaSourceId: String
+    ) -> [String: [Tracklist]] {
+        guard !mediaIds.isEmpty else { return [:] }
+        return (try? self.database.read { db in
+            let rows = try StoredTrackAlbum
+                .where {
+                    $0.trackMediaId.in(mediaIds).and($0.trackMediaSourceId.eq(mediaSourceId))
+                }
+                .join(StoredTracklist.all) { ta, tl in
+                    ta.tracklistMediaId.eq(tl.mediaId).and(
+                        ta.tracklistMediaSourceId.eq(tl.mediaSourceId)
+                    )
+                }
+                .order { ta, _ in ta.sortOrder }
+                .fetchAll(db)
+            var result: [String: [Tracklist]] = [:]
+            for (trackAlbum, storedTracklist) in rows {
+                result[trackAlbum.trackMediaId, default: []]
+                    .append(Tracklist(storedTracklist: storedTracklist))
+            }
+            return result
+        }) ?? [:]
+    }
+
     func tracklistWithRelations(from stored: StoredTracklist) -> Tracklist {
         (try? self.database.read { db in try self.tracklist(from: stored, db: db) })
             ?? Tracklist(storedTracklist: stored)

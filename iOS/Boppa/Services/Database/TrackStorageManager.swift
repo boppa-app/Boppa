@@ -260,23 +260,6 @@ class TrackStorageManager {
         })?.map { $0.toArtist() } ?? []
     }
 
-    func loadAlbums(forTrackMediaId mediaId: String, mediaSourceId: String) -> [Tracklist] {
-        (try? self.database.read { db in
-            try StoredTrackAlbum
-                .where {
-                    $0.trackMediaId.eq(mediaId).and($0.trackMediaSourceId.eq(mediaSourceId))
-                }
-                .join(StoredTracklist.all) { ta, tl in
-                    ta.tracklistMediaId.eq(tl.mediaId).and(
-                        ta.tracklistMediaSourceId.eq(tl.mediaSourceId)
-                    )
-                }
-                .order { ta, _ in ta.sortOrder }
-                .select { _, tl in tl }
-                .fetchAll(db)
-        })?.map { Tracklist(storedTracklist: $0) } ?? []
-    }
-
     func loadArtistsForTrack(_ track: StoredTrack, db: Database) throws -> [Artist] {
         try self.loadStoredArtistsForTrack(track, db: db).map { $0.toArtist() }
     }

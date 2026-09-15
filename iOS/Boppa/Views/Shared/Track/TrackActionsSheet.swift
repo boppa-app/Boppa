@@ -49,10 +49,10 @@ struct TrackActionsSheet: View {
                 )
                 : self.track.artists
             self.albums = self.track.albums.isEmpty
-                ? TrackStorageManager.shared.loadAlbums(
-                    forTrackMediaId: self.track.mediaId,
+                ? TracklistStorageManager.shared.loadAlbums(
+                    forTrackMediaIds: [self.track.mediaId],
                     mediaSourceId: self.track.mediaSourceId
-                )
+                )[self.track.mediaId] ?? []
                 : self.track.albums
         }
     }
