@@ -39,40 +39,59 @@ struct RecentsSectionsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        Group {
             if self.isEmpty {
                 self.emptyState
+                    .padding(.top, 12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
-                Group {
-                    if !self.recentlyPlayedEntries.isEmpty {
-                        self.recentlyPlayedSection
-                            .transition(.opacity)
-                    }
-                }
-                .animation(
-                    self.animateChanges ? .easeInOut(duration: 0.25) : nil,
-                    value: self.recentlyPlayedEntries.isEmpty
-                )
-
-                if !self.recentlyPlayedEntries.isEmpty, !self.recentlyViewed.isEmpty {
-                    self.separator
-                }
-
-                Group {
-                    if !self.recentlyViewed.isEmpty {
-                        self.recentlyViewedSection
-                            .transition(.opacity)
-                    }
-                }
-                .animation(
-                    self.animateChanges ? .easeInOut(duration: 0.25) : nil,
-                    value: self.recentlyViewed.isEmpty
-                )
+                self.scrollableContent
             }
         }
-        .padding(.top, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(self.animateChanges ? .easeInOut(duration: 0.25) : nil, value: self.isEmpty)
+    }
+
+    private var scrollableContent: some View {
+        EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Group {
+                        if !self.recentlyPlayedEntries.isEmpty {
+                            self.recentlyPlayedSection
+                                .transition(.opacity)
+                        }
+                    }
+                    .animation(
+                        self.animateChanges ? .easeInOut(duration: 0.25) : nil,
+                        value: self.recentlyPlayedEntries.isEmpty
+                    )
+
+                    if !self.recentlyPlayedEntries.isEmpty, !self.recentlyViewed.isEmpty {
+                        self.separator
+                    }
+
+                    Group {
+                        if !self.recentlyViewed.isEmpty {
+                            self.recentlyViewedSection
+                                .transition(.opacity)
+                        }
+                    }
+                    .animation(
+                        self.animateChanges ? .easeInOut(duration: 0.25) : nil,
+                        value: self.recentlyViewed.isEmpty
+                    )
+                }
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+            .contentMargins(.top, 16, for: .scrollContent)
+            .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
+            .reportsBottomScrollProximity()
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0).onChanged { _ in self.collapseExpandedAlbum() }
+        )
     }
 
     private var separator: some View {
@@ -81,7 +100,8 @@ struct RecentsSectionsView: View {
             .frame(height: 2)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
     }
 
     private var emptyState: some View {
@@ -237,42 +257,30 @@ struct RecentsSectionsView: View {
                 action: self.onPopRecentlyViewed
             )
             .padding(.bottom, 8)
-            EdgeFadeView(bottomInset: self.scrollFadeBottomInset) {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(self.recentlyViewed) { item in
-                            Button {
-                                switch item {
-                                case let .artist(artist, _):
-                                    self.onSelectArtist(artist)
-                                case let .tracklist(tracklist, _):
-                                    self.onSelectTracklist(tracklist)
-                                }
-                            } label: {
-                                switch item {
-                                case let .artist(artist, _):
-                                    ArtistRow(artist: artist, showChevron: true)
-                                case let .tracklist(tracklist, _):
-                                    TracklistRow(
-                                        tracklist: tracklist, showChevron: true, artworkSize: 48,
-                                        preferLowResArtwork: true
-                                    )
-                                }
-                            }
-                            .buttonStyle(.plain)
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(self.recentlyViewed) { item in
+                    Button {
+                        switch item {
+                        case let .artist(artist, _):
+                            self.onSelectArtist(artist)
+                        case let .tracklist(tracklist, _):
+                            self.onSelectTracklist(tracklist)
+                        }
+                    } label: {
+                        switch item {
+                        case let .artist(artist, _):
+                            ArtistRow(artist: artist, showChevron: true)
+                        case let .tracklist(tracklist, _):
+                            TracklistRow(
+                                tracklist: tracklist, showChevron: true, artworkSize: 48,
+                                preferLowResArtwork: true
+                            )
                         }
                     }
+                    .buttonStyle(.plain)
                 }
-                .scrollIndicators(.hidden)
-                .scrollBounceBehavior(.basedOnSize)
-                .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
-                .reportsBottomScrollProximity()
             }
         }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0).onChanged { _ in self.collapseExpandedAlbum() }
-        )
     }
 
     private func collapseExpandedAlbum() {
