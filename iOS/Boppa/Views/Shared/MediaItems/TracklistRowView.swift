@@ -99,7 +99,7 @@ struct TracklistRow: View {
             if self.showChevron {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.purp)
+                    .foregroundColor(Color(.systemGray))
             }
         }
         .padding(.horizontal, 16)
