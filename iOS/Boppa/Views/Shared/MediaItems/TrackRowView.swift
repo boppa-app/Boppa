@@ -21,17 +21,18 @@ struct TrackRow: View {
     var onDeleteTap: (() -> Void)?
     var isDeleteDisabled: Bool = false
 
-    @AppStorage(MediaSourceCapsuleVisibility.storageKey) private var capsuleVisibilityRaw =
-        MediaSourceCapsuleVisibility.defaultValue.rawValue
+    @AppStorage(MediaSourceSeparatorVisibility.storageKey) private var separatorVisibilityRaw =
+        MediaSourceSeparatorVisibility.defaultValue.rawValue
 
     private var artworkSize: CGFloat {
         self.style == .compact ? 36 : 48
     }
 
     private func mediaSourceColor(_ info: MediaSourceRevealInfo?) -> Color? {
-        let capsuleVisibility = MediaSourceCapsuleVisibility(rawValue: self.capsuleVisibilityRaw) ??
-            .defaultValue
-        guard capsuleVisibility.showsOnTracks, let info else { return nil }
+        let separatorVisibility = MediaSourceSeparatorVisibility(
+            rawValue: self.separatorVisibilityRaw
+        ) ?? .defaultValue
+        guard separatorVisibility.showsOnTracks, let info else { return nil }
         if let hex = info.highlightColor {
             return Color(hex: hex)
         }

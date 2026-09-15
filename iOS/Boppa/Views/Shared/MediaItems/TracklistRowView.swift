@@ -14,8 +14,8 @@ struct TracklistRow: View {
     var isSelected: Bool = false
     var revealInfo: MediaSourceRevealInfo?
 
-    @AppStorage(MediaSourceCapsuleVisibility.storageKey) private var capsuleVisibilityRaw =
-        MediaSourceCapsuleVisibility.defaultValue.rawValue
+    @AppStorage(MediaSourceSeparatorVisibility.storageKey) private var separatorVisibilityRaw =
+        MediaSourceSeparatorVisibility.defaultValue.rawValue
 
     private var resolvedPreferLowResArtwork: Bool {
         self.preferLowResArtwork ?? (self.tracklist.tracklistType == .album)
@@ -42,9 +42,10 @@ struct TracklistRow: View {
     }
 
     private var mediaSourceColor: Color? {
-        let capsuleVisibility = MediaSourceCapsuleVisibility(rawValue: self.capsuleVisibilityRaw) ??
-            .defaultValue
-        guard self.showMediaSourceDivider, capsuleVisibility.showsOnTracklists else { return nil }
+        let separatorVisibility = MediaSourceSeparatorVisibility(
+            rawValue: self.separatorVisibilityRaw
+        ) ?? .defaultValue
+        guard self.showMediaSourceDivider, separatorVisibility.showsOnTracklists else { return nil }
         if self.tracklist.mediaSourceId == "boppa.app" {
             return .purp
         }

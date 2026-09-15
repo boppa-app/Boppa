@@ -1,12 +1,12 @@
 import Foundation
 
-enum MediaSourceCapsuleVisibility: String, CaseIterable, ThreeWaySliderOption {
+enum MediaSourceSeparatorVisibility: String, CaseIterable, ThreeWaySliderOption {
     case off
     case lists
     case everywhere
 
-    static let storageKey = "mediaSourceCapsuleVisibility"
-    static let defaultValue = MediaSourceCapsuleVisibility.lists
+    static let storageKey = "mediaSourceSeparatorVisibility"
+    static let defaultValue = MediaSourceSeparatorVisibility.lists
 
     var label: String {
         switch self {

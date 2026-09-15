@@ -8,15 +8,16 @@ struct ArtistRow: View {
     var mediaSourceRevealBackgroundColor: Color = .init(.black)
     var revealInfo: MediaSourceRevealInfo?
 
-    @AppStorage(MediaSourceCapsuleVisibility.storageKey) private var capsuleVisibilityRaw =
-        MediaSourceCapsuleVisibility.defaultValue.rawValue
+    @AppStorage(MediaSourceSeparatorVisibility.storageKey) private var separatorVisibilityRaw =
+        MediaSourceSeparatorVisibility.defaultValue.rawValue
 
     private let artworkSize: CGFloat = 48
 
     private var mediaSourceColor: Color? {
-        let capsuleVisibility = MediaSourceCapsuleVisibility(rawValue: self.capsuleVisibilityRaw) ??
-            .defaultValue
-        guard self.showMediaSourceDivider, capsuleVisibility.showsOnArtists else { return nil }
+        let separatorVisibility = MediaSourceSeparatorVisibility(
+            rawValue: self.separatorVisibilityRaw
+        ) ?? .defaultValue
+        guard self.showMediaSourceDivider, separatorVisibility.showsOnArtists else { return nil }
         if self.artist.mediaSourceId == "boppa.app" {
             return .purp
         }
