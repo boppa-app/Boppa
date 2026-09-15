@@ -90,7 +90,11 @@ struct RecentsSectionsView: View {
             .reportsBottomScrollProximity()
         }
         .simultaneousGesture(
-            DragGesture(minimumDistance: 0).onChanged { _ in self.collapseExpandedAlbum() }
+            DragGesture(minimumDistance: 0).onChanged { value in
+                let translation = value.translation
+                guard abs(translation.height) > abs(translation.width) else { return }
+                self.collapseExpandedAlbum()
+            }
         )
     }
 
@@ -166,10 +170,12 @@ struct RecentsSectionsView: View {
                                         }
                                     )
                                     .onDisappear {
-                                        if self.expandedEntryId == entry.id {
-                                            withAnimation(.easeInOut(duration: 0.25)) {
-                                                self.expandedEntryId = nil
-                                            }
+                                        guard self.expandedEntryId == entry.id else { return }
+                                        let stillPresent = self.recentlyPlayedEntries
+                                            .contains { $0.id == entry.id }
+                                        guard !stillPresent else { return }
+                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                            self.expandedEntryId = nil
                                         }
                                     }
                                 }
