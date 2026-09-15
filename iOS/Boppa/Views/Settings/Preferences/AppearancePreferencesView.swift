@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct VisualsPreferencesView: View {
+struct AppearancePreferencesView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.bottomBarInset) private var bottomBarInset
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
@@ -77,7 +77,7 @@ struct VisualsPreferencesView: View {
             )
 
             DetailHeaderView(
-                title: "Visuals",
+                title: "Appearance",
                 onBack: { self.dismiss() }
             )
         }
@@ -89,6 +89,6 @@ struct VisualsPreferencesView: View {
 
 #Preview {
     NavigationStack {
-        VisualsPreferencesView()
+        AppearancePreferencesView()
     }
 }

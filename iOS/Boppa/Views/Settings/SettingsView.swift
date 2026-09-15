@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SettingsRoute: Hashable {
-    case visuals
+    case appearance
 }
 
 struct SettingsView: View {
@@ -40,8 +40,8 @@ struct SettingsView: View {
             }
             .navigationDestination(for: SettingsRoute.self) { route in
                 switch route {
-                case .visuals:
-                    VisualsPreferencesView()
+                case .appearance:
+                    AppearancePreferencesView()
                 }
             }
             .onAppear {
@@ -128,13 +128,13 @@ struct SettingsView: View {
 
     private var preferencesSection: some View {
         Section {
-            NavigationLink(value: SettingsRoute.visuals) {
+            NavigationLink(value: SettingsRoute.appearance) {
                 HStack(spacing: 12) {
-                    Image(systemName: "eye")
+                    Image(systemName: "paintpalette.fill")
                         .font(.title3)
                         .foregroundColor(Color.purp)
                         .frame(width: 32, height: 32)
-                    Text("Visuals")
+                    Text("Appearance")
                         .font(.body)
                         .foregroundColor(.primary)
                 }
