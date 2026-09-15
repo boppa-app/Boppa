@@ -6,7 +6,7 @@ enum MediaSourceCapsuleVisibility: String, CaseIterable, ThreeWaySliderOption {
     case everywhere
 
     static let storageKey = "mediaSourceCapsuleVisibility"
-    static let defaultValue = MediaSourceCapsuleVisibility.everywhere
+    static let defaultValue = MediaSourceCapsuleVisibility.lists
 
     var label: String {
         switch self {

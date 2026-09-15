@@ -1,5 +1,9 @@
 import SwiftUI
 
+enum SettingsRoute: Hashable {
+    case visuals
+}
+
 struct SettingsView: View {
     @Environment(\.bottomBarInset) private var bottomBarInset
     @Environment(\.scrollFadeBottomInset) private var scrollFadeBottomInset
@@ -33,6 +37,12 @@ struct SettingsView: View {
                 MediaSourceDetailView(
                     viewModel: MediaSourceDetailViewModel(mediaSource: mediaSource)
                 )
+            }
+            .navigationDestination(for: SettingsRoute.self) { route in
+                switch route {
+                case .visuals:
+                    VisualsPreferencesView()
+                }
             }
             .onAppear {
                 self.viewModel.loadSources()
@@ -118,7 +128,7 @@ struct SettingsView: View {
 
     private var preferencesSection: some View {
         Section {
-            NavigationLink(destination: VisualsPreferencesView()) {
+            NavigationLink(value: SettingsRoute.visuals) {
                 HStack(spacing: 12) {
                     Image(systemName: "eye")
                         .font(.title3)
