@@ -272,7 +272,10 @@ class TracklistStorageManager {
         db: Database? = nil
     ) throws {
         try self.withWriteDB(db) { db in
-            let keys = try self.sortOrderKeys(for: [previousTracklist, nextTracklist], db: db)
+            let keys = try FractionalIndexKeyQueries.shared.tracklistSortOrders(
+                for: [previousTracklist, nextTracklist],
+                db: db
+            )
             let newKey = FractionalIndex.generateKeyBetween(keys[0], keys[1])
 
             try StoredTracklist.update { $0.sortOrder = newKey }
@@ -281,27 +284,6 @@ class TracklistStorageManager {
                         .and($0.mediaSourceId.eq(tracklist.mediaSourceId))
                 }
                 .execute(db)
-        }
-    }
-
-    private func sortOrderKeys(
-        for storedTracklists: [StoredTracklist?],
-        db: Database
-    ) throws -> [String?] {
-        let mediaIds = storedTracklists.compactMap { $0?.mediaId }
-        guard !mediaIds.isEmpty else { return storedTracklists.map { _ in nil } }
-
-        let sortOrderByKey = try Dictionary(
-            StoredTracklist
-                .where { $0.mediaId.in(mediaIds) }
-                .fetchAll(db)
-                .map { (Self.key($0.mediaId, $0.mediaSourceId), $0.sortOrder) },
-            uniquingKeysWith: { first, _ in first }
-        )
-
-        return storedTracklists.map { stored in
-            guard let stored else { return nil }
-            return sortOrderByKey[Self.key(stored.mediaId, stored.mediaSourceId)]
         }
     }
 
@@ -462,11 +444,10 @@ class TracklistStorageManager {
             grouping: tracklists,
             by: { $0.tracklistType.rawValue }
         ) {
-            let maxKey = try StoredTracklist
-                .where { $0.tracklistType.eq(typeString) }
-                .order { $0.sortOrder.desc() }
-                .fetchOne(db)?
-                .sortOrder
+            let maxKey = try FractionalIndexKeyQueries.shared.maxTracklistSortOrder(
+                type: typeString,
+                db: db
+            )
             let newKeys = FractionalIndex.generateNKeysBetween(maxKey, nil, n: group.count)
             let rows = zip(group, newKeys).map { tracklist, sortOrder in
                 StoredTracklist(

@@ -136,19 +136,22 @@ class PlaylistStorageManager {
                         .and($0.tracklistType.eq(Tracklist.TracklistType.playlist.rawValue))
                 }
                 .fetchOne(db)
-            guard tracklist != nil else { return }
+            guard let tracklist else { return }
             didReorder = true
 
             func sortOrderKey(for track: Track?) throws -> String? {
                 guard let track else { return nil }
-                return try StoredTracklistTrack
+                let storedTrack = try StoredTrack
                     .where {
-                        $0.tracklistMediaId.eq(playlistId)
-                            .and($0.tracklistMediaSourceId.eq("boppa.app"))
-                            .and($0.trackMediaId.eq(track.mediaId))
-                            .and($0.trackMediaSourceId.eq(track.mediaSourceId))
+                        $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId))
                     }
-                    .fetchOne(db)?.sortOrder
+                    .fetchOne(db)
+                guard let storedTrack else { return nil }
+                return try FractionalIndexKeyQueries.shared.trackSortOrder(
+                    tracklist: tracklist,
+                    track: storedTrack,
+                    db: db
+                )
             }
 
             let prevKey = try sortOrderKey(for: previousTrack)
@@ -172,14 +175,10 @@ class PlaylistStorageManager {
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
         try TrackStorageManager.shared.upsertTracks([track], db: db)
         try TrackStorageManager.shared.markSavedToLibrary([track], db: db)
-        let maxKey = try StoredTracklistTrack
-            .where {
-                $0.tracklistMediaId.eq(tracklist.mediaId)
-                    .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
-            }
-            .order { $0.sortOrder.desc() }
-            .fetchOne(db)?
-            .sortOrder
+        let maxKey = try FractionalIndexKeyQueries.shared.maxTrackSortOrder(
+            tracklist: tracklist,
+            db: db
+        )
         let newKey = FractionalIndex.generateKeyBetween(maxKey, nil)
         try StoredTracklistTrack.insert {
             StoredTracklistTrack.Draft(
@@ -218,11 +217,10 @@ class PlaylistStorageManager {
     ) throws -> StoredTracklist {
         try self.withWriteDB(db) { db in
             let typeString = tracklistType.rawValue
-            let maxKey = try StoredTracklist
-                .where { $0.tracklistType.eq(typeString) }
-                .order { $0.sortOrder.desc() }
-                .fetchOne(db)?
-                .sortOrder
+            let maxKey = try FractionalIndexKeyQueries.shared.maxTracklistSortOrder(
+                type: typeString,
+                db: db
+            )
             let newSortOrder = FractionalIndex.generateKeyBetween(maxKey, nil)
             try StoredTracklist.insert {
                 StoredTracklist.Draft(
