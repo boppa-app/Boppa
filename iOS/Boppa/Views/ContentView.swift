@@ -244,6 +244,7 @@ struct ContentView: View {
                         ContentTabView(
                             selectedTab: self.$selectedTab,
                             isMiniPlayerVisible: self.showMiniPlayer,
+                            bottomSafeAreaInset: geometry.safeAreaInsets.bottom,
                             onSameTabTapped: { tab in
                                 withAnimation(.easeInOut(duration: 0.35)) {
                                     switch tab {
@@ -301,6 +302,7 @@ struct ContentView: View {
 struct ContentTabView: View {
     @Binding var selectedTab: Int
     var isMiniPlayerVisible: Bool = false
+    var bottomSafeAreaInset: CGFloat = 0
     var onSameTabTapped: ((Int) -> Void)? = nil
 
     @Environment(TabBarGradientState.self) private var gradientState
@@ -310,14 +312,6 @@ struct ContentTabView: View {
     static let keepsGradientWithMiniPlayer = true
     private var usesOpaqueBar: Bool {
         self.isMiniPlayerVisible && !Self.keepsGradientWithMiniPlayer
-    }
-
-    private var windowBottomSafeAreaInset: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first { $0.isKeyWindow }?
-            .safeAreaInsets.bottom ?? 0
     }
 
     private var effectiveGradientVisibility: CGFloat {
@@ -389,7 +383,7 @@ struct ContentTabView: View {
                     .animation(.easeOut(duration: 0.25), value: self.usesOpaqueBar)
             }
             .overlay(alignment: .bottom) {
-                let inset = self.windowBottomSafeAreaInset
+                let inset = self.bottomSafeAreaInset
                 Color.black
                     .frame(height: inset)
                     .offset(y: inset)
