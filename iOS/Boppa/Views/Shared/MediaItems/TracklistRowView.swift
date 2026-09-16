@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct TracklistRow: View {
+    static let verticalPadding: CGFloat = 12
+
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
     var showMediaSourceDivider: Bool = false
@@ -103,7 +105,7 @@ struct TracklistRow: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, Self.verticalPadding)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel([self.tracklist.title, self.tracklist.subtitle].compactMap { $0 }

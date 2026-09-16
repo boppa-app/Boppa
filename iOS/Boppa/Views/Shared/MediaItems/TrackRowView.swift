@@ -55,8 +55,10 @@ struct TrackRow: View {
         self.style == .compact ? 10 : 4
     }
 
+    static let regularVerticalPadding: CGFloat = 10
+
     private var verticalPadding: CGFloat {
-        self.style == .compact ? 6 : 10
+        self.style == .compact ? 6 : Self.regularVerticalPadding
     }
 
     var body: some View {

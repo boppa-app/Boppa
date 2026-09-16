@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ArtistRow: View {
+    static let verticalPadding: CGFloat = 10
+
     let artist: Artist
     var showChevron: Bool = false
     var showMediaSourceDivider: Bool = false
@@ -70,7 +72,7 @@ struct ArtistRow: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, Self.verticalPadding)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(self.artist.name)

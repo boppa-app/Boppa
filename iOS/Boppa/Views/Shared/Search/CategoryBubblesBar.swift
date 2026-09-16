@@ -5,6 +5,21 @@ protocol CategoryBarItem: Hashable {
     var displayName: String { get }
 }
 
+/// Fixed layout metrics for CategoryBubblesBar, so screens can reserve space for it without
+/// measuring. Lives outside the generic view because generic types can't hold static stored
+/// properties.
+enum CategoryBubblesBarMetrics {
+    static let topPadding: CGFloat = 10
+    /// Pinned to the 15pt system font's line height so the row height doesn't depend on layout.
+    static let labelHeight: CGFloat = 18
+    static let labelVerticalPadding: CGFloat = 6
+
+    /// The opaque row: top padding plus one bubble.
+    static let solidHeight: CGFloat = topPadding + labelHeight + 2 * labelVerticalPadding
+    /// The solid row plus the trailing fade drawn when the search field isn't focused.
+    static let totalHeight: CGFloat = solidHeight + EdgeFade.height
+}
+
 struct CategoryBubblesBar<Category: CategoryBarItem>: View {
     let categories: [Category]
     let selectedCategory: Category
@@ -43,15 +58,8 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
                     .padding(.horizontal, 16)
                 }
             }
-            .padding(.top, 10)
+            .padding(.top, CategoryBubblesBarMetrics.topPadding)
             .background(Color.black)
-            .background(
-                GeometryReader { geo in
-                    Color.clear.onChange(of: geo.size.height, initial: true) { _, height in
-                        self.scrollHandler.bubblesBarHeight = height
-                    }
-                }
-            )
 
             LinearGradient(
                 colors: [.black, .clear],
@@ -79,9 +87,10 @@ struct CategoryBubblesBar<Category: CategoryBarItem>: View {
             Text(category.displayName)
                 .font(.system(size: 15, weight: .medium))
         }
+        .frame(height: CategoryBubblesBarMetrics.labelHeight)
         .foregroundColor(isSelected ? .purp : Color(.systemGray))
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.vertical, CategoryBubblesBarMetrics.labelVerticalPadding)
         .background(
             Capsule().fill(Color(.systemGray6).opacity(0.6))
                 .overlay(Capsule().fill(Color.purp.opacity(isSelected ? 0.1 : 0)))

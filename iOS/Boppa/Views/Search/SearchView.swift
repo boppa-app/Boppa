@@ -31,7 +31,7 @@ struct SearchView: View {
     }
 
     private var bubblesBarReservedSpace: CGFloat {
-        self.showBubbles ? self.scrollHandler.bubblesBarHeight : 0
+        self.showBubbles ? CategoryBubblesBarMetrics.totalHeight : 0
     }
 
     private var isBubblesBarShowing: Bool {
@@ -39,7 +39,23 @@ struct SearchView: View {
     }
 
     private var bubblesBarInset: CGFloat {
-        self.isBubblesBarShowing ? self.scrollHandler.bubblesBarHeight : 0
+        self.isBubblesBarShowing ? CategoryBubblesBarMetrics.solidHeight : 0
+    }
+
+    private var resultsRowTopPadding: CGFloat {
+        switch self.viewModel.results {
+        case .songs, .videos: TrackRow.regularVerticalPadding
+        case .albums, .playlists: TracklistRow.verticalPadding
+        case .artists: ArtistRow.verticalPadding
+        }
+    }
+
+    private var resultsTopContentMargin: CGFloat {
+        let fadeFootprint = max(
+            self.bubblesBarReservedSpace,
+            self.isBubblesBarShowing ? 0 : EdgeFade.height
+        )
+        return max(0, fadeFootprint - self.resultsRowTopPadding)
     }
 
     var body: some View {
@@ -322,7 +338,7 @@ struct SearchView: View {
             let keyboardOverlap = max(0, geo.frame(in: .global).maxY - self.keyboardTop)
             VStack(spacing: 0) {
                 if self.showBubbles {
-                    Color.clear.frame(height: self.scrollHandler.bubblesBarHeight)
+                    Color.clear.frame(height: CategoryBubblesBarMetrics.solidHeight)
                     Rectangle()
                         .fill(Color.purp)
                         .frame(height: 1)
@@ -533,7 +549,7 @@ struct SearchView: View {
                 }
             }
             .listStyle(.plain)
-            .contentMargins(.top, self.bubblesBarReservedSpace, for: .scrollContent)
+            .contentMargins(.top, self.resultsTopContentMargin, for: .scrollContent)
             .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
             .reportsBottomScrollProximity(hasMorePages: self.viewModel.hasMorePages)
             .scrollContentBackground(.hidden)

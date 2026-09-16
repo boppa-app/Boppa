@@ -37,7 +37,8 @@ struct LibraryView: View {
     }
 
     private var bubblesBarReservedSpace: CGFloat {
-        self.viewModel.availableLibraryCategories.isEmpty ? 0 : self.scrollHandler.bubblesBarHeight
+        self.viewModel.availableLibraryCategories.isEmpty ? 0 : CategoryBubblesBarMetrics
+            .totalHeight
     }
 
     private var isBubblesBarShowing: Bool {
@@ -45,7 +46,22 @@ struct LibraryView: View {
     }
 
     private var bubblesBarInset: CGFloat {
-        self.isBubblesBarShowing ? self.scrollHandler.bubblesBarHeight : 0
+        self.isBubblesBarShowing ? CategoryBubblesBarMetrics.solidHeight : 0
+    }
+
+    private var searchResultsRowTopPadding: CGFloat {
+        let category = self.viewModel.selectedLibraryCategory
+        return category == .songs || category == .videos
+            ? TrackRow.regularVerticalPadding
+            : TracklistRow.verticalPadding
+    }
+
+    private var searchResultsTopContentMargin: CGFloat {
+        let fadeFootprint = max(
+            self.bubblesBarReservedSpace,
+            self.isBubblesBarShowing ? 0 : EdgeFade.height
+        )
+        return max(0, fadeFootprint - self.searchResultsRowTopPadding)
     }
 
     private var headerSolidExtent: CGFloat {
@@ -434,7 +450,7 @@ struct LibraryView: View {
                     self.searchResultRows
                 }
                 .listStyle(.plain)
-                .contentMargins(.top, self.bubblesBarReservedSpace, for: .scrollContent)
+                .contentMargins(.top, self.searchResultsTopContentMargin, for: .scrollContent)
                 .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
                 .reportsBottomScrollProximity()
                 .scrollContentBackground(.hidden)

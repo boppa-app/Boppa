@@ -37,7 +37,6 @@ struct ScrollDirectionTracker: ViewModifier {
 @Observable
 class ScrollAwareVisibilityHandler {
     var isHeaderVisible = true
-    var bubblesBarHeight: CGFloat = 0
 
     private var accumulatedScrollDown: CGFloat = 0
     private var accumulatedScrollUp: CGFloat = 0
@@ -74,7 +73,7 @@ class ScrollAwareVisibilityHandler {
             // Accumulate if velocity is high enough OR if the spacer is about to become visible
             // (contentOffset < searchBarHeight). This ensures the search bar always appears before
             // the black spacer is exposed, even during very slow scrolls
-            let spacerAboutToShow = newInfo.contentOffset < self.bubblesBarHeight
+            let spacerAboutToShow = newInfo.contentOffset < CategoryBubblesBarMetrics.solidHeight
             if velocity > velocityThreshold || spacerAboutToShow {
                 self.accumulatedScrollUp += abs(delta)
 

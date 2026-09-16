@@ -3,7 +3,7 @@ import SwiftUI
 /// The one fade depth used at every scroll edge in the app. Anything that draws its own edge fade
 /// should use this too, so the top and bottom of a list always fade by the same amount.
 enum EdgeFade {
-    static let height: CGFloat = 14
+    static let height: CGFloat = 12
 }
 
 /// A small, permanently-visible fade at the top and/or bottom edge of scrollable content.
