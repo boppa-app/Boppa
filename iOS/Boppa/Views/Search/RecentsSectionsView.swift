@@ -89,13 +89,6 @@ struct RecentsSectionsView: View {
             .contentMargins(.bottom, self.bottomBarInset, for: .scrollContent)
             .reportsBottomScrollProximity()
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0).onChanged { value in
-                let translation = value.translation
-                guard abs(translation.height) > abs(translation.width) else { return }
-                self.collapseExpandedAlbum()
-            }
-        )
     }
 
     private var separator: some View {
@@ -184,6 +177,13 @@ struct RecentsSectionsView: View {
                         .padding(.horizontal, 16)
                     }
                     .scrollIndicators(.hidden)
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0).onChanged { value in
+                            let translation = value.translation
+                            guard abs(translation.width) > abs(translation.height) else { return }
+                            self.collapseExpandedAlbum()
+                        }
+                    )
                     .onPreferenceChange(AlbumCardFramePreferenceKey.self) { globalFrame in
                         guard let globalFrame else {
                             self.expandedAlbumCardFrame = nil
@@ -263,7 +263,7 @@ struct RecentsSectionsView: View {
                 action: self.onPopRecentlyViewed
             )
             .padding(.bottom, 8)
-            LazyVStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(self.recentlyViewed) { item in
                     Button {
                         switch item {
