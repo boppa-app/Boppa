@@ -16,18 +16,23 @@ class PlaylistManager {
     static let shared = PlaylistManager()
 
     /// Incremented on every add/remove so @Observable views re-evaluate isInPlaylist
+    /// TODO: Better observable mechanism for SQLiteData
     private(set) var membershipVersion: Int = 0
 
     private init() {}
 
     func isInPlaylist(_ track: Track, playlistId: String) -> Bool {
+        self.playlistIdsContaining(track, in: [playlistId]).contains(playlistId)
+    }
+
+    func playlistIdsContaining(_ track: Track, in playlistIds: [String]) -> Set<String> {
         _ = self.membershipVersion
-        return TrackStorageManager.shared.isTrack(track, inPlaylist: playlistId)
+        return PlaylistStorageManager.shared.areTracksInPlaylist(track, inPlaylists: playlistIds)
     }
 
     func addToPlaylist(_ track: Track, playlistId: String) {
         do {
-            try TrackStorageManager.shared.addTrack(track, toPlaylist: playlistId)
+            try PlaylistStorageManager.shared.addTrackToPlaylist(track, toPlaylist: playlistId)
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
@@ -38,7 +43,7 @@ class PlaylistManager {
 
     func removeFromPlaylist(_ track: Track, playlistId: String) {
         do {
-            try TrackStorageManager.shared.removeTrack(track, fromPlaylist: playlistId)
+            try PlaylistStorageManager.shared.removeTrack(track, fromPlaylist: playlistId)
             self.membershipVersion += 1
             NotificationCenter.default.post(name: .playlistMembershipChanged, object: nil)
         } catch {
@@ -60,7 +65,7 @@ class PlaylistManager {
     @discardableResult
     func createPlaylist(title: String) -> StoredTracklist? {
         do {
-            let stored = try TracklistStorageManager.shared.createPlaylist(title: title)
+            let stored = try PlaylistStorageManager.shared.createPlaylist(title: title)
             NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)
             return stored
         } catch {

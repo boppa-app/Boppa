@@ -125,10 +125,7 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: tracklist.mediaSourceId
-                    )
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
                 )))
                 self.pendingTracklist = nil
             }
@@ -154,10 +151,7 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: tracklist.mediaSourceId
-                    )
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
                 )))
                 self.externalPendingTracklist = nil
             }
@@ -295,22 +289,19 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: tracklist.mediaSourceId
-                    )
+                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
                 )))
             },
             onPopRecentlyPlayed: {
-                guard let mediaSourceId = self.viewModel.selectedMediaSource?.id else { return }
+                guard self.viewModel.selectedMediaSource != nil else { return }
                 withAnimation(.easeInOut(duration: 0.25)) {
-                    self.recentsManager.popRecentlyPlayed(mediaSourceId: mediaSourceId)
+                    self.recentsManager.popRecentlyPlayed()
                 }
             },
             onPopRecentlyViewed: {
-                guard let mediaSourceId = self.viewModel.selectedMediaSource?.id else { return }
+                guard self.viewModel.selectedMediaSource != nil else { return }
                 withAnimation(.easeInOut(duration: 0.25)) {
-                    self.recentsManager.popRecentlyViewed(mediaSourceId: mediaSourceId)
+                    self.recentsManager.popRecentlyViewed()
                 }
             },
             animateChanges: self.recentsManager.hasLoadedOnce
@@ -434,10 +425,7 @@ struct SearchView: View {
 
                                     tracklistType: .album,
                                     storedTracklist: TracklistStorageManager.shared
-                                        .findStoredTracklist(
-                                            mediaId: tracklist.mediaId,
-                                            mediaSourceId: tracklist.mediaSourceId
-                                        )
+                                        .findStoredTracklist(tracklist)
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)
@@ -500,10 +488,7 @@ struct SearchView: View {
 
                                     tracklistType: .playlist,
                                     storedTracklist: TracklistStorageManager.shared
-                                        .findStoredTracklist(
-                                            mediaId: tracklist.mediaId,
-                                            mediaSourceId: tracklist.mediaSourceId
-                                        )
+                                        .findStoredTracklist(tracklist)
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)

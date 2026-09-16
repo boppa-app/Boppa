@@ -179,10 +179,8 @@ struct ArtistDetailView: View {
                                 lowResArtworkUrl: tracklist.lowResArtworkUrl,
                                 highResArtworkUrl: tracklist.highResArtworkUrl,
                                 tracklistType: .album,
-                                storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                                    mediaId: tracklist.mediaId,
-                                    mediaSourceId: self.mediaSource.id
-                                )
+                                storedTracklist: TracklistStorageManager.shared
+                                    .findStoredTracklist(tracklist)
                             ))) { EmptyView() }
                                 .opacity(0)
                         )
@@ -283,10 +281,8 @@ struct ArtistDetailView: View {
                                 lowResArtworkUrl: tracklist.lowResArtworkUrl,
                                 highResArtworkUrl: tracklist.highResArtworkUrl,
                                 tracklistType: .playlist,
-                                storedTracklist: TracklistStorageManager.shared.findStoredTracklist(
-                                    mediaId: tracklist.mediaId,
-                                    mediaSourceId: self.mediaSource.id
-                                )
+                                storedTracklist: TracklistStorageManager.shared
+                                    .findStoredTracklist(tracklist)
                             ))) { EmptyView() }
                                 .opacity(0)
                         )

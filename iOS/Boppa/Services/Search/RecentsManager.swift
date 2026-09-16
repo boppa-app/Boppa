@@ -56,7 +56,7 @@ class RecentsManager {
         }
     }
 
-    func popRecentlyPlayed(mediaSourceId: String) {
+    func popRecentlyPlayed() {
         guard let entry = self.recentlyPlayedEntries.first else { return }
         let trackToRemove: Track? =
             switch entry {
@@ -65,24 +65,18 @@ class RecentsManager {
             }
         guard let trackToRemove else { return }
 
-        RecentsStorageManager.shared.removeRecentlyPlayed(
-            mediaIds: [trackToRemove.mediaId], mediaSourceId: mediaSourceId
-        )
+        RecentsStorageManager.shared.removeRecentlyPlayedTrack(trackToRemove)
         self.recentlyPlayed.removeAll { $0.trackKey == trackToRemove.trackKey }
         logger.info("Popped most recently played track")
     }
 
-    func popRecentlyViewed(mediaSourceId: String) {
+    func popRecentlyViewed() {
         guard let item = self.recentlyViewed.first else { return }
         switch item {
         case let .artist(artist, _):
-            RecentsStorageManager.shared.removeRecentlyViewedArtist(
-                mediaId: artist.mediaId, mediaSourceId: mediaSourceId
-            )
+            RecentsStorageManager.shared.removeRecentlyViewedArtist(artist)
         case let .tracklist(tracklist, _):
-            RecentsStorageManager.shared.removeRecentlyViewedTracklist(
-                mediaId: tracklist.mediaId, mediaSourceId: mediaSourceId
-            )
+            RecentsStorageManager.shared.removeRecentlyViewedTracklist(tracklist)
         }
         self.recentlyViewed.removeFirst()
         logger.info("Popped most recently viewed item")

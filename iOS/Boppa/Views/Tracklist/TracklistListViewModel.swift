@@ -292,7 +292,7 @@ class TracklistListViewModel {
             self.tracklists.map { ($0.tracklistKey, $0.id) },
             uniquingKeysWith: { first, _ in first }
         )
-        self.tracklists = TracklistStorageManager.shared.loadLibraryTracklists(type: typeString)
+        self.tracklists = TracklistStorageManager.shared.fetchLibraryTracklists(type: typeString)
             .map { tracklist in
                 guard let id = existingIds[tracklist.tracklistKey] else { return tracklist }
                 return tracklist.withId(id)

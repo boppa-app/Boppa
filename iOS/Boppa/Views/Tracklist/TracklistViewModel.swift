@@ -56,10 +56,9 @@ class TracklistViewModel {
                         self.suppressNextMembershipReload = false
                         return
                     }
-                    if let stored = TracklistStorageManager.shared.findStoredTracklist(
-                        mediaId: self.tracklist.mediaId,
-                        mediaSourceId: self.tracklist.mediaSourceId
-                    ) {
+                    if let stored = TracklistStorageManager.shared
+                        .findStoredTracklist(self.tracklist)
+                    {
                         self.loadFromCache(storedTracklist: stored)
                     }
                 }
@@ -111,7 +110,7 @@ class TracklistViewModel {
         let previousTrack = newIndex > 0 ? self.tracks[newIndex - 1] : nil
         let nextTrack = newIndex < self.tracks.count - 1 ? self.tracks[newIndex + 1] : nil
 
-        try? TracklistStorageManager.shared.moveTrack(
+        try? PlaylistStorageManager.shared.moveTrack(
             movedTrack,
             after: previousTrack,
             before: nextTrack,
@@ -140,12 +139,10 @@ class TracklistViewModel {
     func load() {
         let stored =
             self.tracklist.storedTracklist
-                ?? TracklistStorageManager.shared.findStoredTracklist(
-                    mediaId: self.tracklist.mediaId, mediaSourceId: self.tracklist.mediaSourceId
-                )
+                ?? TracklistStorageManager.shared.findStoredTracklist(self.tracklist)
 
         if let stored, stored.isSavedToLibrary {
-            self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
+            self.tracklist = Tracklist(storedTracklist: stored)
             self.isPersisted = true
             self.isPinned = stored.isPinned
             self.loadFromCache(storedTracklist: stored)
@@ -241,7 +238,7 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist) {
-        let loaded = TracklistStorageManager.shared.loadTracksForTracklist(storedTracklist)
+        let loaded = TrackStorageManager.shared.fetchTracksForTracklist(storedTracklist)
         self.unsortedTracks = self.stabilizingIds(for: loaded)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
@@ -358,7 +355,7 @@ class TracklistViewModel {
                     self.tracklist, tracks: tracks
                 )
 
-                self.tracklist = TracklistStorageManager.shared.tracklistWithRelations(from: stored)
+                self.tracklist = Tracklist(storedTracklist: stored)
                 self.isPersisted = true
                 self.isSaving = false
                 NotificationCenter.default.post(name: .tracklistLibraryChanged, object: nil)

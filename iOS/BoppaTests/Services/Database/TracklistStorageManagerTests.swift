@@ -147,6 +147,14 @@ struct TracklistStorageManagerTests {
                     .fetchOne(db)
             }
         }
+
+        func tracklist(_ mediaId: String, _ source: String = "src") throws -> StoredTracklist? {
+            try self.db.read { db in
+                try StoredTracklist.where {
+                    $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(source))
+                }.fetchOne(db)
+            }
+        }
     }
 
     // MARK: - Fixtures
@@ -189,81 +197,103 @@ struct TracklistStorageManagerTests {
         )
     }
 
-    // MARK: - loadAlbums
+    // MARK: - fetchStoredAlbumsForTracks
 
-    @Test func loadAlbumsForSingleElementArrayWithNoAlbumsReturnsEmpty() throws {
+    @Test func fetchStoredAlbumsForTracksForSingleElementArrayWithNoAlbumsReturnsEmpty() throws {
         let ctx = try Context()
+        let t1 = self.makeTrack("t1")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1"), db: db)
+            try TrackStorageManager.shared.upsertTrack(t1, db: db)
         }
 
-        let albumsByTrack = try ctx.withDatabase {
-            TracklistStorageManager.shared.loadAlbums(
-                forTrackMediaIds: ["t1"], mediaSourceId: "src"
-            )
+        let albumPairs = try ctx.read { db in
+            try TracklistStorageManager.shared.fetchStoredAlbumsForTracks([t1], db: db)
         }
 
-        #expect(albumsByTrack["t1"] == nil)
+        #expect(albumPairs.isEmpty)
     }
 
-    @Test func loadAlbumsGroupsResultsByTrackAndPreservesPerTrackOrder() throws {
+    @Test func fetchStoredAlbumsForTracksGroupsResultsByTrackAndPreservesPerTrackOrder() throws {
         let ctx = try Context()
+        let t1 = self.makeTrack(
+            "t1",
+            albums: [self.makeAlbum("al1", title: "First"), self.makeAlbum(
+                "al2",
+                title: "Second"
+            )]
+        )
+        let t2 = self.makeTrack("t2", albums: [self.makeAlbum("al3", title: "Album Two")])
+        let t3 = self.makeTrack("t3")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack(
-                    "t1",
-                    albums: [self.makeAlbum("al1", title: "First"), self.makeAlbum(
-                        "al2",
-                        title: "Second"
-                    )]
-                ), db: db
-            )
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t2", albums: [self.makeAlbum("al3", title: "Album Two")]), db: db
-            )
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t3"), db: db)
+            try TrackStorageManager.shared.upsertTrack(t1, db: db)
+            try TrackStorageManager.shared.upsertTrack(t2, db: db)
+            try TrackStorageManager.shared.upsertTrack(t3, db: db)
         }
 
-        let albumsByTrack = try ctx.withDatabase {
-            TracklistStorageManager.shared.loadAlbums(
-                forTrackMediaIds: ["t1", "t2", "t3"], mediaSourceId: "src"
-            )
+        let albumPairs = try ctx.read { db in
+            try TracklistStorageManager.shared.fetchStoredAlbumsForTracks([t1, t2, t3], db: db)
         }
 
-        #expect(albumsByTrack["t1"]?.map(\.title) == ["First", "Second"])
-        #expect(albumsByTrack["t2"]?.map(\.title) == ["Album Two"])
-        #expect(albumsByTrack["t3"] == nil)
+        #expect(
+            albumPairs.filter { $0.0.mediaId == "t1" }.map(\.1.title) == ["First", "Second"]
+        )
+        #expect(albumPairs.filter { $0.0.mediaId == "t2" }.map(\.1.title) == ["Album Two"])
+        #expect(albumPairs.filter { $0.0.mediaId == "t3" }.isEmpty)
     }
 
-    @Test func loadAlbumsScopesToMediaSource() throws {
+    @Test func fetchStoredAlbumsForTracksScopesToMediaSource() throws {
         let ctx = try Context()
+        let t1Src = self.makeTrack(
+            "t1",
+            source: "src",
+            albums: [self.makeAlbum("al1", source: "src")]
+        )
+        let t1Other = self.makeTrack(
+            "t1", source: "other", albums: [self.makeAlbum("al1", source: "other")]
+        )
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", source: "src", albums: [self.makeAlbum("al1", source: "src")]),
-                db: db
-            )
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack(
-                    "t1", source: "other", albums: [self.makeAlbum("al1", source: "other")]
-                ),
-                db: db
-            )
+            try TrackStorageManager.shared.upsertTrack(t1Src, db: db)
+            try TrackStorageManager.shared.upsertTrack(t1Other, db: db)
         }
 
-        let albumsByTrack = try ctx.withDatabase {
-            TracklistStorageManager.shared.loadAlbums(
-                forTrackMediaIds: ["t1"], mediaSourceId: "src"
-            )
+        let albumPairs = try ctx.read { db in
+            try TracklistStorageManager.shared.fetchStoredAlbumsForTracks([t1Src], db: db)
         }
 
-        #expect(albumsByTrack["t1"]?.count == 1)
+        #expect(albumPairs.count == 1)
     }
 
-    @Test func loadAlbumsReturnsEmptyForEmptyInput() throws {
+    @Test func fetchStoredAlbumsForTracksReturnsEmptyForEmptyInput() throws {
         let ctx = try Context()
-        let albumsByTrack = try ctx.withDatabase {
-            TracklistStorageManager.shared.loadAlbums(forTrackMediaIds: [], mediaSourceId: "src")
+        let albumPairs = try ctx.read { db in
+            try TracklistStorageManager.shared.fetchStoredAlbumsForTracks([], db: db)
         }
-        #expect(albumsByTrack.isEmpty)
+        #expect(albumPairs.isEmpty)
+    }
+
+    // MARK: - upsertTracklistStubs
+
+    @Test func upsertTracklistStubsSkipsNonPersistableTracklistTypes() throws {
+        let ctx = try Context()
+        let songs = self.makeAlbum("artist-songs", title: "Songs", type: .artistSongs)
+
+        try ctx.write { db in
+            try TracklistStorageManager.shared.upsertTracklistStubs([songs], db: db)
+        }
+
+        #expect(try ctx.tracklist("artist-songs") == nil)
+    }
+
+    @Test func upsertTracklistStubsPersistsOnlyPersistableEntriesFromAMixedBatch() throws {
+        let ctx = try Context()
+        let album = self.makeAlbum("al1", title: "Real Album")
+        let videos = self.makeAlbum("artist-videos", title: "Videos", type: .artistVideos)
+
+        try ctx.write { db in
+            try TracklistStorageManager.shared.upsertTracklistStubs([album, videos], db: db)
+        }
+
+        #expect(try ctx.tracklist("al1") != nil)
+        #expect(try ctx.tracklist("artist-videos") == nil)
     }
 }

@@ -5,6 +5,7 @@ struct AddToPlaylistSheet: View {
     var onBack: (() -> Void)?
 
     @State private var playlists: [StoredTracklist] = []
+    @State private var memberPlaylistIds: Set<String> = []
     @State private var showNewPlaylistAlert = false
     @State private var newPlaylistName = ""
 
@@ -50,10 +51,13 @@ struct AddToPlaylistSheet: View {
         }
         .background(Color(.systemGray6))
         .onAppear {
-            self.playlists = TracklistStorageManager.shared.fetchPlaylists()
+            self.refreshPlaylists()
         }
         .onReceive(NotificationCenter.default.publisher(for: .tracklistLibraryChanged)) { _ in
-            self.playlists = TracklistStorageManager.shared.fetchPlaylists()
+            self.refreshPlaylists()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .playlistMembershipChanged)) { _ in
+            self.refreshMembership()
         }
         .alert("New Playlist", isPresented: self.$showNewPlaylistAlert) {
             TextField("Playlist Name", text: self.$newPlaylistName)
@@ -92,10 +96,7 @@ struct AddToPlaylistSheet: View {
     }
 
     private func playlistRow(_ playlist: StoredTracklist) -> some View {
-        let isInPlaylist = PlaylistManager.shared.isInPlaylist(
-            self.track,
-            playlistId: playlist.mediaId
-        )
+        let isInPlaylist = self.memberPlaylistIds.contains(playlist.mediaId)
         return Button {
             PlaylistManager.shared.togglePlaylist(self.track, playlistId: playlist.mediaId)
         } label: {
@@ -122,6 +123,18 @@ struct AddToPlaylistSheet: View {
         .accessibilityLabel(playlist.title)
         .accessibilityHint(isInPlaylist ? "Remove from \(playlist.title)" :
             "Add to \(playlist.title)")
+    }
+
+    private func refreshPlaylists() {
+        self.playlists = PlaylistStorageManager.shared.fetchPlaylists()
+        self.refreshMembership()
+    }
+
+    private func refreshMembership() {
+        self.memberPlaylistIds = PlaylistManager.shared.playlistIdsContaining(
+            self.track,
+            in: self.playlists.map(\.mediaId)
+        )
     }
 
     private func createPlaylist() {

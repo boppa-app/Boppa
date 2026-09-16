@@ -8,10 +8,8 @@ extension Notification.Name {
 }
 
 func postTracklistNavigation(_ tracklist: Tracklist) {
-    let isSavedToLibrary = TracklistStorageManager.shared.findStoredTracklist(
-        mediaId: tracklist.mediaId,
-        mediaSourceId: tracklist.mediaSourceId
-    )?.isSavedToLibrary == true
+    let isSavedToLibrary = TracklistStorageManager.shared
+        .findStoredTracklist(tracklist)?.isSavedToLibrary == true
     NotificationCenter.default.post(
         name: isSavedToLibrary ? .navigateToTracklistInLibrary : .navigateToTracklistInSearch,
         object: tracklist

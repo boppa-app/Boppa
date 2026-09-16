@@ -21,6 +21,13 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         case artistSongs
         case artistVideos
         case likes
+
+        var isPersistable: Bool {
+            switch self {
+            case .album, .playlist, .likes: true
+            case .artistSongs, .artistVideos: false
+            }
+        }
     }
 
     init(

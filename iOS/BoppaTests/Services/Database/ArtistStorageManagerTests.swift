@@ -113,7 +113,8 @@ struct ArtistStorageManagerTests {
         }
 
         /// Scopes \.defaultDatabase for calls that go through self.database internally
-        /// (fetchLibraryArtists, isArtistSaved, saveArtistToLibrary, removeArtistFromLibrary)
+        /// (fetchLibraryArtists, isArtistSavedToLibrary, saveArtistToLibrary,
+        /// removeArtistFromLibrary)
         /// rather than taking a db: param
         func withDatabase<R>(_ operation: () throws -> R) throws -> R {
             try withDependencies {
@@ -180,7 +181,7 @@ struct ArtistStorageManagerTests {
             try ArtistStorageManager.shared.saveArtistToLibrary(self.makeArtist("a1"))
         }
         try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(
+            try RecentsStorageManager.shared.markArtistRecentlyViewed(
                 self.makeArtist("a2"), viewedAt: 1, db: db
             )
         }
@@ -190,41 +191,41 @@ struct ArtistStorageManagerTests {
         #expect(artists.map(\.mediaId) == ["a1"])
     }
 
-    // MARK: - isArtistSaved
+    // MARK: - isArtistSavedToLibrary
 
-    @Test func isArtistSavedReturnsFalseForNonexistentArtist() throws {
+    @Test func isArtistSavedToLibraryReturnsFalseForNonexistentArtist() throws {
         let ctx = try Context()
 
         let isSaved = try ctx.withDatabase {
-            ArtistStorageManager.shared.isArtistSaved(mediaId: "ghost", mediaSourceId: "src")
+            ArtistStorageManager.shared.isArtistSavedToLibrary(self.makeArtist("ghost"))
         }
 
         #expect(isSaved == false)
     }
 
-    @Test func isArtistSavedReturnsFalseWhenArtistExistsButNotSaved() throws {
+    @Test func isArtistSavedToLibraryReturnsFalseWhenArtistExistsButNotSaved() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(
+            try RecentsStorageManager.shared.markArtistRecentlyViewed(
                 self.makeArtist("a1"), viewedAt: 1, db: db
             )
         }
 
         let isSaved = try ctx.withDatabase {
-            ArtistStorageManager.shared.isArtistSaved(mediaId: "a1", mediaSourceId: "src")
+            ArtistStorageManager.shared.isArtistSavedToLibrary(self.makeArtist("a1"))
         }
 
         #expect(isSaved == false)
     }
 
-    @Test func isArtistSavedReturnsTrueWhenSaved() throws {
+    @Test func isArtistSavedToLibraryReturnsTrueWhenSaved() throws {
         let ctx = try Context()
         try ctx.withDatabase {
             try ArtistStorageManager.shared.saveArtistToLibrary(self.makeArtist("a1"))
         }
 
         let isSaved = try ctx.withDatabase {
-            ArtistStorageManager.shared.isArtistSaved(mediaId: "a1", mediaSourceId: "src")
+            ArtistStorageManager.shared.isArtistSavedToLibrary(self.makeArtist("a1"))
         }
 
         #expect(isSaved == true)
@@ -250,7 +251,7 @@ struct ArtistStorageManagerTests {
     @Test func saveArtistToLibraryOnExistingArtistUpdatesScalarsAndMarksSaved() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(
+            try RecentsStorageManager.shared.markArtistRecentlyViewed(
                 self.makeArtist("a1", name: "Old Name"), viewedAt: 1, db: db
             )
         }
@@ -271,14 +272,13 @@ struct ArtistStorageManagerTests {
 
     @Test func removeArtistFromLibraryDeletesUnreferencedArtist() throws {
         let ctx = try Context()
+        let a1 = self.makeArtist("a1")
         try ctx.withDatabase {
-            try ArtistStorageManager.shared.saveArtistToLibrary(self.makeArtist("a1"))
+            try ArtistStorageManager.shared.saveArtistToLibrary(a1)
         }
 
         try ctx.withDatabase {
-            try ArtistStorageManager.shared.removeArtistFromLibrary(
-                mediaId: "a1", mediaSourceId: "src"
-            )
+            try ArtistStorageManager.shared.removeArtistFromLibrary(a1)
         }
 
         #expect(try ctx.artist("a1") == nil)
@@ -293,9 +293,7 @@ struct ArtistStorageManagerTests {
         try ctx.withDatabase { try ArtistStorageManager.shared.saveArtistToLibrary(a1) }
 
         try ctx.withDatabase {
-            try ArtistStorageManager.shared.removeArtistFromLibrary(
-                mediaId: "a1", mediaSourceId: "src"
-            )
+            try ArtistStorageManager.shared.removeArtistFromLibrary(a1)
         }
 
         let stored = try #require(try ctx.artist("a1"))
@@ -306,14 +304,12 @@ struct ArtistStorageManagerTests {
         let ctx = try Context()
         let a1 = self.makeArtist("a1")
         try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
+            try RecentsStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
         }
         try ctx.withDatabase { try ArtistStorageManager.shared.saveArtistToLibrary(a1) }
 
         try ctx.withDatabase {
-            try ArtistStorageManager.shared.removeArtistFromLibrary(
-                mediaId: "a1", mediaSourceId: "src"
-            )
+            try ArtistStorageManager.shared.removeArtistFromLibrary(a1)
         }
 
         let stored = try #require(try ctx.artist("a1"))
@@ -321,15 +317,15 @@ struct ArtistStorageManagerTests {
         #expect(stored.isRecent == true)
     }
 
-    // MARK: - upsertArtist
+    // MARK: - upsertArtists
 
-    @Test func upsertArtistInsertsNewArtist() throws {
+    @Test func upsertArtistsInsertsNewArtist() throws {
         let ctx = try Context()
         let a1 = self.makeArtist(
             "a1", name: "Artist One", lowResArtworkUrl: "https://x/art.png", url: "https://x/a1"
         )
 
-        try ctx.write { db in try ArtistStorageManager.shared.upsertArtist(a1, db: db) }
+        try ctx.write { db in try ArtistStorageManager.shared.upsertArtists([a1], db: db) }
 
         let stored = try #require(try ctx.artist("a1"))
         #expect(stored.name == "Artist One")
@@ -338,15 +334,15 @@ struct ArtistStorageManagerTests {
         #expect(stored.isSavedToLibrary == false)
     }
 
-    @Test func upsertArtistPartialUpdateIgnoresEmptyNameAndNilArtworkAndNilURL() throws {
+    @Test func upsertArtistsPartialUpdateIgnoresEmptyNameAndNilArtworkAndNilURL() throws {
         let ctx = try Context()
         let original = self.makeArtist(
             "a1", name: "Real Name", lowResArtworkUrl: "https://x/art.png", url: "https://x/a1"
         )
-        try ctx.write { db in try ArtistStorageManager.shared.upsertArtist(original, db: db) }
+        try ctx.write { db in try ArtistStorageManager.shared.upsertArtists([original], db: db) }
 
         let resynced = self.makeArtist("a1", name: "", lowResArtworkUrl: nil, url: nil)
-        try ctx.write { db in try ArtistStorageManager.shared.upsertArtist(resynced, db: db) }
+        try ctx.write { db in try ArtistStorageManager.shared.upsertArtists([resynced], db: db) }
 
         let stored = try #require(try ctx.artist("a1"))
         #expect(stored.name == "Real Name")
@@ -354,19 +350,31 @@ struct ArtistStorageManagerTests {
         #expect(stored.url == "https://x/a1")
     }
 
-    // MARK: - deleteArtistIfOrphaned
+    @Test func upsertArtistsInsertsMultipleNewArtistsInOneBatch() throws {
+        let ctx = try Context()
+        let a1 = self.makeArtist("a1", name: "Artist One")
+        let a2 = self.makeArtist("a2", name: "Artist Two")
 
-    @Test func deleteArtistIfOrphanedNoOpForNonexistentArtist() throws {
+        try ctx.write { db in try ArtistStorageManager.shared.upsertArtists([a1, a2], db: db) }
+
+        #expect(try ctx.artist("a1")?.name == "Artist One")
+        #expect(try ctx.artist("a2")?.name == "Artist Two")
+    }
+
+    // MARK: - deleteArtistStubsIfOrphaned
+
+    @Test func deleteArtistStubsIfOrphanedNoOpForNonexistentArtist() throws {
         let ctx = try Context()
 
         try ctx.write { db in
-            try ArtistStorageManager.shared.deleteArtistIfOrphaned(
-                mediaId: "ghost", mediaSourceId: "src", db: db
+            try ArtistStorageManager.shared.deleteArtistStubsIfOrphaned(
+                [self.makeArtist("ghost")],
+                db: db
             )
         }
     }
 
-    @Test func deleteArtistIfOrphanedKeepsArtistReferencedByTrack() throws {
+    @Test func deleteArtistStubsIfOrphanedKeepsArtistReferencedByTrack() throws {
         let ctx = try Context()
         let a1 = self.makeArtist("a1")
         try ctx.write { db in
@@ -374,12 +382,26 @@ struct ArtistStorageManagerTests {
         }
 
         try ctx.write { db in
-            try ArtistStorageManager.shared.deleteArtistIfOrphaned(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
+            try ArtistStorageManager.shared.deleteArtistStubsIfOrphaned([a1], db: db)
         }
 
         #expect(try ctx.artist("a1") != nil)
+    }
+
+    @Test func deleteArtistStubsIfOrphanedDeletesMultipleArtistsInOneBatch() throws {
+        let ctx = try Context()
+        let a1 = self.makeArtist("a1")
+        let a2 = self.makeArtist("a2")
+        try ctx.write { db in
+            try ArtistStorageManager.shared.upsertArtists([a1, a2], db: db)
+        }
+
+        try ctx.write { db in
+            try ArtistStorageManager.shared.deleteArtistStubsIfOrphaned([a1, a2], db: db)
+        }
+
+        #expect(try ctx.artist("a1") == nil)
+        #expect(try ctx.artist("a2") == nil)
     }
 
     @Test(
@@ -390,12 +412,13 @@ struct ArtistStorageManagerTests {
             (isSaved: true, isRecent: true, shouldSurvive: true),
         ]
     )
-    func deleteArtistIfOrphanedRespectsSavedAndRecentFlags(
+    func deleteArtistStubsIfOrphanedRespectsSavedAndRecentFlags(
         _ params: (isSaved: Bool, isRecent: Bool, shouldSurvive: Bool)
     ) throws {
         let ctx = try Context()
+        let a1 = self.makeArtist("a1")
         try ctx.write { db in
-            try ArtistStorageManager.shared.upsertArtist(self.makeArtist("a1"), db: db)
+            try ArtistStorageManager.shared.upsertArtists([a1], db: db)
         }
         try ctx.write { db in
             try StoredArtist.update {
@@ -407,93 +430,9 @@ struct ArtistStorageManagerTests {
         }
 
         try ctx.write { db in
-            try ArtistStorageManager.shared.deleteArtistIfOrphaned(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
+            try ArtistStorageManager.shared.deleteArtistStubsIfOrphaned([a1], db: db)
         }
 
         #expect(try (ctx.artist("a1") != nil) == params.shouldSurvive)
-    }
-
-    // MARK: - Recents
-
-    @Test func markArtistRecentlyViewedInsertsArtistAndSetsFlag() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1", name: "Some Artist")
-
-        try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 55, db: db)
-        }
-
-        let stored = try #require(try ctx.artist("a1"))
-        #expect(stored.isRecent == true)
-        #expect(stored.lastViewedTimestamp == 55)
-    }
-
-    @Test func markArtistRecentlyViewedUpdatesTimestampOnRevisit() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1")
-        try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 100, db: db)
-        }
-
-        try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 200, db: db)
-        }
-
-        let stored = try #require(try ctx.artist("a1"))
-        #expect(stored.lastViewedTimestamp == 200)
-    }
-
-    @Test func unmarkArtistRecentlyViewedDeletesOrphanedArtist() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1")
-        try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
-        }
-
-        try ctx.write { db in
-            try ArtistStorageManager.shared.unmarkArtistRecentlyViewed(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
-        }
-
-        #expect(try ctx.artist("a1") == nil)
-    }
-
-    @Test func unmarkArtistRecentlyViewedKeepsArtistReferencedByTrack() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1")
-        try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1", artists: [a1]), db: db)
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
-        }
-
-        try ctx.write { db in
-            try ArtistStorageManager.shared.unmarkArtistRecentlyViewed(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
-        }
-
-        #expect(try ctx.artist("a1") != nil)
-    }
-
-    @Test func unmarkArtistRecentlyViewedKeepsSavedToLibraryArtist() throws {
-        let ctx = try Context()
-        let a1 = self.makeArtist("a1")
-        try ctx.withDatabase { try ArtistStorageManager.shared.saveArtistToLibrary(a1) }
-        try ctx.write { db in
-            try ArtistStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
-        }
-
-        try ctx.write { db in
-            try ArtistStorageManager.shared.unmarkArtistRecentlyViewed(
-                mediaId: "a1", mediaSourceId: "src", db: db
-            )
-        }
-
-        let stored = try #require(try ctx.artist("a1"))
-        #expect(stored.isRecent == false)
-        #expect(stored.isSavedToLibrary == true)
     }
 }

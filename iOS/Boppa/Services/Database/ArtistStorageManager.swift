@@ -14,27 +14,66 @@ class ArtistStorageManager {
 
     private init() {}
 
+    // MARK: - DB Access
+
+    private func withReadDB<T>(_ db: Database?, _ body: (Database) throws -> T) throws -> T {
+        if let db { return try body(db) }
+        return try self.database.read(body)
+    }
+
+    private func withWriteDB<T>(_ db: Database?, _ body: (Database) throws -> T) throws -> T {
+        if let db { return try body(db) }
+        return try self.database.write(body)
+    }
+
     // MARK: - Reads
 
-    func fetchLibraryArtists() -> [StoredArtist] {
-        (try? self.database.read { db in
+    func fetchLibraryArtists(db: Database? = nil) -> [StoredArtist] {
+        (try? self.withReadDB(db) { db in
             try StoredArtist.where(\.isSavedToLibrary).fetchAll(db)
         }) ?? []
     }
 
-    func isArtistSaved(mediaId: String, mediaSourceId: String) -> Bool {
-        (try? self.database.read { db in
+    func isArtistSavedToLibrary(_ artist: Artist, db: Database? = nil) -> Bool {
+        (try? self.withReadDB(db) { db in
             try StoredArtist
-                .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
+                .where {
+                    $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId))
+                }
                 .fetchOne(db)?.isSavedToLibrary
         }) ?? false
     }
 
+    func fetchStoredArtistsForTracks(
+        _ tracks: [Track],
+        db: Database? = nil
+    ) throws -> [(Track, StoredArtist)] {
+        guard !tracks.isEmpty else { return [] }
+        return try self.withReadDB(db) { db in
+            let tracksByKey = Dictionary(
+                uniqueKeysWithValues: tracks.map { ("\($0.mediaId)|\($0.mediaSourceId)", $0) }
+            )
+            let rows = try StoredTrackArtist
+                .where { $0.trackMediaId.in(tracks.map(\.mediaId)) }
+                .join(StoredArtist.all) { ta, a in
+                    ta.artistMediaId.eq(a.mediaId).and(ta.artistMediaSourceId.eq(a.mediaSourceId))
+                }
+                .order { ta, _ in ta.sortOrder }
+                .fetchAll(db)
+            return rows.compactMap { trackArtist, artist in
+                guard let track = tracksByKey[
+                    "\(trackArtist.trackMediaId)|\(trackArtist.trackMediaSourceId)"
+                ] else { return nil }
+                return (track, artist)
+            }
+        }
+    }
+
     // MARK: - Writes
 
-    func saveArtistToLibrary(_ artist: Artist) throws {
-        try self.database.write { db in
-            try self.upsertArtist(artist, db: db)
+    func saveArtistToLibrary(_ artist: Artist, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
+            try self.upsertArtists([artist], db: db)
             try StoredArtist.update { $0.isSavedToLibrary = true }
                 .where {
                     $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId))
@@ -44,98 +83,122 @@ class ArtistStorageManager {
         logger.info("Saved artist '\(artist.mediaId)' to library")
     }
 
-    func removeArtistFromLibrary(mediaId: String, mediaSourceId: String) throws {
-        try self.database.write { db in
+    func removeArtistFromLibrary(_ artist: Artist, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
             try StoredArtist.update { $0.isSavedToLibrary = false }
-                .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-                .execute(db)
-            try self.deleteArtistIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
-        }
-        logger.info("Removed artist '\(mediaId)' from library")
-    }
-
-    // MARK: - Recents
-
-    func markArtistRecentlyViewed(_ artist: Artist, viewedAt: Double, db: Database) throws {
-        try self.upsertArtist(artist, db: db)
-        try StoredArtist.update {
-            $0.isRecent = true
-            $0.lastViewedTimestamp = #bind(viewedAt)
-        }
-        .where { $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId)) }
-        .execute(db)
-    }
-
-    func unmarkArtistRecentlyViewed(mediaId: String, mediaSourceId: String, db: Database) throws {
-        try StoredArtist.update { $0.isRecent = false }
-            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-            .execute(db)
-        try self.deleteArtistIfOrphaned(mediaId: mediaId, mediaSourceId: mediaSourceId, db: db)
-    }
-
-    // MARK: - Track Relation Support
-
-    @discardableResult
-    func upsertArtist(_ artist: Artist, db: Database) throws -> String {
-        let existing =
-            try StoredArtist
                 .where {
                     $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId))
                 }
-                .fetchOne(db)
-        if let existing {
-            try StoredArtist.update {
-                if !artist.name.isEmpty { $0.name = artist.name }
-                if artist.lowResArtworkUrl != nil { $0.lowResArtworkUrl = artist.lowResArtworkUrl }
-                if artist
-                    .highResArtworkUrl != nil { $0.highResArtworkUrl = artist.highResArtworkUrl }
-                if artist.url != nil { $0.url = artist.url }
+                .execute(db)
+            try self.deleteArtistStubsIfOrphaned([artist], db: db)
+        }
+        logger.info("Removed artist '\(artist.mediaId)' from library")
+    }
+
+    func upsertArtists(_ artists: [Artist], db: Database? = nil) throws {
+        guard !artists.isEmpty else { return }
+        try self.withWriteDB(db) { db in
+            let mediaIds = Array(Set(artists.map(\.mediaId)))
+            let existingKeys = try Set(
+                StoredArtist
+                    .where { $0.mediaId.in(mediaIds) }
+                    .fetchAll(db)
+                    .map { Self.key($0.mediaId, $0.mediaSourceId) }
+            )
+
+            var toInsert: [Artist] = []
+            var seenNewKeys = Set<String>()
+            for artist in artists {
+                let key = Self.key(artist.mediaId, artist.mediaSourceId)
+                if existingKeys.contains(key) {
+                    try StoredArtist.update {
+                        if !artist.name.isEmpty { $0.name = artist.name }
+                        if artist
+                            .lowResArtworkUrl !=
+                            nil { $0.lowResArtworkUrl = artist.lowResArtworkUrl }
+                        if artist
+                            .highResArtworkUrl != nil
+                        {
+                            $0.highResArtworkUrl = artist.highResArtworkUrl
+                        }
+                        if artist.url != nil { $0.url = artist.url }
+                    }
+                    .where {
+                        $0.mediaId.eq(artist.mediaId).and($0.mediaSourceId.eq(artist.mediaSourceId))
+                    }
+                    .execute(db)
+                } else if seenNewKeys.insert(key).inserted {
+                    toInsert.append(artist)
+                }
             }
-            .where {
-                $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
-            }
-            .execute(db)
-        } else {
+
+            guard !toInsert.isEmpty else { return }
             try StoredArtist.insert {
-                StoredArtist.Draft(
-                    mediaId: artist.mediaId,
-                    mediaSourceId: artist.mediaSourceId,
-                    name: artist.name,
-                    lowResArtworkUrl: artist.lowResArtworkUrl,
-                    highResArtworkUrl: artist.highResArtworkUrl,
-                    url: artist.url
-                )
+                toInsert.map { artist in
+                    StoredArtist.Draft(
+                        mediaId: artist.mediaId,
+                        mediaSourceId: artist.mediaSourceId,
+                        name: artist.name,
+                        lowResArtworkUrl: artist.lowResArtworkUrl,
+                        highResArtworkUrl: artist.highResArtworkUrl,
+                        url: artist.url
+                    )
+                }
             }.execute(db)
         }
-        return artist.mediaId
     }
 
-    func deleteArtistIfOrphaned(_ ref: StoredTrackArtist, db: Database) throws {
-        try self.deleteArtistIfOrphaned(
-            mediaId: ref.artistMediaId, mediaSourceId: ref.artistMediaSourceId, db: db
-        )
+    // MARK: - Orphan Cleanup
+
+    func deleteArtistStubsIfOrphaned(_ artists: [Artist], db: Database? = nil) throws {
+        guard !artists.isEmpty else { return }
+        try self.withWriteDB(db) { db in
+            let candidates = try self.fetchUnreferencedArtistStubs(artists, db: db)
+            guard !candidates.isEmpty else { return }
+            try self.deleteArtistStubs(candidates, db: db)
+        }
     }
 
-    func deleteArtistIfOrphaned(
-        mediaId: String,
-        mediaSourceId: String,
+    private func fetchUnreferencedArtistStubs(
+        _ artists: [Artist],
         db: Database
-    ) throws {
-        let inTracks =
+    ) throws -> [StoredArtist] {
+        let mediaIds = Array(Set(artists.map(\.mediaId)))
+        let referencedKeys =
             try StoredTrackArtist
-                .where { $0.artistMediaId.eq(mediaId).and($0.artistMediaSourceId.eq(mediaSourceId))
+                .where { $0.artistMediaId.in(mediaIds) }
+                .fetchAll(db)
+                .reduce(into: Set<String>()) {
+                    $0.insert(Self.key($1.artistMediaId, $1.artistMediaSourceId))
                 }
-                .fetchCount(db)
-        guard inTracks == 0 else { return }
-        let artist =
+        let unreferenced = artists.filter {
+            !referencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId))
+        }
+        guard !unreferenced.isEmpty else { return [] }
+
+        let unreferencedKeys = Set(unreferenced.map { Self.key($0.mediaId, $0.mediaSourceId) })
+        return try StoredArtist
+            .where { $0.mediaId.in(unreferenced.map(\.mediaId)) }
+            .fetchAll(db)
+            .filter { unreferencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId)) }
+    }
+
+    private func deleteArtistStubs(_ candidates: [StoredArtist], db: Database) throws {
+        let toDelete = candidates.filter { !$0.isRecent && !$0.isSavedToLibrary }
+        guard !toDelete.isEmpty else { return }
+        for (mediaSourceId, group) in Dictionary(grouping: toDelete, by: \.mediaSourceId) {
+            let mediaIds = group.map(\.mediaId)
             try StoredArtist
-                .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-                .fetchOne(db)
-        guard let artist, !artist.isRecent, !artist.isSavedToLibrary else { return }
-        try StoredArtist
-            .where { $0.mediaId.eq(mediaId).and($0.mediaSourceId.eq(mediaSourceId)) }
-            .delete()
-            .execute(db)
-        logger.info("Deleted orphaned artist '\(mediaId)'")
+                .where { $0.mediaSourceId.eq(mediaSourceId).and($0.mediaId.in(mediaIds)) }
+                .delete()
+                .execute(db)
+        }
+        for artist in toDelete {
+            logger.info("Deleted orphaned artist '\(artist.mediaId)'")
+        }
+    }
+
+    private static func key(_ mediaId: String, _ mediaSourceId: String) -> String {
+        "\(mediaId)|\(mediaSourceId)"
     }
 }

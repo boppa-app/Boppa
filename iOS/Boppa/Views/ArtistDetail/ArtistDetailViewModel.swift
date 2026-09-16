@@ -32,10 +32,7 @@ class ArtistDetailViewModel {
                 queue: .main
             ) { [weak self] _ in
                 guard let self, let artist = self.currentArtist else { return }
-                self.isSaved = ArtistStorageManager.shared.isArtistSaved(
-                    mediaId: artist.mediaId,
-                    mediaSourceId: artist.mediaSourceId
-                )
+                self.isSaved = ArtistStorageManager.shared.isArtistSavedToLibrary(artist)
             }
         )
     }
@@ -51,10 +48,7 @@ class ArtistDetailViewModel {
         mediaSource: StoredMediaSource
     ) {
         self.currentArtist = artist
-        self.isSaved = ArtistStorageManager.shared.isArtistSaved(
-            mediaId: artist.mediaId,
-            mediaSourceId: artist.mediaSourceId
-        )
+        self.isSaved = ArtistStorageManager.shared.isArtistSavedToLibrary(artist)
 
         guard self.detail == nil else { return }
         self.fetch(artist: artist, mediaSource: mediaSource)
@@ -76,10 +70,7 @@ class ArtistDetailViewModel {
     func removeFromLibrary() {
         guard let artist = self.currentArtist else { return }
         do {
-            try ArtistStorageManager.shared.removeArtistFromLibrary(
-                mediaId: artist.mediaId,
-                mediaSourceId: artist.mediaSourceId
-            )
+            try ArtistStorageManager.shared.removeArtistFromLibrary(artist)
             self.isSaved = false
             NotificationCenter.default.post(name: .artistLibraryChanged, object: nil)
             logger.info("Removed artist '\(artist.name)' from library")

@@ -43,16 +43,12 @@ struct TrackActionsSheet: View {
         .presentationBackground(Color(.systemGray6))
         .task(id: self.track.trackKey) {
             self.artists = self.track.artists.isEmpty
-                ? TrackStorageManager.shared.loadArtists(
-                    forTrackMediaId: self.track.mediaId,
-                    mediaSourceId: self.track.mediaSourceId
-                )
+                ? ((try? ArtistStorageManager.shared.fetchStoredArtistsForTracks([self.track]))?
+                    .map { $0.1.toArtist() } ?? [])
                 : self.track.artists
             self.albums = self.track.albums.isEmpty
-                ? TracklistStorageManager.shared.loadAlbums(
-                    forTrackMediaIds: [self.track.mediaId],
-                    mediaSourceId: self.track.mediaSourceId
-                )[self.track.mediaId] ?? []
+                ? ((try? TracklistStorageManager.shared.fetchStoredAlbumsForTracks([self.track]))?
+                    .map { Tracklist(storedTracklist: $0.1) } ?? [])
                 : self.track.albums
         }
     }
