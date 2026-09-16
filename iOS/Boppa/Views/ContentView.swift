@@ -248,11 +248,9 @@ struct ContentView: View {
                                 withAnimation(.easeInOut(duration: 0.35)) {
                                     switch tab {
                                     case 0:
-                                        if self.searchIsAtRoot {
-                                            self.searchFocusId += 1
-                                        } else {
-                                            self.searchNavigationReset.fire()
-                                        }
+                                        if !self
+                                            .searchIsAtRoot { self.searchNavigationReset.fire() }
+                                        self.searchFocusId += 1
                                     case 1:
                                         if !self
                                             .libraryIsAtRoot { self.libraryNavigationReset.fire() }
