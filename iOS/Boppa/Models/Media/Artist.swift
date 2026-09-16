@@ -39,6 +39,10 @@ struct Artist: Identifiable, Equatable, Hashable {
         hasher.combine(self.mediaId)
     }
 
+    var artistKey: String {
+        "\(self.mediaId)|\(self.mediaSourceId)"
+    }
+
     func merging(detail: ArtistDetail) -> Artist {
         let lowResArtworkUrl = detail.lowResArtworkUrl ?? self.lowResArtworkUrl
         let highResArtworkUrl = detail.highResArtworkUrl ?? self.highResArtworkUrl

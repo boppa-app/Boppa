@@ -104,13 +104,13 @@ class ArtistStorageManager {
                 StoredArtist
                     .where { $0.mediaId.in(mediaIds) }
                     .fetchAll(db)
-                    .map { Self.key($0.mediaId, $0.mediaSourceId) }
+                    .map(\.id)
             )
 
             var toInsert: [Artist] = []
             var seenNewKeys = Set<String>()
             for artist in artists {
-                let key = Self.key(artist.mediaId, artist.mediaSourceId)
+                let key = artist.artistKey
                 if existingKeys.contains(key) {
                     try StoredArtist.update {
                         if !artist.name.isEmpty { $0.name = artist.name }
@@ -170,18 +170,16 @@ class ArtistStorageManager {
                 .where { $0.artistMediaId.in(mediaIds) }
                 .fetchAll(db)
                 .reduce(into: Set<String>()) {
-                    $0.insert(Self.key($1.artistMediaId, $1.artistMediaSourceId))
+                    $0.insert("\($1.artistMediaId)|\($1.artistMediaSourceId)")
                 }
-        let unreferenced = artists.filter {
-            !referencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId))
-        }
+        let unreferenced = artists.filter { !referencedKeys.contains($0.artistKey) }
         guard !unreferenced.isEmpty else { return [] }
 
-        let unreferencedKeys = Set(unreferenced.map { Self.key($0.mediaId, $0.mediaSourceId) })
+        let unreferencedKeys = Set(unreferenced.map(\.artistKey))
         return try StoredArtist
             .where { $0.mediaId.in(unreferenced.map(\.mediaId)) }
             .fetchAll(db)
-            .filter { unreferencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId)) }
+            .filter { unreferencedKeys.contains($0.id) }
     }
 
     private func deleteArtistStubs(_ candidates: [StoredArtist], db: Database) throws {
@@ -197,9 +195,5 @@ class ArtistStorageManager {
         for artist in toDelete {
             logger.info("Deleted orphaned artist '\(artist.mediaId)'")
         }
-    }
-
-    private static func key(_ mediaId: String, _ mediaSourceId: String) -> String {
-        "\(mediaId)|\(mediaSourceId)"
     }
 }

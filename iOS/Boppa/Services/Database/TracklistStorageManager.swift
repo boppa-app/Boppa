@@ -50,7 +50,7 @@ class TracklistStorageManager {
             let mediaIds = Array(Set(tracklists.map(\.mediaId)))
             let rows = try StoredTracklist.where { $0.mediaId.in(mediaIds) }.fetchAll(db)
             return Dictionary(
-                rows.map { (Self.key($0.mediaId, $0.mediaSourceId), $0) },
+                rows.map { ($0.id, $0) },
                 uniquingKeysWith: { first, _ in first }
             )
         }) ?? [:]
@@ -348,18 +348,16 @@ class TracklistStorageManager {
                 .where { $0.tracklistMediaId.in(mediaIds) }
                 .fetchAll(db)
                 .reduce(into: Set<String>()) {
-                    $0.insert(Self.key($1.tracklistMediaId, $1.tracklistMediaSourceId))
+                    $0.insert("\($1.tracklistMediaId)|\($1.tracklistMediaSourceId)")
                 }
-        let unreferenced = tracklists.filter {
-            !referencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId))
-        }
+        let unreferenced = tracklists.filter { !referencedKeys.contains($0.tracklistKey) }
         guard !unreferenced.isEmpty else { return [] }
 
-        let unreferencedKeys = Set(unreferenced.map { Self.key($0.mediaId, $0.mediaSourceId) })
+        let unreferencedKeys = Set(unreferenced.map(\.tracklistKey))
         return try StoredTracklist
             .where { $0.mediaId.in(unreferenced.map(\.mediaId)) }
             .fetchAll(db)
-            .filter { unreferencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId)) }
+            .filter { unreferencedKeys.contains($0.id) }
     }
 
     private func deleteOrphanedAlbumStubs(_ candidates: [StoredTracklist], db: Database) throws {
@@ -377,10 +375,6 @@ class TracklistStorageManager {
         }
     }
 
-    private static func key(_ mediaId: String, _ mediaSourceId: String) -> String {
-        "\(mediaId)|\(mediaSourceId)"
-    }
-
     // MARK: - Tracklist Stubs
 
     func upsertTracklistStubs(_ tracklists: [Tracklist], db: Database? = nil) throws {
@@ -392,7 +386,7 @@ class TracklistStorageManager {
             var toInsert: [Tracklist] = []
             var seenNewKeys = Set<String>()
             for tracklist in tracklists {
-                let key = Self.key(tracklist.mediaId, tracklist.mediaSourceId)
+                let key = tracklist.tracklistKey
                 if existingByKey[key] != nil {
                     try StoredTracklist.update {
                         if !tracklist.title.isEmpty { $0.title = tracklist.title }

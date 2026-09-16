@@ -88,7 +88,7 @@ class TrackStorageManager {
         let mediaIds = Array(Set(tracks.map(\.mediaId)))
         let existingRows = try StoredTrack.where { $0.mediaId.in(mediaIds) }.fetchAll(db)
         return Dictionary(
-            existingRows.map { (Self.key($0.mediaId, $0.mediaSourceId), $0) },
+            existingRows.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
     }
@@ -101,7 +101,7 @@ class TrackStorageManager {
         var toInsert: [Track] = []
         var seenNewKeys = Set<String>()
         for track in tracks {
-            let key = Self.key(track.mediaId, track.mediaSourceId)
+            let key = track.trackKey
             if let stored = existingByKey[key] {
                 try self.updateTrackScalars(track, stored: stored, db: db)
                 try self.replaceTrackArtists(track: stored, artists: track.artists, db: db)
@@ -299,18 +299,16 @@ class TrackStorageManager {
                 .where { $0.trackMediaId.in(mediaIds) }
                 .fetchAll(db)
                 .reduce(into: Set<String>()) {
-                    $0.insert(Self.key($1.trackMediaId, $1.trackMediaSourceId))
+                    $0.insert("\($1.trackMediaId)|\($1.trackMediaSourceId)")
                 }
-        let unreferenced = tracks.filter {
-            !referencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId))
-        }
+        let unreferenced = tracks.filter { !referencedKeys.contains($0.trackKey) }
         guard !unreferenced.isEmpty else { return [] }
 
-        let unreferencedKeys = Set(unreferenced.map { Self.key($0.mediaId, $0.mediaSourceId) })
+        let unreferencedKeys = Set(unreferenced.map(\.trackKey))
         return try StoredTrack
             .where { $0.mediaId.in(unreferenced.map(\.mediaId)) }
             .fetchAll(db)
-            .filter { unreferencedKeys.contains(Self.key($0.mediaId, $0.mediaSourceId)) }
+            .filter { unreferencedKeys.contains($0.id) }
     }
 
     private func demoteRecentTrackStubs(_ tracks: [StoredTrack], db: Database) throws {
@@ -343,26 +341,16 @@ class TrackStorageManager {
             logger.info("Deleted orphaned track '\(track.mediaId)' from '\(track.mediaSourceId)'")
         }
 
-        let uniqueArtists = Dictionary(
-            grouping: orphanArtists,
-            by: { Self.key($0.mediaId, $0.mediaSourceId) }
-        ).values.compactMap(\.first)
+        let uniqueArtists = Dictionary(grouping: orphanArtists, by: \.id).values.compactMap(\.first)
         try ArtistStorageManager.shared.deleteArtistStubsIfOrphaned(
             uniqueArtists.map { $0.toArtist() },
             db: db
         )
 
-        let uniqueAlbums = Dictionary(
-            grouping: orphanAlbums,
-            by: { Self.key($0.mediaId, $0.mediaSourceId) }
-        ).values.compactMap(\.first)
+        let uniqueAlbums = Dictionary(grouping: orphanAlbums, by: \.id).values.compactMap(\.first)
         try TracklistStorageManager.shared.deleteAlbumStubsIfOrphaned(
             uniqueAlbums.map { Tracklist(storedTracklist: $0) },
             db: db
         )
-    }
-
-    private static func key(_ mediaId: String, _ mediaSourceId: String) -> String {
-        "\(mediaId)|\(mediaSourceId)"
     }
 }

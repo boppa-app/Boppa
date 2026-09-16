@@ -38,12 +38,12 @@ class FractionalIndexKeyQueries {
                 StoredTracklist
                     .where { $0.mediaId.in(mediaIds) }
                     .fetchAll(db)
-                    .map { (Self.key($0.mediaId, $0.mediaSourceId), $0.sortOrder) },
+                    .map { ($0.id, $0.sortOrder) },
                 uniquingKeysWith: { first, _ in first }
             )
             return storedTracklists.map { stored in
                 guard let stored else { return nil }
-                return sortOrderByKey[Self.key(stored.mediaId, stored.mediaSourceId)]
+                return sortOrderByKey[stored.id]
             }
         }
     }
@@ -82,9 +82,5 @@ class FractionalIndexKeyQueries {
                 .fetchOne(db)?
                 .sortOrder
         }
-    }
-
-    private static func key(_ mediaId: String, _ mediaSourceId: String) -> String {
-        "\(mediaId)|\(mediaSourceId)"
     }
 }
