@@ -15,31 +15,43 @@ class MediaSourceStorageManager {
 
     private init() {}
 
+    // MARK: - DB Access
+
+    private func withReadDB<T>(_ db: Database?, _ body: (Database) throws -> T) throws -> T {
+        if let db { return try body(db) }
+        return try self.database.read(body)
+    }
+
+    private func withWriteDB<T>(_ db: Database?, _ body: (Database) throws -> T) throws -> T {
+        if let db { return try body(db) }
+        return try self.database.write(body)
+    }
+
     // MARK: - Reads
 
-    func fetchAll() -> [StoredMediaSource] {
-        (try? self.database.read { db in
+    func fetchAll(db: Database? = nil) -> [StoredMediaSource] {
+        (try? self.withReadDB(db) { db in
             try StoredMediaSource.order { $0.sortOrder }.fetchAll(db)
         }) ?? []
     }
 
-    func fetchAllEnabled() -> [StoredMediaSource] {
-        let all = (try? self.database.read { db in
+    func fetchAllEnabled(db: Database? = nil) -> [StoredMediaSource] {
+        let all = (try? self.withReadDB(db) { db in
             try StoredMediaSource.where(\.isEnabled).order { $0.sortOrder }.fetchAll(db)
         }) ?? []
         return all.filter { $0.isContextGathered }
     }
 
-    func fetchOne(id: String) -> StoredMediaSource? {
-        try? self.database.read { db in
+    func fetchOne(id: String, db: Database? = nil) -> StoredMediaSource? {
+        try? self.withReadDB(db) { db in
             try StoredMediaSource.where { $0.id.eq(id) }.fetchOne(db)
         }
     }
 
-    func fetchMany(ids: some Sequence<String>) -> [String: StoredMediaSource] {
+    func fetchMany(ids: some Sequence<String>, db: Database? = nil) -> [String: StoredMediaSource] {
         let uniqueIds = Array(Set(ids))
         guard !uniqueIds.isEmpty else { return [:] }
-        let rows = (try? self.database.read { db in
+        let rows = (try? self.withReadDB(db) { db in
             try StoredMediaSource.find(uniqueIds).fetchAll(db)
         }) ?? []
         return Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
@@ -47,8 +59,8 @@ class MediaSourceStorageManager {
 
     // MARK: - Writes
 
-    func insert(_ mediaSources: [StoredMediaSource]) throws {
-        try self.database.write { db in
+    func insert(_ mediaSources: [StoredMediaSource], db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
             let maxKey = try StoredMediaSource.order { $0.sortOrder.desc() }.fetchOne(db)?.sortOrder
             var prevKey = maxKey
             for var mediaSource in mediaSources {
@@ -61,9 +73,9 @@ class MediaSourceStorageManager {
         logger.info("Inserted \(mediaSources.count) media source(s)")
     }
 
-    func updateConfig(id: String, configData: Data) throws {
+    func updateConfig(id: String, configData: Data, db: Database? = nil) throws {
         let now = Date().timeIntervalSince1970
-        try self.database.write { db in
+        try self.withWriteDB(db) { db in
             try StoredMediaSource.update {
                 $0.configData = #bind(configData)
                 $0.lastUpdatedTimestamp = #bind(now)
@@ -74,25 +86,28 @@ class MediaSourceStorageManager {
         logger.info("Updated config for '\(id)'")
     }
 
-    func setAutoUpdate(id: String, autoUpdate: Bool) throws {
-        try self.database.write { db in
+    func setAutoUpdate(id: String, autoUpdate: Bool, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
             try StoredMediaSource.update { $0.autoUpdate = autoUpdate }
                 .where { $0.id.eq(id) }
                 .execute(db)
         }
     }
 
-    func setEnabled(id: String, isEnabled: Bool) throws {
-        try self.database.write { db in
+    func setEnabled(id: String, isEnabled: Bool, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
             try StoredMediaSource.update { $0.isEnabled = isEnabled }
                 .where { $0.id.eq(id) }
                 .execute(db)
         }
     }
 
-    func updateSortOrders(_ mediaSources: [StoredMediaSource]) throws -> [StoredMediaSource] {
+    func updateSortOrders(
+        _ mediaSources: [StoredMediaSource],
+        db: Database? = nil
+    ) throws -> [StoredMediaSource] {
         let newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: mediaSources.count)
-        try self.database.write { db in
+        try self.withWriteDB(db) { db in
             for (mediaSource, key) in zip(mediaSources, newKeys) {
                 try StoredMediaSource.update { $0.sortOrder = key }
                     .where { $0.id.eq(mediaSource.id) }
@@ -106,16 +121,16 @@ class MediaSourceStorageManager {
         }
     }
 
-    func delete(id: String) throws {
-        try self.database.write { db in
+    func delete(id: String, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
             try StoredMediaSource.where { $0.id.eq(id) }.delete().execute(db)
         }
         logger.info("Deleted media source '\(id)'")
     }
 
-    func setContextLastGatheredTimestamp(id: String) throws -> Bool {
+    func setContextLastGatheredTimestamp(id: String, db: Database? = nil) throws -> Bool {
         var wasNil = false
-        try self.database.write { db in
+        try self.withWriteDB(db) { db in
             let mediaSource = try StoredMediaSource.where { $0.id.eq(id) }.fetchOne(db)
             guard let mediaSource else { return }
             wasNil = mediaSource.contextLastGatheredTimestamp == nil
@@ -127,8 +142,8 @@ class MediaSourceStorageManager {
         return wasNil
     }
 
-    func mergeContextValues(id: String, newValues: [String: Any]) throws {
-        try self.database.write { db in
+    func mergeContextValues(id: String, newValues: [String: Any], db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
             let mediaSource = try StoredMediaSource.where { $0.id.eq(id) }.fetchOne(db)
             guard let mediaSource else {
                 logger.warning("Could not find StoredMediaSource '\(id)' to store context values")
