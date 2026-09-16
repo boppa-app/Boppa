@@ -269,7 +269,10 @@ struct RecentsStorageManagerTests {
         let ctx = try Context()
         let a1 = self.makeArtist("a1")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1", artists: [a1]), db: db)
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", artists: [a1])],
+                db: db
+            )
             try RecentsStorageManager.shared.markArtistRecentlyViewed(a1, viewedAt: 1, db: db)
         }
 
@@ -335,7 +338,7 @@ struct RecentsStorageManagerTests {
             artists: [self.makeArtist("a1", name: "Artist One")],
             albums: [self.makeAlbum("al1", title: "Album One")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(full, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([full], db: db) }
 
         let lightweight = self.makeTrack("t1", title: "Stale Title")
         try ctx.write { db in

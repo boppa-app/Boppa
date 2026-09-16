@@ -51,7 +51,8 @@ class ArtistStorageManager {
         guard !tracks.isEmpty else { return [] }
         return try self.withReadDB(db) { db in
             let tracksByKey = Dictionary(
-                uniqueKeysWithValues: tracks.map { ("\($0.mediaId)|\($0.mediaSourceId)", $0) }
+                tracks.map { ("\($0.mediaId)|\($0.mediaSourceId)", $0) },
+                uniquingKeysWith: { first, _ in first }
             )
             let rows = try StoredTrackArtist
                 .where { $0.trackMediaId.in(tracks.map(\.mediaId)) }

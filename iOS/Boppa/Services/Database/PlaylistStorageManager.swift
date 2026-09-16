@@ -170,8 +170,8 @@ class PlaylistStorageManager {
     }
 
     private func addTrack(_ track: Track, to tracklist: StoredTracklist, db: Database) throws {
-        try TrackStorageManager.shared.upsertTrack(track, db: db)
-        try TrackStorageManager.shared.markSavedToLibrary(track, db: db)
+        try TrackStorageManager.shared.upsertTracks([track], db: db)
+        try TrackStorageManager.shared.markSavedToLibrary([track], db: db)
         let maxKey = try StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)

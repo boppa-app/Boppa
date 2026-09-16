@@ -106,7 +106,7 @@ private struct ComposedTracklistArtworkView: View {
             let mediaId = self.mediaId
             let mediaSourceId = self.mediaSourceId
             let result = await Task.detached(priority: .userInitiated) {
-                TracklistStorageManager.shared.resolveComposedArtwork(
+                TracklistArtworkResolver.shared.resolveComposedArtwork(
                     mediaId: mediaId, mediaSourceId: mediaSourceId
                 )
             }.value

@@ -145,7 +145,10 @@ struct LibraryView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
+                    storedTracklist: TracklistStorageManager.shared
+                        .findStoredTracklists([tracklist])[
+                            tracklist.tracklistKey
+                        ]
                 )))
                 self.pendingTracklist = nil
             }

@@ -41,17 +41,23 @@ class TracklistStorageManager {
         }) ?? []
     }
 
-    func findStoredTracklist(_ tracklist: Tracklist, db: Database? = nil) -> StoredTracklist? {
-        try? self.withReadDB(db) { db in
-            try StoredTracklist
-                .where {
-                    $0.mediaId.eq(tracklist.mediaId)
-                        .and($0.mediaSourceId.eq(tracklist.mediaSourceId))
-                }
-                .fetchOne(db)
-        }
+    func findStoredTracklists(
+        _ tracklists: [Tracklist],
+        db: Database? = nil
+    ) -> [String: StoredTracklist] {
+        guard !tracklists.isEmpty else { return [:] }
+        return (try? self.withReadDB(db) { db in
+            let mediaIds = Array(Set(tracklists.map(\.mediaId)))
+            let rows = try StoredTracklist.where { $0.mediaId.in(mediaIds) }.fetchAll(db)
+            return Dictionary(
+                rows.map { (Self.key($0.mediaId, $0.mediaSourceId), $0) },
+                uniquingKeysWith: { first, _ in first }
+            )
+        }) ?? [:]
     }
 
+    /// Called directly via UI with only one tracklist at a time for now so keep single
+    /// StoredTracklist param instead of array
     func isTracklistEmpty(_ tracklist: Tracklist, db: Database? = nil) -> Bool {
         let match: StoredTracklistTrack? = try? self.withReadDB(db) { db in
             try StoredTracklistTrack
@@ -71,7 +77,8 @@ class TracklistStorageManager {
         guard !tracks.isEmpty else { return [] }
         return try self.withReadDB(db) { db in
             let tracksByKey = Dictionary(
-                uniqueKeysWithValues: tracks.map { ("\($0.mediaId)|\($0.mediaSourceId)", $0) }
+                tracks.map { ("\($0.mediaId)|\($0.mediaSourceId)", $0) },
+                uniquingKeysWith: { first, _ in first }
             )
             let rows = try StoredTrackAlbum
                 .where { $0.trackMediaId.in(tracks.map(\.mediaId)) }
@@ -111,6 +118,8 @@ class TracklistStorageManager {
         return stored
     }
 
+    /// Called directly via UI with only one tracklist at a time for now so keep single Tracklist
+    /// param instead of array
     private func performStoreTracklist(
         _ tracklist: Tracklist,
         tracks: [Track],
@@ -125,108 +134,6 @@ class TracklistStorageManager {
             .fetchOne(db) ?? stored
     }
 
-    func setPin(_ storedTracklist: StoredTracklist, isPinned: Bool, db: Database? = nil) throws {
-        try self.withWriteDB(db) { db in
-            try StoredTracklist.update { $0.isPinned = isPinned }
-                .where {
-                    $0.mediaId.eq(storedTracklist.mediaId)
-                        .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
-                }
-                .execute(db)
-        }
-    }
-
-    func moveTracklist(
-        _ tracklist: Tracklist,
-        after previousTracklist: Tracklist?,
-        before nextTracklist: Tracklist?,
-        db: Database? = nil
-    ) throws {
-        guard let stored = tracklist.storedTracklist else { return }
-        try self.withWriteDB(db) { db in
-            func sortOrderKey(for tracklist: Tracklist?) throws -> String? {
-                guard let stored = tracklist?.storedTracklist else { return nil }
-                return try StoredTracklist
-                    .where {
-                        $0.mediaId.eq(stored.mediaId).and($0.mediaSourceId.eq(stored.mediaSourceId))
-                    }
-                    .fetchOne(db)?.sortOrder
-            }
-
-            let prevKey = try sortOrderKey(for: previousTracklist)
-            let nextKey = try sortOrderKey(for: nextTracklist)
-            let newKey = FractionalIndex.generateKeyBetween(prevKey, nextKey)
-
-            try StoredTracklist.update { $0.sortOrder = newKey }
-                .where {
-                    $0.mediaId.eq(stored.mediaId)
-                        .and($0.mediaSourceId.eq(stored.mediaSourceId))
-                }
-                .execute(db)
-        }
-    }
-
-    func fetchLibraryTracklists(type: String, db: Database? = nil) -> [Tracklist] {
-        (try? self.withReadDB(db) { db in
-            try StoredTracklist
-                .where { $0.tracklistType.eq(type).and($0.isSavedToLibrary.eq(true)) }
-                .order { $0.sortOrder }
-                .fetchAll(db)
-        })?.map { Tracklist(storedTracklist: $0) } ?? []
-    }
-
-    func deleteStoredTracklist(_ storedTracklist: StoredTracklist, db: Database? = nil) throws {
-        try self.withWriteDB(db) { db in
-            let tracks = try StoredTracklistTrack
-                .where {
-                    $0.tracklistMediaId.eq(storedTracklist.mediaId)
-                        .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
-                }
-                .join(StoredTrack.all) { tt, t in
-                    tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
-                }
-                .select { _, t in t }
-                .fetchAll(db)
-
-            let albumRefCount = try StoredTrackAlbum
-                .where {
-                    $0.tracklistMediaId.eq(storedTracklist.mediaId)
-                        .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
-                }
-                .fetchCount(db)
-
-            if albumRefCount > 0 {
-                try StoredTracklist.update { $0.isSavedToLibrary = false }
-                    .where {
-                        $0.mediaId.eq(storedTracklist.mediaId)
-                            .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
-                    }
-                    .execute(db)
-                try StoredTracklistTrack
-                    .where {
-                        $0.tracklistMediaId.eq(storedTracklist.mediaId)
-                            .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
-                    }
-                    .delete()
-                    .execute(db)
-            } else {
-                try StoredTracklist
-                    .where {
-                        $0.mediaId.eq(storedTracklist.mediaId)
-                            .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
-                    }
-                    .delete()
-                    .execute(db)
-            }
-
-            try TrackStorageManager.shared.deleteTrackStubsIfOrphaned(
-                tracks.map { $0.toTrack() },
-                db: db
-            )
-        }
-        logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
-    }
-
     private func upsertLibraryTracklist(
         tracklist: Tracklist,
         db: Database
@@ -237,76 +144,36 @@ class TracklistStorageManager {
             }
             .fetchOne(db)
         if let existing {
-            try StoredTracklist.update {
-                $0.title = tracklist.title
-                $0.subtitle = tracklist.subtitle
-                $0.year = tracklist.year
-                $0.lowResArtworkUrl = tracklist.lowResArtworkUrl
-                $0.highResArtworkUrl = tracklist.highResArtworkUrl
-                $0.url = tracklist.url
-                $0.isSavedToLibrary = true
-            }
+            return try self.updateExistingLibraryTracklist(existing, with: tracklist, db: db)
+        }
+        let inserted = try self.insertTracklistStubs([tracklist], isSavedToLibrary: true, db: db)
+        return inserted[0]
+    }
+
+    private func updateExistingLibraryTracklist(
+        _ existing: StoredTracklist,
+        with tracklist: Tracklist,
+        db: Database
+    ) throws -> StoredTracklist {
+        try StoredTracklist.update {
+            $0.title = tracklist.title
+            $0.subtitle = tracklist.subtitle
+            $0.year = tracklist.year
+            $0.lowResArtworkUrl = tracklist.lowResArtworkUrl
+            $0.highResArtworkUrl = tracklist.highResArtworkUrl
+            $0.url = tracklist.url
+            $0.isSavedToLibrary = true
+        }
+        .where {
+            $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
+        }
+        .execute(db)
+        return try StoredTracklist
             .where {
-                $0.mediaId.eq(existing.mediaId).and($0.mediaSourceId.eq(existing.mediaSourceId))
+                $0.mediaId.eq(existing.mediaId)
+                    .and($0.mediaSourceId.eq(existing.mediaSourceId))
             }
-            .execute(db)
-            return try StoredTracklist
-                .where {
-                    $0.mediaId.eq(existing.mediaId)
-                        .and($0.mediaSourceId.eq(existing.mediaSourceId))
-                }
-                .fetchOne(db) ?? existing
-        }
-
-        guard tracklist.tracklistType.isPersistable else {
-            throw NSError(
-                domain: "TracklistStorageManager", code: 1,
-                userInfo: [
-                    NSLocalizedDescriptionKey:
-                        "Cannot save a '\(tracklist.tracklistType.rawValue)' tracklist to the library",
-                ]
-            )
-        }
-
-        let typeString = tracklist.tracklistType.rawValue
-        let maxKey = try StoredTracklist
-            .where { $0.tracklistType.eq(typeString) }
-            .order { $0.sortOrder.desc() }
-            .fetchOne(db)?
-            .sortOrder
-        let newSortOrder = FractionalIndex.generateKeyBetween(maxKey, nil)
-
-        try StoredTracklist.insert {
-            StoredTracklist.Draft(
-                mediaId: tracklist.mediaId,
-                mediaSourceId: tracklist.mediaSourceId,
-                title: tracklist.title,
-                subtitle: tracklist.subtitle,
-                year: tracklist.year,
-                lowResArtworkUrl: tracklist.lowResArtworkUrl,
-                highResArtworkUrl: tracklist.highResArtworkUrl,
-                url: tracklist.url,
-                tracklistType: typeString,
-                isPinned: false,
-                isSavedToLibrary: true,
-                sortOrder: newSortOrder
-            )
-        }.execute(db)
-
-        return StoredTracklist(
-            mediaId: tracklist.mediaId,
-            mediaSourceId: tracklist.mediaSourceId,
-            title: tracklist.title,
-            subtitle: tracklist.subtitle,
-            year: tracklist.year,
-            lowResArtworkUrl: tracklist.lowResArtworkUrl,
-            highResArtworkUrl: tracklist.highResArtworkUrl,
-            url: tracklist.url,
-            tracklistType: typeString,
-            isPinned: false,
-            isSavedToLibrary: true,
-            sortOrder: newSortOrder
-        )
+            .fetchOne(db) ?? existing
     }
 
     private func persistTracks(
@@ -315,25 +182,16 @@ class TracklistStorageManager {
         db: Database,
         pruneStale: Bool
     ) throws {
-        let newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
-        let (existingJoins, existingTracks) = try fetchExistingTrackData(for: tracklist, db: db)
-        let relationCache = try buildRelationCache(for: existingTracks, db: db)
+        let existingTracks = pruneStale
+            ? TrackStorageManager.shared.fetchStoredTracksForTracklist(tracklist, db: db)
+            : []
 
-        for (index, track) in tracks.enumerated() {
-            let newKey = newKeys[index]
-            if let match = existingTracks.first(where: { $0.identityMatches(track) }) {
-                try self.syncExistingTrack(
-                    track,
-                    match: match,
-                    newKey: newKey,
-                    existingJoins: existingJoins,
-                    relationCache: relationCache,
-                    db: db
-                )
-            } else {
-                try self.insertNewTrackJoin(track, newKey: newKey, into: tracklist, db: db)
-            }
-        }
+        try TrackStorageManager.shared.upsertTracks(tracks, db: db)
+
+        let newKeys = FractionalIndex.generateNKeysBetween(nil, nil, n: tracks.count)
+        try self.upsertTrackJoins(tracks, newKeys: newKeys, into: tracklist, db: db)
+
+        try TrackStorageManager.shared.markSavedToLibrary(tracks, db: db)
 
         if pruneStale {
             try self.pruneStaleJoins(
@@ -345,121 +203,24 @@ class TracklistStorageManager {
         }
     }
 
-    private func fetchExistingTrackData(
-        for tracklist: StoredTracklist,
-        db: Database
-    ) throws -> ([StoredTracklistTrack], [StoredTrack]) {
-        let joins = try StoredTracklistTrack
-            .where {
-                $0.tracklistMediaId.eq(tracklist.mediaId)
-                    .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
-            }
-            .order { $0.sortOrder }
-            .fetchAll(db)
-
-        let tracks: [StoredTrack] = try StoredTracklistTrack
-            .where {
-                $0.tracklistMediaId.eq(tracklist.mediaId)
-                    .and($0.tracklistMediaSourceId.eq(tracklist.mediaSourceId))
-            }
-            .join(StoredTrack.all) { tt, t in
-                tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
-            }
-            .order { tt, _ in tt.sortOrder }
-            .select { _, t in t }
-            .fetchAll(db)
-
-        return (joins, tracks)
-    }
-
-    private func buildRelationCache(
-        for tracks: [StoredTrack],
-        db: Database
-    ) throws -> [(Track, [StoredArtist], [StoredTracklist])] {
-        let domainTracks = tracks.map { $0.toTrack() }
-
-        var artistsByKey: [String: [StoredArtist]] = [:]
-        for (track, artist) in try ArtistStorageManager.shared.fetchStoredArtistsForTracks(
-            domainTracks,
-            db: db
-        ) {
-            artistsByKey[Self.key(track.mediaId, track.mediaSourceId), default: []].append(artist)
-        }
-        var albumsByKey: [String: [StoredTracklist]] = [:]
-        for (track, album) in try self.fetchStoredAlbumsForTracks(
-            domainTracks,
-            db: db
-        ) {
-            albumsByKey[Self.key(track.mediaId, track.mediaSourceId), default: []].append(album)
-        }
-
-        return domainTracks.map { track in
-            let key = Self.key(track.mediaId, track.mediaSourceId)
-            return (track, artistsByKey[key] ?? [], albumsByKey[key] ?? [])
-        }
-    }
-
-    private func syncExistingTrack(
-        _ track: Track,
-        match: StoredTrack,
-        newKey: String,
-        existingJoins: [StoredTracklistTrack],
-        relationCache: [(Track, [StoredArtist], [StoredTracklist])],
-        db: Database
-    ) throws {
-        if let join = existingJoins
-            .first(where: {
-                $0.trackMediaId == match.mediaId && $0.trackMediaSourceId == match.mediaSourceId
-            }),
-            join.sortOrder != newKey
-        {
-            try StoredTracklistTrack.update { $0.sortOrder = newKey }
-                .where {
-                    $0.tracklistMediaId.eq(join.tracklistMediaId)
-                        .and($0.tracklistMediaSourceId.eq(join.tracklistMediaSourceId))
-                        .and($0.trackMediaId.eq(join.trackMediaId))
-                        .and($0.trackMediaSourceId.eq(join.trackMediaSourceId))
-                }
-                .execute(db)
-        }
-        let relations = relationCache.first {
-            $0.0.mediaId == match.mediaId && $0.0.mediaSourceId == match.mediaSourceId
-        }
-        let existingArtists = relations?.1 ?? []
-        let existingAlbums = relations?.2 ?? []
-        if !match.contentMatches(track, artists: existingArtists, albums: existingAlbums) {
-            try TrackStorageManager.shared.updateTrackScalars(track, stored: match, db: db)
-            try TrackStorageManager.shared.replaceTrackArtists(
-                track: match,
-                artists: track.artists,
-                db: db
-            )
-            try TrackStorageManager.shared.replaceTrackAlbums(
-                track: match,
-                albums: track.albums,
-                db: db
-            )
-        }
-        try TrackStorageManager.shared.markSavedToLibrary(track, db: db)
-    }
-
-    private func insertNewTrackJoin(
-        _ track: Track,
-        newKey: String,
+    private func upsertTrackJoins(
+        _ tracks: [Track],
+        newKeys: [String],
         into tracklist: StoredTracklist,
         db: Database
     ) throws {
-        try TrackStorageManager.shared.upsertTrack(track, db: db)
-        try TrackStorageManager.shared.markSavedToLibrary(track, db: db)
+        guard !tracks.isEmpty else { return }
         try StoredTracklistTrack.insert {
-            StoredTracklistTrack.Draft(
-                tracklistMediaId: tracklist.mediaId,
-                tracklistMediaSourceId: tracklist.mediaSourceId,
-                trackMediaId: track.mediaId,
-                trackMediaSourceId: track.mediaSourceId,
-                sortOrder: newKey
-            )
-        } onConflictDoUpdate: { $0.sortOrder = newKey }
+            zip(tracks, newKeys).map { track, key in
+                StoredTracklistTrack.Draft(
+                    tracklistMediaId: tracklist.mediaId,
+                    tracklistMediaSourceId: tracklist.mediaSourceId,
+                    trackMediaId: track.mediaId,
+                    trackMediaSourceId: track.mediaSourceId,
+                    sortOrder: key
+                )
+            }
+        } onConflictDoUpdate: { $0.sortOrder = $1.sortOrder }
             .execute(db)
     }
 
@@ -487,6 +248,101 @@ class TracklistStorageManager {
             staleTracks.map { $0.toTrack() },
             db: db
         )
+    }
+
+    /// Called directly via UI with only one tracklist at a time for now so keep single
+    /// StoredTracklist param instead of array
+    func setPin(_ storedTracklist: StoredTracklist, isPinned: Bool, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
+            try StoredTracklist.update { $0.isPinned = isPinned }
+                .where {
+                    $0.mediaId.eq(storedTracklist.mediaId)
+                        .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
+                }
+                .execute(db)
+        }
+    }
+
+    /// Called directly via UI with only one tracklist at a time for now so keep single
+    /// StoredTracklist param instead of array
+    func moveTracklist(
+        _ tracklist: StoredTracklist,
+        after previousTracklist: StoredTracklist?,
+        before nextTracklist: StoredTracklist?,
+        db: Database? = nil
+    ) throws {
+        try self.withWriteDB(db) { db in
+            let keys = try self.sortOrderKeys(for: [previousTracklist, nextTracklist], db: db)
+            let newKey = FractionalIndex.generateKeyBetween(keys[0], keys[1])
+
+            try StoredTracklist.update { $0.sortOrder = newKey }
+                .where {
+                    $0.mediaId.eq(tracklist.mediaId)
+                        .and($0.mediaSourceId.eq(tracklist.mediaSourceId))
+                }
+                .execute(db)
+        }
+    }
+
+    private func sortOrderKeys(
+        for storedTracklists: [StoredTracklist?],
+        db: Database
+    ) throws -> [String?] {
+        let mediaIds = storedTracklists.compactMap { $0?.mediaId }
+        guard !mediaIds.isEmpty else { return storedTracklists.map { _ in nil } }
+
+        let sortOrderByKey = try Dictionary(
+            StoredTracklist
+                .where { $0.mediaId.in(mediaIds) }
+                .fetchAll(db)
+                .map { (Self.key($0.mediaId, $0.mediaSourceId), $0.sortOrder) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return storedTracklists.map { stored in
+            guard let stored else { return nil }
+            return sortOrderByKey[Self.key(stored.mediaId, stored.mediaSourceId)]
+        }
+    }
+
+    func fetchLibraryTracklists(type: String, db: Database? = nil) -> [Tracklist] {
+        (try? self.withReadDB(db) { db in
+            try StoredTracklist
+                .where { $0.tracklistType.eq(type).and($0.isSavedToLibrary.eq(true)) }
+                .order { $0.sortOrder }
+                .fetchAll(db)
+        })?.map { Tracklist(storedTracklist: $0) } ?? []
+    }
+
+    /// Called directly via UI with only one tracklist at a time for now so keep single
+    /// StoredTracklist param instead of array
+    func deleteStoredTracklist(_ storedTracklist: StoredTracklist, db: Database? = nil) throws {
+        try self.withWriteDB(db) { db in
+            let tracks = TrackStorageManager.shared
+                .fetchStoredTracksForTracklist(storedTracklist, db: db)
+                .map { $0.toTrack() }
+
+            try StoredTracklistTrack
+                .where {
+                    $0.tracklistMediaId.eq(storedTracklist.mediaId)
+                        .and($0.tracklistMediaSourceId.eq(storedTracklist.mediaSourceId))
+                }
+                .delete()
+                .execute(db)
+            try StoredTracklist.update { $0.isSavedToLibrary = false }
+                .where {
+                    $0.mediaId.eq(storedTracklist.mediaId)
+                        .and($0.mediaSourceId.eq(storedTracklist.mediaSourceId))
+                }
+                .execute(db)
+
+            try self.deleteAlbumStubsIfOrphaned(
+                [Tracklist(storedTracklist: storedTracklist)],
+                db: db
+            )
+            try TrackStorageManager.shared.deleteTrackStubsIfOrphaned(tracks, db: db)
+        }
+        logger.info("Deleted stored tracklist '\(storedTracklist.title)'")
     }
 
     // MARK: - Orphan Cleanup
@@ -543,83 +399,19 @@ class TracklistStorageManager {
         "\(mediaId)|\(mediaSourceId)"
     }
 
-    // MARK: - Composed Artwork
-
-    private static let composedArtworkTargetCount = 4
-    private static let composedArtworkInitialBatchSize = 8
-    private static let composedArtworkMaxBatchSize = 64
-
-    func resolveComposedArtwork(
-        mediaId: String,
-        mediaSourceId: String,
-        db: Database? = nil
-    ) -> [TrackArtworkURLs] {
-        var collected: [TrackArtworkURLs] = []
-        var seenKeys = Set<String>()
-        var offset = 0
-        var batchSize = Self.composedArtworkInitialBatchSize
-
-        while collected.count < Self.composedArtworkTargetCount {
-            let batch: [StoredTrack] = (try? self.withReadDB(db) { db in
-                try StoredTracklistTrack
-                    .where {
-                        $0.tracklistMediaId.eq(mediaId)
-                            .and($0.tracklistMediaSourceId.eq(mediaSourceId))
-                    }
-                    .join(StoredTrack.all) { tt, t in
-                        tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
-                    }
-                    .order { tt, _ in tt.sortOrder }
-                    .select { _, t in t }
-                    .limit(batchSize, offset: offset)
-                    .fetchAll(db)
-            }) ?? []
-
-            guard !batch.isEmpty else { break }
-
-            for track in batch {
-                guard let key = track.highResArtworkUrl ?? track.lowResArtworkUrl,
-                      !key.isEmpty
-                else {
-                    continue
-                }
-                guard seenKeys.insert(key).inserted else { continue }
-                collected.append(
-                    TrackArtworkURLs(
-                        lowResUrl: track.lowResArtworkUrl,
-                        highResUrl: track.highResArtworkUrl
-                    )
-                )
-                if collected.count >= Self.composedArtworkTargetCount { break }
-            }
-
-            offset += batch.count
-            if batch.count < batchSize { break }
-            batchSize = min(batchSize * 2, Self.composedArtworkMaxBatchSize)
-        }
-
-        return collected
-    }
-
     // MARK: - Tracklist Stubs
 
     func upsertTracklistStubs(_ tracklists: [Tracklist], db: Database? = nil) throws {
         let tracklists = tracklists.filter(\.tracklistType.isPersistable)
         guard !tracklists.isEmpty else { return }
         try self.withWriteDB(db) { db in
-            let mediaIds = Array(Set(tracklists.map(\.mediaId)))
-            let existingKeys = try Set(
-                StoredTracklist
-                    .where { $0.mediaId.in(mediaIds) }
-                    .fetchAll(db)
-                    .map { Self.key($0.mediaId, $0.mediaSourceId) }
-            )
+            let existingByKey = self.findStoredTracklists(tracklists, db: db)
 
             var toInsert: [Tracklist] = []
             var seenNewKeys = Set<String>()
             for tracklist in tracklists {
                 let key = Self.key(tracklist.mediaId, tracklist.mediaSourceId)
-                if existingKeys.contains(key) {
+                if existingByKey[key] != nil {
                     try StoredTracklist.update {
                         if !tracklist.title.isEmpty { $0.title = tracklist.title }
                         if tracklist.subtitle != nil { $0.subtitle = tracklist.subtitle }
@@ -649,8 +441,23 @@ class TracklistStorageManager {
         }
     }
 
-    private func insertTracklistStubs(_ tracklists: [Tracklist], db: Database) throws {
-        guard !tracklists.isEmpty else { return }
+    @discardableResult
+    private func insertTracklistStubs(
+        _ tracklists: [Tracklist],
+        isSavedToLibrary: Bool = false,
+        db: Database
+    ) throws -> [StoredTracklist] {
+        guard !tracklists.isEmpty else { return [] }
+        if let invalid = tracklists.first(where: { !$0.tracklistType.isPersistable }) {
+            throw NSError(
+                domain: "TracklistStorageManager", code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "Cannot save a '\(invalid.tracklistType.rawValue)' tracklist to the library",
+                ]
+            )
+        }
+        var inserted: [StoredTracklist] = []
         for (typeString, group) in Dictionary(
             grouping: tracklists,
             by: { $0.tracklistType.rawValue }
@@ -661,23 +468,29 @@ class TracklistStorageManager {
                 .fetchOne(db)?
                 .sortOrder
             let newKeys = FractionalIndex.generateNKeysBetween(maxKey, nil, n: group.count)
+            let rows = zip(group, newKeys).map { tracklist, sortOrder in
+                StoredTracklist(
+                    mediaId: tracklist.mediaId,
+                    mediaSourceId: tracklist.mediaSourceId,
+                    title: tracklist.title,
+                    subtitle: tracklist.subtitle,
+                    year: tracklist.year,
+                    lowResArtworkUrl: tracklist.lowResArtworkUrl,
+                    highResArtworkUrl: tracklist.highResArtworkUrl,
+                    url: tracklist.url,
+                    tracklistType: typeString,
+                    isPinned: false,
+                    isSavedToLibrary: isSavedToLibrary,
+                    sortOrder: sortOrder
+                )
+            }
+
             try StoredTracklist.insert {
-                zip(group, newKeys).map { tracklist, sortOrder in
-                    StoredTracklist.Draft(
-                        mediaId: tracklist.mediaId,
-                        mediaSourceId: tracklist.mediaSourceId,
-                        title: tracklist.title,
-                        subtitle: tracklist.subtitle,
-                        lowResArtworkUrl: tracklist.lowResArtworkUrl,
-                        highResArtworkUrl: tracklist.highResArtworkUrl,
-                        url: tracklist.url,
-                        tracklistType: typeString,
-                        isPinned: false,
-                        isSavedToLibrary: false,
-                        sortOrder: sortOrder
-                    )
-                }
+                rows.map { StoredTracklist.Draft($0) }
             }.execute(db)
+
+            inserted.append(contentsOf: rows)
         }
+        return inserted
     }
 }

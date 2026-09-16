@@ -182,6 +182,7 @@ class TracklistListViewModel {
     func moveTracklist(from source: IndexSet, to destination: Int) {
         guard let sourceIndex = source.first, source.count == 1 else { return }
         let movedTracklist = self.tracklists[sourceIndex]
+        guard let stored = movedTracklist.storedTracklist else { return }
         self.tracklists.move(fromOffsets: source, toOffset: destination)
 
         guard let newIndex = self.tracklists
@@ -192,9 +193,9 @@ class TracklistListViewModel {
             self.tracklists[newIndex + 1] : nil
 
         try? TracklistStorageManager.shared.moveTracklist(
-            movedTracklist,
-            after: previousTracklist,
-            before: nextTracklist
+            stored,
+            after: previousTracklist?.storedTracklist,
+            before: nextTracklist?.storedTracklist
         )
     }
 

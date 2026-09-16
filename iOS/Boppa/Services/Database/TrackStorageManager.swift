@@ -34,7 +34,10 @@ class TrackStorageManager {
         }) ?? []
     }
 
-    func fetchTracksForTracklist(_ tracklist: StoredTracklist, db: Database? = nil) -> [Track] {
+    func fetchStoredTracksForTracklist(
+        _ tracklist: StoredTracklist,
+        db: Database? = nil
+    ) -> [StoredTrack] {
         let isLikes = tracklist.tracklistType == Tracklist.TracklistType.likes.rawValue
         return (try? self.withReadDB(db) { db in
             try self.fetchStoredTracks(for: tracklist, isLikes: isLikes, db: db)
@@ -45,7 +48,7 @@ class TrackStorageManager {
         for tracklist: StoredTracklist,
         isLikes: Bool,
         db: Database
-    ) throws -> [Track] {
+    ) throws -> [StoredTrack] {
         let query = StoredTracklistTrack
             .where {
                 $0.tracklistMediaId.eq(tracklist.mediaId)
@@ -54,61 +57,67 @@ class TrackStorageManager {
             .join(StoredTrack.all) { tt, t in
                 tt.trackMediaId.eq(t.mediaId).and(tt.trackMediaSourceId.eq(t.mediaSourceId))
             }
-        let storedTracks: [StoredTrack]
         if isLikes {
-            storedTracks = try query.order { tt, _ in tt.sortOrder.desc() }.select { _, t in t }
+            return try query.order { tt, _ in tt.sortOrder.desc() }.select { _, t in t }
                 .fetchAll(db)
         } else {
-            storedTracks = try query.order { tt, _ in tt.sortOrder }.select { _, t in t }
+            return try query.order { tt, _ in tt.sortOrder }.select { _, t in t }
                 .fetchAll(db)
         }
-        return storedTracks.map { $0.toTrack() }
     }
 
     // MARK: - Writes
 
-    func upsertTrack(_ track: Track, db: Database? = nil) throws {
+    func upsertTracks(_ tracks: [Track], db: Database? = nil) throws {
+        guard !tracks.isEmpty else { return }
         try self.withWriteDB(db) { db in
-            let existing =
-                try StoredTrack
-                    .where {
-                        $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId))
-                    }
-                    .fetchOne(db)
-            if let existing {
-                let existingArtists = try ArtistStorageManager.shared.fetchStoredArtistsForTracks(
-                    [existing.toTrack()],
-                    db: db
-                ).map(\.1)
-                let existingAlbums = try TracklistStorageManager.shared.fetchStoredAlbumsForTracks(
-                    [existing.toTrack()],
-                    db: db
-                ).map(\.1)
-                if !existing.contentMatches(
-                    track,
-                    artists: existingArtists,
-                    albums: existingAlbums
-                ) {
-                    try self.updateTrackScalars(track, stored: existing, db: db)
-                    try self.replaceTrackArtists(track: existing, artists: track.artists, db: db)
-                    try self.replaceTrackAlbums(track: existing, albums: track.albums, db: db)
-                }
-            } else {
-                try StoredTrack.insert {
-                    StoredTrack.Draft(
-                        mediaId: track.mediaId,
-                        mediaSourceId: track.mediaSourceId,
-                        title: track.title,
-                        subtitle: track.subtitle,
-                        duration: track.duration,
-                        lowResArtworkUrl: track.lowResArtworkUrl,
-                        highResArtworkUrl: track.highResArtworkUrl,
-                        url: track.url,
-                        type: track.type.rawValue,
-                        metadata: track.metadata
-                    )
-                }.execute(db)
-                let inserted = StoredTrack(
+            let existingByKey = try self.fetchExistingTracksByKey(tracks, db: db)
+            let newTracks = try self.syncExistingTracks(
+                tracks,
+                existingByKey: existingByKey,
+                db: db
+            )
+            try self.insertNewTracks(newTracks, db: db)
+        }
+    }
+
+    private func fetchExistingTracksByKey(
+        _ tracks: [Track],
+        db: Database
+    ) throws -> [String: StoredTrack] {
+        let mediaIds = Array(Set(tracks.map(\.mediaId)))
+        let existingRows = try StoredTrack.where { $0.mediaId.in(mediaIds) }.fetchAll(db)
+        return Dictionary(
+            existingRows.map { (Self.key($0.mediaId, $0.mediaSourceId), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
+
+    private func syncExistingTracks(
+        _ tracks: [Track],
+        existingByKey: [String: StoredTrack],
+        db: Database
+    ) throws -> [Track] {
+        var toInsert: [Track] = []
+        var seenNewKeys = Set<String>()
+        for track in tracks {
+            let key = Self.key(track.mediaId, track.mediaSourceId)
+            if let stored = existingByKey[key] {
+                try self.updateTrackScalars(track, stored: stored, db: db)
+                try self.replaceTrackArtists(track: stored, artists: track.artists, db: db)
+                try self.replaceTrackAlbums(track: stored, albums: track.albums, db: db)
+            } else if seenNewKeys.insert(key).inserted {
+                toInsert.append(track)
+            }
+        }
+        return toInsert
+    }
+
+    private func insertNewTracks(_ tracks: [Track], db: Database) throws {
+        guard !tracks.isEmpty else { return }
+        try StoredTrack.insert {
+            tracks.map { track in
+                StoredTrack.Draft(
                     mediaId: track.mediaId,
                     mediaSourceId: track.mediaSourceId,
                     title: track.title,
@@ -120,18 +129,37 @@ class TrackStorageManager {
                     type: track.type.rawValue,
                     metadata: track.metadata
                 )
-                try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
-                try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
             }
+        }.execute(db)
+
+        for track in tracks {
+            let inserted = StoredTrack(
+                mediaId: track.mediaId,
+                mediaSourceId: track.mediaSourceId,
+                title: track.title,
+                subtitle: track.subtitle,
+                duration: track.duration,
+                lowResArtworkUrl: track.lowResArtworkUrl,
+                highResArtworkUrl: track.highResArtworkUrl,
+                url: track.url,
+                type: track.type.rawValue,
+                metadata: track.metadata
+            )
+            try self.replaceTrackArtists(track: inserted, artists: track.artists, db: db)
+            try self.replaceTrackAlbums(track: inserted, albums: track.albums, db: db)
         }
     }
 
-    func markSavedToLibrary(_ track: Track, db: Database? = nil) throws {
+    func markSavedToLibrary(_ tracks: [Track], db: Database? = nil) throws {
+        guard !tracks.isEmpty else { return }
         try self.withWriteDB(db) { db in
-            try StoredTrack.update { $0.isSavedToLibrary = true }
-                .where { $0.mediaId.eq(track.mediaId).and($0.mediaSourceId.eq(track.mediaSourceId))
-                }
-                .execute(db)
+            for (mediaSourceId, group) in Dictionary(grouping: tracks, by: \.mediaSourceId) {
+                try StoredTrack.update { $0.isSavedToLibrary = true }
+                    .where {
+                        $0.mediaSourceId.eq(mediaSourceId).and($0.mediaId.in(group.map(\.mediaId)))
+                    }
+                    .execute(db)
+            }
         }
     }
 

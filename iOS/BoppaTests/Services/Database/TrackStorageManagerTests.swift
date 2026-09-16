@@ -254,10 +254,10 @@ struct TrackStorageManagerTests {
     @Test func fetchLibraryTracksReturnsAllStoredTracks() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1"), db: db)
-            try TrackStorageManager.shared.markSavedToLibrary(self.makeTrack("t1"), db: db)
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t2"), db: db)
-            try TrackStorageManager.shared.markSavedToLibrary(self.makeTrack("t2"), db: db)
+            try TrackStorageManager.shared.upsertTracks([self.makeTrack("t1")], db: db)
+            try TrackStorageManager.shared.markSavedToLibrary([self.makeTrack("t1")], db: db)
+            try TrackStorageManager.shared.upsertTracks([self.makeTrack("t2")], db: db)
+            try TrackStorageManager.shared.markSavedToLibrary([self.makeTrack("t2")], db: db)
         }
 
         let tracks = try ctx.withDatabase { TrackStorageManager.shared.fetchLibraryTracks() }
@@ -279,7 +279,7 @@ struct TrackStorageManagerTests {
             artists: [self.makeArtist("a1", name: "Artist One")],
             albums: [self.makeAlbum("al1", title: "Album One")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let stored = try #require(try ctx.track("t1"))
         #expect(stored.title == "Song")
@@ -304,7 +304,7 @@ struct TrackStorageManagerTests {
             ],
             albums: [self.makeAlbum("al1", url: "https://example.com/albums/al1")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let artist = try #require(try ctx.artist("a1"))
         #expect(artist.url == "https://example.com/artists/a1")
@@ -315,21 +315,21 @@ struct TrackStorageManagerTests {
 
     // MARK: - upsertTrack: change detection
 
-    @Test func upsertTrackIdenticalContentSkipsReplacingJoins() throws {
+    @Test func upsertTracksAlwaysReplacesJoinsEvenWithIdenticalContent() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", artists: [self.makeArtist("a1", name: "Artist One")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         try ctx.write { db in
             try StoredTrackArtist.update { $0.sortOrder = "sentinel" }
                 .where { $0.trackMediaId.eq("t1").and($0.trackMediaSourceId.eq("src")) }
                 .execute(db)
         }
 
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let refs = try ctx.trackArtistRefs("t1")
         #expect(refs.count == 1)
-        #expect(refs.first?.sortOrder == "sentinel")
+        #expect(refs.first?.sortOrder != "sentinel")
     }
 
     @Test func upsertTrackChangedTitleUpdatesScalarsAndRegeneratesJoins() throws {
@@ -337,7 +337,7 @@ struct TrackStorageManagerTests {
         let original = self.makeTrack(
             "t1", title: "Old Title", artists: [self.makeArtist("a1", name: "Artist One")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(original, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([original], db: db) }
         try ctx.write { db in
             try StoredTrackArtist.update { $0.sortOrder = "sentinel" }
                 .where { $0.trackMediaId.eq("t1").and($0.trackMediaSourceId.eq("src")) }
@@ -347,7 +347,7 @@ struct TrackStorageManagerTests {
         let updated = self.makeTrack(
             "t1", title: "New Title", artists: [self.makeArtist("a1", name: "Artist One")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([updated], db: db) }
 
         let stored = try #require(try ctx.track("t1"))
         #expect(stored.title == "New Title")
@@ -355,49 +355,35 @@ struct TrackStorageManagerTests {
         #expect(refs.first?.sortOrder != "sentinel")
     }
 
-    @Test func upsertTrackToleratesMissingArtistURLOnResyncWithoutTriggeringReplace() throws {
+    @Test func upsertTrackPreservesArtistURLWhenResyncOmitsIt() throws {
         let ctx = try Context()
         let t1 = self.makeTrack(
             "t1",
             artists: [self.makeArtist("a1", name: "Artist One", url: "https://example.com/a1")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
-        try ctx.write { db in
-            try StoredTrackArtist.update { $0.sortOrder = "sentinel" }
-                .where { $0.trackMediaId.eq("t1").and($0.trackMediaSourceId.eq("src")) }
-                .execute(db)
-        }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let resynced = self.makeTrack(
             "t1", artists: [self.makeArtist("a1", name: "Artist One", url: nil)]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([resynced], db: db) }
 
-        let refs = try ctx.trackArtistRefs("t1")
-        #expect(refs.first?.sortOrder == "sentinel")
         let artist = try #require(try ctx.artist("a1"))
         #expect(artist.url == "https://example.com/a1")
     }
 
-    @Test func upsertTrackToleratesMissingAlbumURLOnResyncWithoutTriggeringReplace() throws {
+    @Test func upsertTrackPreservesAlbumURLWhenResyncOmitsIt() throws {
         let ctx = try Context()
         let t1 = self.makeTrack(
             "t1", albums: [self.makeAlbum("al1", url: "https://example.com/al1")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
-        try ctx.write { db in
-            try StoredTrackAlbum.update { $0.sortOrder = "sentinel" }
-                .where { $0.trackMediaId.eq("t1").and($0.trackMediaSourceId.eq("src")) }
-                .execute(db)
-        }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let resynced = self.makeTrack(
             "t1", albums: [self.makeAlbum("al1", url: nil)]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([resynced], db: db) }
 
-        let refs = try ctx.trackAlbumRefs("t1")
-        #expect(refs.first?.sortOrder == "sentinel")
         let album = try #require(try ctx.tracklist("al1"))
         #expect(album.url == "https://example.com/al1")
     }
@@ -407,14 +393,14 @@ struct TrackStorageManagerTests {
         let t1 = self.makeTrack(
             "t1", artists: [self.makeArtist("a1", name: "Artist One", url: nil)]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         #expect(try ctx.artist("a1")?.url == nil)
 
         let resynced = self.makeTrack(
             "t1",
             artists: [self.makeArtist("a1", name: "Artist One", url: "https://example.com/a1")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([resynced], db: db) }
 
         #expect(try ctx.artist("a1")?.url == "https://example.com/a1")
     }
@@ -422,13 +408,13 @@ struct TrackStorageManagerTests {
     @Test func upsertTrackDetectsAndPersistsAlbumURLWhenNewlyProvided() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1", url: nil)])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         #expect(try ctx.tracklist("al1")?.url == nil)
 
         let resynced = self.makeTrack(
             "t1", albums: [self.makeAlbum("al1", url: "https://example.com/al1")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(resynced, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([resynced], db: db) }
 
         #expect(try ctx.tracklist("al1")?.url == "https://example.com/al1")
     }
@@ -438,11 +424,11 @@ struct TrackStorageManagerTests {
     @Test func upsertTrackReplacingArtistDeletesOldUnsharedArtist() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", artists: [self.makeArtist("a1", name: "Old Artist")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         #expect(try ctx.artist("a1") != nil)
 
         let t1Updated = self.makeTrack("t1", artists: [self.makeArtist("a2", name: "New Artist")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1Updated], db: db) }
 
         #expect(try ctx.artist("a1") == nil)
         #expect(try ctx.artist("a2") != nil)
@@ -452,16 +438,16 @@ struct TrackStorageManagerTests {
         let ctx = try Context()
         let shared = self.makeArtist("a1", name: "Shared Artist")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", artists: [shared]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", artists: [shared])], db: db
             )
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t2", artists: [shared]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t2", artists: [shared])], db: db
             )
         }
 
         let t1Updated = self.makeTrack("t1", artists: [])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1Updated], db: db) }
 
         #expect(try ctx.artist("a1") != nil)
         #expect(try ctx.trackArtistRefs("t1").isEmpty)
@@ -479,13 +465,13 @@ struct TrackStorageManagerTests {
                 ),
             ]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let t1Updated = self.makeTrack(
             "t1", title: "Title B",
             artists: [self.makeArtist("a1", name: "", lowResArtworkUrl: nil, url: nil)]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1Updated], db: db) }
 
         let artist = try #require(try ctx.artist("a1"))
         #expect(artist.name == "Real Name")
@@ -498,11 +484,11 @@ struct TrackStorageManagerTests {
     @Test func upsertTrackReplacingAlbumDeletesOldUnsharedStubAlbum() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1", title: "Old Album")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         #expect(try ctx.tracklist("al1") != nil)
 
         let t1Updated = self.makeTrack("t1", albums: [self.makeAlbum("al2", title: "New Album")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1Updated], db: db) }
 
         #expect(try ctx.tracklist("al1") == nil)
         #expect(try ctx.tracklist("al2") != nil)
@@ -511,7 +497,7 @@ struct TrackStorageManagerTests {
     @Test func upsertTrackReplacingAlbumKeepsAlbumIfSavedToLibrary() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1", title: "Saved Album")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         try ctx.write { db in
             try StoredTracklist.update { $0.isSavedToLibrary = true }
                 .where { $0.mediaId.eq("al1").and($0.mediaSourceId.eq("src")) }
@@ -519,7 +505,7 @@ struct TrackStorageManagerTests {
         }
 
         let t1Updated = self.makeTrack("t1", albums: [])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1Updated], db: db) }
 
         #expect(try ctx.tracklist("al1") != nil)
     }
@@ -527,7 +513,7 @@ struct TrackStorageManagerTests {
     @Test func upsertTrackNewAlbumStubDefaultsToNotSavedToLibrary() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let album = try #require(try ctx.tracklist("al1"))
         #expect(album.isSavedToLibrary == false)
@@ -541,14 +527,14 @@ struct TrackStorageManagerTests {
                 self.makeAlbum("al1", title: "Real Album", url: "https://x/al1"),
             ]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let t1Updated = self.makeTrack(
             "t1",
             title: "New Track Title",
             albums: [self.makeAlbum("al1", title: "", url: nil)]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1Updated, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1Updated], db: db) }
 
         let album = try #require(try ctx.tracklist("al1"))
         #expect(album.title == "Real Album")
@@ -560,7 +546,7 @@ struct TrackStorageManagerTests {
         let t1 = self.makeTrack("t1", albums: [self.makeAlbum("al1", type: .artistSongs)])
 
         #expect(throws: (any Error).self) {
-            try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+            try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         }
     }
 
@@ -574,7 +560,7 @@ struct TrackStorageManagerTests {
             self.makeArtist("a3", name: "Third"),
         ]
         let t1 = self.makeTrack("t1", artists: artists)
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let stored = try #require(try ctx.track("t1"))
         let loaded = try ctx.read { db in
@@ -593,7 +579,7 @@ struct TrackStorageManagerTests {
             self.makeAlbum("al1", title: "First"), self.makeAlbum("al2", title: "Second"),
         ]
         let t1 = self.makeTrack("t1", albums: albums)
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let stored = try #require(try ctx.track("t1"))
         let loaded = try ctx.read { db in
@@ -609,7 +595,7 @@ struct TrackStorageManagerTests {
     @Test func replaceTrackArtistsWithEmptyArrayRemovesAllAndOrphansUnshared() throws {
         let ctx = try Context()
         let t1 = self.makeTrack("t1", artists: [self.makeArtist("a1", name: "Solo Artist")])
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
 
         let stored = try #require(try ctx.track("t1"))
         try ctx.write { db in
@@ -666,7 +652,7 @@ struct TrackStorageManagerTests {
         let t1 = self.makeTrack(
             "t1", artists: [self.makeArtist("a1")], albums: [self.makeAlbum("al1")]
         )
-        try ctx.write { db in try TrackStorageManager.shared.upsertTrack(t1, db: db) }
+        try ctx.write { db in try TrackStorageManager.shared.upsertTracks([t1], db: db) }
         try ctx.write { db in
             try TrackStorageManager.shared.deleteTrackStubsIfOrphaned([t1], db: db)
         }
@@ -680,11 +666,11 @@ struct TrackStorageManagerTests {
         let ctx = try Context()
         let shared = self.makeArtist("a1")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", artists: [shared]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", artists: [shared])], db: db
             )
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t2", artists: [shared]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t2", artists: [shared])], db: db
             )
         }
 
@@ -702,11 +688,11 @@ struct TrackStorageManagerTests {
         let ctx = try Context()
         let shared = self.makeAlbum("al1")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", albums: [shared]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", albums: [shared])], db: db
             )
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t2", albums: [shared]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t2", albums: [shared])], db: db
             )
         }
 
@@ -725,8 +711,8 @@ struct TrackStorageManagerTests {
         let t1 = self.makeTrack("t1", artists: [self.makeArtist("a1")])
         let t2 = self.makeTrack("t2", artists: [self.makeArtist("a2")])
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(t1, db: db)
-            try TrackStorageManager.shared.upsertTrack(t2, db: db)
+            try TrackStorageManager.shared.upsertTracks([t1], db: db)
+            try TrackStorageManager.shared.upsertTracks([t2], db: db)
         }
 
         try ctx.write { db in
@@ -752,8 +738,8 @@ struct TrackStorageManagerTests {
     ) throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", albums: [self.makeAlbum("al1")]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", albums: [self.makeAlbum("al1")])], db: db
             )
         }
         try ctx.write { db in
@@ -778,7 +764,7 @@ struct TrackStorageManagerTests {
     @Test func fetchStoredArtistsForTracksReturnsEmptyForTrackWithNoArtists() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1"), db: db)
+            try TrackStorageManager.shared.upsertTracks([self.makeTrack("t1")], db: db)
         }
         let stored = try #require(try ctx.track("t1"))
         let artists = try ctx.read { db in
@@ -790,19 +776,19 @@ struct TrackStorageManagerTests {
     @Test func fetchStoredArtistsForTracksBatchesAndScopesByMediaSource() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", artists: [self.makeArtist("a1", name: "Track One Artist")]),
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", artists: [self.makeArtist("a1", name: "Track One Artist")])],
                 db: db
             )
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack(
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack(
                     "t1", source: "other-src",
                     artists: [self.makeArtist(
                         "a2",
                         source: "other-src",
                         name: "Other Source Artist"
                     )]
-                ),
+                )],
                 db: db
             )
         }
@@ -828,7 +814,7 @@ struct TrackStorageManagerTests {
     @Test func fetchStoredAlbumsForTracksReturnsEmptyForTrackWithNoAlbums() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1"), db: db)
+            try TrackStorageManager.shared.upsertTracks([self.makeTrack("t1")], db: db)
         }
         let stored = try #require(try ctx.track("t1"))
         let albums = try ctx.read { db in
@@ -840,177 +826,13 @@ struct TrackStorageManagerTests {
         #expect(albums.isEmpty)
     }
 
-    // MARK: - resolveComposedArtwork
-
-    @Test func resolveComposedArtworkReturnsEmptyForTracklistWithNoTracks() throws {
-        let ctx = try Context()
-        let playlist = try ctx
-            .withDatabase { try PlaylistStorageManager.shared.createPlaylist(title: "Empty") }
-
-        let artwork = try ctx.withDatabase {
-            TracklistStorageManager.shared.resolveComposedArtwork(
-                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
-            )
-        }
-
-        #expect(artwork.isEmpty)
-    }
-
-    @Test func resolveComposedArtworkReturnsEmptyWhenNoTracksHaveArtwork() throws {
-        let ctx = try Context()
-        let playlist = try ctx
-            .withDatabase { try PlaylistStorageManager.shared.createPlaylist(title: "Mix") }
-        try ctx.withDatabase {
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t1"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t2"),
-                toPlaylist: playlist.mediaId
-            )
-        }
-
-        let artwork = try ctx.withDatabase {
-            TracklistStorageManager.shared.resolveComposedArtwork(
-                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
-            )
-        }
-
-        #expect(artwork.isEmpty)
-    }
-
-    @Test func resolveComposedArtworkCollectsUpToFourDistinctURLsInTrackOrder() throws {
-        let ctx = try Context()
-        let playlist = try ctx
-            .withDatabase { try PlaylistStorageManager.shared.createPlaylist(title: "Mix") }
-        try ctx.withDatabase {
-            for index in 1 ... 5 {
-                try PlaylistStorageManager.shared.addTrackToPlaylist(
-                    self.makeTrack("t\(index)", highResArtworkUrl: "https://x/\(index).png"),
-                    toPlaylist: playlist.mediaId
-                )
-            }
-        }
-
-        let artwork = try ctx.withDatabase {
-            TracklistStorageManager.shared.resolveComposedArtwork(
-                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
-            )
-        }
-
-        #expect(artwork.map(\.highResUrl) == [
-            "https://x/1.png", "https://x/2.png", "https://x/3.png", "https://x/4.png",
-        ])
-    }
-
-    @Test func resolveComposedArtworkSkipsDuplicateArtworkAcrossTracks() throws {
-        let ctx = try Context()
-        let playlist = try ctx
-            .withDatabase { try PlaylistStorageManager.shared.createPlaylist(title: "Mix") }
-        try ctx.withDatabase {
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t2", highResArtworkUrl: "https://x/a.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t3", highResArtworkUrl: "https://x/b.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t4", highResArtworkUrl: "https://x/c.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t5", highResArtworkUrl: "https://x/d.png"),
-                toPlaylist: playlist.mediaId
-            )
-        }
-
-        let artwork = try ctx.withDatabase {
-            TracklistStorageManager.shared.resolveComposedArtwork(
-                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
-            )
-        }
-
-        #expect(artwork.map(\.highResUrl) == [
-            "https://x/a.png", "https://x/b.png", "https://x/c.png", "https://x/d.png",
-        ])
-    }
-
-    @Test func resolveComposedArtworkReturnsFewerThanFourWhenTracklistLacksThatManyDistinctURLs(
-    ) throws {
-        let ctx = try Context()
-        let playlist = try ctx
-            .withDatabase { try PlaylistStorageManager.shared.createPlaylist(title: "Mix") }
-        try ctx.withDatabase {
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t1", highResArtworkUrl: "https://x/a.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t2", highResArtworkUrl: "https://x/b.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t3"),
-                toPlaylist: playlist.mediaId
-            )
-        }
-
-        let artwork = try ctx.withDatabase {
-            TracklistStorageManager.shared.resolveComposedArtwork(
-                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
-            )
-        }
-
-        #expect(artwork.map(\.highResUrl) == ["https://x/a.png", "https://x/b.png"])
-    }
-
-    @Test func resolveComposedArtworkScansBeyondInitialBatchWhenNeeded() throws {
-        let ctx = try Context()
-        let playlist = try ctx
-            .withDatabase { try PlaylistStorageManager.shared.createPlaylist(title: "Long Mix") }
-        try ctx.withDatabase {
-            for index in 1 ... 8 {
-                let art = index.isMultiple(of: 2) ? "https://x/even.png" : "https://x/odd.png"
-                try PlaylistStorageManager.shared.addTrackToPlaylist(
-                    self.makeTrack("t\(index)", highResArtworkUrl: art),
-                    toPlaylist: playlist.mediaId
-                )
-            }
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t9", highResArtworkUrl: "https://x/c.png"),
-                toPlaylist: playlist.mediaId
-            )
-            try PlaylistStorageManager.shared.addTrackToPlaylist(
-                self.makeTrack("t10", highResArtworkUrl: "https://x/d.png"),
-                toPlaylist: playlist.mediaId
-            )
-        }
-
-        let artwork = try ctx.withDatabase {
-            TracklistStorageManager.shared.resolveComposedArtwork(
-                mediaId: playlist.mediaId, mediaSourceId: "boppa.app"
-            )
-        }
-
-        #expect(artwork.map(\.highResUrl) == [
-            "https://x/odd.png", "https://x/even.png", "https://x/c.png", "https://x/d.png",
-        ])
-    }
-
     // MARK: - Recents: tracklists
 
     @Test func unmarkTracklistRecentlyViewedDeletesUnsavedUnreferencedStub() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", albums: [self.makeAlbum("al1")]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", albums: [self.makeAlbum("al1")])], db: db
             )
         }
         try ctx.write { db in
@@ -1036,8 +858,8 @@ struct TrackStorageManagerTests {
     @Test func unmarkTracklistRecentlyViewedKeepsSavedToLibraryAlbum() throws {
         let ctx = try Context()
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(
-                self.makeTrack("t1", albums: [self.makeAlbum("al1")]), db: db
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", albums: [self.makeAlbum("al1")])], db: db
             )
         }
         try ctx.write { db in

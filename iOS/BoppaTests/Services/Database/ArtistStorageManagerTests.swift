@@ -288,7 +288,10 @@ struct ArtistStorageManagerTests {
         let ctx = try Context()
         let a1 = self.makeArtist("a1")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1", artists: [a1]), db: db)
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", artists: [a1])],
+                db: db
+            )
         }
         try ctx.withDatabase { try ArtistStorageManager.shared.saveArtistToLibrary(a1) }
 
@@ -378,7 +381,10 @@ struct ArtistStorageManagerTests {
         let ctx = try Context()
         let a1 = self.makeArtist("a1")
         try ctx.write { db in
-            try TrackStorageManager.shared.upsertTrack(self.makeTrack("t1", artists: [a1]), db: db)
+            try TrackStorageManager.shared.upsertTracks(
+                [self.makeTrack("t1", artists: [a1])],
+                db: db
+            )
         }
 
         try ctx.write { db in

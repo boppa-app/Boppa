@@ -125,7 +125,10 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
+                    storedTracklist: TracklistStorageManager.shared
+                        .findStoredTracklists([tracklist])[
+                            tracklist.tracklistKey
+                        ]
                 )))
                 self.pendingTracklist = nil
             }
@@ -151,7 +154,10 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
+                    storedTracklist: TracklistStorageManager.shared
+                        .findStoredTracklists([tracklist])[
+                            tracklist.tracklistKey
+                        ]
                 )))
                 self.externalPendingTracklist = nil
             }
@@ -289,7 +295,10 @@ struct SearchView: View {
                     highResArtworkUrl: tracklist.highResArtworkUrl,
 
                     tracklistType: tracklist.tracklistType,
-                    storedTracklist: TracklistStorageManager.shared.findStoredTracklist(tracklist)
+                    storedTracklist: TracklistStorageManager.shared
+                        .findStoredTracklists([tracklist])[
+                            tracklist.tracklistKey
+                        ]
                 )))
             },
             onPopRecentlyPlayed: {
@@ -425,7 +434,7 @@ struct SearchView: View {
 
                                     tracklistType: .album,
                                     storedTracklist: TracklistStorageManager.shared
-                                        .findStoredTracklist(tracklist)
+                                        .findStoredTracklists([tracklist])[tracklist.tracklistKey]
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)
@@ -488,7 +497,7 @@ struct SearchView: View {
 
                                     tracklistType: .playlist,
                                     storedTracklist: TracklistStorageManager.shared
-                                        .findStoredTracklist(tracklist)
+                                        .findStoredTracklists([tracklist])[tracklist.tracklistKey]
                                 )))
                             } label: {
                                 TracklistRow(tracklist: tracklist, showChevron: true)

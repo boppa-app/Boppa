@@ -180,7 +180,7 @@ struct ArtistDetailView: View {
                                 highResArtworkUrl: tracklist.highResArtworkUrl,
                                 tracklistType: .album,
                                 storedTracklist: TracklistStorageManager.shared
-                                    .findStoredTracklist(tracklist)
+                                    .findStoredTracklists([tracklist])[tracklist.tracklistKey]
                             ))) { EmptyView() }
                                 .opacity(0)
                         )
@@ -282,7 +282,7 @@ struct ArtistDetailView: View {
                                 highResArtworkUrl: tracklist.highResArtworkUrl,
                                 tracklistType: .playlist,
                                 storedTracklist: TracklistStorageManager.shared
-                                    .findStoredTracklist(tracklist)
+                                    .findStoredTracklists([tracklist])[tracklist.tracklistKey]
                             ))) { EmptyView() }
                                 .opacity(0)
                         )

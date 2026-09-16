@@ -156,7 +156,7 @@ class RecentsStorageManager {
                     }
                     .fetchOne(db)
             if existing == nil {
-                try TrackStorageManager.shared.upsertTrack(track, db: db)
+                try TrackStorageManager.shared.upsertTracks([track], db: db)
             }
             try StoredTrack.update {
                 $0.isRecent = true

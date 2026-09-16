@@ -57,7 +57,7 @@ class TracklistViewModel {
                         return
                     }
                     if let stored = TracklistStorageManager.shared
-                        .findStoredTracklist(self.tracklist)
+                        .findStoredTracklists([self.tracklist])[self.tracklist.tracklistKey]
                     {
                         self.loadFromCache(storedTracklist: stored)
                     }
@@ -139,7 +139,8 @@ class TracklistViewModel {
     func load() {
         let stored =
             self.tracklist.storedTracklist
-                ?? TracklistStorageManager.shared.findStoredTracklist(self.tracklist)
+                ?? TracklistStorageManager.shared
+                .findStoredTracklists([self.tracklist])[self.tracklist.tracklistKey]
 
         if let stored, stored.isSavedToLibrary {
             self.tracklist = Tracklist(storedTracklist: stored)
@@ -238,7 +239,8 @@ class TracklistViewModel {
     }
 
     private func loadFromCache(storedTracklist: StoredTracklist) {
-        let loaded = TrackStorageManager.shared.fetchTracksForTracklist(storedTracklist)
+        let loaded = TrackStorageManager.shared.fetchStoredTracksForTracklist(storedTracklist)
+            .map { $0.toTrack() }
         self.unsortedTracks = self.stabilizingIds(for: loaded)
         self.tracks = self.unsortedTracks
         self.isPinned = storedTracklist.isPinned
