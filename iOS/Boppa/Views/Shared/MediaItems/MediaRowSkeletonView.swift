@@ -86,8 +86,12 @@ enum MediaRowSkeletonStyle {
 struct MediaRowSkeletonList: View {
     let style: MediaRowSkeletonStyle
     var topInset: CGFloat = 0
+    /// Gates the shimmer. The overlay keeps this view mounted while idle, so without this its
+    /// TimelineView would redraw at display rate behind a fully transparent layer.
+    var isAnimating = true
 
-    static let fadeDuration: TimeInterval = 0.15
+    static let fadeDuration: TimeInterval = 0.25
+    static let minimumSkeletonDuration: TimeInterval = 0.5
 
     /// Width of the travelling highlight, as a fraction of the list's width. The gradient ramps
     /// from clear to peak across half of this, so widening it lengthens the fade. It also
@@ -112,13 +116,15 @@ struct MediaRowSkeletonList: View {
             bars
                 .overlay {
                     // Deliberately not gated on Reduce Motion
-                    TimelineView(.animation) { timeline in
-                        self.shimmer(
-                            listWidth: proxy.size.width,
-                            phase: Self.shimmerPhase(at: timeline.date)
-                        )
+                    if self.isAnimating {
+                        TimelineView(.animation) { timeline in
+                            self.shimmer(
+                                listWidth: proxy.size.width,
+                                phase: Self.shimmerPhase(at: timeline.date)
+                            )
+                        }
+                        .mask { bars }
                     }
-                    .mask { bars }
                 }
         }
         .allowsHitTesting(false)
@@ -204,5 +210,102 @@ struct MediaRowSkeletonList: View {
         RoundedRectangle(cornerRadius: height / 2, style: .continuous)
             .fill(Color(.systemGray6))
             .frame(width: width, height: height)
+    }
+}
+
+/// Sequences a mutation behind the skeleton: raise it, then apply the change once it is opaque.
+/// Lowering immediately after is fine — the overlay holds the skeleton for its minimum duration.
+@MainActor
+@Observable
+final class MediaRowSkeletonTransition {
+    private(set) var isActive = false
+
+    func doWorkWithTransition(_ work: @escaping () -> Void) {
+        Task { @MainActor in
+            self.isActive = true
+            // Fade in
+            try? await Task.sleep(for: .seconds(MediaRowSkeletonList.fadeDuration))
+            // Do work
+            work()
+            self.isActive = false
+        }
+    }
+}
+
+private struct MediaRowSkeletonOverlay: ViewModifier {
+    let isActive: Bool
+    let style: MediaRowSkeletonStyle
+    let topInset: CGFloat
+    let bottomInset: CGFloat
+
+    @State private var isVisible = false
+    @State private var shownAt: Date?
+    @State private var pendingHide: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+        ZStack(alignment: .top) {
+            content
+
+            EdgeFadeView(topFadeHeight: 0, bottomInset: self.bottomInset) {
+                MediaRowSkeletonList(
+                    style: self.style,
+                    topInset: self.topInset,
+                    isAnimating: self.isVisible
+                )
+            }
+            .background(Color.black)
+            .opacity(self.isVisible ? 1 : 0)
+            .allowsHitTesting(false)
+            // Scoped to this layer and never to content: an animation covering the list would
+            // pick up its row changes too and slide them into place on reveal.
+            .animation(
+                .easeInOut(duration: MediaRowSkeletonList.fadeDuration),
+                value: self.isVisible
+            )
+        }
+        .onChange(of: self.isActive) { _, isActive in
+            isActive ? self.show() : self.scheduleHideAfterMinimumSkeletonDuration()
+        }
+    }
+
+    private func show() {
+        self.pendingHide?.cancel()
+        self.pendingHide = nil
+        self.shownAt = Date()
+        self.isVisible = true
+    }
+
+    private func scheduleHideAfterMinimumSkeletonDuration() {
+        guard self.isVisible else { return }
+
+        let shownFor = self.shownAt.map { Date().timeIntervalSince($0) }
+        let remaining = MediaRowSkeletonList.minimumSkeletonDuration - (shownFor ?? .infinity)
+        guard remaining > 0 else {
+            self.isVisible = false
+            return
+        }
+
+        self.pendingHide = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(remaining))
+            guard !Task.isCancelled else { return }
+            self.isVisible = false
+        }
+    }
+}
+
+extension View {
+    /// Cross-fades between this content and a skeleton screen drived via isActive
+    func mediaRowSkeleton(
+        isActive: Bool,
+        style: MediaRowSkeletonStyle,
+        topInset: CGFloat = 0,
+        bottomInset: CGFloat = 0
+    ) -> some View {
+        self.modifier(MediaRowSkeletonOverlay(
+            isActive: isActive,
+            style: style,
+            topInset: topInset,
+            bottomInset: bottomInset
+        ))
     }
 }

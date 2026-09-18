@@ -13,8 +13,7 @@ struct TracklistListView: View {
     @State private var showNewPlaylistAlert = false
     @State private var newPlaylistName = ""
     @State private var headerFadeVisibility: CGFloat = 0
-    @State private var pendingSortMode: SortMode?
-    @State private var isShowingSortSkeleton = false
+    @State private var sortTransition = MediaRowSkeletonTransition()
 
     let artist: Artist?
     let mediaSource: StoredMediaSource?
@@ -57,17 +56,12 @@ struct TracklistListView: View {
     var body: some View {
         ZStack(alignment: .top) {
             self.content
-                .opacity(self.isShowingSortSkeleton ? 0 : 1)
-
-            if self.isShowingSortSkeleton {
-                EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
-                    MediaRowSkeletonList(
-                        style: .tracklist,
-                        topInset: DetailHeaderMetrics.height
-                    )
-                }
-                .transition(.opacity)
-            }
+                .mediaRowSkeleton(
+                    isActive: self.isShowingSkeleton,
+                    style: .tracklist,
+                    topInset: DetailHeaderMetrics.height,
+                    bottomInset: self.scrollFadeBottomInset
+                )
 
             EdgeGradientFade(
                 edge: .top,
@@ -157,12 +151,14 @@ struct TracklistListView: View {
             .tint(.purp)
             .disabled(self.newPlaylistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .sheet(isPresented: self.$showActionSheet, onDismiss: self.finishSortTransition) {
+        .sheet(isPresented: self.$showActionSheet) {
             TracklistListActionSheet(
                 type: self.type,
                 sortMode: self.viewModel.sortMode,
                 onSortSelected: { mode in
-                    self.beginSortTransition(to: mode)
+                    self.sortTransition.doWorkWithTransition {
+                        self.viewModel.setSortMode(mode, type: self.type)
+                    }
                 },
                 onEdit: {
                     self.viewModel.enterEditMode(type: self.type)
@@ -217,32 +213,10 @@ struct TracklistListView: View {
         }
     }
 
-    private func beginSortTransition(to mode: SortMode) {
-        self.pendingSortMode = mode
-
-        withAnimation(.easeOut(duration: MediaRowSkeletonList.fadeDuration)) {
-            self.isShowingSortSkeleton = true
-        }
-
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(MediaRowSkeletonList.fadeDuration))
-            self.applySortModeIfPending()
-        }
-    }
-
-    private func finishSortTransition() {
-        guard self.isShowingSortSkeleton else { return }
-
-        self.applySortModeIfPending()
-        withAnimation(.easeIn(duration: MediaRowSkeletonList.fadeDuration)) {
-            self.isShowingSortSkeleton = false
-        }
-    }
-
-    private func applySortModeIfPending() {
-        guard let mode = self.pendingSortMode else { return }
-        self.pendingSortMode = nil
-        self.viewModel.setSortMode(mode, type: self.type)
+    private var isShowingSkeleton: Bool {
+        guard self.viewModel.errorMessage == nil else { return false }
+        return self.sortTransition.isActive
+            || (self.viewModel.tracklists.isEmpty && self.viewModel.isLoading)
     }
 
     private var content: some View {
@@ -250,11 +224,6 @@ struct TracklistListView: View {
             if let errorMessage = self.viewModel.errorMessage {
                 self.errorView(message: errorMessage)
                     .padding(.top, DetailHeaderMetrics.height)
-            } else if self.viewModel.tracklists.isEmpty && self.viewModel.isLoading {
-                SpinnerView(tint: Color(.systemGray), lineWidth: 4)
-                    .frame(width: 40, height: 40)
-                    .padding(.top, DetailHeaderMetrics.height)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.tracklists.isEmpty {
                 self.emptyState
                     .padding(.top, DetailHeaderMetrics.height)
