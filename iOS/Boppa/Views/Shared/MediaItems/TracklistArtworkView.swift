@@ -67,7 +67,7 @@ private struct ComposedTracklistArtworkView: View {
     @State private var refreshTick = 0
 
     private var resolvedCornerRadius: CGFloat {
-        self.cornerRadius ?? 6
+        self.cornerRadius ?? ArtworkView.defaultCornerRadius
     }
 
     private var taskId: String {
@@ -148,7 +148,7 @@ private struct QuadrantOrFallbackArtworkView: View {
     @State private var tileResults: [Int: Bool] = [:]
 
     private var resolvedCornerRadius: CGFloat {
-        self.cornerRadius ?? 6
+        self.cornerRadius ?? ArtworkView.defaultCornerRadius
     }
 
     private var allLoaded: Bool {

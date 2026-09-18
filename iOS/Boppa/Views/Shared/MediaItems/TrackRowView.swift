@@ -24,8 +24,16 @@ struct TrackRow: View {
     @AppStorage(MediaSourceSeparatorVisibility.storageKey) private var separatorVisibilityRaw =
         MediaSourceSeparatorVisibility.defaultValue.rawValue
 
+    static let regularArtworkSize: CGFloat = 48
+    static let regularLeadingPadding: CGFloat = 18
+    static let regularTrailingPadding: CGFloat = 4
+    static let regularVerticalPadding: CGFloat = 10
+    static let regularHorizontalSpacing: CGFloat = 12
+    static let regularTextSpacing: CGFloat = 4
+    static let trailingControlWidth: CGFloat = 44
+
     private var artworkSize: CGFloat {
-        self.style == .compact ? 36 : 48
+        self.style == .compact ? 36 : Self.regularArtworkSize
     }
 
     private func mediaSourceColor(_ info: MediaSourceRevealInfo?) -> Color? {
@@ -48,14 +56,20 @@ struct TrackRow: View {
     }
 
     private var leftPadding: CGFloat {
-        self.style == .compact ? 10 : 18
+        self.style == .compact ? 10 : Self.regularLeadingPadding
     }
 
     private var rightPadding: CGFloat {
-        self.style == .compact ? 10 : 4
+        self.style == .compact ? 10 : Self.regularTrailingPadding
     }
 
-    static let regularVerticalPadding: CGFloat = 10
+    private var horizontalSpacing: CGFloat {
+        self.style == .compact ? 10 : Self.regularHorizontalSpacing
+    }
+
+    private var textSpacing: CGFloat {
+        self.style == .compact ? 2 : Self.regularTextSpacing
+    }
 
     private var verticalPadding: CGFloat {
         self.style == .compact ? 6 : Self.regularVerticalPadding
@@ -65,7 +79,7 @@ struct TrackRow: View {
         let revealInfo = self.revealInfo
         let mediaSourceColor = self.mediaSourceColor(revealInfo)
 
-        HStack(spacing: self.style == .compact ? 10 : 12) {
+        HStack(spacing: self.horizontalSpacing) {
             MediaSourceRevealArtwork(
                 size: self.artworkSize,
                 borderColor: mediaSourceColor,
@@ -85,7 +99,7 @@ struct TrackRow: View {
                     .fill(mediaSourceColor)
                     .frame(width: 2, height: self.artworkSize * 0.7)
             }
-            VStack(alignment: .leading, spacing: self.style == .compact ? 2 : 4) {
+            VStack(alignment: .leading, spacing: self.textSpacing) {
                 Text(self.track.title)
                     .font(self.titleFont)
                     .fontWeight(self.isSelected ? .bold : .regular)
@@ -110,7 +124,10 @@ struct TrackRow: View {
                     if self.style == .regular {
                         Image(systemName: "ellipsis")
                             .foregroundColor(Color(.systemGray4))
-                            .frame(width: 44, height: 44)
+                            .frame(
+                                width: Self.trailingControlWidth,
+                                height: Self.trailingControlWidth
+                            )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 self.onEllipsisTap?()
@@ -122,7 +139,7 @@ struct TrackRow: View {
                 } else if let onDeleteTap = self.onDeleteTap, !self.isDeleteDisabled {
                     Image(systemName: "xmark")
                         .foregroundColor(.purp)
-                        .frame(width: 44, height: 44)
+                        .frame(width: Self.trailingControlWidth, height: Self.trailingControlWidth)
                         .contentShape(Rectangle())
                         .onTapGesture { onDeleteTap() }
                         .accessibilityLabel("Remove from queue")
@@ -131,7 +148,10 @@ struct TrackRow: View {
                     if self.isSelected && self.isLoading {
                         SpinnerView(tint: .purp, lineWidth: 3)
                             .frame(width: 20, height: 20)
-                            .frame(width: 44, height: 44)
+                            .frame(
+                                width: Self.trailingControlWidth,
+                                height: Self.trailingControlWidth
+                            )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 self.onEllipsisTap?()
@@ -149,7 +169,7 @@ struct TrackRow: View {
                                     .background(Color.black)
                             }
                         }
-                        .frame(width: 44, height: 44)
+                        .frame(width: Self.trailingControlWidth, height: Self.trailingControlWidth)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             self.onEllipsisTap?()
@@ -160,7 +180,10 @@ struct TrackRow: View {
                     } else {
                         Image(systemName: "ellipsis")
                             .foregroundColor(Color(.systemGray))
-                            .frame(width: 44, height: 44)
+                            .frame(
+                                width: Self.trailingControlWidth,
+                                height: Self.trailingControlWidth
+                            )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 self.onEllipsisTap?()

@@ -13,11 +13,13 @@ struct ArtworkView: View {
     var placeholderBackground: Color? = nil
     var onLoadStateChange: ((Bool) -> Void)? = nil
 
+    static let defaultCornerRadius: CGFloat = 6
+
     private var resolvedCornerRadius: CGFloat {
         if self.isCircular {
             return self.size / 2
         }
-        return self.cornerRadius ?? 6
+        return self.cornerRadius ?? Self.defaultCornerRadius
     }
 
     private var candidateURLs: [URL] {

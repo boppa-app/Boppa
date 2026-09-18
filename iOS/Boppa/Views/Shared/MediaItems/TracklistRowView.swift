@@ -1,7 +1,14 @@
 import SwiftUI
 
 struct TracklistRow: View {
+    static let defaultArtworkSize: CGFloat = 72
+    static let horizontalPadding: CGFloat = 16
+    static let horizontalSpacing: CGFloat = 12
+    static let textSpacing: CGFloat = 4
     static let verticalPadding: CGFloat = 12
+    /// Width reserved for the trailing chevron. Applied with trailing alignment, so the glyph
+    /// stays put and the leading Spacer absorbs the difference.
+    static let chevronWidth: CGFloat = 24
 
     let tracklist: Tracklist
     var showMediaSourceIcon: Bool = false
@@ -9,7 +16,7 @@ struct TracklistRow: View {
     var showMediaSourceReveal: Bool = false
     var showChevron: Bool = false
     var isMediaSourceEnabled: Bool = true
-    var artworkSize: CGFloat = 72
+    var artworkSize: CGFloat = TracklistRow.defaultArtworkSize
     var preferLowResArtwork: Bool? = nil
     var placeholderBackground: Color? = nil
     var mediaSourceRevealBackgroundColor: Color = .init(.black)
@@ -67,7 +74,7 @@ struct TracklistRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Self.horizontalSpacing) {
             TracklistArtworkView(
                 tracklist: self.tracklist,
                 preferLowRes: self.resolvedPreferLowResArtwork,
@@ -83,7 +90,7 @@ struct TracklistRow: View {
                     .fill(mediaSourceColor)
                     .frame(width: 2, height: self.artworkSize * 0.7)
             }
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Self.textSpacing) {
                 HStack(spacing: 6) {
                     Text(self.tracklist.title)
                         .font(.headline)
@@ -102,9 +109,10 @@ struct TracklistRow: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(.systemGray))
+                    .frame(width: Self.chevronWidth, alignment: .trailing)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Self.horizontalPadding)
         .padding(.vertical, Self.verticalPadding)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

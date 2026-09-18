@@ -23,7 +23,7 @@ struct MediaSourceRevealArtwork<Content: View>: View {
     }
 
     private var resolvedCornerRadius: CGFloat {
-        self.cornerRadius ?? 6
+        self.cornerRadius ?? ArtworkView.defaultCornerRadius
     }
 
     @ViewBuilder
