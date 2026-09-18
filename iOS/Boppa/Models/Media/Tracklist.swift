@@ -145,13 +145,3 @@ struct Tracklist: Identifiable, Equatable, Hashable {
         )
     }
 }
-
-extension Tracklist: FuzzySearchable {
-    var fuzzyTitle: String {
-        self.title
-    }
-
-    var fuzzySubtitle: String? {
-        self.subtitle
-    }
-}

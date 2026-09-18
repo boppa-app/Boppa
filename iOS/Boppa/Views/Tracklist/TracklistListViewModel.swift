@@ -24,8 +24,6 @@ class TracklistListViewModel {
     var pageLoadId = 0
     var mediaSourceRevealInfoById: [String: MediaSourceRevealInfo] = [:]
 
-    let searchHandler = FuzzySearchHandler<Tracklist>()
-
     private var fetchTask: Task<Void, Never>?
     private var didLoad = false
     private var libraryType: TracklistListType?
@@ -77,15 +75,7 @@ class TracklistListViewModel {
         if self.isEditing {
             return self.tracklists
         }
-        let items = self.searchHandler.displayItems(from: self.tracklists)
-        if self.searchHandler.filteredItems != nil {
-            return items
-        }
-        return self.applySorting(items)
-    }
-
-    func updateSearch(_ text: String) {
-        self.searchHandler.updateSearch(text, items: self.tracklists)
+        return self.applySorting(self.tracklists)
     }
 
     func setSortMode(_ mode: SortMode, type: TracklistListType) {

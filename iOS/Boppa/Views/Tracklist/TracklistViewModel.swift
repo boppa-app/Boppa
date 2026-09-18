@@ -17,19 +17,17 @@ private let logger = Logger(
 class TracklistViewModel {
     var tracklist: Tracklist
     var isPersisted: Bool
-    var tracks: [Track] = []
+    private(set) var tracks: [Track] = []
     var isLoading = false
     var isRefreshing = false
     var isSaving = false
     var isPinned = false
     var errorMessage: String?
-    var sortMode: SortMode = .defaultOrder
+    private(set) var sortMode: SortMode = .defaultOrder
     var hasMorePages = false
     var pageLoadId = 0
-    var isEditing = false
+    private(set) var isEditing = false
     var mediaSourceRevealInfoById: [String: MediaSourceRevealInfo] = [:]
-
-    let searchHandler = FuzzySearchHandler<Track>()
 
     private var fetchTask: Task<Void, Never>?
     private var unsortedTracks: [Track] = []
@@ -73,15 +71,10 @@ class TracklistViewModel {
     }
 
     var displayTracks: [Track] {
-        let base = self.tracks
         if self.isEditing {
-            return base
+            return self.tracks
         }
-        let items = self.searchHandler.displayItems(from: base)
-        if self.searchHandler.filteredItems != nil {
-            return items
-        }
-        return self.applySorting(items)
+        return self.applySorting(self.tracks)
     }
 
     var canReorder: Bool {
@@ -126,10 +119,6 @@ class TracklistViewModel {
         self.unsortedTracks = self.tracks
         self.suppressNextMembershipReload = true
         PlaylistManager.shared.removeFromPlaylist(track, playlistId: self.tracklist.mediaId)
-    }
-
-    func updateSearch(_ text: String) {
-        self.searchHandler.updateSearch(text, items: self.tracks)
     }
 
     var canRefresh: Bool {
