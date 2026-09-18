@@ -214,7 +214,6 @@ struct MediaRowSkeletonList: View {
 }
 
 /// Sequences a mutation behind the skeleton: raise it, then apply the change once it is opaque.
-/// Lowering immediately after is fine — the overlay holds the skeleton for its minimum duration.
 @MainActor
 @Observable
 final class MediaRowSkeletonTransition {
