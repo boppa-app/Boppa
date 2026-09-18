@@ -10,6 +10,8 @@ struct TracklistView: View {
     @State private var scrollHandler = ScrollAwareVisibilityHandler()
     @State private var navigatingAwayHideOverlayButton = false
     @State private var headerFadeVisibility: CGFloat = 0
+    @State private var pendingSortMode: SortMode?
+    @State private var isShowingSortSkeleton = false
     var navigationReset: NavigationResetSignal
     init(tracklist: Tracklist, navigationReset: NavigationResetSignal = NavigationResetSignal()) {
         self._viewModel = State(initialValue: TracklistViewModel(tracklist: tracklist))
@@ -32,6 +34,17 @@ struct TracklistView: View {
     var body: some View {
         ZStack(alignment: .top) {
             self.content
+                .opacity(self.isShowingSortSkeleton ? 0 : 1)
+
+            if self.isShowingSortSkeleton {
+                EdgeFadeView(topFadeHeight: 0, bottomInset: self.scrollFadeBottomInset) {
+                    MediaRowSkeletonList(
+                        style: .track,
+                        topInset: DetailHeaderMetrics.height
+                    )
+                }
+                .transition(.opacity)
+            }
 
             EdgeGradientFade(
                 edge: .top,
@@ -136,7 +149,7 @@ struct TracklistView: View {
         .onAppear {
             self.viewModel.load()
         }
-        .sheet(isPresented: self.$showActionSheet) {
+        .sheet(isPresented: self.$showActionSheet, onDismiss: self.finishSortTransition) {
             TracklistActionSheet(
                 tracklist: self.viewModel.tracklist,
                 mediaSource: MediaSourceStorageManager.shared
@@ -152,7 +165,7 @@ struct TracklistView: View {
                     self.viewModel.refresh()
                 },
                 onSortSelected: { mode in
-                    self.viewModel.setSortMode(mode)
+                    self.beginSortTransition(to: mode)
                 },
                 onArtistSelected: nil,
                 onDelete: {
@@ -183,6 +196,34 @@ struct TracklistView: View {
                 )
             }
         }
+    }
+
+    private func beginSortTransition(to mode: SortMode) {
+        self.pendingSortMode = mode
+
+        withAnimation(.easeOut(duration: MediaRowSkeletonList.fadeDuration)) {
+            self.isShowingSortSkeleton = true
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(MediaRowSkeletonList.fadeDuration))
+            self.applySortModeIfPending()
+        }
+    }
+
+    private func finishSortTransition() {
+        guard self.isShowingSortSkeleton else { return }
+
+        self.applySortModeIfPending()
+        withAnimation(.easeIn(duration: MediaRowSkeletonList.fadeDuration)) {
+            self.isShowingSortSkeleton = false
+        }
+    }
+
+    private func applySortModeIfPending() {
+        guard let mode = self.pendingSortMode else { return }
+        self.pendingSortMode = nil
+        self.viewModel.setSortMode(mode)
     }
 
     private var content: some View {
